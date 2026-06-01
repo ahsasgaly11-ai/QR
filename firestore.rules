@@ -1,0 +1,52 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- وظائف مساعدة ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // --- المعلمون والبيانات التابعة لهم ---
+    match /teachers/{teacherId} {
+      allow read, write: if isSignedIn() && request.auth.uid == teacherId;
+
+      match /classes/{classId} {
+        allow read, write, delete: if isSignedIn() && request.auth.uid == teacherId;
+      }
+
+      match /lessons/{lessonId} {
+        allow read, write, delete: if isSignedIn() && request.auth.uid == teacherId;
+      }
+      
+      // بنك الأسئلة الخاص بالمعلم
+      match /questionBank/{itemId} {
+        allow read, write, delete: if isSignedIn() && request.auth.uid == teacherId;
+      }
+    }
+
+    // --- الطلاب ---
+    match /students/{studentId} {
+      allow read, write, delete: if isSignedIn();
+    }
+    
+    // --- الجلسات والردود ---
+    match /sessions/{sessionId} {
+        allow read, write, delete: if isSignedIn();
+    }
+    
+    match /studentResponses/{responseId} {
+       allow read, write, delete: if isSignedIn();
+    }
+
+    // --- أولياء الأمور والجداول المساعدة ---
+    match /parents/{parentId} {
+      allow read, write: if isSignedIn(); 
+    }
+    
+    match /parentLookupsByWhatsapp/{whatsappNumber} {
+        allow read, write: if isSignedIn();
+    }
+  }
+}
