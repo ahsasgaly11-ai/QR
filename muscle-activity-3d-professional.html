@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>محاكاة العضلات - نشاط تفاعلي احترافي 3D</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #d4584e;
+            --secondary: #4a5568;
+            --accent: #48bb78;
+            --dark-bg: #0f1419;
+            --card-bg: #1a202c;
+            --text-primary: #ffffff;
+            --text-secondary: #cbd5e0;
+            --border-color: #2d3748;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--dark-bg) 0%, #1a202c 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 20px;
+            padding: 20px;
+            height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(15, 20, 25, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), #ff6b6b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 15px;
+        }
+
+        .nav-btn {
+            padding: 8px 16px;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 13px;
+        }
+
+        .nav-btn:hover {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        /* Main Content */
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 20px;
+            padding: 80px 20px 20px;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        /* Left Panel */
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .control-section {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .control-section h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .btn-action {
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            color: var(--text-primary);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-contract {
+            background: linear-gradient(135deg, var(--primary) 0%, #c9453e 100%);
+            border-color: var(--primary);
+        }
+
+        .btn-contract:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(212, 88, 78, 0.3);
+        }
+
+        .btn-relax {
+            background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+            border-color: #4299e1;
+        }
+
+        .btn-relax:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(66, 153, 225, 0.3);
+        }
+
+        .btn-reset {
+            grid-column: 1 / -1;
+            background: transparent;
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-reset:hover {
+            background: var(--border-color);
+            border-color: var(--accent);
+        }
+
+        /* Slider */
+        .slider-container {
+            margin: 20px 0;
+        }
+
+        .slider-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .slider-label strong {
+            color: var(--text-primary);
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: linear-gradient(90deg, var(--accent) 0%, var(--primary) 100%);
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Measurements */
+        .measurements-box {
+            background: linear-gradient(135deg, rgba(66, 153, 225, 0.1) 0%, rgba(212, 88, 78, 0.1) 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .measurement-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .measurement-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .measurement-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .measurement-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--accent);
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Statistics */
+        .stats-box {
+            background: linear-gradient(135deg, rgba(72, 187, 120, 0.1) 0%, rgba(212, 88, 78, 0.1) 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 10px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        /* Center - 3D Canvas */
+        .canvas-container {
+            background: linear-gradient(135deg, #1a202c 0%, #0f1419 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .canvas-overlay {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(15, 20, 25, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        /* Right Panel */
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .info-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .info-box h4 {
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-list {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.8;
+        }
+
+        .info-list li {
+            margin-bottom: 8px;
+            padding-left: 16px;
+            position: relative;
+        }
+
+        .info-list li:before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        .status-bar {
+            background: linear-gradient(135deg, rgba(212, 88, 78, 0.2) 0%, rgba(66, 153, 225, 0.2) 100%);
+            border: 1px solid var(--primary);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .status-bar.relaxed {
+            color: #4299e1;
+            border-color: #4299e1;
+        }
+
+        .status-bar.contracted {
+            color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        /* Table */
+        .table-container {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        th {
+            background: linear-gradient(135deg, var(--primary), #d4584e);
+            padding: 12px;
+            text-align: right;
+            font-weight: 600;
+            color: white;
+        }
+
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        tr:hover {
+            background: rgba(212, 88, 78, 0.1);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--card-bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+        }
+
+        /* Responsive */
+        @media (max-width: 1400px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>💪 محاكاة العضلات - نشاط تفاعلي احترافي</h1>
+        <div class="header-nav">
+            <button class="nav-btn">🏠 الرئيسية</button>
+            <button class="nav-btn">📚 دليل الاستخدام</button>
+            <button class="nav-btn">⚙️ الإعدادات</button>
+        </div>
+    </div>
+
+    <div class="content">
+        <!-- Left Panel -->
+        <div class="left-panel">
+            <div class="control-section">
+                <h3>🎮 التحكم في الحركة</h3>
+                <div class="btn-group">
+                    <button class="btn-action btn-contract" onclick="setContraction(100)">👊 انقباض</button>
+                    <button class="btn-action btn-relax" onclick="setContraction(0)">✋ انبساط</button>
+                </div>
+                <button class="btn-action btn-reset" onclick="resetAnimation()">🔄 إعادة تعيين</button>
+            </div>
+
+            <div class="control-section">
+                <h3>📐 زاوية الذراع</h3>
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>120°</span>
+                        <strong id="angleValue">32°</strong>
+                        <span>0°</span>
+                    </div>
+                    <input type="range" id="armAngle" min="0" max="120" value="32" oninput="updateArmAngle(this.value)">
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>📏 قياسات العضلات الأمامية</h3>
+                <div class="measurements-box">
+                    <div class="measurement-item">
+                        <span class="measurement-label">عند الانقباض</span>
+                        <span class="measurement-value" id="bicepsContracted">12.4 cm</span>
+                    </div>
+                    <div class="measurement-item">
+                        <span class="measurement-label">عند الانبساط</span>
+                        <span class="measurement-value" id="bicepsRelaxed">18.7 cm</span>
+                    </div>
+                </div>
+
+                <div class="stats-box">
+                    <div class="stat-item">
+                        <span>التغير في الطول</span>
+                        <span class="stat-value" id="lengthChange">-6.3 cm</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>النسبة المئوية</span>
+                        <span class="stat-value" id="percentChange">-34%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>ℹ️ معلومة مهمة</h3>
+                <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.6;">
+                    تنقبض العضلة الأمامية (ذات الرأسين) وتقصر عند الانقباض وتنبسط عند الاسترخاء وتطول
+                </div>
+            </div>
+        </div>
+
+        <!-- Center - Canvas -->
+        <div class="canvas-container">
+            <canvas id="canvas"></canvas>
+            <div class="canvas-overlay">
+                <div style="text-align: center;">
+                    <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 5px;">حالة الذراع</div>
+                    <div class="status-bar relaxed" id="statusBar">مرتخية ✋</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel -->
+        <div class="right-panel">
+            <div class="info-box">
+                <h4>📖 مكونات الذراع</h4>
+                <ul class="info-list">
+                    <li><strong>العضلة الأمامية (Biceps)</strong> - حمراء زاهية</li>
+                    <li><strong>العضلة الخلفية (Triceps)</strong> - كريمية فاتحة</li>
+                    <li><strong>العظام</strong> - بيضاء طبيعية</li>
+                    <li><strong>المفصل</strong> - دقيق وحركي</li>
+                </ul>
+            </div>
+
+            <div class="info-box">
+                <h4>🔬 كيفية عمل العضلات</h4>
+                <ul class="info-list">
+                    <li>تعمل العضلات في أزواج متضادة</li>
+                    <li>الانقباض يقصر العضلة</li>
+                    <li>الاسترخاء يطول العضلة</li>
+                    <li>الأعصاب تتحكم في الحركة</li>
+                </ul>
+            </div>
+
+            <div class="info-box">
+                <h4>📊 نشاط تعليمي</h4>
+                <ul class="info-list">
+                    <li>لاحظ الفرق في الطول</li>
+                    <li>قارن قياسات الطلاب</li>
+                    <li>اكتشف العضلات الأخرى</li>
+                    <li>تفاعل مع التطبيق</li>
+                </ul>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>الحالة</th>
+                            <th>الطول (cm)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>الانبساط الكامل</td>
+                            <td id="tableRelax">18.7</td>
+                        </tr>
+                        <tr>
+                            <td>الانقباض الكامل</td>
+                            <td id="tableContract">12.4</td>
+                        </tr>
+                        <tr>
+                            <td>الفرق</td>
+                            <td id="tableDiff">-6.3</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Three.js Setup
+        const canvas = document.getElementById('canvas');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+
+        renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+        renderer.setClearColor(0x0a0e13, 1);
+        renderer.shadowMap.enabled = true;
+
+        camera.position.set(5, 0, 5);
+        camera.lookAt(0, 0, 0);
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(10, 10, 10);
+        directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
+        scene.add(directionalLight);
+
+        // Arm Group
+        const armGroup = new THREE.Group();
+        scene.add(armGroup);
+
+        // Materials
+        const boneMaterial = new THREE.MeshStandardMaterial({ color: 0xe8d5c4, metalness: 0.3, roughness: 0.6 });
+        const bicepsMaterial = new THREE.MeshStandardMaterial({ color: 0xd4584e, metalness: 0.2, roughness: 0.7 });
+        const tricepsMaterial = new THREE.MeshStandardMaterial({ color: 0xc9a97a, metalness: 0.2, roughness: 0.7 });
+        const skinMaterial = new THREE.MeshStandardMaterial({ color: 0xdaa69d, metalness: 0.1, roughness: 0.8 });
+
+        // Shoulder
+        const shoulderGeometry = new THREE.SphereGeometry(0.4, 32, 32);
+        const shoulder = new THREE.Mesh(shoulderGeometry, skinMaterial);
+        shoulder.position.y = 0;
+        shoulder.castShadow = true;
+        shoulder.receiveShadow = true;
+        armGroup.add(shoulder);
+
+        // Upper Arm Bone
+        const humerusGeometry = new THREE.CylinderGeometry(0.2, 0.18, 2, 32);
+        const humerus = new THREE.Mesh(humerusGeometry, boneMaterial);
+        humerus.position.y = -1;
+        humerus.castShadow = true;
+        humerus.receiveShadow = true;
+        armGroup.add(humerus);
+
+        // Biceps
+        const bicepsGeometry = new THREE.CylinderGeometry(0.25, 0.22, 1.8, 32);
+        const biceps = new THREE.Mesh(bicepsGeometry, bicepsMaterial);
+        biceps.position.set(0.35, -1, 0);
+        biceps.castShadow = true;
+        biceps.receiveShadow = true;
+        armGroup.add(biceps);
+
+        // Triceps
+        const tricepsGeometry = new THREE.CylinderGeometry(0.22, 0.2, 1.8, 32);
+        const triceps = new THREE.Mesh(tricepsGeometry, tricepsMaterial);
+        triceps.position.set(-0.35, -1, 0);
+        triceps.castShadow = true;
+        triceps.receiveShadow = true;
+        armGroup.add(triceps);
+
+        // Elbow Joint
+        const elbowGeometry = new THREE.SphereGeometry(0.25, 32, 32);
+        const elbow = new THREE.Mesh(elbowGeometry, skinMaterial);
+        elbow.position.y = -2;
+        elbow.castShadow = true;
+        elbow.receiveShadow = true;
+        armGroup.add(elbow);
+
+        // Forearm Group (rotates with elbow)
+        const forearmGroup = new THREE.Group();
+        forearmGroup.position.y = -2;
+        armGroup.add(forearmGroup);
+
+        const forearmGeometry = new THREE.CylinderGeometry(0.18, 0.16, 2, 32);
+        const forearm = new THREE.Mesh(forearmGeometry, boneMaterial);
+        forearm.position.y = -1;
+        forearm.castShadow = true;
+        forearm.receiveShadow = true;
+        forearmGroup.add(forearm);
+
+        const handGeometry = new THREE.BoxGeometry(0.4, 0.5, 0.3);
+        const hand = new THREE.Mesh(handGeometry, skinMaterial);
+        hand.position.set(0, -2.3, 0);
+        hand.castShadow = true;
+        hand.receiveShadow = true;
+        forearmGroup.add(hand);
+
+        // Variables
+        let contractionValue = 0;
+        let armAngleValue = 32;
+        const maxBicepsLength = 18.7;
+        const minBicepsLength = 12.4;
+
+        // Update Functions
+        function setContraction(value) {
+            gsap.to({}, {}, {
+                onUpdate: function() {
+                    contractionValue = gsap.getProperty({}, 'value') || 0;
+                    updateMuscles();
+                },
+                duration: 0.6
+            });
+            gsap.to({}, 0, value, { duration: 0.6 });
+        }
+
+        function updateArmAngle(value) {
+            armAngleValue = value;
+            document.getElementById('angleValue').textContent = value + '°';
+            const radians = (value / 180) * Math.PI;
+            forearmGroup.rotation.z = radians;
+        }
+
+        function updateMuscles() {
+            // Contraction effect (0-1)
+            const contraction = contractionValue / 100;
+
+            // Biceps - shortens when contracted
+            const bicepsScale = 1 - (contraction * 0.35);
+            biceps.scale.y = bicepsScale;
+
+            // Triceps - lengthens when contracted
+            const tricepsScale = 1 + (contraction * 0.25);
+            triceps.scale.y = tricepsScale;
+
+            // Calculate lengths
+            const bicepsLength = maxBicepsLength - ((maxBicepsLength - minBicepsLength) * contraction);
+            const tricepsLength = 16.2 + (contraction * 4.5);
+
+            // Update measurements
+            document.getElementById('bicepsContracted').textContent = minBicepsLength.toFixed(1) + ' cm';
+            document.getElementById('bicepsRelaxed').textContent = maxBicepsLength.toFixed(1) + ' cm';
+
+            const difference = maxBicepsLength - minBicepsLength;
+            const percentChange = ((difference / maxBicepsLength) * 100).toFixed(0);
+
+            document.getElementById('lengthChange').textContent = '-' + difference.toFixed(1) + ' cm';
+            document.getElementById('percentChange').textContent = '-' + percentChange + '%';
+
+            document.getElementById('tableRelax').textContent = maxBicepsLength.toFixed(1);
+            document.getElementById('tableContract').textContent = minBicepsLength.toFixed(1);
+            document.getElementById('tableDiff').textContent = '-' + difference.toFixed(1);
+
+            // Update status
+            const statusBar = document.getElementById('statusBar');
+            if (contraction > 0.5) {
+                statusBar.textContent = 'منقبضة 💪';
+                statusBar.className = 'status-bar contracted';
+            } else {
+                statusBar.textContent = 'مرتخية ✋';
+                statusBar.className = 'status-bar relaxed';
+            }
+        }
+
+        function resetAnimation() {
+            gsap.to(window, {
+                onUpdate: function() {
+                    contractionValue = gsap.getProperty(window, 'temp') || 0;
+                    updateMuscles();
+                },
+                duration: 0.5
+            });
+            gsap.fromTo({}, { temp: contractionValue }, { temp: 0, duration: 0.5 });
+            document.getElementById('armAngle').value = 32;
+            updateArmAngle(32);
+        }
+
+        // Animation Loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Rotate for visualization
+            armGroup.rotation.x += 0.001;
+
+            renderer.render(scene, camera);
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            const width = canvas.clientWidth;
+            const height = canvas.clientHeight;
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+        });
+
+        // Initialize
+        updateMuscles();
+        animate();
+    </script>
+</body>
+</html>
