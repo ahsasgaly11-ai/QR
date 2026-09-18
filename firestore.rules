@@ -74,5 +74,11 @@ service cloud.firestore {
       allow read: if true;
       allow write: if true;
     }
+
+    // بنية المناهج القابلة للتحرير من لوحة الإدارة (المواد/الوحدات/الدروس).
+    match /curriculum/{docId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
   }
 }

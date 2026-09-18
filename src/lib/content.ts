@@ -8,8 +8,58 @@ import { getDb, isFirebaseConfigured } from '@/lib/firebase';
 // stored in Firestore (collection: "activities").
 // ---------------------------------------------------------------------------
 
-function cloneSubjects(): Subject[] {
-  return JSON.parse(JSON.stringify(SUBJECTS)) as Subject[];
+function cloneSubjects(source: Subject[]): Subject[] {
+  return JSON.parse(JSON.stringify(source)) as Subject[];
+}
+
+// Structure (subjects › grades › units › lessons, WITHOUT activities) can be
+// overridden by an admin-edited Firestore doc: curriculum/tree.
+async function fetchStructure(): Promise<Subject[] | null> {
+  if (!isFirebaseConfigured) return null;
+  const db = getDb();
+  if (!db) return null;
+  try {
+    const { doc, getDoc } = await import('firebase/firestore');
+    const snap = await getDoc(doc(db, 'curriculum', 'tree'));
+    if (snap.exists()) {
+      const data = snap.data() as { subjects?: Subject[] };
+      if (Array.isArray(data.subjects) && data.subjects.length) {
+        return data.subjects;
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+/** Strip activities → a pure structure tree (for the structure editor/save). */
+export function toStructure(subjects: Subject[]): Subject[] {
+  return subjects.map((s) => ({
+    ...s,
+    grades: s.grades.map((g) => ({
+      ...g,
+      units: g.units.map((u) => ({
+        ...u,
+        lessons: u.lessons.map((l) => ({ ...l, activities: [] })),
+      })),
+    })),
+  }));
+}
+
+export async function getStructure(): Promise<Subject[]> {
+  const fromDb = await fetchStructure();
+  return toStructure(cloneSubjects(fromDb ?? SUBJECTS));
+}
+
+export async function saveStructure(subjects: Subject[]): Promise<void> {
+  const db = getDb();
+  if (!db) throw new Error('Firebase غير مُعدّ.');
+  const { doc, setDoc } = await import('firebase/firestore');
+  await setDoc(doc(db, 'curriculum', 'tree'), {
+    subjects: toStructure(subjects),
+    updatedAt: Date.now(),
+  });
 }
 
 async function fetchUploadedActivities(): Promise<Activity[]> {
@@ -38,8 +88,11 @@ function attachActivities(subjects: Subject[], activities: Activity[]) {
 }
 
 export async function getSubjects(): Promise<Subject[]> {
-  const subjects = cloneSubjects();
-  const uploaded = await fetchUploadedActivities();
+  const [structure, uploaded] = await Promise.all([
+    fetchStructure(),
+    fetchUploadedActivities(),
+  ]);
+  const subjects = cloneSubjects(structure ?? SUBJECTS);
   attachActivities(subjects, [...SEED_ACTIVITIES, ...uploaded]);
   return subjects;
 }
@@ -49,6 +102,31 @@ export async function getAllActivities(): Promise<Activity[]> {
   const map = new Map<string, Activity>();
   for (const a of [...SEED_ACTIVITIES, ...uploaded]) map.set(a.id, a);
   return [...map.values()];
+}
+
+/** Uploaded (Firestore) activity ids — these are editable/deletable in admin. */
+export async function getUploadedActivityIds(): Promise<Set<string>> {
+  const uploaded = await fetchUploadedActivities();
+  return new Set(uploaded.map((a) => a.id));
+}
+
+export const SEED_ACTIVITY_IDS = new Set(SEED_ACTIVITIES.map((a) => a.id));
+
+export async function deleteActivity(id: string): Promise<void> {
+  const db = getDb();
+  if (!db) throw new Error('Firebase غير مُعدّ.');
+  const { doc, deleteDoc } = await import('firebase/firestore');
+  await deleteDoc(doc(db, 'activities', id));
+}
+
+export async function updateActivity(
+  id: string,
+  patch: Partial<Activity>
+): Promise<void> {
+  const db = getDb();
+  if (!db) throw new Error('Firebase غير مُعدّ.');
+  const { doc, setDoc } = await import('firebase/firestore');
+  await setDoc(doc(db, 'activities', id), patch, { merge: true });
 }
 
 export async function getActivity(id: string): Promise<Activity | null> {
