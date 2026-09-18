@@ -255,85 +255,88 @@ body::after {
 }
 
 /* thin gold divider with a heritage diamond */
-.diamond-divider {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.7rem;
-  color: var(--gold);
-}
-.diamond-divider::before,
-.diamond-divider::after {
-  content: '';
-  height: 1px;
-  width: 2.4rem;
-  background: linear-gradient(90deg, transparent, var(--gold));
-}
-.diamond-divider::after {
-  background: linear-gradient(90deg, var(--gold), transparent);
-}
+/* مكوّنات داخل طبقة components حتى تتغلّب أدوات Tailwind (مثل hidden) عليها */
+@layer components {
+  .diamond-divider {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7rem;
+    color: var(--gold);
+  }
+  .diamond-divider::before,
+  .diamond-divider::after {
+    content: '';
+    height: 1px;
+    width: 2.4rem;
+    background: linear-gradient(90deg, transparent, var(--gold));
+  }
+  .diamond-divider::after {
+    background: linear-gradient(90deg, var(--gold), transparent);
+  }
 
-.pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  border-radius: 999px;
-  padding: 0.3rem 0.85rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-}
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    border-radius: 999px;
+    padding: 0.3rem 0.85rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
 
-.gold-ring {
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--gold) 55%, transparent),
-    0 0 0 5px color-mix(in srgb, var(--gold) 15%, transparent);
-}
+  .gold-ring {
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--gold) 55%, transparent),
+      0 0 0 5px color-mix(in srgb, var(--gold) 15%, transparent);
+  }
 
-/* buttons */
-.btn-primary {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  /* مساحة لمس مريحة للمرحلة الابتدائية (≥ 60px) */
-  min-height: 60px;
-  border-radius: 1.15rem;
-  background: linear-gradient(180deg, var(--maroon-300) -40%, var(--maroon) 45%, var(--maroon-700));
-  color: #fff;
-  font-weight: 800;
-  box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.28),
-    inset 0 -2px 0 rgba(0, 0, 0, 0.18);
-  transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.2, 1), box-shadow 0.35s ease, filter 0.35s ease;
-  overflow: hidden;
-}
-.btn-primary:hover { transform: translateY(-2px); filter: brightness(1.06); box-shadow: var(--shadow-lg); }
-.btn-primary::after {
-  content: '';
-  position: absolute; inset: 0;
-  background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,.28) 50%, transparent 70%);
-  transform: translateX(-120%);
-  transition: transform 0.7s ease;
-}
-.btn-primary:hover::after { transform: translateX(120%); }
+  /* buttons */
+  .btn-primary {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    /* مساحة لمس مريحة للمرحلة الابتدائية (≥ 60px) */
+    min-height: 60px;
+    border-radius: 1.15rem;
+    background: linear-gradient(180deg, var(--maroon-300) -40%, var(--maroon) 45%, var(--maroon-700));
+    color: #fff;
+    font-weight: 800;
+    box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.28),
+      inset 0 -2px 0 rgba(0, 0, 0, 0.18);
+    transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.2, 1), box-shadow 0.35s ease, filter 0.35s ease;
+    overflow: hidden;
+  }
+  .btn-primary:hover { transform: translateY(-2px); filter: brightness(1.06); box-shadow: var(--shadow-lg); }
+  .btn-primary::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,.28) 50%, transparent 70%);
+    transform: translateX(-120%);
+    transition: transform 0.7s ease;
+  }
+  .btn-primary:hover::after { transform: translateX(120%); }
 
-.btn-ghost {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  min-height: 60px;
-  border-radius: 1.15rem;
-  border: 2px solid color-mix(in srgb, var(--gold) 60%, transparent);
-  background: color-mix(in srgb, var(--surface) 60%, transparent);
-  color: var(--maroon);
-  font-weight: 800;
-  transition: transform 0.35s ease, background 0.35s ease, border-color 0.35s ease;
-}
-.btn-ghost:hover { transform: translateY(-2px); background: color-mix(in srgb, var(--gold) 12%, transparent); }
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 60px;
+    border-radius: 1.15rem;
+    border: 2px solid color-mix(in srgb, var(--gold) 60%, transparent);
+    background: color-mix(in srgb, var(--surface) 60%, transparent);
+    color: var(--maroon);
+    font-weight: 800;
+    transition: transform 0.35s ease, background 0.35s ease, border-color 0.35s ease;
+  }
+  .btn-ghost:hover { transform: translateY(-2px); background: color-mix(in srgb, var(--gold) 12%, transparent); }
 
-/* نسخة مضغوطة لأزرار الترويسة ولوحة الإدارة (خارج واجهة الطلبة) */
-.btn-sm {
-  min-height: 44px;
-  border-radius: 0.85rem;
+  /* نسخة مضغوطة لأزرار الترويسة ولوحة الإدارة (خارج واجهة الطلبة) */
+  .btn-sm {
+    min-height: 44px;
+    border-radius: 0.85rem;
+  }
 }
 
 /* =========================================================================
