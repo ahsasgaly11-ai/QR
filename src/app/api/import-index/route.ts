@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { verifyOwnerToken } from '@/lib/server-auth';
 
 // ---------------------------------------------------------------------------
 // قراءة صورة فهرس الكتاب وتحويلها إلى نص (OCR بصري عبر Gemini).
@@ -24,26 +25,6 @@ const PROMPT = `هذه صفحات فهرس (جدول محتويات) من كتا
 - لا تضف أي شرح أو تعليق أو ترقيم من عندك.
 أخرج النص فقط.`;
 
-async function verifyOwner(idToken: string): Promise<boolean> {
-  const adminUid = process.env.ADMIN_UID;
-  const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
-  if (!adminUid || !apiKey || !idToken) return false;
-  try {
-    const res = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken }),
-      }
-    );
-    if (!res.ok) return false;
-    const data = (await res.json()) as { users?: { localId?: string }[] };
-    return data.users?.[0]?.localId === adminUid;
-  } catch {
-    return false;
-  }
-}
 
 export async function POST(req: Request) {
   const key = process.env.GEMINI_API_KEY;
@@ -72,7 +53,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'طلب غير صالح.' }, { status: 400 });
   }
 
-  if (!(await verifyOwner(body.idToken ?? ''))) {
+  if (!(await verifyOwnerToken(body.idToken ?? ''))) {
     return NextResponse.json(
       { error: 'غير مصرّح — هذه الخاصية متاحة لمالك المنصّة فقط.' },
       { status: 403 }

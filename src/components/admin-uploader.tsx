@@ -19,6 +19,7 @@ import { ACTIVITY_META } from '@/lib/types';
 import { isFirebaseConfigured, getDb } from '@/lib/firebase';
 import { saveStructure, toStructure } from '@/lib/content';
 import { saveGameHtml, MAX_GAME_BYTES } from '@/lib/game-store';
+import { revalidateContent } from '@/lib/revalidate';
 import {
   saveLocalActivity,
   saveLocalStructure,
@@ -241,6 +242,9 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
         stored: 'firestore',
         chunks,
       });
+
+      // حدّث الصفحات فورًا ليظهر النشاط للجميع بلا انتظار
+      await revalidateContent({ subjectId, activityId: id });
 
       setResult({ mode: 'firebase', activity: baseActivity, fileName: file.name });
     } catch (err) {
