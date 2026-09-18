@@ -7,6 +7,7 @@ import {
   locateActivity,
 } from '@/lib/content';
 import { AdminShell } from '@/components/admin/admin-shell';
+import { BackButton } from '@/components/back-button';
 
 // لوحة المالك تُقرأ حيّة دائمًا حتى يرى ما رفعه فورًا بلا انتظار.
 export const dynamic = 'force-dynamic';
@@ -31,6 +32,9 @@ export default async function AdminPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-12">
+      <div className="mb-6 flex">
+        <BackButton fallback="/" />
+      </div>
       <div className="mb-8 text-center">
         <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-[color:var(--maroon)] text-white shadow-[var(--shadow-md)]">
           <Settings2 className="h-8 w-8" />

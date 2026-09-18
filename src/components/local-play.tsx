@@ -7,6 +7,7 @@ import type { Activity } from '@/lib/types';
 import { getLocalRecord } from '@/lib/local-store';
 import { ActivityPlayer } from './activity-player';
 import { OryxMascot } from './oryx-mascot';
+import { BackButton } from './back-button';
 
 /**
  * يُستخدم عندما لا يجد الخادم النشاط: قد يكون نشاطًا مرفوعًا في «وضع العرض»
@@ -99,6 +100,10 @@ export function LocalPlay({ activityId }: { activityId: string }) {
 
   return (
     <div className="short-tight mx-auto max-w-6xl px-4 py-10 sm:px-6">
+      <div className="mb-5 flex items-center gap-3">
+        <BackButton fallback={`/subject/${activity.subjectId}`} />
+      </div>
+
       <nav className="short-hide mb-5 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         <Link href="/" className="flex items-center gap-1 hover:text-[color:var(--maroon)]">
           <Home className="h-4 w-4" /> الرئيسية

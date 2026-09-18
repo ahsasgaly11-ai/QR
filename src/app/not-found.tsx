@@ -1,10 +1,14 @@
 import Link from 'next/link';
 import { Home } from 'lucide-react';
 import { OryxMascot } from '@/components/oryx-mascot';
+import { BackButton } from '@/components/back-button';
 
 export default function NotFound() {
   return (
     <div className="mx-auto flex max-w-xl flex-col items-center px-6 py-24 text-center">
+      <div className="mb-8 self-start">
+        <BackButton fallback="/" />
+      </div>
       <OryxMascot className="h-40 w-auto float-mid" />
       <h1 className="mt-6 font-calli text-6xl font-bold text-gradient-maroon">404</h1>
       <p className="mt-3 text-lg font-bold text-foreground">
