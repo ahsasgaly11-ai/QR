@@ -1,0 +1,55 @@
+{
+  "$comment": "أوصاف جاهزة لمجسمات تعليمية (عضلات وتشريح) تُرسل إلى Tripo Studio. الوصف بالإنجليزية لأن النموذج يفهمها بدقة أعلى، والتسمية بالعربية للعرض.",
+  "presets": {
+    "arm-skeleton": {
+      "label": "هيكل الذراع العظمي",
+      "prompt": "anatomically accurate human arm skeleton, humerus, radius and ulna, clean matte bone material, isolated on neutral background, educational anatomy model, T-pose, no text",
+      "face_limit": 40000
+    },
+    "arm-muscles": {
+      "label": "عضلات الذراع كاملة",
+      "prompt": "anatomically accurate human upper arm with biceps brachii and triceps brachii muscles wrapped around the humerus bone, deep red striated muscle with pale tendons, educational anatomy model, slightly flexed elbow, no text",
+      "face_limit": 60000
+    },
+    "biceps": {
+      "label": "العضلة ذات الرأسين",
+      "prompt": "isolated human biceps brachii muscle, two heads, deep red striated muscle tissue with white fibrous tendons at both ends, educational anatomy model, no text",
+      "face_limit": 40000
+    },
+    "triceps": {
+      "label": "العضلة ثلاثية الرؤوس",
+      "prompt": "isolated human triceps brachii muscle, three heads, deep red striated muscle tissue with white tendon attaching to the olecranon, educational anatomy model, no text",
+      "face_limit": 40000
+    },
+    "elbow-joint": {
+      "label": "مفصل المرفق",
+      "prompt": "human elbow joint cutaway showing humerus, radius, ulna, articular cartilage and ligaments, educational anatomy model, clean materials, no text",
+      "face_limit": 40000
+    },
+    "muscle-fiber": {
+      "label": "الليف العضلي",
+      "prompt": "magnified bundle of skeletal muscle fibers, visible striations, myofibrils and surrounding connective tissue sheath, scientific illustration style 3d model, no text",
+      "face_limit": 30000
+    },
+    "skeletal-muscle": {
+      "label": "نسيج عضلي هيكلي",
+      "prompt": "skeletal muscle tissue sample, long cylindrical multinucleated striated fibers arranged in parallel bundles, histology teaching model, no text",
+      "face_limit": 30000
+    },
+    "cardiac-muscle": {
+      "label": "نسيج عضلي قلبي",
+      "prompt": "cardiac muscle tissue sample, branching striated fibers joined by intercalated discs, histology teaching model, deep red tones, no text",
+      "face_limit": 30000
+    },
+    "smooth-muscle": {
+      "label": "نسيج عضلي أملس",
+      "prompt": "smooth muscle tissue sample, spindle shaped cells with single central nuclei arranged in sheets, no striations, histology teaching model, no text",
+      "face_limit": 30000
+    },
+    "human-skeleton": {
+      "label": "الهيكل العظمي البشري",
+      "prompt": "full human skeleton standing in anatomical position, accurate proportions, clean matte bone material, classroom anatomy model, no text",
+      "face_limit": 80000
+    }
+  }
+}

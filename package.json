@@ -6,6 +6,7 @@
     "dev": "next dev --turbopack",
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
     "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
+    "tripo": "node scripts/tripo-fetch.mjs",
     "build": "NODE_ENV=production next build",
     "start": "next start",
     "lint": "next lint",
