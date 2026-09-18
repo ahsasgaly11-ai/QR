@@ -131,12 +131,56 @@ export async function loadGameHtml(id: string): Promise<string | null> {
   }
 }
 
+// --- نسخة المعاينة الخفيفة (وثيقة واحدة) ----------------------------------
+
+/**
+ * يحفظ نسخة المعاينة في وثيقة واحدة تحت activities/{id}/preview/doc،
+ * فتُقرأ بقراءة واحدة سريعة بدل تحميل الملف الكامل داخل بطاقة الدرس.
+ */
+export async function savePreviewHtml(id: string, html: string): Promise<boolean> {
+  const db = getDb();
+  if (!db) return false;
+  const { makePreviewHtml } = await import('@/lib/preview-html');
+  const light = makePreviewHtml(html);
+  if (!light) return false;
+  try {
+    const { doc, setDoc } = await import('firebase/firestore');
+    await setDoc(doc(db, 'activities', id, 'preview', 'doc'), { s: light });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function loadPreviewHtml(id: string): Promise<string | null> {
+  const db = getDb();
+  if (!db) return null;
+  try {
+    const { doc, getDoc } = await import('firebase/firestore');
+    const snap = await getDoc(doc(db, 'activities', id, 'preview', 'doc'));
+    if (!snap.exists()) return null;
+    return (snap.data() as { s?: string }).s ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /** يحذف كل أجزاء اللعبة (يُستدعى قبل حذف وثيقة النشاط). */
 export async function deleteGameChunks(id: string): Promise<void> {
   const db = getDb();
   if (!db) return;
 
-  const { collection, getDocs, writeBatch, doc } = await import('firebase/firestore');
+  const { collection, getDocs, writeBatch, doc, deleteDoc } = await import(
+    'firebase/firestore'
+  );
+
+  // وثيقة المعاينة أيضًا — وإلا بقيت بلا صاحب تستهلك المساحة
+  try {
+    await deleteDoc(doc(db, 'activities', id, 'preview', 'doc'));
+  } catch {
+    /* قد لا تكون موجودة */
+  }
+
   const snap = await getDocs(collection(db, 'activities', id, 'chunks'));
   if (snap.empty) return;
 

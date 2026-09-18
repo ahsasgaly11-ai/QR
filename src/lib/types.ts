@@ -32,6 +32,8 @@ export interface Activity {
   stored?: 'firestore';
   /** عدد أجزاء الملف عند التخزين في Firestore. */
   chunks?: number;
+  /** توجد نسخة معاينة خفيفة تُعرض في بطاقة الدرس. */
+  hasPreview?: boolean;
   subjectId: string;
   gradeId: string;
   unitId: string;

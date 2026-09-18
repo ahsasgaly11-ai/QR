@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Pencil, Trash2, X, Check, Loader2, Lock, Eye, Download } from 'lucide-react';
+import { Pencil, Trash2, X, Check, Loader2, Lock, Eye, Download, Images } from 'lucide-react';
 import type { Activity, ActivityType } from '@/lib/types';
 import { ACTIVITY_META } from '@/lib/types';
 import { updateActivity, deleteActivity } from '@/lib/content';
@@ -24,6 +24,8 @@ export function ActivitiesManager({
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState<Partial<Activity>>({});
   const [busy, setBusy] = useState(false);
+  const [backfill, setBackfill] = useState<{ done: number; total: number } | null>(null);
+  const [backfillMsg, setBackfillMsg] = useState('');
   const uploaded = new Set(uploadedIds);
 
   const inp =
@@ -59,8 +61,79 @@ export function ActivitiesManager({
     }
   }
 
+  /**
+   * الأنشطة التي رُفعت قبل إضافة المعاينة لا تملك نسخة خفيفة، فتبقى بطاقتها
+   * بلا صورة. هذا الزرّ يبني لها المعاينة مرّة واحدة.
+   */
+  async function buildMissingPreviews() {
+    const targets = rows.filter(
+      (a) => a.stored === 'firestore' && !a.hasPreview && uploaded.has(a.id)
+    );
+    if (!targets.length) {
+      setBackfillMsg('كل الأنشطة لديها معاينة بالفعل.');
+      return;
+    }
+    setBackfillMsg('');
+    setBackfill({ done: 0, total: targets.length });
+    const { loadGameHtml, savePreviewHtml } = await import('@/lib/game-store');
+    let ok = 0;
+    for (let i = 0; i < targets.length; i++) {
+      const a = targets[i];
+      try {
+        const html = await loadGameHtml(a.id);
+        if (html && (await savePreviewHtml(a.id, html))) {
+          await updateActivity(a.id, { hasPreview: true });
+          setRows((r) =>
+            r.map((x) => (x.id === a.id ? { ...x, hasPreview: true } : x))
+          );
+          ok++;
+        }
+      } catch {
+        /* تجاهل نشاطًا واحدًا فاشلًا وواصل البقية */
+      }
+      setBackfill({ done: i + 1, total: targets.length });
+    }
+    setBackfill(null);
+    setBackfillMsg(`تم توليد ${ok} معاينة من أصل ${targets.length}.`);
+    await revalidateContent({ subjectId: targets[0]?.subjectId });
+  }
+
+  const missingPreviews = rows.filter(
+    (a) => a.stored === 'firestore' && !a.hasPreview && uploaded.has(a.id)
+  ).length;
+
   return (
     <div className="space-y-3">
+      {isFirebaseConfigured && missingPreviews > 0 && (
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-[color:var(--gold)]/35 bg-[color:var(--gold)]/10 p-4 text-sm">
+          <Images className="h-5 w-5 shrink-0 text-[color:var(--gold)]" />
+          <p className="flex-1">
+            <b>{missingPreviews}</b> نشاطًا بلا معاينة في بطاقة الدرس (رُفعت قبل
+            إضافة هذه الميزة).
+          </p>
+          <button
+            onClick={buildMissingPreviews}
+            disabled={!!backfill}
+            className="btn-primary btn-sm px-4 py-2 text-sm"
+          >
+            {backfill ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {backfill.done}/{backfill.total}
+              </>
+            ) : (
+              <>
+                <Images className="h-4 w-4" /> توليد المعاينات
+              </>
+            )}
+          </button>
+        </div>
+      )}
+      {backfillMsg && (
+        <p className="rounded-xl bg-[color:var(--teal)]/15 px-4 py-2.5 text-sm font-bold text-[color:var(--teal)]">
+          {backfillMsg}
+        </p>
+      )}
       <p className="text-sm text-muted-foreground">
         الأنشطة المضمّنة (seed) للعرض فقط؛ الأنشطة المرفوعة عبر المنصّة يمكن
         تعديلها أو حذفها.

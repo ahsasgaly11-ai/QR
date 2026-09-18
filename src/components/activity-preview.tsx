@@ -78,8 +78,14 @@ export function ActivityPreview({
             setUrl(u);
           } else setFailed(true);
         } else if (activity.stored === 'firestore') {
-          const { loadGameHtml } = await import('@/lib/game-store');
-          const html = await loadGameHtml(activity.id);
+          // نسخة المعاينة الخفيفة أولًا — قراءة واحدة بدل عشرات، وبضع مئات
+          // من الكيلوبايتات بدل ميجابايتات الملف الكامل.
+          const { loadPreviewHtml, loadGameHtml } = await import('@/lib/game-store');
+          let html = await loadPreviewHtml(activity.id);
+          // أنشطة رُفعت قبل وجود المعاينة: حمّل الملف كاملًا فقط إن كان صغيرًا
+          if (!html && (activity.chunks ?? 99) <= 2) {
+            html = await loadGameHtml(activity.id);
+          }
           if (!alive) return;
           if (html) {
             const u = htmlToBlobUrl(html);
