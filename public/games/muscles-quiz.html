@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>اختبر معلوماتك: العضلات والحركة</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
+<style>
+  :root{--maroon:#8a1538;--maroon-d:#5f0e26;--gold:#c9a227;--sky:#1b9bd8;--teal:#17a398;--coral:#ef5b3c;--cream:#fffdf8;--sand:#fbf6ec}
+  *{margin:0;padding:0;box-sizing:border-box;font-family:'Tajawal',sans-serif}
+  body{min-height:100vh;background:radial-gradient(circle at 15% 0%,#fdeef2,transparent 45%),radial-gradient(circle at 90% 10%,#e6f5fc,transparent 45%),var(--sand);display:flex;align-items:center;justify-content:center;padding:24px;color:#241a14}
+  .card{width:100%;max-width:640px;background:var(--cream);border-radius:28px;box-shadow:0 30px 60px -25px rgba(138,21,56,.4);overflow:hidden;border:1px solid rgba(201,162,39,.25)}
+  .top{height:8px;background:repeating-linear-gradient(-35deg,var(--maroon) 0 18px,var(--gold) 18px 20px,var(--maroon) 20px 22px)}
+  .pad{padding:28px}
+  .head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+  .badge{background:var(--gold);color:var(--maroon-d);font-weight:800;font-size:13px;padding:6px 14px;border-radius:999px}
+  h1{color:var(--maroon);font-size:22px;font-weight:900}
+  .progress{height:10px;background:#eee3cf;border-radius:999px;overflow:hidden;margin-bottom:22px}
+  .bar{height:100%;width:0;background:linear-gradient(90deg,var(--sky),var(--maroon));transition:width .5s}
+  .q{font-size:20px;font-weight:800;margin-bottom:18px;line-height:1.6}
+  .opts{display:grid;gap:12px}
+  .opt{background:#fff;border:2px solid #eadfca;border-radius:16px;padding:15px 18px;font-size:17px;font-weight:700;text-align:right;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:12px}
+  .opt:hover:not(.locked){border-color:var(--sky);transform:translateY(-2px)}
+  .opt .k{width:32px;height:32px;border-radius:10px;background:var(--maroon);color:#fff;display:grid;place-items:center;font-weight:900;flex-shrink:0}
+  .opt.correct{border-color:var(--teal);background:#e7f7f4}
+  .opt.correct .k{background:var(--teal)}
+  .opt.wrong{border-color:var(--coral);background:#fdecea}
+  .opt.wrong .k{background:var(--coral)}
+  .opt.locked{cursor:default}
+  .explain{margin-top:18px;background:#eef7fb;border-right:5px solid var(--sky);padding:14px 16px;border-radius:12px;font-weight:600;line-height:1.7;display:none}
+  .explain.show{display:block;animation:fade .4s}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1}}
+  .btn{margin-top:20px;width:100%;background:var(--maroon);color:#fff;border:none;border-radius:16px;padding:15px;font-size:17px;font-weight:900;cursor:pointer;transition:.2s}
+  .btn:hover{background:var(--maroon-d)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .result{text-align:center}
+  .score{font-size:60px;font-weight:900;color:var(--maroon);margin:10px 0}
+  .emoji{font-size:64px}
+  .hintbtn{background:none;border:none;color:var(--sky);font-weight:800;cursor:pointer;font-size:14px;margin-top:10px}
+  .hint{display:none;margin-top:8px;background:#fff8e6;border-radius:10px;padding:10px 14px;font-weight:600;border-right:4px solid var(--gold)}
+  .hint.show{display:block}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="top"></div>
+  <div class="pad">
+    <div class="head"><h1>العضلات والحركة</h1><span class="badge">أسئلة تفاعلية</span></div>
+    <div class="progress"><div class="bar" id="bar"></div></div>
+    <div id="game"></div>
+  </div>
+</div>
+<script>
+const QUESTIONS=[
+  {q:"ماذا يحدث للعضلة عندما تنقبض؟",o:["تقصر وتسحب العظم","تطول وترخي العظم","تختفي تمامًا","تتحول إلى عظم"],a:0,
+   hint:"فكّر في عضلة الذراع عند رفع شيء ثقيل — تصبح أقصر وأكثر صلابة.",
+   ex:"عند الانقباض تقصر العضلة فتسحب العظم المتصل بها، وهذا ما يسبّب الحركة."},
+  {q:"كيف تعمل العضلات لتحريك المفصل؟",o:["عضلة واحدة فقط","في مجموعات متقابلة (زوجية)","لا تحتاج إلى عظام","بالدفع فقط"],a:1,
+   hint:"عضلة تسحب في اتجاه، وأخرى تعيد العظم إلى مكانه.",
+   ex:"تعمل العضلات في أزواج متقابلة: تنقبض إحداهما بينما ترتخي الأخرى لتحريك المفصل في الاتجاهين."},
+  {q:"أي نوع من العضلات نتحكم فيه بإرادتنا؟",o:["عضلة القلب","العضلات الإرادية (الهيكلية)","عضلات المعدة","لا شيء"],a:1,
+   hint:"العضلات المتصلة بالعظام والتي نحرّكها متى شئنا.",
+   ex:"العضلات الهيكلية إرادية نتحكم فيها، أما عضلة القلب وعضلات الأعضاء الداخلية فهي لا إرادية."},
+  {q:"ما الذي يربط العضلة بالعظم؟",o:["الجلد","الأوتار","الدم","الشعر"],a:1,
+   hint:"نسيج قوي أبيض اللون في أطراف العضلات.",
+   ex:"الأوتار أنسجة قوية تربط العضلات بالعظام وتنقل قوة الانقباض إليها."},
+  {q:"لماذا نحتاج إلى الغذاء الصحي والرياضة للعضلات؟",o:["لتصبح أضعف","لتبقى قوية وسليمة","لتتوقف عن العمل","لا فائدة"],a:1,
+   hint:"العضلة كالآلة تحتاج وقودًا وتدريبًا.",
+   ex:"الغذاء المتوازن والنشاط البدني يقوّيان العضلات ويحافظان على صحتها ومرونتها."}
+];
+let i=0,score=0,locked=false;
+const g=document.getElementById('game'),bar=document.getElementById('bar');
+function render(){
+  locked=false;
+  bar.style.width=(i/QUESTIONS.length*100)+'%';
+  const Q=QUESTIONS[i];
+  g.innerHTML=`<div class="q">${i+1}. ${Q.q}</div>
+    <div class="opts">${Q.o.map((t,k)=>`<div class="opt" data-k="${k}"><span class="k">${['أ','ب','ج','د'][k]}</span><span>${t}</span></div>`).join('')}</div>
+    <button class="hintbtn" id="hb">💡 تلميح</button>
+    <div class="hint" id="hint">${Q.hint}</div>
+    <div class="explain" id="ex"></div>
+    <button class="btn" id="next" disabled>السؤال التالي ←</button>`;
+  document.getElementById('hb').onclick=()=>document.getElementById('hint').classList.add('show');
+  g.querySelectorAll('.opt').forEach(o=>o.onclick=()=>choose(o));
+  document.getElementById('next').onclick=()=>{i++;i<QUESTIONS.length?render():finish();};
+}
+function choose(el){
+  if(locked)return;locked=true;
+  const Q=QUESTIONS[i],k=+el.dataset.k;
+  g.querySelectorAll('.opt').forEach(o=>{o.classList.add('locked');const kk=+o.dataset.k;if(kk===Q.a)o.classList.add('correct');});
+  if(k===Q.a){score++;}else{el.classList.add('wrong');}
+  const ex=document.getElementById('ex');ex.textContent=(k===Q.a?'✅ إجابة صحيحة! ':'')+Q.ex;ex.classList.add('show');
+  document.getElementById('next').disabled=false;
+}
+function finish(){
+  bar.style.width='100%';
+  const pct=Math.round(score/QUESTIONS.length*100);
+  const good=pct>=60;
+  g.innerHTML=`<div class="result"><div class="emoji">${good?'🎉':'💪'}</div>
+    <div class="score">${score}/${QUESTIONS.length}</div>
+    <p style="font-size:18px;font-weight:700;color:${good?'#17a398':'#8a1538'}">${good?'أحسنت! أتقنت درس العضلات والحركة.':'محاولة جيدة! راجع الدرس وحاول مرة أخرى.'}</p>
+    <button class="btn" onclick="restart()">إعادة الاختبار ↺</button></div>`;
+}
+function restart(){i=0;score=0;render();}
+render();
+</script>
+</body>
+</html>

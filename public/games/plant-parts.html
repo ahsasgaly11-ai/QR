@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>لعبة: ركّب أجزاء النبات</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
+<style>
+  :root{--maroon:#8a1538;--maroon-d:#5f0e26;--gold:#c9a227;--sky:#1b9bd8;--teal:#17a398;--coral:#ef5b3c;--cream:#fffdf8;--sand:#fbf6ec}
+  *{margin:0;padding:0;box-sizing:border-box;font-family:'Tajawal',sans-serif}
+  body{min-height:100vh;background:radial-gradient(circle at 80% 0%,#eafaf0,transparent 45%),var(--sand);display:flex;align-items:center;justify-content:center;padding:20px;color:#241a14}
+  .card{width:100%;max-width:760px;background:var(--cream);border-radius:28px;box-shadow:0 30px 60px -25px rgba(138,21,56,.4);overflow:hidden;border:1px solid rgba(201,162,39,.25)}
+  .top{height:8px;background:repeating-linear-gradient(-35deg,var(--maroon) 0 18px,var(--gold) 18px 20px,var(--maroon) 20px 22px)}
+  .pad{padding:24px}
+  .head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px;flex-wrap:wrap}
+  h1{color:var(--maroon);font-size:22px;font-weight:900}
+  .badge{background:var(--coral);color:#fff;font-weight:800;font-size:13px;padding:6px 14px;border-radius:999px}
+  .instr{color:#6b5d52;font-weight:600;margin-bottom:14px}
+  .stage{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:center}
+  @media(max-width:640px){.stage{grid-template-columns:1fr}}
+  svg{width:100%;height:auto;max-height:360px}
+  .slot{cursor:pointer}
+  .slot rect{fill:#fff;stroke:var(--gold);stroke-width:2.5;stroke-dasharray:6 5;rx:10;transition:.2s}
+  .slot.sel rect{stroke:var(--sky);fill:#eaf6fc}
+  .slot.done rect{stroke:var(--teal);fill:#e7f7f4;stroke-dasharray:none}
+  .slot text{font-weight:800;font-size:15px;fill:#b9a98f}
+  .slot.done text{fill:var(--teal)}
+  .chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:8px}
+  .chip{background:#fff;border:2px solid #eadfca;border-radius:14px;padding:12px 18px;font-weight:800;font-size:16px;cursor:pointer;transition:.2s}
+  .chip:hover{transform:translateY(-2px);border-color:var(--sky)}
+  .chip.sel{background:var(--sky);color:#fff;border-color:var(--sky)}
+  .chip.used{opacity:.35;pointer-events:none;text-decoration:line-through}
+  .fx{margin-top:14px;min-height:52px;background:#eef7fb;border-right:5px solid var(--sky);padding:12px 15px;border-radius:12px;font-weight:600;line-height:1.6;display:flex;align-items:center}
+  .win{text-align:center;padding:10px}
+  .win .e{font-size:60px}
+  .btn{margin-top:12px;background:var(--maroon);color:#fff;border:none;border-radius:14px;padding:12px 22px;font-weight:900;cursor:pointer;font-size:16px}
+  .btn:hover{background:var(--maroon-d)}
+  .shake{animation:sh .4s}
+  @keyframes sh{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="top"></div>
+  <div class="pad">
+    <div class="head"><h1>🌱 ركّب أجزاء النبات</h1><span class="badge">لعبة تعليمية</span></div>
+    <p class="instr">اختر اسم الجزء ثم اضغط على مكانه الصحيح في الرسم.</p>
+    <div class="stage">
+      <svg id="plant" viewBox="0 0 300 380" aria-label="نبات">
+        <!-- soil -->
+        <rect x="20" y="300" width="260" height="60" rx="14" fill="#c9976a"/>
+        <rect x="20" y="300" width="260" height="14" rx="7" fill="#b07d4f"/>
+        <!-- roots -->
+        <g stroke="#8a5a33" stroke-width="5" fill="none" stroke-linecap="round">
+          <path d="M150 305 L150 350"/><path d="M150 320 L120 352"/><path d="M150 320 L182 352"/><path d="M150 335 L134 356"/><path d="M150 335 L168 356"/>
+        </g>
+        <!-- stem -->
+        <rect x="144" y="150" width="12" height="158" rx="6" fill="#2e9b4f"/>
+        <!-- leaves -->
+        <path d="M150 210 C110 195 92 220 100 250 C140 250 156 235 150 210Z" fill="#3bb862"/>
+        <path d="M150 235 C190 220 208 245 200 275 C160 275 144 260 150 235Z" fill="#3bb862"/>
+        <!-- flower -->
+        <g>
+          <circle cx="150" cy="120" r="22" fill="#f4c430"/>
+          <g fill="#ef5b3c">
+            <ellipse cx="150" cy="86" rx="14" ry="22"/><ellipse cx="150" cy="154" rx="14" ry="22"/>
+            <ellipse cx="116" cy="120" rx="22" ry="14"/><ellipse cx="184" cy="120" rx="22" ry="14"/>
+            <ellipse cx="126" cy="96" rx="16" ry="16"/><ellipse cx="174" cy="96" rx="16" ry="16"/>
+            <ellipse cx="126" cy="144" rx="16" ry="16"/><ellipse cx="174" cy="144" rx="16" ry="16"/>
+          </g>
+          <circle cx="150" cy="120" r="16" fill="#f4c430"/>
+        </g>
+        <!-- slots -->
+        <g class="slot" data-id="flower"><rect x="196" y="104" width="92" height="34" rx="10"/><text x="242" y="126" text-anchor="middle">؟</text></g>
+        <g class="slot" data-id="leaf"><rect x="204" y="256" width="84" height="34" rx="10"/><text x="246" y="278" text-anchor="middle">؟</text></g>
+        <g class="slot" data-id="stem"><rect x="10" y="205" width="92" height="34" rx="10"/><text x="56" y="227" text-anchor="middle">؟</text></g>
+        <g class="slot" data-id="root"><rect x="184" y="330" width="96" height="34" rx="10"/><text x="232" y="352" text-anchor="middle">؟</text></g>
+      </svg>
+      <div>
+        <div class="chips" id="chips"></div>
+        <div class="fx" id="fx">اختر اسمًا للبدء… 👆</div>
+        <div id="win"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const PARTS={
+  root:{name:"الجذر",fx:"الجذر يثبّت النبات في التربة ويمتصّ الماء والأملاح."},
+  stem:{name:"الساق",fx:"الساق تحمل النبات وتنقل الماء والغذاء بين الأجزاء."},
+  leaf:{name:"الورقة",fx:"الورقة تصنع غذاء النبات عبر عملية البناء الضوئي."},
+  flower:{name:"الزهرة",fx:"الزهرة عضو التكاثر في النبات ومنها تتكوّن الثمرة والبذور."}
+};
+let sel=null,done=0;
+const chipsEl=document.getElementById('chips'),fx=document.getElementById('fx');
+const order=Object.keys(PARTS).sort(()=>Math.random()-0.5);
+order.forEach(id=>{
+  const c=document.createElement('div');c.className='chip';c.dataset.id=id;c.textContent=PARTS[id].name;
+  c.onclick=()=>{if(c.classList.contains('used'))return;document.querySelectorAll('.chip').forEach(x=>x.classList.remove('sel'));c.classList.add('sel');sel=id;fx.textContent='الآن اضغط على مكان «'+PARTS[id].name+'» في الرسم.';};
+  chipsEl.appendChild(c);
+});
+document.querySelectorAll('.slot').forEach(s=>{
+  s.onclick=()=>{
+    if(s.classList.contains('done'))return;
+    if(!sel){fx.textContent='اختر اسم الجزء أولًا 👆';return;}
+    if(s.dataset.id===sel){
+      s.classList.add('done');s.classList.remove('sel');
+      s.querySelector('text').textContent=PARTS[sel].name;
+      const chip=document.querySelector('.chip.sel');chip.classList.add('used');chip.classList.remove('sel');
+      fx.innerHTML='✅ <b>'+PARTS[sel].name+'</b>: '+PARTS[sel].fx;
+      sel=null;done++;
+      if(done===4)win();
+    }else{
+      s.classList.add('shake');setTimeout(()=>s.classList.remove('shake'),400);
+      fx.textContent='❌ ليس هنا، جرّب مكانًا آخر.';
+    }
+  };
+});
+function win(){
+  document.getElementById('win').innerHTML='<div class="win"><div class="e">🎉🌻</div><p style="font-weight:800;color:#17a398;font-size:18px">أحسنت! ركّبت جميع أجزاء النبات بشكل صحيح.</p><button class="btn" onclick="location.reload()">العب مجددًا ↺</button></div>';
+}
+</script>
+</body>
+</html>

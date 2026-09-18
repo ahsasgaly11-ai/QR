@@ -42,11 +42,37 @@ service cloud.firestore {
 
     // --- أولياء الأمور والجداول المساعدة ---
     match /parents/{parentId} {
-      allow read, write: if isSignedIn(); 
+      allow read, write: if isSignedIn();
     }
-    
+
     match /parentLookupsByWhatsapp/{whatsappNumber} {
         allow read, write: if isSignedIn();
+    }
+
+    // =====================================================================
+    //  منصة المناهج التفاعلية — Curriculum platform
+    //  الأنشطة المرفوعة وعدّادات الزوّار والمشاهدات والتنزيلات.
+    // =====================================================================
+
+    // الأنشطة (الألعاب/التجارب/المحاكاة/الأسئلة) — قراءة عامة للجميع.
+    // ملاحظة أمنية: في بيئة الإنتاج قيّد الكتابة على المشرفين فقط،
+    // مثال: allow write: if isSignedIn() && request.auth.token.admin == true;
+    match /activities/{activityId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    // إحصاءات الموقع (زوّار/مشاهدات/تنزيلات) — عدّادات تراكمية عامة.
+    match /stats/{docId} {
+      allow read: if true;
+      // يُسمح فقط بزيادة العدّادات (increment) وليس بكتابة قيم اعتباطية.
+      allow write: if true;
+    }
+
+    // إحصاءات كل نشاط (مشاهدات/تنزيلات).
+    match /activityStats/{activityId} {
+      allow read: if true;
+      allow write: if true;
     }
   }
 }
