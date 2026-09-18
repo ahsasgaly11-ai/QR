@@ -80,9 +80,9 @@ export default async function HomePage() {
           </div>
 
           {/* 3D book */}
-          <div className="order-1 flex justify-center lg:order-2">
-            <div className="fade-in relative">
-              <div className="absolute -inset-8 rounded-full bg-gradient-to-tr from-[color:var(--maroon)]/15 to-[color:var(--gold)]/15 blur-2xl" />
+          <div className="order-1 flex max-w-full justify-center overflow-hidden lg:order-2">
+            <div className="fade-in relative max-w-full">
+              <div className="pointer-events-none absolute -inset-2 rounded-full bg-gradient-to-tr from-[color:var(--maroon)]/15 to-[color:var(--gold)]/15 blur-2xl sm:-inset-8" />
               <div className="relative">
                 <Book3D />
               </div>

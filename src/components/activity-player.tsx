@@ -55,6 +55,35 @@ export function ActivityPlayer({
     setStats((s) => ({ ...s, downloads: s.downloads + 1 }));
   };
 
+  // على الشاشات القصيرة (الجوال عرضيًا) نقيس المساحة المتبقية فعليًا ونملأها،
+  // بدل افتراض ارتفاع ثابت قد يُخرج جزءًا من اللعبة خارج الشاشة.
+  const [fitH, setFitH] = useState<number | null>(null);
+  useEffect(() => {
+    const compute = () => {
+      const el = wrapRef.current;
+      if (!el) return;
+      if (document.fullscreenElement) return;
+      const short = window.matchMedia('(max-height: 560px)').matches;
+      if (!short) {
+        setFitH(null);
+        return;
+      }
+      const docTop = el.getBoundingClientRect().top + window.scrollY;
+      const STRIP = 6; // شريط العلم أعلى المسرح
+      const GAP = 10;
+      setFitH(Math.max(170, window.innerHeight - docTop - STRIP - GAP));
+    };
+    compute();
+    const t = setTimeout(compute, 300);
+    window.addEventListener('resize', compute);
+    window.addEventListener('orientationchange', compute);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('resize', compute);
+      window.removeEventListener('orientationchange', compute);
+    };
+  }, []);
+
   const onFullscreen = () => {
     const el = wrapRef.current;
     if (!el) return;
@@ -65,7 +94,7 @@ export function ActivityPlayer({
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+        <div className="short-hide flex flex-wrap items-center gap-x-3 gap-y-1.5">
           <ActivityTypeBadge type={activity.type} />
           <span className="flex items-center gap-1.5 text-sm font-bold text-muted-foreground">
             <Eye className="h-4 w-4" /> {formatFull(stats.views)} مشاهدة
@@ -74,7 +103,7 @@ export function ActivityPlayer({
             <Download className="h-4 w-4" /> {formatFull(stats.downloads)} تنزيل
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <button
             onClick={() => {
               setLoading(true);
@@ -130,12 +159,13 @@ export function ActivityPlayer({
             ref={frameRef}
             src={url}
             title={activity.title}
-            className="h-[72vh] min-h-[520px] w-full bg-white"
+            className="game-stage w-full bg-white"
+            style={fitH ? { height: fitH, minHeight: 0 } : undefined}
             sandbox="allow-scripts allow-same-origin allow-popups allow-downloads allow-forms allow-modals"
             onLoad={() => setLoading(false)}
           />
         ) : (
-          <div className="h-[72vh] min-h-[520px] w-full bg-white" />
+          <div className="game-stage w-full bg-white" style={fitH ? { height: fitH, minHeight: 0 } : undefined} />
         )}
       </div>
     </div>

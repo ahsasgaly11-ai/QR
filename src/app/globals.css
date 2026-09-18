@@ -340,6 +340,16 @@ body::after {
    3D scene helpers & cinematic motion
    ========================================================================= */
 .scene { perspective: 1800px; perspective-origin: 50% 42%; }
+
+/* الكتاب ثابت الأبعاد (312×440) — يُصغَّر ليسع الشاشات الضيّقة كاملًا
+   بدل أن يُقصّ أو يُحدث تمريرًا أفقيًا. الهامش السالب يعوّض فراغ التصغير. */
+.book-fit { transform-origin: top center; }
+@media (max-width: 400px) {
+  .book-fit { transform: scale(0.72); margin-bottom: -123px; }
+}
+@media (min-width: 401px) and (max-width: 520px) {
+  .book-fit { transform: scale(0.86); margin-bottom: -62px; }
+}
 .preserve-3d { transform-style: preserve-3d; }
 
 .book-3d {
@@ -409,6 +419,50 @@ body::after {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='10' viewBox='0 0 60 10'%3E%3Cpath d='M0 5 Q7.5 0 15 5 T30 5 T45 5 T60 5' fill='none' stroke='%23b0892e' stroke-width='1.6'/%3E%3C/svg%3E");
   background-repeat: repeat-x;
   opacity: 0.7;
+}
+
+/* =========================================================================
+   مسرح اللعبة — ارتفاع متجاوب يسع كل الأجهزة في الوضعين الطولي والعرضي.
+   svh يتعامل مع أشرطة متصفّحات الجوال المتغيّرة؛ والحدّ الأدنى لا يتجاوز
+   نسبة من ارتفاع الشاشة حتى لا تُقصّ اللعبة في الوضع العرضي.
+   ========================================================================= */
+.game-stage {
+  height: min(72vh, 820px);
+  min-height: min(520px, 60vh);
+}
+@supports (height: 1svh) {
+  .game-stage {
+    height: min(72svh, 820px);
+    min-height: min(520px, 60svh);
+  }
+}
+/* شاشات قصيرة (الجوال عرضيًا): اضغط واجهة الصفحة لتظهر اللعبة فورًا
+   دون الحاجة للتمرير، واستغلّ أقصى ارتفاع متاح. */
+@media (max-height: 520px) {
+  .game-stage {
+    height: calc(100svh - 118px);
+    min-height: 180px;
+  }
+  .short-hide { display: none !important; }
+  .short-tight {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+  .short-title {
+    font-size: 1.15rem !important;
+    line-height: 1.3 !important;
+    margin-bottom: 0.35rem !important;
+  }
+}
+/* في ملء الشاشة تملأ اللعبة الشاشة كاملةً (الأفضل للجوال عرضيًا) */
+:fullscreen .game-stage,
+:-webkit-full-screen .game-stage {
+  height: 100vh !important;
+  min-height: 0 !important;
+}
+:fullscreen .flag-strip,
+:-webkit-full-screen .flag-strip {
+  display: none;
 }
 
 /* refined dotted/grid backdrops */

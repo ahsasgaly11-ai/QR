@@ -42,8 +42,8 @@ export function SiteHeader() {
         )}
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-2.5">
-          <Link href="/" className="group flex items-center gap-3">
-            <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-2xl bg-white p-1 gold-ring transition-transform duration-500 group-hover:scale-105 group-hover:rotate-3">
+          <Link href="/" className="group flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+            <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-2xl bg-white p-1 gold-ring transition-transform duration-500 group-hover:scale-105 group-hover:rotate-3 sm:h-11 sm:w-11">
               <Image
                 src="/images/ministry-logo.jpg"
                 alt="شعار وزارة التربية والتعليم والتعليم العالي"
@@ -53,11 +53,11 @@ export function SiteHeader() {
                 priority
               />
             </div>
-            <div className="leading-tight">
-              <p className="font-display text-[17px] font-bold text-[color:var(--maroon)]">
+            <div className="min-w-0 leading-tight">
+              <p className="truncate font-display text-[15px] font-bold text-[color:var(--maroon)] sm:text-[17px]">
                 منصة مناهج قطر
               </p>
-              <p className="text-[11px] font-medium text-muted-foreground">
+              <p className="hidden truncate text-[11px] font-medium text-muted-foreground sm:block">
                 التفاعلية • وزارة التربية والتعليم
               </p>
             </div>
@@ -87,7 +87,7 @@ export function SiteHeader() {
             })}
           </nav>
 
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <ThemeToggle />
             <Link
               href="/admin"

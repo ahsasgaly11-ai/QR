@@ -34,9 +34,9 @@ export default async function PlayPage({
   );
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-10">
+    <div className="short-tight mx-auto max-w-6xl px-4 py-10 sm:px-6">
       {/* breadcrumb */}
-      <nav className="mb-5 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+      <nav className="short-hide mb-5 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         <Link href="/" className="flex items-center gap-1 hover:text-[color:var(--maroon)]">
           <Home className="h-4 w-4" /> الرئيسية
         </Link>
@@ -61,11 +61,11 @@ export default async function PlayPage({
         {lesson && <span className="font-bold text-foreground">{lesson.title}</span>}
       </nav>
 
-      <h1 className="mb-1 font-display text-3xl font-black text-[color:var(--maroon)] sm:text-4xl">
+      <h1 className="short-title mb-1 font-display text-3xl font-black text-[color:var(--maroon)] sm:text-4xl">
         {activity.title}
       </h1>
       {activity.description && (
-        <p className="mb-6 max-w-3xl text-muted-foreground">{activity.description}</p>
+        <p className="short-hide mb-6 max-w-3xl text-muted-foreground">{activity.description}</p>
       )}
 
       <ActivityPlayer activity={activity} />

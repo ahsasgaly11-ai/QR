@@ -79,8 +79,8 @@ export function LocalPlay({ activityId }: { activityId: string }) {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-10">
-      <nav className="mb-5 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+    <div className="short-tight mx-auto max-w-6xl px-4 py-10 sm:px-6">
+      <nav className="short-hide mb-5 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         <Link href="/" className="flex items-center gap-1 hover:text-[color:var(--maroon)]">
           <Home className="h-4 w-4" /> الرئيسية
         </Link>
@@ -92,14 +92,14 @@ export function LocalPlay({ activityId }: { activityId: string }) {
         <span className="font-bold text-foreground">{activity.title}</span>
       </nav>
 
-      <h1 className="mb-1 font-calli text-3xl font-bold text-[color:var(--maroon)] sm:text-4xl">
+      <h1 className="short-title mb-1 font-calli text-3xl font-bold text-[color:var(--maroon)] sm:text-4xl">
         {activity.title}
       </h1>
       {activity.description && (
-        <p className="mb-4 max-w-3xl text-muted-foreground">{activity.description}</p>
+        <p className="short-hide mb-4 max-w-3xl text-muted-foreground">{activity.description}</p>
       )}
 
-      <div className="mb-6 flex items-start gap-3 rounded-2xl border border-[color:var(--gold)]/35 bg-[color:var(--gold)]/10 p-4 text-sm">
+      <div className="short-hide mb-6 flex items-start gap-3 rounded-2xl border border-[color:var(--gold)]/35 bg-[color:var(--gold)]/10 p-4 text-sm">
         <HardDrive className="mt-0.5 h-5 w-5 shrink-0 text-[color:var(--gold)]" />
         <p>
           <b>وضع العرض:</b> هذا النشاط محفوظ في متصفّحك فقط. فعّل Firebase ليظهر

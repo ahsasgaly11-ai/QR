@@ -36,13 +36,13 @@ export function AdminShell({
   return (
     <AuthGate>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex rounded-2xl border border-[color:var(--hairline)] bg-[color:var(--surface)] p-1 shadow-[var(--shadow-sm)]">
+        <div className="flex w-full flex-wrap gap-1 rounded-2xl border border-[color:var(--hairline)] bg-[color:var(--surface)] p-1 shadow-[var(--shadow-sm)] sm:w-auto">
           {tabs.map((t) => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
               className={cn(
-                'flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition',
+                'flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-bold transition sm:flex-none sm:px-4',
                 tab === t.id
                   ? 'bg-[color:var(--maroon)] text-white shadow-[var(--shadow-sm)]'
                   : 'text-foreground/70 hover:text-[color:var(--maroon)]'

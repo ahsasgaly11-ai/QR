@@ -202,7 +202,33 @@ export function StatsDashboard({ activities: serverActivities }: { activities: R
             كل الأنشطة
           </h2>
         </div>
-        <div className="overflow-x-auto">
+        {/* الجوال: بطاقات مكدّسة تُظهر كل البيانات بلا تمرير أفقي */}
+        <ul className="divide-y divide-[color:var(--hairline)] sm:hidden">
+          {rows.map((r) => (
+            <li key={r.id} className="p-4">
+              <div className="flex items-start justify-between gap-3">
+                <p className="font-bold text-foreground">{r.title}</p>
+                <Link
+                  href={`/play/${r.id}`}
+                  className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-[color:var(--maroon)] px-3 py-1.5 text-xs font-black text-white"
+                >
+                  <Play className="h-3 w-3 fill-current" /> تشغيل
+                </Link>
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-bold text-muted-foreground">
+                <ActivityTypeBadge type={r.type} />
+                <span className="flex items-center gap-1 tabular-nums">
+                  <Eye className="h-3.5 w-3.5" /> {formatFull(r.views)}
+                </span>
+                <span className="flex items-center gap-1 tabular-nums">
+                  <Download className="h-3.5 w-3.5" /> {formatFull(r.downloads)}
+                </span>
+              </div>
+            </li>
+          ))}
+        </ul>
+
+        <div className="hidden overflow-x-auto sm:block">
           <table className="w-full text-right text-sm">
             <thead>
               <tr className="border-b border-[color:var(--hairline)] bg-[color:var(--surface-2)] text-[color:var(--maroon)]">

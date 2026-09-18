@@ -8,7 +8,7 @@ import { OryxMascot } from './oryx-mascot';
  */
 export function Book3D() {
   return (
-    <div className="scene">
+    <div className="scene book-fit">
       <div className="book-3d preserve-3d relative h-[440px] w-[312px]">
         {/* page block (thickness) */}
         <div
