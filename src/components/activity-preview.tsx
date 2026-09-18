@@ -3,7 +3,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Gamepad2, Loader2 } from 'lucide-react';
 import type { Activity } from '@/lib/types';
-import { getLocalRecord, htmlToBlobUrl } from '@/lib/local-store';
+import {
+  getLocalRecord,
+  htmlToBlobUrl,
+  getCachedPreview,
+  putCachedPreview,
+} from '@/lib/local-store';
 
 /** العرض المرجعي الذي نفترضه للعبة ثم نُصغّره ليملأ عرض البطاقة. */
 const REF_WIDTH = 900;
@@ -78,15 +83,25 @@ export function ActivityPreview({
             setUrl(u);
           } else setFailed(true);
         } else if (activity.stored === 'firestore') {
-          // نسخة المعاينة الخفيفة أولًا — قراءة واحدة بدل عشرات، وبضع مئات
-          // من الكيلوبايتات بدل ميجابايتات الملف الكامل.
-          const { loadPreviewHtml, loadGameHtml } = await import('@/lib/game-store');
-          let html = await loadPreviewHtml(activity.id);
-          // أنشطة رُفعت قبل وجود المعاينة: حمّل الملف كاملًا فقط إن كان صغيرًا
-          if (!html && (activity.chunks ?? 99) <= 2) {
-            html = await loadGameHtml(activity.id);
-          }
+          // 1) الذاكرة المحلية: المعاينة لا تتغيّر، فالزيارة الثانية فورية
+          let html = await getCachedPreview(activity.id);
           if (!alive) return;
+
+          if (!html) {
+            // 2) نسخة المعاينة الخفيفة — قراءة واحدة بدل عشرات، وبضع مئات
+            //    من الكيلوبايتات بدل ميجابايتات الملف الكامل.
+            const { loadPreviewHtml, loadGameHtml } = await import(
+              '@/lib/game-store'
+            );
+            html = await loadPreviewHtml(activity.id);
+            // 3) أنشطة رُفعت قبل وجود المعاينة: الملف كاملًا إن كان صغيرًا فقط
+            if (!html && (activity.chunks ?? 99) <= 2) {
+              html = await loadGameHtml(activity.id);
+            }
+            if (!alive) return;
+            if (html) void putCachedPreview(activity.id, html);
+          }
+
           if (html) {
             const u = htmlToBlobUrl(html);
             revoke = u;
@@ -143,7 +158,12 @@ export function ActivityPreview({
           )}
         </>
       ) : (
-        <div className="grid h-full place-items-center bg-[color:var(--surface-2)]">
+        <div
+          className={
+            'grid h-full place-items-center bg-[color:var(--surface-2)] ' +
+            (failed ? '' : 'animate-pulse')
+          }
+        >
           <Gamepad2 className="h-8 w-8 text-[color:var(--maroon)]/30" />
         </div>
       )}

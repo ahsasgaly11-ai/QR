@@ -19,6 +19,9 @@ export function CurriculumExplorer({ subject: serverSubject }: { subject: Subjec
   // ما رفعه المالك للتوّ وقد لا تكون الصفحة المُخزَّنة قد التقطته بعد
   const [liveActs, setLiveActs] = useState<Activity[]>([]);
   const [liveStruct, setLiveStruct] = useState<Subject[] | null>(null);
+  const [isOwner, setIsOwner] = useState(false);
+  // تعديلات المالك الفورية قبل إعادة توليد الصفحة
+  const [patched, setPatched] = useState<Record<string, Partial<Activity> | null>>({});
 
   useEffect(() => {
     setLocalStruct(getLocalStructure());
@@ -38,9 +41,14 @@ export function CurriculumExplorer({ subject: serverSubject }: { subject: Subjec
           if (alive) {
             setLiveActs([]);
             setLiveStruct(null);
+            setIsOwner(false);
           }
           return;
         }
+        const { isOwnerUid } = await import('@/lib/auth');
+        const owner = await isOwnerUid(user.uid);
+        if (alive) setIsOwner(owner);
+        if (!owner) return;
         const { getUploadedActivitiesFor, getStructure } = await import('@/lib/content');
         // البنية أيضًا: قد يكون الرفع أنشأ وحدة أو درسًا جديدًا
         const [rows, tree] = await Promise.all([
@@ -58,14 +66,23 @@ export function CurriculumExplorer({ subject: serverSubject }: { subject: Subjec
     };
   }, [serverSubject.id]);
 
-  const subject = useMemo(
-    () =>
-      mergeLocalIntoSubject(serverSubject, liveStruct ?? localStruct, [
-        ...liveActs,
-        ...localActs,
-      ]),
-    [serverSubject, localStruct, liveStruct, localActs, liveActs]
-  );
+  const subject = useMemo(() => {
+    const merged = mergeLocalIntoSubject(
+      serverSubject,
+      liveStruct ?? localStruct,
+      [...liveActs, ...localActs]
+    );
+    if (!Object.keys(patched).length) return merged;
+    // احذف المحذوف وطبّق العناوين المعدَّلة فورًا دون انتظار الخادم
+    for (const g of merged.grades)
+      for (const u of g.units)
+        for (const l of u.lessons) {
+          l.activities = l.activities
+            .filter((a) => patched[a.id] !== null)
+            .map((a) => (patched[a.id] ? { ...a, ...patched[a.id] } : a));
+        }
+    return merged;
+  }, [serverSubject, localStruct, liveStruct, localActs, liveActs, patched]);
 
   const [gradeId, setGradeId] = useState(serverSubject.grades[0]?.id ?? '');
   const grade = subject.grades.find((g) => g.id === gradeId) ?? subject.grades[0];
@@ -181,7 +198,15 @@ export function CurriculumExplorer({ subject: serverSubject }: { subject: Subjec
                         {lesson.activities.length > 0 ? (
                           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                             {lesson.activities.map((a, i) => (
-                              <ActivityCard key={a.id} activity={a} index={i} />
+                              <ActivityCard
+                                key={a.id}
+                                activity={a}
+                                index={i}
+                                isOwner={isOwner}
+                                onChanged={(id, patch) =>
+                                  setPatched((m) => ({ ...m, [id]: patch }))
+                                }
+                              />
                             ))}
                           </div>
                         ) : (

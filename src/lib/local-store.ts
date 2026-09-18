@@ -12,7 +12,8 @@ import type { Activity, Subject } from '@/lib/types';
 
 const DB_NAME = 'qa-curriculum';
 const STORE = 'activities';
-const DB_VERSION = 1;
+const PREVIEW_STORE = 'previews';
+const DB_VERSION = 2;
 const STRUCTURE_KEY = 'qa-local-structure-v1';
 
 export interface LocalRecord {
@@ -34,6 +35,9 @@ function openDb(): Promise<IDBDatabase | null> {
         if (!db.objectStoreNames.contains(STORE)) {
           db.createObjectStore(STORE, { keyPath: 'id' });
         }
+        if (!db.objectStoreNames.contains(PREVIEW_STORE)) {
+          db.createObjectStore(PREVIEW_STORE, { keyPath: 'id' });
+        }
       };
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => resolve(null);
@@ -46,14 +50,15 @@ function openDb(): Promise<IDBDatabase | null> {
 
 function tx<T>(
   mode: IDBTransactionMode,
-  run: (store: IDBObjectStore) => IDBRequest<T>
+  run: (store: IDBObjectStore) => IDBRequest<T>,
+  storeName: string = STORE
 ): Promise<T | null> {
   return new Promise(async (resolve) => {
     const db = await openDb();
     if (!db) return resolve(null);
     try {
-      const t = db.transaction(STORE, mode);
-      const req = run(t.objectStore(STORE));
+      const t = db.transaction(storeName, mode);
+      const req = run(t.objectStore(storeName));
       req.onsuccess = () => resolve(req.result as T);
       req.onerror = () => resolve(null);
     } catch {
@@ -140,4 +145,41 @@ export function mergeLocalIntoSubject(
     }
   }
   return merged;
+}
+
+// --- ذاكرة معاينات البطاقات ------------------------------------------------
+//
+// نسخة المعاينة لا تتغيّر بعد إنشائها، فلا داعي لتحميلها من الشبكة في كل
+// زيارة. تُحفَظ هنا فتُفتح صفحة الدرس في المرّات التالية بلا انتظار.
+
+interface CachedPreview {
+  id: string;
+  html: string;
+  at: number;
+}
+
+export async function getCachedPreview(id: string): Promise<string | null> {
+  const rec = await tx<CachedPreview>(
+    'readonly',
+    (s) => s.get(id),
+    PREVIEW_STORE
+  );
+  return rec?.html ?? null;
+}
+
+export async function putCachedPreview(id: string, html: string): Promise<void> {
+  await tx(
+    'readwrite',
+    (s) => s.put({ id, html, at: Date.now() }) as IDBRequest<IDBValidKey>,
+    PREVIEW_STORE
+  );
+}
+
+/** تُستدعى عند تعديل نشاط أو حذفه حتى لا تبقى معاينة قديمة. */
+export async function dropCachedPreview(id: string): Promise<void> {
+  await tx(
+    'readwrite',
+    (s) => s.delete(id) as unknown as IDBRequest<undefined>,
+    PREVIEW_STORE
+  );
 }
