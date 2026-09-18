@@ -39,6 +39,18 @@ export async function signInAdmin(
   return { email: cred.user.email, uid: cred.user.uid };
 }
 
+/** رمز دخول المستخدم الحالي — يُرسَل للمسارات المحمية على الخادم. */
+export async function getIdToken(): Promise<string | null> {
+  if (!isFirebaseConfigured) return null;
+  try {
+    const { getAuth } = await import('firebase/auth');
+    const user = getAuth(firebaseApp()).currentUser;
+    return user ? await user.getIdToken() : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function signOutAdmin(): Promise<void> {
   if (!isFirebaseConfigured) return;
   const { getAuth, signOut } = await import('firebase/auth');

@@ -12,10 +12,13 @@ import {
   Layers,
   GraduationCap,
   FolderOpen,
+  FileScan,
 } from 'lucide-react';
 import type { Subject } from '@/lib/types';
 import { saveStructure } from '@/lib/content';
 import { isFirebaseConfigured } from '@/lib/firebase';
+import { IndexImporter } from './index-importer';
+import type { ParsedUnit } from '@/lib/index-parser';
 
 function uid(prefix: string) {
   return prefix + '-' + Math.random().toString(36).slice(2, 8);
@@ -31,6 +34,29 @@ export function ContentManager({ initial }: { initial: Subject[] }) {
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
+  const [importing, setImporting] = useState(false);
+
+  /** يدمج وحدات/دروس مستوردة من الفهرس في الشجرة الحالية (دون حفظ فوري). */
+  function applyImport(units: ParsedUnit[], subjectId: string, gradeId: string) {
+    update((t) => {
+      const s = t.find((x) => x.id === subjectId);
+      const g = s?.grades.find((x) => x.id === gradeId);
+      if (!g) return;
+      for (const u of units) {
+        if (!u.include) continue;
+        const newUnit = {
+          id: uid('u'),
+          title: u.title.trim(),
+          summary: '',
+          color: s?.color ?? '#8a173e',
+          lessons: u.lessons
+            .filter((l) => l.include && l.title.trim())
+            .map((l) => ({ id: uid('l'), title: l.title.trim(), activities: [] })),
+        };
+        g.units.push(newUnit);
+      }
+    });
+  }
 
   const update = (fn: (t: Subject[]) => void) => {
     setTree((prev) => {
@@ -74,10 +100,26 @@ export function ContentManager({ initial }: { initial: Subject[] }) {
 
   return (
     <div className="space-y-5">
-      <p className="text-sm text-muted-foreground">
-        أضِف أو عدّل أو احذف المواد والمستويات والوحدات والدروس. لإضافة
-        الأنشطة إليها استخدم تبويب «رفع نشاط».
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground">
+          أضِف أو عدّل أو احذف المواد والمستويات والوحدات والدروس. لإضافة
+          الأنشطة إليها استخدم تبويب «رفع نشاط».
+        </p>
+        <button
+          onClick={() => setImporting(true)}
+          className="btn-primary btn-sm shrink-0 px-5 text-sm"
+        >
+          <FileScan className="h-4 w-4" /> استيراد من الفهرس
+        </button>
+      </div>
+
+      {importing && (
+        <IndexImporter
+          subjects={tree}
+          onImport={applyImport}
+          onClose={() => setImporting(false)}
+        />
+      )}
 
       {tree.map((s, si) => (
         <div key={s.id} className="card-premium rounded-2xl p-4">
