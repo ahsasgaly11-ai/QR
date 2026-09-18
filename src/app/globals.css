@@ -1,0 +1,506 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =========================================================================
+   منصة مناهج قطر — Qatar Curriculum Platform
+   Design language: "Qatar Heritage Modern"
+   Refined MOEHE identity (maroon + gold) over warm editorial neutrals,
+   layered elevation, a grain-and-aurora atmosphere, and restrained motion.
+   ========================================================================= */
+
+:root {
+  /* --- Brand (official MOEHE identity: maroon-dominant) ------------------- */
+  --maroon: #8a173e;          /* اللون الرسمي المستخرج من شعار الوزارة */
+  --maroon-700: #6a0f2e;
+  --maroon-800: #4d0a21;
+  --maroon-300: #b8496a;
+  --maroon-200: #d98da4;
+  --maroon-100: #f6dfe6;
+  --gold: #b0892e;            /* الذهبي التراثي (إطار الشعار) */
+  --gold-500: #c9a227;
+  --gold-200: #ecd9a6;
+  /* ألوان تمييز محايدة وخفيفة فقط — لا تُستخدم كألوان مهيمنة */
+  --sky: #2f6f96;
+  --sky-200: #d5e6ef;
+  --teal: #2b7d74;
+  --coral: #c0526e;
+
+  /* --- Warm neutral scale ----------------------------------------------- */
+  --paper: #faf6f0;
+  --surface: #fffdfa;
+  --surface-2: #f6efe5;
+  --ink: #211619;
+  --ink-2: #4b3d3a;
+  --muted: #6f6058;
+  --hairline: rgba(33, 22, 25, 0.09);
+  --hairline-strong: rgba(33, 22, 25, 0.14);
+
+  /* --- Elevation (layered, soft) ---------------------------------------- */
+  --shadow-sm: 0 1px 2px rgba(33, 22, 25, 0.06), 0 1px 3px rgba(33, 22, 25, 0.05);
+  --shadow-md: 0 2px 6px rgba(33, 22, 25, 0.05), 0 14px 30px -12px rgba(138, 21, 56, 0.20);
+  --shadow-lg: 0 4px 10px rgba(33, 22, 25, 0.06), 0 34px 64px -24px rgba(138, 21, 56, 0.30);
+  --shadow-gold: 0 10px 34px -14px rgba(176, 137, 46, 0.55);
+
+  /* --- shadcn/tailwind tokens (HSL) ------------------------------------- */
+  --background: 33 45% 96%;
+  --foreground: 340 12% 12%;
+  --card: 40 100% 99%;
+  --card-foreground: 340 12% 12%;
+  --popover: 40 100% 99%;
+  --popover-foreground: 340 12% 12%;
+  --primary: 340 73% 31%;
+  --primary-foreground: 40 60% 98%;
+  --secondary: 42 60% 43%;
+  --secondary-foreground: 30 40% 15%;
+  --muted-c: 34 24% 90%;
+  --muted-foreground: 20 12% 40%;
+  --accent: 202 77% 45%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 9 76% 56%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 33 20% 86%;
+  --input: 33 20% 86%;
+  --ring: 340 73% 31%;
+  --radius: 1.15rem;
+}
+
+:root[data-theme='dark'],
+.dark {
+  --paper: #130c0e;
+  --surface: #1c1315;
+  --surface-2: #241a1c;
+  --ink: #f5ece4;
+  --ink-2: #d9c9c1;
+  --muted: #b3a099;
+  --hairline: rgba(245, 236, 228, 0.10);
+  --hairline-strong: rgba(245, 236, 228, 0.16);
+  --maroon: #d46a86;
+  --maroon-300: #e493a8;
+  --maroon-100: #3a1420;
+  --gold: #e3c26b;
+  --gold-200: #4a3c1c;
+  --sky: #59b6e8;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.4), 0 16px 34px -14px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 4px 10px rgba(0, 0, 0, 0.45), 0 36px 70px -26px rgba(0, 0, 0, 0.7);
+
+  --background: 340 18% 6%;
+  --foreground: 34 40% 92%;
+  --card: 340 15% 10%;
+  --card-foreground: 34 40% 92%;
+  --popover: 340 15% 10%;
+  --popover-foreground: 34 40% 92%;
+  --primary: 340 58% 62%;
+  --primary-foreground: 340 30% 8%;
+  --secondary: 42 60% 60%;
+  --secondary-foreground: 340 30% 8%;
+  --muted-c: 340 12% 18%;
+  --muted-foreground: 34 18% 68%;
+  --accent: 202 68% 60%;
+  --accent-foreground: 340 30% 8%;
+  --border: 340 12% 20%;
+  --input: 340 12% 22%;
+  --ring: 340 58% 62%;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  /* المرحلة الابتدائية: حجم أساسي كبير (معيار الوزارة 18–20px) */
+  font-size: 18px;
+}
+
+body {
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: 'Tajawal', system-ui, sans-serif;
+  font-weight: 500;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+  position: relative;
+  min-height: 100vh;
+}
+
+/* Grain + aurora atmosphere (fixed, behind everything) */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(60% 55% at 15% -10%, rgba(138, 21, 56, 0.10), transparent 60%),
+    radial-gradient(55% 50% at 92% 0%, rgba(26, 134, 201, 0.10), transparent 60%),
+    radial-gradient(65% 60% at 50% 115%, rgba(176, 137, 46, 0.12), transparent 62%);
+  animation: aurora 24s ease-in-out infinite alternate;
+}
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.dark body::after { opacity: 0.08; }
+
+@keyframes aurora {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  100% { transform: translate3d(0, -3%, 0) scale(1.08); }
+}
+
+/* =========================================================================
+   Typography
+   ========================================================================= */
+/* عناوين واجهة المستخدم (وظيفية، واضحة) */
+.font-display {
+  font-family: 'Tajawal', sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+/* العناوين الكبرى بخط الهوية الرسمي — للعناوين الضخمة فقط لضمان الوضوح */
+.font-calli {
+  font-family: 'Aref Ruqaa', 'Tajawal', serif;
+  font-weight: 700;
+  line-height: 1.6;
+  letter-spacing: 0;
+}
+.font-playful {
+  font-family: 'Baloo Bhaijaan 2', 'Tajawal', sans-serif;
+  font-weight: 800;
+}
+
+.eyebrow {
+  font-family: 'Tajawal', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-size: 0.82rem;
+  color: var(--gold);
+  text-transform: none;
+}
+
+.text-gradient-maroon {
+  background: linear-gradient(105deg, var(--maroon), var(--maroon-300) 60%, var(--gold));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.text-gradient-sky {
+  background: linear-gradient(105deg, var(--sky), var(--teal));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.text-gradient-gold {
+  background: linear-gradient(105deg, var(--gold), var(--gold-500) 55%, var(--maroon-300));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* =========================================================================
+   Qatar flag serration — used sparingly as a refined accent
+   ========================================================================= */
+.flag-strip {
+  background-image: repeating-linear-gradient(
+    -37deg,
+    var(--maroon) 0 20px,
+    var(--gold-200) 20px 22px,
+    var(--maroon) 22px 24px
+  );
+}
+.flag-hairline {
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--gold), var(--maroon), var(--gold), transparent);
+}
+
+/* =========================================================================
+   Surfaces & components
+   ========================================================================= */
+.surface {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  box-shadow: var(--shadow-sm);
+}
+
+.glass {
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid var(--hairline);
+}
+
+.card-premium {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  transition: transform 0.5s cubic-bezier(0.2, 0.9, 0.2, 1), box-shadow 0.5s ease, border-color 0.5s ease;
+  will-change: transform;
+}
+.card-premium:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-lg);
+  border-color: color-mix(in srgb, var(--gold) 45%, transparent);
+}
+
+/* thin gold divider with a heritage diamond */
+/* مكوّنات داخل طبقة components حتى تتغلّب أدوات Tailwind (مثل hidden) عليها */
+@layer components {
+  .diamond-divider {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7rem;
+    color: var(--gold);
+  }
+  .diamond-divider::before,
+  .diamond-divider::after {
+    content: '';
+    height: 1px;
+    width: 2.4rem;
+    background: linear-gradient(90deg, transparent, var(--gold));
+  }
+  .diamond-divider::after {
+    background: linear-gradient(90deg, var(--gold), transparent);
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    border-radius: 999px;
+    padding: 0.3rem 0.85rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .gold-ring {
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--gold) 55%, transparent),
+      0 0 0 5px color-mix(in srgb, var(--gold) 15%, transparent);
+  }
+
+  /* buttons */
+  .btn-primary {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    /* مساحة لمس مريحة للمرحلة الابتدائية (≥ 60px) */
+    min-height: 60px;
+    border-radius: 1.15rem;
+    background: linear-gradient(180deg, var(--maroon-300) -40%, var(--maroon) 45%, var(--maroon-700));
+    color: #fff;
+    font-weight: 800;
+    box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.28),
+      inset 0 -2px 0 rgba(0, 0, 0, 0.18);
+    transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.2, 1), box-shadow 0.35s ease, filter 0.35s ease;
+    overflow: hidden;
+  }
+  .btn-primary:hover { transform: translateY(-2px); filter: brightness(1.06); box-shadow: var(--shadow-lg); }
+  .btn-primary::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,.28) 50%, transparent 70%);
+    transform: translateX(-120%);
+    transition: transform 0.7s ease;
+  }
+  .btn-primary:hover::after { transform: translateX(120%); }
+
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 60px;
+    border-radius: 1.15rem;
+    border: 2px solid color-mix(in srgb, var(--gold) 60%, transparent);
+    background: color-mix(in srgb, var(--surface) 60%, transparent);
+    color: var(--maroon);
+    font-weight: 800;
+    transition: transform 0.35s ease, background 0.35s ease, border-color 0.35s ease;
+  }
+  .btn-ghost:hover { transform: translateY(-2px); background: color-mix(in srgb, var(--gold) 12%, transparent); }
+
+  /* نسخة مضغوطة لأزرار الترويسة ولوحة الإدارة (خارج واجهة الطلبة) */
+  .btn-sm {
+    min-height: 44px;
+    border-radius: 0.85rem;
+  }
+}
+
+/* =========================================================================
+   3D scene helpers & cinematic motion
+   ========================================================================= */
+.scene { perspective: 1800px; perspective-origin: 50% 42%; }
+
+/* الكتاب ثابت الأبعاد (312×440) — يُصغَّر ليسع الشاشات الضيّقة كاملًا
+   بدل أن يُقصّ أو يُحدث تمريرًا أفقيًا. الهامش السالب يعوّض فراغ التصغير. */
+.book-fit { transform-origin: top center; }
+@media (max-width: 400px) {
+  .book-fit { transform: scale(0.72); margin-bottom: -123px; }
+}
+@media (min-width: 401px) and (max-width: 520px) {
+  .book-fit { transform: scale(0.86); margin-bottom: -62px; }
+}
+.preserve-3d { transform-style: preserve-3d; }
+
+.book-3d {
+  transform-style: preserve-3d;
+  transform: rotateY(-26deg) rotateX(7deg);
+  transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: book-float 8s ease-in-out infinite;
+}
+.book-3d:hover { transform: rotateY(-10deg) rotateX(3deg) scale(1.02); animation-play-state: paused; }
+.book-face { position: absolute; inset: 0; border-radius: 8px 16px 16px 8px; backface-visibility: hidden; }
+@keyframes book-float {
+  0%, 100% { transform: rotateY(-26deg) rotateX(7deg) translateY(0); }
+  50% { transform: rotateY(-22deg) rotateX(5deg) translateY(-18px); }
+}
+
+@keyframes float-slow { 0%,100%{transform:translateY(0) translateX(0)} 50%{transform:translateY(-26px) translateX(10px)} }
+@keyframes float-mid { 0%,100%{transform:translateY(0) rotate(0)} 50%{transform:translateY(-16px) rotate(6deg)} }
+.float-slow { animation: float-slow 10s ease-in-out infinite; }
+.float-mid { animation: float-mid 6.5s ease-in-out infinite; }
+
+@keyframes spin-slow { to { transform: rotate(360deg); } }
+.spin-slow { animation: spin-slow 28s linear infinite; }
+.spin-slower { animation: spin-slow 70s linear infinite; }
+
+@keyframes rise-in { from { opacity: 0; transform: translateY(34px) scale(0.98); } to { opacity: 1; transform: none; } }
+.rise-in { opacity: 0; animation: rise-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+.fade-in { animation: fade-in 1.4s ease forwards; }
+
+.reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+.reveal.is-visible { opacity: 1; transform: none; }
+
+@keyframes shimmer { 0% { background-position: -160% 0; } 100% { background-position: 260% 0; } }
+.shimmer {
+  background: linear-gradient(100deg, transparent 20%, rgba(236,217,166,.5) 45%, rgba(255,255,255,.7) 50%, rgba(236,217,166,.5) 55%, transparent 80%);
+  background-size: 200% 100%;
+  animation: shimmer 4s linear infinite;
+}
+
+/* زخرفة هندسية عربية/إسلامية خفيفة (نجمة ثمانية + تناظر) مستوحاة من روح الشعار */
+.girih-backdrop {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%238a173e' stroke-width='1.1' stroke-opacity='0.5'%3E%3Cpath d='M60 6 74 32 102 34 82 54 88 82 60 68 32 82 38 54 18 34 46 32Z'/%3E%3Crect x='30' y='30' width='60' height='60' transform='rotate(45 60 60)'/%3E%3Crect x='32' y='32' width='56' height='56'/%3E%3Ccircle cx='60' cy='60' r='7'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 120px 120px;
+  opacity: 0.15;
+  -webkit-mask-image: radial-gradient(ellipse 72% 65% at 50% 42%, #000, transparent);
+  mask-image: radial-gradient(ellipse 72% 65% at 50% 42%, #000, transparent);
+}
+.dark .girih-backdrop { opacity: 0.12; filter: invert(1) hue-rotate(180deg); }
+
+/* نسخة فاتحة للاستخدام فوق الخلفيات العنّابية الداكنة */
+.girih-light {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='1.1' stroke-opacity='0.9'%3E%3Cpath d='M60 6 74 32 102 34 82 54 88 82 60 68 32 82 38 54 18 34 46 32Z'/%3E%3Crect x='30' y='30' width='60' height='60' transform='rotate(45 60 60)'/%3E%3Crect x='32' y='32' width='56' height='56'/%3E%3Ccircle cx='60' cy='60' r='7'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 120px 120px;
+  opacity: 0.12;
+  -webkit-mask-image: radial-gradient(ellipse 80% 75% at 50% 45%, #000, transparent);
+  mask-image: radial-gradient(ellipse 80% 75% at 50% 45%, #000, transparent);
+}
+
+/* حدّ مزخرف رفيع يستلهم الأمواج من الشعار */
+.wave-rule {
+  height: 10px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='10' viewBox='0 0 60 10'%3E%3Cpath d='M0 5 Q7.5 0 15 5 T30 5 T45 5 T60 5' fill='none' stroke='%23b0892e' stroke-width='1.6'/%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+  opacity: 0.7;
+}
+
+/* =========================================================================
+   مسرح اللعبة — ارتفاع متجاوب يسع كل الأجهزة في الوضعين الطولي والعرضي.
+   svh يتعامل مع أشرطة متصفّحات الجوال المتغيّرة؛ والحدّ الأدنى لا يتجاوز
+   نسبة من ارتفاع الشاشة حتى لا تُقصّ اللعبة في الوضع العرضي.
+   ========================================================================= */
+.game-stage {
+  height: min(72vh, 820px);
+  min-height: min(520px, 60vh);
+}
+@supports (height: 1svh) {
+  .game-stage {
+    height: min(72svh, 820px);
+    min-height: min(520px, 60svh);
+  }
+}
+/* شاشات قصيرة (الجوال عرضيًا): اضغط واجهة الصفحة لتظهر اللعبة فورًا
+   دون الحاجة للتمرير، واستغلّ أقصى ارتفاع متاح. */
+@media (max-height: 520px) {
+  .game-stage {
+    height: calc(100svh - 118px);
+    min-height: 180px;
+  }
+  .short-hide { display: none !important; }
+  .short-tight {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+  .short-title {
+    font-size: 1.15rem !important;
+    line-height: 1.3 !important;
+    margin-bottom: 0.35rem !important;
+  }
+}
+/* في ملء الشاشة تملأ اللعبة الشاشة كاملةً (الأفضل للجوال عرضيًا) */
+:fullscreen .game-stage,
+:-webkit-full-screen .game-stage {
+  height: 100vh !important;
+  min-height: 0 !important;
+}
+:fullscreen .flag-strip,
+:-webkit-full-screen .flag-strip {
+  display: none;
+}
+
+/* refined dotted/grid backdrops */
+.grid-backdrop {
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--maroon) 8%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--maroon) 8%, transparent) 1px, transparent 1px);
+  background-size: 48px 48px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000, transparent);
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000, transparent);
+}
+.dot-backdrop {
+  background-image: radial-gradient(color-mix(in srgb, var(--maroon) 14%, transparent) 1.1px, transparent 1.2px);
+  background-size: 22px 22px;
+  -webkit-mask-image: radial-gradient(ellipse 75% 70% at 50% 45%, #000, transparent);
+  mask-image: radial-gradient(ellipse 75% 70% at 50% 45%, #000, transparent);
+}
+
+/* scrollbar */
+::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar-track { background: var(--surface-2); }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(var(--maroon), var(--maroon-700));
+  border-radius: 999px;
+  border: 3px solid var(--surface-2);
+}
+
+::selection { background: color-mix(in srgb, var(--gold) 45%, transparent); color: var(--ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .book-3d { transform: rotateY(-16deg) rotateX(4deg); }
+}

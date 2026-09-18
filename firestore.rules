@@ -42,11 +42,80 @@ service cloud.firestore {
 
     // --- أولياء الأمور والجداول المساعدة ---
     match /parents/{parentId} {
-      allow read, write: if isSignedIn(); 
+      allow read, write: if isSignedIn();
     }
-    
+
     match /parentLookupsByWhatsapp/{whatsappNumber} {
         allow read, write: if isSignedIn();
+    }
+
+    // =====================================================================
+    //  منصة المناهج التفاعلية — Curriculum platform
+    //
+    //  نموذج الصلاحيات:
+    //   • القراءة عامة للجميع (الزوّار يتصفّحون ويشغّلون ويحمّلون).
+    //   • الكتابة على المحتوى (الأنشطة/بنية المناهج) للمالك وحده.
+    //   • العدّادات يزيدها الزوّار بمقدار 1 فقط، ولا يمكن تعيينها أو محوها.
+    // =====================================================================
+
+    // قائمة المالكين: وثيقة واحدة معرّفها = UID حسابك.
+    // تُنشأ يدويًا من Firebase Console فقط — لا يمكن إنشاؤها من الموقع،
+    // لذا لا يستطيع أي شخص ترقية نفسه إلى مشرف.
+    function isOwner() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    match /admins/{uid} {
+      // يقرأ كل مستخدم وثيقته فقط (لتتحقّق الواجهة من صلاحيته)
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false; // لا أحد إطلاقًا — عبر Console حصرًا
+    }
+
+    // الأنشطة (الألعاب/التجارب/المحاكاة/الأسئلة)
+    match /activities/{activityId} {
+      allow read: if true;
+      allow write: if isOwner();
+    }
+
+    // بنية المناهج (المواد/المستويات/الوحدات/الدروس)
+    match /curriculum/{docId} {
+      allow read: if true;
+      allow write: if isOwner();
+    }
+
+    // --- العدّادات: زيادة فقط، بمقدار 1 كحدّ أقصى لكل عملية ---------------
+    function incrementsOnly(fields) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields)
+        && request.resource.data.get('visitors', 0) >= resource.data.get('visitors', 0)
+        && request.resource.data.get('visitors', 0) <= resource.data.get('visitors', 0) + 1
+        && request.resource.data.get('views', 0) >= resource.data.get('views', 0)
+        && request.resource.data.get('views', 0) <= resource.data.get('views', 0) + 1
+        && request.resource.data.get('downloads', 0) >= resource.data.get('downloads', 0)
+        && request.resource.data.get('downloads', 0) <= resource.data.get('downloads', 0) + 1;
+    }
+
+    // إحصاءات الموقع (زوّار/مشاهدات/تنزيلات)
+    match /stats/{docId} {
+      allow read: if true;
+      allow create: if request.resource.data.keys()
+                      .hasOnly(['visitors', 'views', 'downloads'])
+                    && request.resource.data.get('visitors', 0) <= 1
+                    && request.resource.data.get('views', 0) <= 1
+                    && request.resource.data.get('downloads', 0) <= 1;
+      allow update: if isOwner()
+                    || incrementsOnly(['visitors', 'views', 'downloads']);
+      allow delete: if isOwner();
+    }
+
+    // إحصاءات كل نشاط (مشاهدات/تنزيلات)
+    match /activityStats/{activityId} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasOnly(['views', 'downloads'])
+                    && request.resource.data.get('views', 0) <= 1
+                    && request.resource.data.get('downloads', 0) <= 1;
+      allow update: if isOwner() || incrementsOnly(['views', 'downloads']);
+      allow delete: if isOwner();
     }
   }
 }

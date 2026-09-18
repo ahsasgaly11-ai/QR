@@ -12,6 +12,8 @@ export default {
       fontFamily: {
         body: ['"Tajawal"', 'sans-serif'],
         headline: ['"Tajawal"', 'sans-serif'],
+        display: ['"Aref Ruqaa"', '"Tajawal"', 'serif'],
+        playful: ['"Baloo Bhaijaan 2"', '"Tajawal"', 'sans-serif'],
         code: ['"Source Code Pro"', 'monospace'],
       },
       colors: {
@@ -34,7 +36,7 @@ export default {
           foreground: 'hsl(var(--secondary-foreground))',
         },
         muted: {
-          DEFAULT: 'hsl(var(--muted))',
+          DEFAULT: 'hsl(var(--muted-c))',
           foreground: 'hsl(var(--muted-foreground))',
         },
         accent: {

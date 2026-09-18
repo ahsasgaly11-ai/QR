@@ -1,0 +1,35 @@
+rules_version = '2';
+
+// ---------------------------------------------------------------------------
+// قواعد التخزين — منصة مناهج قطر
+//
+// ملفات الأنشطة (HTML) تحت /activities/**:
+//   • القراءة عامة (ليتمكّن الزوّار من التشغيل والتحميل).
+//   • الرفع/التعديل/الحذف للمالك وحده — يُتحقّق منه عبر وجود وثيقة
+//     admins/{uid} في Firestore، وهي وثيقة تُنشأ من Firebase Console فقط.
+// ---------------------------------------------------------------------------
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isOwner() {
+      return request.auth != null
+        && firestore.exists(/databases/(default)/documents/admins/$(request.auth.uid));
+    }
+
+    match /activities/{allPaths=**} {
+      allow read: if true;
+
+      allow write: if isOwner()
+                   && request.resource.size < 20 * 1024 * 1024
+                   && request.resource.contentType.matches('text/html.*');
+
+      allow delete: if isOwner();
+    }
+
+    // أي مسار آخر مغلق تمامًا
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
