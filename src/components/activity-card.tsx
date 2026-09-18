@@ -8,6 +8,7 @@ import { getActivityStats, trackDownload } from '@/lib/stats';
 import { ActivityTypeBadge } from './activity-type-badge';
 import { formatNumber, cn } from '@/lib/utils';
 import { getLocalRecord, htmlToBlobUrl } from '@/lib/local-store';
+import { ActivityPreview } from './activity-preview';
 
 function fileUrl(a: Activity) {
   return a.external ? a.file : `/games/${a.file}`;
@@ -57,6 +58,20 @@ export function ActivityCard({
     >
       {/* top accent ribbon */}
       <div className="absolute inset-x-0 top-0 h-1.5 flag-strip opacity-80" />
+
+      {/* معاينة حيّة لشكل اللعبة */}
+      <Link
+        href={`/play/${activity.id}`}
+        className="group/prev relative mb-4 block overflow-hidden rounded-2xl"
+        aria-label={`تشغيل ${activity.title}`}
+      >
+        <ActivityPreview activity={activity} />
+        <span className="pointer-events-none absolute inset-0 grid place-items-center bg-[color:var(--maroon)]/0 transition-colors duration-300 group-hover/prev:bg-[color:var(--maroon)]/35">
+          <span className="grid h-12 w-12 scale-75 place-items-center rounded-full bg-white/95 text-[color:var(--maroon)] opacity-0 shadow-lg transition-all duration-300 group-hover/prev:scale-100 group-hover/prev:opacity-100">
+            <Play className="h-5 w-5 fill-current" />
+          </span>
+        </span>
+      </Link>
 
       <div className="mb-3 flex items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-1.5">
