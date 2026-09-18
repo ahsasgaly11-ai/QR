@@ -74,7 +74,9 @@ export default function RootLayout({
         />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('qa-theme');var d=t?t==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;var r=document.documentElement;r.setAttribute('data-theme',d?'dark':'light');if(d)r.classList.add('dark');}catch(e){}})();`,
+            // الافتراضي دائمًا: الوضع النهاري. لا يُفعّل الليلي إلا إذا اختاره
+            // الزائر صراحةً من زر التبديل (ولا نتبع إعداد نظام الجهاز).
+            __html: `(function(){try{var d=localStorage.getItem('qa-theme')==='dark';var r=document.documentElement;r.setAttribute('data-theme',d?'dark':'light');r.classList.toggle('dark',d);}catch(e){}})();`,
           }}
         />
       </head>
