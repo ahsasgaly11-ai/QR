@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Download,
   Eye,
   Maximize2,
+  Minimize2,
   ExternalLink,
   RefreshCw,
   Loader2,
@@ -12,7 +13,7 @@ import {
 import type { Activity, ActivityStats } from '@/lib/types';
 import { getActivityStats, trackView, trackDownload } from '@/lib/stats';
 import { ActivityTypeBadge } from './activity-type-badge';
-import { formatFull } from '@/lib/utils';
+import { formatFull, cn } from '@/lib/utils';
 import { htmlToBlobUrl } from '@/lib/local-store';
 
 function fileUrl(a: Activity) {
@@ -43,6 +44,11 @@ export function ActivityPlayer({
   const [loading, setLoading] = useState(true);
   const [key, setKey] = useState(0);
 
+  // وضع العرض الكامل: طبقة ثابتة داخل الصفحة (لا تعتمد على Fullscreen API)
+  // حتى لا يُنهيها التمرير على الجوال، وتعمل على iOS الذي لا يدعم ملء شاشة
+  // العناصر. نطلب ملء الشاشة الأصلي إضافةً إليها عند توفّره فقط.
+  const [immersive, setImmersive] = useState(false);
+
   useEffect(() => {
     trackView(activity.id);
     getActivityStats(activity.id).then((s) =>
@@ -55,21 +61,19 @@ export function ActivityPlayer({
     setStats((s) => ({ ...s, downloads: s.downloads + 1 }));
   };
 
-  // على الشاشات القصيرة (الجوال عرضيًا) نقيس المساحة المتبقية فعليًا ونملأها،
-  // بدل افتراض ارتفاع ثابت قد يُخرج جزءًا من اللعبة خارج الشاشة.
+  // على الشاشات القصيرة نقيس المساحة المتبقية فعليًا ونملأها
   const [fitH, setFitH] = useState<number | null>(null);
   useEffect(() => {
     const compute = () => {
       const el = wrapRef.current;
-      if (!el) return;
-      if (document.fullscreenElement) return;
+      if (!el || immersive) return;
       const short = window.matchMedia('(max-height: 560px)').matches;
       if (!short) {
         setFitH(null);
         return;
       }
       const docTop = el.getBoundingClientRect().top + window.scrollY;
-      const STRIP = 6; // شريط العلم أعلى المسرح
+      const STRIP = 6;
       const GAP = 10;
       setFitH(Math.max(170, window.innerHeight - docTop - STRIP - GAP));
     };
@@ -82,14 +86,66 @@ export function ActivityPlayer({
       window.removeEventListener('resize', compute);
       window.removeEventListener('orientationchange', compute);
     };
+  }, [immersive]);
+
+  // امنع تمرير الصفحة خلف الطبقة (السبب المباشر لانقطاع ملء الشاشة سابقًا)
+  useEffect(() => {
+    if (!immersive) return;
+    const body = document.body;
+    const root = document.documentElement;
+    const prev = {
+      bodyOverflow: body.style.overflow,
+      bodyOverscroll: body.style.overscrollBehavior,
+      rootOverflow: root.style.overflow,
+    };
+    const y = window.scrollY;
+    body.style.overflow = 'hidden';
+    body.style.overscrollBehavior = 'none';
+    root.style.overflow = 'hidden';
+    return () => {
+      body.style.overflow = prev.bodyOverflow;
+      body.style.overscrollBehavior = prev.bodyOverscroll;
+      root.style.overflow = prev.rootOverflow;
+      // أعِد الزائر إلى موضعه قبل الدخول
+      window.scrollTo(0, y);
+    };
+  }, [immersive]);
+
+  const exitImmersive = useCallback(() => {
+    setImmersive(false);
+    const d = document as Document & { webkitExitFullscreen?: () => void };
+    if (document.fullscreenElement) document.exitFullscreen?.();
+    else if ((d as unknown as { webkitFullscreenElement?: Element }).webkitFullscreenElement) {
+      d.webkitExitFullscreen?.();
+    }
   }, []);
 
-  const onFullscreen = () => {
-    const el = wrapRef.current;
-    if (!el) return;
-    if (document.fullscreenElement) document.exitFullscreen();
-    else el.requestFullscreen?.();
+  // الخروج بمفتاح Esc
+  useEffect(() => {
+    if (!immersive) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') exitImmersive();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [immersive, exitImmersive]);
+
+  const enterImmersive = () => {
+    setImmersive(true);
+    // محاولة ملء الشاشة الأصلي كميزة إضافية — وفشلها لا يؤثّر على الطبقة
+    const el = wrapRef.current as (HTMLDivElement & {
+      webkitRequestFullscreen?: () => Promise<void> | void;
+    }) | null;
+    try {
+      if (el?.requestFullscreen) void el.requestFullscreen().catch(() => {});
+      else el?.webkitRequestFullscreen?.();
+    } catch {
+      /* الطبقة الثابتة تكفي */
+    }
   };
+
+  const toolbarBtn =
+    'flex items-center gap-1.5 rounded-xl border border-[color:var(--gold)]/40 bg-[color:var(--surface)]/70 px-3 py-2 text-sm font-bold text-[color:var(--maroon)] transition hover:bg-[color:var(--gold)]/10';
 
   return (
     <div>
@@ -109,23 +165,15 @@ export function ActivityPlayer({
               setLoading(true);
               setKey((k) => k + 1);
             }}
-            className="flex items-center gap-1.5 rounded-xl border border-[color:var(--gold)]/40 bg-[color:var(--surface)]/70 px-3 py-2 text-sm font-bold text-[color:var(--maroon)] transition hover:bg-[color:var(--gold)]/10"
+            className={toolbarBtn}
             title="إعادة تشغيل"
           >
             <RefreshCw className="h-4 w-4" />
           </button>
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 rounded-xl border border-[color:var(--gold)]/40 bg-[color:var(--surface)]/70 px-3 py-2 text-sm font-bold text-[color:var(--maroon)] transition hover:bg-[color:var(--gold)]/10"
-          >
+          <a href={url} target="_blank" rel="noopener noreferrer" className={toolbarBtn}>
             <ExternalLink className="h-4 w-4" /> فتح في نافذة
           </a>
-          <button
-            onClick={onFullscreen}
-            className="flex items-center gap-1.5 rounded-xl border border-[color:var(--gold)]/40 bg-[color:var(--surface)]/70 px-3 py-2 text-sm font-bold text-[color:var(--maroon)] transition hover:bg-[color:var(--gold)]/10"
-          >
+          <button onClick={enterImmersive} className={toolbarBtn}>
             <Maximize2 className="h-4 w-4" /> ملء الشاشة
           </button>
           <a
@@ -139,33 +187,54 @@ export function ActivityPlayer({
         </div>
       </div>
 
-      {/* stage */}
+      {/* حافظ على مكان المسرح في الصفحة أثناء وضع العرض الكامل */}
+      {immersive && <div className="game-stage w-full" aria-hidden />}
+
       <div
         ref={wrapRef}
-        className="relative overflow-hidden rounded-3xl border-2 border-[color:var(--gold)]/30 bg-white shadow-2xl"
+        className={cn(
+          'relative overflow-hidden bg-white',
+          immersive
+            ? 'fixed inset-0 z-[100] rounded-none border-0'
+            : 'rounded-3xl border-2 border-[color:var(--gold)]/30 shadow-2xl'
+        )}
+        style={immersive ? { overscrollBehavior: 'contain' } : undefined}
       >
-        <div className="h-1.5 w-full flag-strip" />
+        {!immersive && <div className="h-1.5 w-full flag-strip" />}
+
+        {immersive && (
+          <button
+            onClick={exitImmersive}
+            className="absolute left-3 top-3 z-20 flex items-center gap-1.5 rounded-xl bg-[color:var(--maroon)]/90 px-3 py-2 text-sm font-black text-white shadow-lg backdrop-blur transition hover:bg-[color:var(--maroon)]"
+            aria-label="إنهاء ملء الشاشة"
+          >
+            <Minimize2 className="h-4 w-4" /> خروج
+          </button>
+        )}
+
         {loading && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-[color:var(--surface)]">
             <Loader2 className="h-10 w-10 animate-spin text-[color:var(--maroon)]" />
-            <p className="text-sm font-bold text-muted-foreground">
-              جارٍ تحميل النشاط…
-            </p>
+            <p className="text-sm font-bold text-muted-foreground">جارٍ تحميل النشاط…</p>
           </div>
         )}
+
         {url ? (
           <iframe
             key={`${key}-${url}`}
             ref={frameRef}
             src={url}
             title={activity.title}
-            className="game-stage w-full bg-white"
-            style={fitH ? { height: fitH, minHeight: 0 } : undefined}
+            className={cn('w-full bg-white', immersive ? 'h-full' : 'game-stage')}
+            style={!immersive && fitH ? { height: fitH, minHeight: 0 } : undefined}
             sandbox="allow-scripts allow-same-origin allow-popups allow-downloads allow-forms allow-modals"
             onLoad={() => setLoading(false)}
           />
         ) : (
-          <div className="game-stage w-full bg-white" style={fitH ? { height: fitH, minHeight: 0 } : undefined} />
+          <div
+            className={cn('w-full bg-white', immersive ? 'h-full' : 'game-stage')}
+            style={!immersive && fitH ? { height: fitH, minHeight: 0 } : undefined}
+          />
         )}
       </div>
     </div>
