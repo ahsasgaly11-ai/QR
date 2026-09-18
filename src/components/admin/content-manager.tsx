@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import type { Subject } from '@/lib/types';
 import { saveStructure } from '@/lib/content';
+import { revalidateContent } from '@/lib/revalidate';
 import { isFirebaseConfigured } from '@/lib/firebase';
 import { IndexImporter } from './index-importer';
 import type { ParsedUnit } from '@/lib/index-parser';
@@ -81,6 +82,8 @@ export function ContentManager({ initial }: { initial: Subject[] }) {
     setBusy(true);
     try {
       await saveStructure(tree);
+      // البنية الجديدة تظهر للجميع فورًا بدل انتظار المهلة الدورية
+      await revalidateContent({ subjectId: tree[0]?.id });
       setSaved(true);
     } catch {
       setError('تعذّر حفظ البنية. تحقّق من إعداد Firebase وصلاحياتك.');

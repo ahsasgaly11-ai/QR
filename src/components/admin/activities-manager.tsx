@@ -5,6 +5,7 @@ import { Pencil, Trash2, X, Check, Loader2, Lock, Eye, Download } from 'lucide-r
 import type { Activity, ActivityType } from '@/lib/types';
 import { ACTIVITY_META } from '@/lib/types';
 import { updateActivity, deleteActivity } from '@/lib/content';
+import { revalidateContent } from '@/lib/revalidate';
 import { isFirebaseConfigured } from '@/lib/firebase';
 import { ActivityTypeBadge } from '@/components/activity-type-badge';
 
@@ -31,7 +32,11 @@ export function ActivitiesManager({
   async function save(id: string) {
     setBusy(true);
     try {
-      if (isFirebaseConfigured) await updateActivity(id, draft);
+      if (isFirebaseConfigured) {
+        await updateActivity(id, draft);
+        const subjectId = rows.find((a) => a.id === id)?.subjectId;
+        await revalidateContent({ subjectId, activityId: id });
+      }
       setRows((r) => r.map((a) => (a.id === id ? { ...a, ...draft } : a)));
       setEditing(null);
     } finally {
@@ -43,7 +48,11 @@ export function ActivitiesManager({
     if (!confirm('هل تريد حذف هذا النشاط نهائيًا؟')) return;
     setBusy(true);
     try {
-      if (isFirebaseConfigured) await deleteActivity(id);
+      if (isFirebaseConfigured) {
+        const subjectId = rows.find((a) => a.id === id)?.subjectId;
+        await deleteActivity(id);
+        await revalidateContent({ subjectId, activityId: id });
+      }
       setRows((r) => r.filter((a) => a.id !== id));
     } finally {
       setBusy(false);
