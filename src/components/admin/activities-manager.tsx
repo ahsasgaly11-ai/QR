@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Pencil, Trash2, X, Check, Loader2, Lock, Eye, Download, Images } from 'lucide-react';
-import type { Activity, ActivityType } from '@/lib/types';
+import {
+  Pencil, Trash2, X, Check, Loader2, Lock, Eye, Download, Images, Search, FolderInput,
+} from 'lucide-react';
+import type { Activity, ActivityType, Subject } from '@/lib/types';
 import { ACTIVITY_META } from '@/lib/types';
 import { updateActivity, deleteActivity } from '@/lib/content';
 import { revalidateContent } from '@/lib/revalidate';
@@ -15,10 +17,13 @@ export function ActivitiesManager({
   activities: initial,
   uploadedIds,
   labels,
+  structure,
 }: {
   activities: Activity[];
   uploadedIds: string[];
   labels: Record<string, string>;
+  /** شجرة المناهج — تتيح نقل النشاط إلى وحدة أو درس آخر */
+  structure: Subject[];
 }) {
   const [rows, setRows] = useState<Activity[]>(initial);
   const [editing, setEditing] = useState<string | null>(null);
@@ -26,7 +31,13 @@ export function ActivitiesManager({
   const [busy, setBusy] = useState(false);
   const [backfill, setBackfill] = useState<{ done: number; total: number } | null>(null);
   const [backfillMsg, setBackfillMsg] = useState('');
+  const [q, setQ] = useState('');
   const uploaded = new Set(uploadedIds);
+
+  // خيارات النقل مشتقّة من الشجرة حسب ما هو محدَّد في المسوّدة
+  const draftSubject = structure.find((x) => x.id === draft.subjectId);
+  const draftGrade = draftSubject?.grades.find((x) => x.id === draft.gradeId);
+  const draftUnit = draftGrade?.units.find((x) => x.id === draft.unitId);
 
   const inp =
     'w-full rounded-lg border border-[color:var(--hairline-strong)] bg-[color:var(--surface)] px-3 py-2 text-sm font-bold outline-none focus:border-[color:var(--maroon)]';
@@ -98,6 +109,15 @@ export function ActivitiesManager({
     await revalidateContent({ subjectId: targets[0]?.subjectId });
   }
 
+  const needle = q.trim().toLowerCase();
+  const visible = needle
+    ? rows.filter(
+        (a) =>
+          a.title.toLowerCase().includes(needle) ||
+          (labels[a.id] ?? '').toLowerCase().includes(needle)
+      )
+    : rows;
+
   const missingPreviews = rows.filter(
     (a) => a.stored === 'firestore' && !a.hasPreview && uploaded.has(a.id)
   ).length;
@@ -134,11 +154,21 @@ export function ActivitiesManager({
           {backfillMsg}
         </p>
       )}
+      <div className="relative">
+        <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <input
+          className={inp + ' pr-9'}
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="ابحث بالعنوان أو بموقع الدرس…"
+        />
+      </div>
       <p className="text-sm text-muted-foreground">
-        الأنشطة المضمّنة (seed) للعرض فقط؛ الأنشطة المرفوعة عبر المنصّة يمكن
-        تعديلها أو حذفها.
+        {q
+          ? `${visible.length} من ${rows.length} نشاطًا`
+          : 'عدّل عنوان أي نشاط مرفوع أو وصفه أو نوعه، وانقله إلى درس آخر، أو احذفه نهائيًا.'}
       </p>
-      {rows.map((a) => {
+      {visible.map((a) => {
         const isUp = uploaded.has(a.id);
         const isEditing = editing === a.id;
         return (
@@ -176,6 +206,42 @@ export function ActivitiesManager({
                     </button>
                   ))}
                 </div>
+                {/* نقل النشاط إلى وحدة أو درس آخر */}
+                <div className="rounded-xl border border-[color:var(--hairline)] p-3">
+                  <p className="mb-2 flex items-center gap-1.5 text-xs font-black text-[color:var(--maroon)]">
+                    <FolderInput className="h-4 w-4" /> موقع النشاط
+                  </p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <select
+                      className={inp}
+                      value={draft.unitId ?? ''}
+                      onChange={(e) => {
+                        const u = draftGrade?.units.find((x) => x.id === e.target.value);
+                        setDraft((d) => ({
+                          ...d,
+                          unitId: e.target.value,
+                          lessonId: u?.lessons[0]?.id ?? '',
+                        }));
+                      }}
+                    >
+                      {draftGrade?.units.map((u) => (
+                        <option key={u.id} value={u.id}>{u.title}</option>
+                      ))}
+                    </select>
+                    <select
+                      className={inp}
+                      value={draft.lessonId ?? ''}
+                      onChange={(e) =>
+                        setDraft((d) => ({ ...d, lessonId: e.target.value }))
+                      }
+                    >
+                      {draftUnit?.lessons.map((l) => (
+                        <option key={l.id} value={l.id}>{l.title}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
                 <div className="flex gap-2">
                   <button
                     onClick={() => save(a.id)}
@@ -212,7 +278,15 @@ export function ActivitiesManager({
                   <button
                     onClick={() => {
                       setEditing(a.id);
-                      setDraft({ title: a.title, description: a.description, type: a.type });
+                      setDraft({
+                        title: a.title,
+                        description: a.description,
+                        type: a.type,
+                        subjectId: a.subjectId,
+                        gradeId: a.gradeId,
+                        unitId: a.unitId,
+                        lessonId: a.lessonId,
+                      });
                     }}
                     disabled={!isUp}
                     className="grid h-9 w-9 place-items-center rounded-lg bg-[color:var(--surface-2)] text-[color:var(--maroon)] transition hover:scale-105 disabled:opacity-30"
