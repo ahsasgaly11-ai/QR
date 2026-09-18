@@ -18,7 +18,7 @@ import type { ActivityType, Subject, Activity } from '@/lib/types';
 import { ACTIVITY_META } from '@/lib/types';
 import { isFirebaseConfigured, getDb } from '@/lib/firebase';
 import { saveStructure, toStructure } from '@/lib/content';
-import { saveGameHtml, MAX_GAME_BYTES } from '@/lib/game-store';
+import { saveGameHtml, savePreviewHtml, MAX_GAME_BYTES } from '@/lib/game-store';
 import { revalidateContent } from '@/lib/revalidate';
 import {
   saveLocalActivity,
@@ -235,12 +235,16 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
         setProgress(Math.round((p.done / p.total) * 100))
       );
 
-      // 3) write activity metadata
+      // 3) نسخة معاينة خفيفة لبطاقة الدرس (فشلها لا يُفشل الرفع)
+      const hasPreview = await savePreviewHtml(id, html);
+
+      // 4) write activity metadata
       const { doc, setDoc } = await import('firebase/firestore');
       await setDoc(doc(db, 'activities', id), {
         ...baseActivity,
         stored: 'firestore',
         chunks,
+        hasPreview,
       });
 
       // حدّث الصفحات فورًا ليظهر النشاط للجميع بلا انتظار

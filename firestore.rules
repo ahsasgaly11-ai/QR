@@ -83,6 +83,12 @@ service cloud.firestore {
         allow read: if true;
         allow write: if isOwner();
       }
+
+      // نسخة معاينة خفيفة تُعرض في بطاقة الدرس بدل تحميل الملف كاملًا
+      match /preview/{docId} {
+        allow read: if true;
+        allow write: if isOwner();
+      }
     }
 
     // بنية المناهج (المواد/المستويات/الوحدات/الدروس)
