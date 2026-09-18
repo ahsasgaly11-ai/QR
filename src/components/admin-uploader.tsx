@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import {
   UploadCloud,
   CheckCircle2,
@@ -9,11 +10,19 @@ import {
   Loader2,
   FileCode2,
   Plus,
+  Play,
+  BookOpen,
+  HardDrive,
 } from 'lucide-react';
 import type { ActivityType, Subject, Activity } from '@/lib/types';
 import { ACTIVITY_META } from '@/lib/types';
 import { isFirebaseConfigured, getDb, getBucket, ensureAuth } from '@/lib/firebase';
 import { saveStructure, toStructure } from '@/lib/content';
+import {
+  saveLocalActivity,
+  saveLocalStructure,
+  getLocalStructure,
+} from '@/lib/local-store';
 
 const TYPES = Object.keys(ACTIVITY_META) as ActivityType[];
 const NEW = '__new__';
@@ -102,9 +111,11 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
     if (!unitIsNew && !unitId) return setError('الرجاء اختيار الوحدة.');
     if (!lessonIsNew && !lessonId) return setError('الرجاء اختيار الدرس.');
 
-    const finalUnitId = unitIsNew ? `u-${slug(newUnitName)}-${rid()}` : unitId;
-    const finalLessonId = lessonIsNew ? `l-${slug(newLessonName)}-${rid()}` : lessonId;
-    const id = `${slug(title)}-${rid()}`;
+    // معرّفات لاتينية آمنة في الروابط (العناوين العربية تُكسر ترميز الـ URL)
+    const stamp = Date.now().toString(36);
+    const finalUnitId = unitIsNew ? `u-${stamp}-${rid()}` : unitId;
+    const finalLessonId = lessonIsNew ? `l-${stamp}-${rid()}` : lessonId;
+    const id = `act-${stamp}-${rid()}`;
 
     const baseActivity: Activity = {
       id,
@@ -119,15 +130,59 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
       createdAt: Date.now(),
     };
 
-    // ---- Demo mode ----
+    // ---- وضع العرض: يُحفظ داخل المتصفّح ليصبح قابلًا للتشغيل فورًا ----
     if (!isFirebaseConfigured) {
-      setResult({
-        mode: 'demo',
-        activity: baseActivity,
-        newUnit: unitIsNew ? newUnitName.trim() : undefined,
-        newLesson: lessonIsNew ? newLessonName.trim() : undefined,
-        fileName: file.name,
-      });
+      setBusy(true);
+      try {
+        const html = await file.text();
+
+        // احفظ أي وحدة/درس جديد في البنية المحلية ليجد النشاط مكانه
+        if (unitIsNew || lessonIsNew) {
+          const tree = getLocalStructure() ?? toStructure(subjects);
+          const s = tree.find((x) => x.id === subjectId);
+          const g = s?.grades.find((x) => x.id === gradeId);
+          if (g) {
+            let targetUnit = g.units.find((u) => u.id === finalUnitId);
+            if (unitIsNew) {
+              targetUnit = {
+                id: finalUnitId,
+                title: newUnitName.trim(),
+                summary: '',
+                color: subject?.color ?? '#8a173e',
+                lessons: [],
+              };
+              g.units.push(targetUnit);
+            }
+            if (!targetUnit) targetUnit = g.units.find((u) => u.id === unitId);
+            if (lessonIsNew && targetUnit) {
+              targetUnit.lessons.push({
+                id: finalLessonId,
+                title: newLessonName.trim(),
+                activities: [],
+              });
+            }
+            saveLocalStructure(tree);
+          }
+        }
+
+        const localActivity: Activity = { ...baseActivity, local: true };
+        const ok = await saveLocalActivity(localActivity, html);
+        if (!ok) throw new Error('تعذّر حفظ النشاط في متصفّحك.');
+
+        setResult({
+          mode: 'demo',
+          activity: localActivity,
+          newUnit: unitIsNew ? newUnitName.trim() : undefined,
+          newLesson: lessonIsNew ? newLessonName.trim() : undefined,
+          fileName: file.name,
+        });
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : 'تعذّر حفظ النشاط محليًا.'
+        );
+      } finally {
+        setBusy(false);
+      }
       return;
     }
 
@@ -220,68 +275,80 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
         <div className="mb-4 flex items-center gap-3 text-[color:var(--teal)]">
           <CheckCircle2 className="h-9 w-9" />
           <h3 className="font-display text-2xl font-bold">
-            {result.mode === 'firebase' ? 'تم رفع النشاط بنجاح!' : 'النشاط جاهز للإضافة'}
+            {result.mode === 'firebase'
+              ? 'تم رفع النشاط بنجاح!'
+              : 'تم رفع النشاط — جاهز للتجربة الآن'}
           </h3>
         </div>
+
         {result.mode === 'firebase' ? (
           <p className="text-muted-foreground">
             أصبح النشاط «{result.activity.title}» متاحًا الآن في المنصّة ضمن
-            الدرس المحدّد
-            {result.activity.unitId ? '' : ''}. يمكن للزوّار تجربته وتحميله،
-            وتُحتسب مشاهداته وتنزيلاته تلقائيًا.
+            الدرس المحدّد. يمكن للزوّار تجربته وتحميله، وتُحتسب مشاهداته
+            وتنزيلاته تلقائيًا.
           </p>
         ) : (
           <div className="space-y-4">
             <p className="text-muted-foreground">
-              المنصّة تعمل حاليًا في «وضع العرض» (بدون Firebase). لإضافة النشاط
-              بشكل دائم:
+              حُفظ النشاط «{result.activity.title}» وأصبح ظاهرًا في درسه داخل
+              المنصّة — يمكنك تشغيله وتحميله فورًا.
             </p>
-            <ol className="list-inside list-decimal space-y-2 text-sm text-foreground">
-              <li>
-                انسخ الملف{' '}
-                <code className="rounded bg-[color:var(--surface-2)] px-1.5 py-0.5 font-mono text-xs">
-                  {result.fileName}
-                </code>{' '}
-                إلى{' '}
+            {(result.newUnit || result.newLesson) && (
+              <p className="text-sm text-muted-foreground">
+                وأُضيفت
+                {result.newUnit ? ` الوحدة «${result.newUnit}»` : ''}
+                {result.newUnit && result.newLesson ? ' و' : ''}
+                {result.newLesson ? `الدرس «${result.newLesson}»` : ''} إلى بنية
+                المناهج.
+              </p>
+            )}
+
+            <div className="flex flex-wrap gap-3">
+              <Link href={`/play/${result.activity.id}`} className="btn-primary px-6 text-base">
+                <Play className="h-5 w-5 fill-current" /> جرّب اللعبة الآن
+              </Link>
+              <Link
+                href={`/subject/${result.activity.subjectId}`}
+                className="btn-ghost px-6 text-base"
+              >
+                <BookOpen className="h-5 w-5" /> عرضها في الدرس
+              </Link>
+            </div>
+
+            <div className="flex items-start gap-3 rounded-2xl border border-[color:var(--gold)]/35 bg-[color:var(--gold)]/10 p-4 text-sm">
+              <HardDrive className="mt-0.5 h-5 w-5 shrink-0 text-[color:var(--gold)]" />
+              <p>
+                <b>وضع العرض:</b> النشاط محفوظ في <b>هذا المتصفّح فقط</b> — ممتاز
+                للتجربة والمراجعة، لكنه لن يظهر لبقيّة الزوّار ولن تُجمَع
+                إحصاءاته إلا بعد تفعيل Firebase. لنقله بشكل دائم، انسخ الملف إلى{' '}
                 <code className="rounded bg-[color:var(--surface-2)] px-1.5 py-0.5 font-mono text-xs">
                   public/games/
-                </code>
-              </li>
-              {(result.newUnit || result.newLesson) && (
-                <li>
-                  أضِف
-                  {result.newUnit ? ` الوحدة «${result.newUnit}»` : ''}
-                  {result.newUnit && result.newLesson ? ' و' : ''}
-                  {result.newLesson ? `الدرس «${result.newLesson}»` : ''} إلى بنية
-                  المناهج من تبويب «إدارة المناهج».
-                </li>
-              )}
-              <li>
-                أضِف الكائن التالي إلى{' '}
+                </code>{' '}
+                وأضِف الكائن أدناه إلى{' '}
                 <code className="rounded bg-[color:var(--surface-2)] px-1.5 py-0.5 font-mono text-xs">
                   SEED_ACTIVITIES
-                </code>{' '}
-                في{' '}
-                <code className="rounded bg-[color:var(--surface-2)] px-1.5 py-0.5 font-mono text-xs">
-                  src/data/curriculum.ts
                 </code>
-              </li>
-            </ol>
-            <div className="relative">
-              <pre className="max-h-64 overflow-auto rounded-2xl bg-[#211619] p-4 text-left text-xs leading-6 text-[#f5ece4]" dir="ltr">
-                {JSON.stringify(result.activity, null, 2)}
-              </pre>
-              <button
-                onClick={copySnippet}
-                className="absolute left-3 top-3 flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-bold text-white backdrop-blur hover:bg-white/20"
-              >
-                {copied ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                {copied ? 'تم النسخ' : 'نسخ'}
-              </button>
+                .
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground">
-              أو فعّل Firebase ليصبح الرفع مباشرًا من هذه الصفحة (راجع README).
-            </p>
+
+            <details className="rounded-2xl border border-[color:var(--hairline)] p-4">
+              <summary className="cursor-pointer text-sm font-bold text-[color:var(--maroon)]">
+                إظهار بيانات النشاط (JSON)
+              </summary>
+              <div className="relative mt-3">
+                <pre className="max-h-64 overflow-auto rounded-2xl bg-[#211619] p-4 text-left text-xs leading-6 text-[#f5ece4]" dir="ltr">
+                  {JSON.stringify(result.activity, null, 2)}
+                </pre>
+                <button
+                  onClick={copySnippet}
+                  className="absolute left-3 top-3 flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-bold text-white backdrop-blur hover:bg-white/20"
+                >
+                  {copied ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  {copied ? 'تم النسخ' : 'نسخ'}
+                </button>
+              </div>
+            </details>
           </div>
         )}
         <button onClick={reset} className="btn-primary btn-sm mt-6 px-6 py-2.5 text-sm">
@@ -300,9 +367,9 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
         <div className="mb-6 flex items-start gap-3 rounded-2xl border border-[color:var(--sky)]/30 bg-[color:var(--sky)]/10 p-4 text-sm">
           <Info className="mt-0.5 h-5 w-5 shrink-0 text-[color:var(--sky)]" />
           <p>
-            <b>وضع العرض:</b> Firebase غير مُعدّ، لذا يُنشئ النموذج تعليمات وكائن
-            بيانات جاهزًا. بعد تفعيل Firebase يتم الرفع وحفظ الوحدات/الدروس
-            الجديدة مباشرةً.
+            <b>وضع العرض:</b> Firebase غير مُعدّ، لذا يُحفظ النشاط داخل هذا
+            المتصفّح ويصبح قابلًا للتشغيل والتحميل فورًا للتجربة. بعد تفعيل
+            Firebase يُرفع للمنصّة ليراه جميع الزوّار وتُجمَع إحصاءاته.
           </p>
         </div>
       )}

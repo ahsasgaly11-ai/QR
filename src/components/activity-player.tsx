@@ -13,13 +13,30 @@ import type { Activity, ActivityStats } from '@/lib/types';
 import { getActivityStats, trackView, trackDownload } from '@/lib/stats';
 import { ActivityTypeBadge } from './activity-type-badge';
 import { formatFull } from '@/lib/utils';
+import { htmlToBlobUrl } from '@/lib/local-store';
 
 function fileUrl(a: Activity) {
   return a.external ? a.file : `/games/${a.file}`;
 }
 
-export function ActivityPlayer({ activity }: { activity: Activity }) {
-  const url = fileUrl(activity);
+export function ActivityPlayer({
+  activity,
+  localHtml,
+}: {
+  activity: Activity;
+  /** محتوى الملف عند تشغيل نشاط محفوظ محليًا (وضع العرض) */
+  localHtml?: string;
+}) {
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!localHtml) return;
+    const u = htmlToBlobUrl(localHtml);
+    setBlobUrl(u);
+    return () => URL.revokeObjectURL(u);
+  }, [localHtml]);
+
+  const url = localHtml ? blobUrl ?? '' : fileUrl(activity);
   const frameRef = useRef<HTMLIFrameElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const [stats, setStats] = useState<ActivityStats>({ views: 0, downloads: 0 });
@@ -84,7 +101,7 @@ export function ActivityPlayer({ activity }: { activity: Activity }) {
           </button>
           <a
             href={url}
-            download
+            download={activity.file || 'activity.html'}
             onClick={onDownload}
             className="flex items-center gap-1.5 rounded-xl bg-[color:var(--maroon)] px-4 py-2 text-sm font-black text-white shadow-md transition hover:bg-[color:var(--maroon-700)]"
           >
@@ -107,15 +124,19 @@ export function ActivityPlayer({ activity }: { activity: Activity }) {
             </p>
           </div>
         )}
-        <iframe
-          key={key}
-          ref={frameRef}
-          src={url}
-          title={activity.title}
-          className="h-[72vh] min-h-[520px] w-full bg-white"
-          sandbox="allow-scripts allow-same-origin allow-popups allow-downloads allow-forms allow-modals"
-          onLoad={() => setLoading(false)}
-        />
+        {url ? (
+          <iframe
+            key={`${key}-${url}`}
+            ref={frameRef}
+            src={url}
+            title={activity.title}
+            className="h-[72vh] min-h-[520px] w-full bg-white"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-downloads allow-forms allow-modals"
+            onLoad={() => setLoading(false)}
+          />
+        ) : (
+          <div className="h-[72vh] min-h-[520px] w-full bg-white" />
+        )}
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Search, X, SlidersHorizontal } from 'lucide-react';
 import type { Activity, ActivityType } from '@/lib/types';
 import { ACTIVITY_META } from '@/lib/types';
@@ -18,7 +18,7 @@ export interface SearchRow {
 const TYPES = Object.keys(ACTIVITY_META) as ActivityType[];
 
 export function SearchExplorer({
-  rows,
+  rows: serverRows,
   subjects,
 }: {
   rows: SearchRow[];
@@ -27,6 +27,36 @@ export function SearchExplorer({
   const [q, setQ] = useState('');
   const [type, setType] = useState<ActivityType | 'all'>('all');
   const [subject, setSubject] = useState<string>('all');
+  const [localRows, setLocalRows] = useState<SearchRow[]>([]);
+
+  // ضمّ الأنشطة المرفوعة في «وضع العرض» (محفوظة في هذا المتصفّح)
+  useEffect(() => {
+    Promise.all([
+      import('@/lib/local-store').then((m) => m.listLocalActivities()),
+      import('@/lib/local-store').then((m) => m.getLocalStructure()),
+    ]).then(([acts, struct]) => {
+      setLocalRows(
+        acts.map((a) => {
+          const s = struct?.find((x) => x.id === a.subjectId);
+          const g = s?.grades.find((x) => x.id === a.gradeId);
+          const u = g?.units.find((x) => x.id === a.unitId);
+          const l = u?.lessons.find((x) => x.id === a.lessonId);
+          return {
+            activity: a,
+            subjectId: a.subjectId,
+            subjectTitle: s?.title ?? '',
+            unitTitle: u?.title ?? '',
+            lessonTitle: l?.title ?? '',
+          };
+        })
+      );
+    });
+  }, []);
+
+  const rows = useMemo(() => {
+    const ids = new Set(serverRows.map((r) => r.activity.id));
+    return [...serverRows, ...localRows.filter((r) => !ids.has(r.activity.id))];
+  }, [serverRows, localRows]);
 
   const results = useMemo(() => {
     const needle = normalizeAr(q);

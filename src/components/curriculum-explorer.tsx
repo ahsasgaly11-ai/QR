@@ -1,14 +1,33 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ChevronDown, BookMarked, FolderOpen, Inbox, UploadCloud } from 'lucide-react';
-import type { Subject } from '@/lib/types';
+import type { Subject, Activity } from '@/lib/types';
 import { ActivityCard } from './activity-card';
 import { cn } from '@/lib/utils';
+import {
+  listLocalActivities,
+  getLocalStructure,
+  mergeLocalIntoSubject,
+} from '@/lib/local-store';
 
-export function CurriculumExplorer({ subject }: { subject: Subject }) {
-  const [gradeId, setGradeId] = useState(subject.grades[0]?.id ?? '');
+export function CurriculumExplorer({ subject: serverSubject }: { subject: Subject }) {
+  // ادمج ما رُفع في «وضع العرض» (محفوظ في هذا المتصفّح) مع ما يأتي من الخادم
+  const [localActs, setLocalActs] = useState<Activity[]>([]);
+  const [localStruct, setLocalStruct] = useState<Subject[] | null>(null);
+
+  useEffect(() => {
+    setLocalStruct(getLocalStructure());
+    listLocalActivities().then(setLocalActs);
+  }, []);
+
+  const subject = useMemo(
+    () => mergeLocalIntoSubject(serverSubject, localStruct, localActs),
+    [serverSubject, localStruct, localActs]
+  );
+
+  const [gradeId, setGradeId] = useState(serverSubject.grades[0]?.id ?? '');
   const grade = subject.grades.find((g) => g.id === gradeId) ?? subject.grades[0];
   const [open, setOpen] = useState<Record<string, boolean>>(
     grade ? { [grade.units[0]?.id ?? '']: true } : {}

@@ -27,10 +27,11 @@ interface Row {
 }
 type FullRow = Row & { views: number; downloads: number };
 
-export function StatsDashboard({ activities }: { activities: Row[] }) {
+export function StatsDashboard({ activities: serverActivities }: { activities: Row[] }) {
   const [site, setSite] = useState({ visitors: 0, views: 0, downloads: 0 });
   const [map, setMap] = useState<Record<string, ActivityStats>>({});
   const [loaded, setLoaded] = useState(false);
+  const [localRows, setLocalRows] = useState<Row[]>([]);
 
   useEffect(() => {
     Promise.all([getSiteStats(), getAllActivityStats()]).then(([s, m]) => {
@@ -38,7 +39,20 @@ export function StatsDashboard({ activities }: { activities: Row[] }) {
       setMap(m);
       setLoaded(true);
     });
+    // ضمّ أنشطة «وضع العرض» المحفوظة في هذا المتصفّح
+    import('@/lib/local-store').then((mod) =>
+      mod.listLocalActivities().then((acts) =>
+        setLocalRows(
+          acts.map((a) => ({ id: a.id, title: a.title, type: a.type, subject: '' }))
+        )
+      )
+    );
   }, []);
+
+  const activities = (() => {
+    const ids = new Set(serverActivities.map((a) => a.id));
+    return [...serverActivities, ...localRows.filter((a) => !ids.has(a.id))];
+  })();
 
   const rows: FullRow[] = activities
     .map((a) => ({

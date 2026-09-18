@@ -7,6 +7,7 @@ import type { Activity, ActivityStats } from '@/lib/types';
 import { getActivityStats, trackDownload } from '@/lib/stats';
 import { ActivityTypeBadge } from './activity-type-badge';
 import { formatNumber, cn } from '@/lib/utils';
+import { getLocalRecord, htmlToBlobUrl } from '@/lib/local-store';
 
 function fileUrl(a: Activity) {
   return a.external ? a.file : `/games/${a.file}`;
@@ -29,7 +30,22 @@ export function ActivityCard({
     };
   }, [activity.id]);
 
-  const onDownload = async () => {
+  const onDownload = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+    // الأنشطة المحفوظة محليًا (وضع العرض) تُنزَّل من مخزن المتصفّح
+    if (activity.local) {
+      e.preventDefault();
+      const rec = await getLocalRecord(activity.id);
+      if (rec?.html) {
+        const url = htmlToBlobUrl(rec.html);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = activity.file || 'activity.html';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+      }
+    }
     await trackDownload(activity.id);
     setStats((s) => ({ ...s, downloads: s.downloads + 1 }));
   };
@@ -42,8 +58,18 @@ export function ActivityCard({
       {/* top accent ribbon */}
       <div className="absolute inset-x-0 top-0 h-1.5 flag-strip opacity-80" />
 
-      <div className="mb-3 flex items-center justify-between">
-        <ActivityTypeBadge type={activity.type} />
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <ActivityTypeBadge type={activity.type} />
+          {activity.local && (
+            <span
+              className="pill bg-[color:var(--gold)]/20 text-[color:var(--gold)]"
+              title="محفوظ في هذا المتصفّح فقط (وضع العرض)"
+            >
+              محلي
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-1 text-xs font-bold text-muted-foreground">
           <Eye className="h-3.5 w-3.5" />
           {formatNumber(stats.views)}

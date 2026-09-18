@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { LocalPlay } from '@/components/local-play';
 import { ChevronLeft, Home } from 'lucide-react';
 import {
   getActivity,
@@ -22,7 +22,8 @@ export default async function PlayPage({
 }) {
   const { activityId } = await params;
   const activity = await getActivity(activityId);
-  if (!activity) notFound();
+  // قد يكون النشاط مرفوعًا في «وضع العرض» ومحفوظًا في متصفّح الزائر
+  if (!activity) return <LocalPlay activityId={activityId} />;
 
   const subjects = await getSubjects();
   const { subject, unit, lesson } = locateActivity(subjects, activity);

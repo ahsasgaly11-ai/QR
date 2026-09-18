@@ -26,6 +26,8 @@ export interface Activity {
   file: string;
   /** true when `file` is an absolute URL (uploaded to Firebase Storage). */
   external?: boolean;
+  /** true when the file lives only in this browser (وضع العرض المحلي). */
+  local?: boolean;
   subjectId: string;
   gradeId: string;
   unitId: string;
