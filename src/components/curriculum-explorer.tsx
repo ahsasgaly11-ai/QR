@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, BookMarked, FolderOpen, Inbox } from 'lucide-react';
+import Link from 'next/link';
+import { ChevronDown, BookMarked, FolderOpen, Inbox, UploadCloud } from 'lucide-react';
 import type { Subject } from '@/lib/types';
 import { ActivityCard } from './activity-card';
 import { cn } from '@/lib/utils';
@@ -40,6 +41,22 @@ export function CurriculumExplorer({ subject }: { subject: Subject }) {
               {g.title}
             </button>
           ))}
+        </div>
+      )}
+
+      {grade.units.length === 0 && (
+        <div className="rounded-3xl border border-dashed border-[color:var(--gold)]/40 bg-[color:var(--surface)] p-12 text-center">
+          <BookMarked className="mx-auto h-12 w-12 text-[color:var(--gold)]" />
+          <h3 className="mt-4 font-display text-xl font-bold text-[color:var(--maroon)]">
+            لا توجد وحدات بعد
+          </h3>
+          <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+            ابدأ بإضافة الوحدات والدروس ورفع أنشطتك (تجارب، محاكاة، أسئلة، ألعاب)
+            من لوحة الإدارة.
+          </p>
+          <Link href="/admin" className="btn-primary mt-6 px-6 py-2.5 text-sm">
+            <UploadCloud className="h-4 w-4" /> ابدأ من لوحة الإدارة
+          </Link>
         </div>
       )}
 

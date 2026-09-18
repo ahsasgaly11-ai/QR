@@ -28,15 +28,10 @@ function readLocal(): LocalStore {
   } catch {
     /* ignore */
   }
-  // Seed with lively baseline numbers so demo mode doesn't look empty.
+  // Real counters start at zero — they grow as visitors interact.
   return {
-    site: { visitors: 1284, views: 3960, downloads: 742 },
-    activities: {
-      'muscle-3d': { views: 1180, downloads: 305 },
-      'muscle-quiz': { views: 640, downloads: 96 },
-      'states-of-matter': { views: 910, downloads: 214 },
-      'plant-parts': { views: 730, downloads: 127 },
-    },
+    site: { visitors: 0, views: 0, downloads: 0 },
+    activities: {},
   };
 }
 

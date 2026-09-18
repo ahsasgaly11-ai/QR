@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import {
   UploadCloud,
   CheckCircle2,
@@ -8,12 +8,15 @@ import {
   Info,
   Loader2,
   FileCode2,
+  Plus,
 } from 'lucide-react';
-import type { ActivityType, Subject } from '@/lib/types';
+import type { ActivityType, Subject, Activity } from '@/lib/types';
 import { ACTIVITY_META } from '@/lib/types';
 import { isFirebaseConfigured, getDb, getBucket, ensureAuth } from '@/lib/firebase';
+import { saveStructure, toStructure } from '@/lib/content';
 
 const TYPES = Object.keys(ACTIVITY_META) as ActivityType[];
+const NEW = '__new__';
 
 function slug(s: string) {
   return (
@@ -22,8 +25,17 @@ function slug(s: string) {
       .toLowerCase()
       .replace(/[^\p{L}\p{N}]+/gu, '-')
       .replace(/^-+|-+$/g, '')
-      .slice(0, 40) || 'activity'
+      .slice(0, 40) || 'item'
   );
+}
+const rid = () => Math.random().toString(36).slice(2, 7);
+
+interface Result {
+  mode: 'firebase' | 'demo';
+  activity: Activity;
+  newUnit?: string;
+  newLesson?: string;
+  fileName: string;
 }
 
 export function AdminUploader({ subjects }: { subjects: Subject[] }) {
@@ -32,112 +44,165 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
   const subject = subjects.find((s) => s.id === subjectId);
   const [gradeId, setGradeId] = useState(subject?.grades[0]?.id ?? '');
   const grade = subject?.grades.find((g) => g.id === gradeId);
-  const [unitId, setUnitId] = useState(grade?.units[0]?.id ?? '');
+  const [unitId, setUnitId] = useState(grade?.units[0]?.id ?? NEW);
   const unit = grade?.units.find((u) => u.id === unitId);
-  const [lessonId, setLessonId] = useState(unit?.lessons[0]?.id ?? '');
+  const [lessonId, setLessonId] = useState(unit?.lessons[0]?.id ?? NEW);
+
+  const [newUnitName, setNewUnitName] = useState('');
+  const [newLessonName, setNewLessonName] = useState('');
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [type, setType] = useState<ActivityType>('experiment');
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState<null | 'firebase' | 'demo'>(null);
+  const [result, setResult] = useState<Result | null>(null);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
 
-  // keep dependent selects valid
+  const unitIsNew = unitId === NEW;
+  const lessonIsNew = lessonId === NEW || unitIsNew;
+
   function pickSubject(id: string) {
     setSubjectId(id);
     const s = subjects.find((x) => x.id === id);
     const g = s?.grades[0];
     setGradeId(g?.id ?? '');
     const u = g?.units[0];
-    setUnitId(u?.id ?? '');
-    setLessonId(u?.lessons[0]?.id ?? '');
+    setUnitId(u?.id ?? NEW);
+    setLessonId(u?.lessons[0]?.id ?? NEW);
   }
   function pickGrade(id: string) {
     setGradeId(id);
     const g = subject?.grades.find((x) => x.id === id);
     const u = g?.units[0];
-    setUnitId(u?.id ?? '');
-    setLessonId(u?.lessons[0]?.id ?? '');
+    setUnitId(u?.id ?? NEW);
+    setLessonId(u?.lessons[0]?.id ?? NEW);
   }
   function pickUnit(id: string) {
     setUnitId(id);
-    const u = grade?.units.find((x) => x.id === id);
-    setLessonId(u?.lessons[0]?.id ?? '');
+    if (id === NEW) {
+      setLessonId(NEW);
+    } else {
+      const u = grade?.units.find((x) => x.id === id);
+      setLessonId(u?.lessons[0]?.id ?? NEW);
+    }
   }
-
-  const activityObject = useMemo(
-    () => ({
-      id: (title ? slug(title) : 'new-activity') + '-' + Date.now().toString(36).slice(-4),
-      title: title || 'عنوان النشاط',
-      description,
-      type,
-      file: file?.name ?? 'your-activity.html',
-      subjectId,
-      gradeId,
-      unitId,
-      lessonId,
-    }),
-    [title, description, type, file, subjectId, gradeId, unitId, lessonId]
-  );
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
     if (!file) return setError('الرجاء اختيار ملف HTML للنشاط.');
     if (!title.trim()) return setError('الرجاء إدخال عنوان النشاط.');
-    if (!lessonId) return setError('الرجاء اختيار الدرس.');
+    if (!subjectId || !gradeId) return setError('الرجاء اختيار المادة والمستوى.');
+    if (unitIsNew && !newUnitName.trim())
+      return setError('الرجاء إدخال اسم الوحدة الجديدة.');
+    if (lessonIsNew && !newLessonName.trim())
+      return setError('الرجاء إدخال اسم الدرس الجديد.');
+    if (!unitIsNew && !unitId) return setError('الرجاء اختيار الوحدة.');
+    if (!lessonIsNew && !lessonId) return setError('الرجاء اختيار الدرس.');
 
-    // Demo mode: no Firebase — guide the author.
+    const finalUnitId = unitIsNew ? `u-${slug(newUnitName)}-${rid()}` : unitId;
+    const finalLessonId = lessonIsNew ? `l-${slug(newLessonName)}-${rid()}` : lessonId;
+    const id = `${slug(title)}-${rid()}`;
+
+    const baseActivity: Activity = {
+      id,
+      title: title.trim(),
+      description: description.trim(),
+      type,
+      file: file.name,
+      subjectId,
+      gradeId,
+      unitId: finalUnitId,
+      lessonId: finalLessonId,
+      createdAt: Date.now(),
+    };
+
+    // ---- Demo mode ----
     if (!isFirebaseConfigured) {
-      setDone('demo');
+      setResult({
+        mode: 'demo',
+        activity: baseActivity,
+        newUnit: unitIsNew ? newUnitName.trim() : undefined,
+        newLesson: lessonIsNew ? newLessonName.trim() : undefined,
+        fileName: file.name,
+      });
       return;
     }
 
+    // ---- Firebase mode ----
     setBusy(true);
     try {
       await ensureAuth();
       const db = getDb();
       const bucket = getBucket();
       if (!db || !bucket) throw new Error('تعذّر الاتصال بخدمة التخزين.');
-      const { ref, uploadBytes, getDownloadURL } = await import(
-        'firebase/storage'
-      );
-      const { doc, setDoc } = await import('firebase/firestore');
 
-      const id = activityObject.id;
+      // 1) persist any new unit/lesson into the curriculum structure
+      if (unitIsNew || lessonIsNew) {
+        const tree = toStructure(subjects);
+        const s = tree.find((x) => x.id === subjectId);
+        const g = s?.grades.find((x) => x.id === gradeId);
+        if (!g) throw new Error('تعذّر إيجاد المستوى المحدّد.');
+        let targetUnit = g.units.find((u) => u.id === finalUnitId);
+        if (unitIsNew) {
+          targetUnit = {
+            id: finalUnitId,
+            title: newUnitName.trim(),
+            summary: '',
+            color: subject?.color ?? '#8a1538',
+            lessons: [],
+          };
+          g.units.push(targetUnit);
+        }
+        if (!targetUnit) targetUnit = g.units.find((u) => u.id === unitId);
+        if (lessonIsNew && targetUnit) {
+          targetUnit.lessons.push({
+            id: finalLessonId,
+            title: newLessonName.trim(),
+            activities: [],
+          });
+        }
+        await saveStructure(tree);
+      }
+
+      // 2) upload the file
+      const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
+      const { doc, setDoc } = await import('firebase/firestore');
       const path = `activities/${subjectId}/${id}-${file.name}`;
       const storageRef = ref(bucket, path);
       await uploadBytes(storageRef, file, { contentType: 'text/html' });
       const downloadUrl = await getDownloadURL(storageRef);
 
+      // 3) write activity metadata
       await setDoc(doc(db, 'activities', id), {
-        title,
-        description,
-        type,
+        ...baseActivity,
         file: downloadUrl,
         external: true,
-        subjectId,
-        gradeId,
-        unitId,
-        lessonId,
-        createdAt: Date.now(),
       });
-      setDone('firebase');
+
+      setResult({ mode: 'firebase', activity: baseActivity, fileName: file.name });
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'حدث خطأ أثناء رفع النشاط.'
-      );
+      setError(err instanceof Error ? err.message : 'حدث خطأ أثناء رفع النشاط.');
     } finally {
       setBusy(false);
     }
   }
 
+  function reset() {
+    setResult(null);
+    setTitle('');
+    setDescription('');
+    setFile(null);
+    setNewUnitName('');
+    setNewLessonName('');
+  }
+
   function copySnippet() {
+    if (!result) return;
     navigator.clipboard
-      ?.writeText(JSON.stringify(activityObject, null, 2))
+      ?.writeText(JSON.stringify(result.activity, null, 2))
       .then(() => {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
@@ -145,54 +210,66 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
   }
 
   const inputCls =
-    'w-full rounded-xl border border-[color:var(--gold)]/30 bg-white px-4 py-2.5 text-sm font-medium text-foreground outline-none transition focus:border-[color:var(--maroon)] focus:ring-2 focus:ring-[color:var(--maroon)]/20';
+    'w-full rounded-xl border border-[color:var(--hairline-strong)] bg-[color:var(--surface)] px-4 py-2.5 text-sm font-bold text-foreground outline-none transition focus:border-[color:var(--maroon)] focus:ring-2 focus:ring-[color:var(--maroon)]/20';
   const labelCls = 'mb-1.5 block text-sm font-black text-[color:var(--maroon)]';
 
-  if (done) {
+  // ---- success / result screen ----
+  if (result) {
     return (
-      <div className="rounded-3xl border border-[color:var(--gold)]/30 bg-[color:var(--surface)] p-8 shadow-lg">
+      <div className="card-premium rounded-3xl p-8">
         <div className="mb-4 flex items-center gap-3 text-[color:var(--teal)]">
           <CheckCircle2 className="h-9 w-9" />
-          <h3 className="font-display text-2xl font-black">
-            {done === 'firebase' ? 'تم رفع النشاط بنجاح!' : 'النشاط جاهز للإضافة'}
+          <h3 className="font-display text-2xl font-bold">
+            {result.mode === 'firebase' ? 'تم رفع النشاط بنجاح!' : 'النشاط جاهز للإضافة'}
           </h3>
         </div>
-        {done === 'firebase' ? (
+        {result.mode === 'firebase' ? (
           <p className="text-muted-foreground">
-            أصبح النشاط «{title}» متاحًا الآن في المنصّة ضمن الدرس المحدّد. يمكن
-            للزوّار تجربته وتحميله، وستُحتسب مشاهداته وتنزيلاته تلقائيًا.
+            أصبح النشاط «{result.activity.title}» متاحًا الآن في المنصّة ضمن
+            الدرس المحدّد
+            {result.activity.unitId ? '' : ''}. يمكن للزوّار تجربته وتحميله،
+            وتُحتسب مشاهداته وتنزيلاته تلقائيًا.
           </p>
         ) : (
           <div className="space-y-4">
             <p className="text-muted-foreground">
-              المنصّة تعمل حاليًا في «وضع العرض» (بدون إعداد Firebase). لإضافة
-              نشاطك بشكل دائم:
+              المنصّة تعمل حاليًا في «وضع العرض» (بدون Firebase). لإضافة النشاط
+              بشكل دائم:
             </p>
             <ol className="list-inside list-decimal space-y-2 text-sm text-foreground">
               <li>
                 انسخ الملف{' '}
-                <code className="rounded bg-black/5 px-1.5 py-0.5 font-mono text-xs">
-                  {file?.name}
+                <code className="rounded bg-[color:var(--surface-2)] px-1.5 py-0.5 font-mono text-xs">
+                  {result.fileName}
                 </code>{' '}
-                إلى المجلد{' '}
-                <code className="rounded bg-black/5 px-1.5 py-0.5 font-mono text-xs">
+                إلى{' '}
+                <code className="rounded bg-[color:var(--surface-2)] px-1.5 py-0.5 font-mono text-xs">
                   public/games/
                 </code>
               </li>
+              {(result.newUnit || result.newLesson) && (
+                <li>
+                  أضِف
+                  {result.newUnit ? ` الوحدة «${result.newUnit}»` : ''}
+                  {result.newUnit && result.newLesson ? ' و' : ''}
+                  {result.newLesson ? `الدرس «${result.newLesson}»` : ''} إلى بنية
+                  المناهج من تبويب «إدارة المناهج».
+                </li>
+              )}
               <li>
-                أضف الكائن التالي إلى مصفوفة{' '}
-                <code className="rounded bg-black/5 px-1.5 py-0.5 font-mono text-xs">
+                أضِف الكائن التالي إلى{' '}
+                <code className="rounded bg-[color:var(--surface-2)] px-1.5 py-0.5 font-mono text-xs">
                   SEED_ACTIVITIES
                 </code>{' '}
                 في{' '}
-                <code className="rounded bg-black/5 px-1.5 py-0.5 font-mono text-xs">
+                <code className="rounded bg-[color:var(--surface-2)] px-1.5 py-0.5 font-mono text-xs">
                   src/data/curriculum.ts
                 </code>
               </li>
             </ol>
             <div className="relative">
-              <pre className="max-h-64 overflow-auto rounded-2xl bg-[#241a14] p-4 text-left text-xs leading-6 text-[#f6ecdd]" dir="ltr">
-                {JSON.stringify(activityObject, null, 2)}
+              <pre className="max-h-64 overflow-auto rounded-2xl bg-[#211619] p-4 text-left text-xs leading-6 text-[#f5ece4]" dir="ltr">
+                {JSON.stringify(result.activity, null, 2)}
               </pre>
               <button
                 onClick={copySnippet}
@@ -203,38 +280,29 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
               </button>
             </div>
             <p className="text-xs text-muted-foreground">
-              أو فعّل Firebase (Firestore + Storage) عبر متغيّرات البيئة ليصبح
-              الرفع مباشرًا من هذه الصفحة. راجع ملف README.
+              أو فعّل Firebase ليصبح الرفع مباشرًا من هذه الصفحة (راجع README).
             </p>
           </div>
         )}
-        <button
-          onClick={() => {
-            setDone(null);
-            setTitle('');
-            setDescription('');
-            setFile(null);
-          }}
-          className="mt-6 rounded-xl bg-[color:var(--maroon)] px-6 py-2.5 text-sm font-black text-white hover:bg-[color:var(--maroon-700)]"
-        >
-          رفع نشاط آخر
+        <button onClick={reset} className="btn-primary mt-6 px-6 py-2.5 text-sm">
+          <UploadCloud className="h-4 w-4" /> رفع نشاط آخر
         </button>
       </div>
     );
   }
 
+  const hasUnits = (grade?.units.length ?? 0) > 0;
+  const hasLessons = (unit?.lessons.length ?? 0) > 0;
+
   return (
-    <form
-      onSubmit={onSubmit}
-      className="rounded-3xl border border-[color:var(--gold)]/30 bg-[color:var(--surface)] p-6 shadow-lg sm:p-8"
-    >
+    <form onSubmit={onSubmit} className="card-premium rounded-3xl p-6 sm:p-8">
       {!isFirebaseConfigured && (
-        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-[color:var(--sky)]/30 bg-[color:var(--sky)]/10 p-4 text-sm text-[color:var(--maroon)]">
+        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-[color:var(--sky)]/30 bg-[color:var(--sky)]/10 p-4 text-sm">
           <Info className="mt-0.5 h-5 w-5 shrink-0 text-[color:var(--sky)]" />
           <p>
-            <b>وضع العرض:</b> Firebase غير مُعدّ حاليًا، لذا سيُنشئ النموذج
-            تعليمات وكائن بيانات جاهزًا للإضافة. بعد إعداد Firebase سيتم الرفع
-            مباشرة إلى المنصّة.
+            <b>وضع العرض:</b> Firebase غير مُعدّ، لذا يُنشئ النموذج تعليمات وكائن
+            بيانات جاهزًا. بعد تفعيل Firebase يتم الرفع وحفظ الوحدات/الدروس
+            الجديدة مباشرةً.
           </p>
         </div>
       )}
@@ -242,11 +310,7 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
           <label className={labelCls}>المادة</label>
-          <select
-            className={inputCls}
-            value={subjectId}
-            onChange={(e) => pickSubject(e.target.value)}
-          >
+          <select className={inputCls} value={subjectId} onChange={(e) => pickSubject(e.target.value)}>
             {available.map((s) => (
               <option key={s.id} value={s.id}>{s.title}</option>
             ))}
@@ -254,44 +318,67 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
         </div>
         <div>
           <label className={labelCls}>المستوى</label>
-          <select
-            className={inputCls}
-            value={gradeId}
-            onChange={(e) => pickGrade(e.target.value)}
-          >
+          <select className={inputCls} value={gradeId} onChange={(e) => pickGrade(e.target.value)}>
             {subject?.grades.map((g) => (
               <option key={g.id} value={g.id}>{g.title}</option>
             ))}
           </select>
         </div>
+
+        {/* Unit: existing or new */}
         <div>
           <label className={labelCls}>الوحدة</label>
-          <select
-            className={inputCls}
-            value={unitId}
-            onChange={(e) => pickUnit(e.target.value)}
-          >
-            {grade?.units.map((u) => (
-              <option key={u.id} value={u.id}>{u.title}</option>
-            ))}
-          </select>
+          {hasUnits && (
+            <select className={inputCls} value={unitId} onChange={(e) => pickUnit(e.target.value)}>
+              {grade?.units.map((u) => (
+                <option key={u.id} value={u.id}>{u.title}</option>
+              ))}
+              <option value={NEW}>➕ وحدة جديدة…</option>
+            </select>
+          )}
+          {unitIsNew && (
+            <div className={hasUnits ? 'mt-2' : ''}>
+              <input
+                className={inputCls}
+                value={newUnitName}
+                onChange={(e) => setNewUnitName(e.target.value)}
+                placeholder="اسم الوحدة الجديدة (مثال: الوحدة الأولى: النباتات)"
+              />
+            </div>
+          )}
+          {!hasUnits && (
+            <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+              <Plus className="h-3 w-3" /> لا توجد وحدات بعد — اكتب اسم أول وحدة.
+            </p>
+          )}
         </div>
+
+        {/* Lesson: existing or new */}
         <div>
           <label className={labelCls}>الدرس</label>
-          <select
-            className={inputCls}
-            value={lessonId}
-            onChange={(e) => setLessonId(e.target.value)}
-          >
-            {unit?.lessons.map((l) => (
-              <option key={l.id} value={l.id}>{l.title}</option>
-            ))}
-          </select>
+          {!unitIsNew && hasLessons && (
+            <select className={inputCls} value={lessonId} onChange={(e) => setLessonId(e.target.value)}>
+              {unit?.lessons.map((l) => (
+                <option key={l.id} value={l.id}>{l.title}</option>
+              ))}
+              <option value={NEW}>➕ درس جديد…</option>
+            </select>
+          )}
+          {lessonIsNew && (
+            <div className={!unitIsNew && hasLessons ? 'mt-2' : ''}>
+              <input
+                className={inputCls}
+                value={newLessonName}
+                onChange={(e) => setNewLessonName(e.target.value)}
+                placeholder="اسم الدرس الجديد (مثال: أجزاء النبات)"
+              />
+            </div>
+          )}
         </div>
       </div>
 
       <div className="mt-5">
-        <label className={labelCls}>عنوان النشاط</label>
+        <label className={labelCls}>عنوان النشاط / اللعبة</label>
         <input
           className={inputCls}
           value={title}
@@ -301,13 +388,13 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
       </div>
 
       <div className="mt-5">
-        <label className={labelCls}>وصف مختصر</label>
+        <label className={labelCls}>وصف مختصر (اختياري)</label>
         <textarea
           className={inputCls}
           rows={2}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="اكتب وصفًا موجزًا يظهر للطلبة…"
+          placeholder="وصف موجز يظهر للطلبة…"
         />
       </div>
 
@@ -320,9 +407,7 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
               key={t}
               onClick={() => setType(t)}
               className={`rounded-xl px-4 py-2 text-sm font-bold transition ${
-                type === t
-                  ? 'text-white shadow-md'
-                  : 'bg-white text-[color:var(--maroon)] hover:bg-black/5'
+                type === t ? 'text-white shadow-md' : 'bg-[color:var(--surface-2)] text-[color:var(--maroon)] hover:brightness-95'
               }`}
               style={type === t ? { background: ACTIVITY_META[t].color } : {}}
             >
@@ -334,7 +419,7 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
 
       <div className="mt-5">
         <label className={labelCls}>ملف النشاط (HTML)</label>
-        <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[color:var(--gold)]/50 bg-[color:var(--surface)]/70 p-8 text-center transition hover:border-[color:var(--maroon)] hover:bg-[color:var(--gold)]/5">
+        <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[color:var(--gold)]/50 bg-[color:var(--surface-2)]/60 p-8 text-center transition hover:border-[color:var(--maroon)] hover:bg-[color:var(--gold)]/5">
           {file ? (
             <>
               <FileCode2 className="h-9 w-9 text-[color:var(--teal)]" />
@@ -349,9 +434,7 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
               <span className="font-bold text-[color:var(--maroon)]">
                 اسحب ملف HTML هنا أو اضغط للاختيار
               </span>
-              <span className="text-xs text-muted-foreground">
-                ملف واحد قائم بذاته (.html)
-              </span>
+              <span className="text-xs text-muted-foreground">ملف واحد قائم بذاته (.html)</span>
             </>
           )}
           <input
@@ -369,11 +452,7 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
         </p>
       )}
 
-      <button
-        type="submit"
-        disabled={busy}
-        className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-[color:var(--maroon)] px-6 py-3.5 text-base font-black text-white shadow-xl shadow-[color:var(--maroon)]/25 transition hover:-translate-y-0.5 hover:bg-[color:var(--maroon-700)] disabled:opacity-60"
-      >
+      <button type="submit" disabled={busy} className="btn-primary mt-6 w-full justify-center py-3.5 text-base">
         {busy ? (
           <>
             <Loader2 className="h-5 w-5 animate-spin" /> جارٍ الرفع…

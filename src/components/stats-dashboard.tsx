@@ -89,6 +89,19 @@ export function StatsDashboard({ activities }: { activities: Row[] }) {
         ))}
       </div>
 
+      {activities.length === 0 ? (
+        <div className="card-premium rounded-3xl p-12 text-center">
+          <TrendingUp className="mx-auto h-12 w-12 text-[color:var(--gold)]" />
+          <h3 className="mt-4 font-display text-xl font-bold text-[color:var(--maroon)]">
+            لا توجد بيانات بعد
+          </h3>
+          <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+            ستظهر إحصاءات المشاهدات والتنزيلات هنا تلقائيًا بمجرّد رفع الأنشطة
+            وبدء الزوّار بتجربتها.
+          </p>
+        </div>
+      ) : (
+      <>
       <div className="grid gap-6 lg:grid-cols-5">
         {/* ranking: most viewed (single-hue magnitude; identity via type badge) */}
         <figure className="card-premium rounded-3xl p-6 sm:p-7 lg:col-span-3">
@@ -204,6 +217,8 @@ export function StatsDashboard({ activities }: { activities: Row[] }) {
           </table>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }

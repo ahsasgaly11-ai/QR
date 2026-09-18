@@ -241,22 +241,24 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ===================== FEATURED ===================== */}
-      <section className="mx-auto max-w-7xl px-6 py-16">
-        <Reveal className="mb-10 text-center">
-          <p className="text-sm font-black text-[color:var(--gold)]">الأكثر تفاعلاً</p>
-          <h2 className="mt-1 font-display text-3xl font-black text-[color:var(--maroon)] sm:text-4xl">
-            أنشطة مميّزة
-          </h2>
-        </Reveal>
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {featured.map((a, i) => (
-            <Reveal key={a.id} delay={i * 80}>
-              <ActivityCard activity={a} index={i} />
-            </Reveal>
-          ))}
-        </div>
-      </section>
+      {/* ===================== FEATURED (only when content exists) ========= */}
+      {featured.length > 0 && (
+        <section className="mx-auto max-w-7xl px-6 py-16">
+          <Reveal className="mb-10 text-center">
+            <p className="text-sm font-black text-[color:var(--gold)]">الأكثر تفاعلاً</p>
+            <h2 className="mt-1 font-display text-3xl font-black text-[color:var(--maroon)] sm:text-4xl">
+              أنشطة مميّزة
+            </h2>
+          </Reveal>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {featured.map((a, i) => (
+              <Reveal key={a.id} delay={i * 80}>
+                <ActivityCard activity={a} index={i} />
+              </Reveal>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ===================== CTA ===================== */}
       <section className="mx-auto max-w-7xl px-6 pb-8">
