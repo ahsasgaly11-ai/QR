@@ -8,6 +8,9 @@ import {
 } from '@/lib/content';
 import { AdminShell } from '@/components/admin/admin-shell';
 
+// لوحة المالك تُقرأ حيّة دائمًا حتى يرى ما رفعه فورًا بلا انتظار.
+export const dynamic = 'force-dynamic';
+
 export const metadata = { title: 'لوحة الإدارة | منصة مناهج قطر' };
 
 export default async function AdminPage() {

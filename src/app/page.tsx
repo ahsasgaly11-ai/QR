@@ -17,6 +17,10 @@ import { SiteStatsStrip } from '@/components/site-stats-strip';
 import { ActivityCard } from '@/components/activity-card';
 import { SUBJECTS } from '@/data/curriculum';
 
+// المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
+// وإلا لما ظهرت الأنشطة المرفوعة بعد البناء إلا بنشر جديد.
+export const revalidate = 60;
+
 export default async function HomePage() {
   const subjects = await getSubjects();
   const activities = await getAllActivities();

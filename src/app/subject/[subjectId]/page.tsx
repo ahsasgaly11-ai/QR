@@ -6,6 +6,10 @@ import { SUBJECTS } from '@/data/curriculum';
 import { CurriculumExplorer } from '@/components/curriculum-explorer';
 import { OryxMascot } from '@/components/oryx-mascot';
 
+// المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
+// وإلا لما ظهرت الأنشطة المرفوعة بعد البناء إلا بنشر جديد.
+export const revalidate = 30;
+
 export function generateStaticParams() {
   return SUBJECTS.map((s) => ({ subjectId: s.id }));
 }

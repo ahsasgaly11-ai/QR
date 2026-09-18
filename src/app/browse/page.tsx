@@ -3,6 +3,10 @@ import { ArrowLeft, Layers } from 'lucide-react';
 import { getSubjects, countActivities } from '@/lib/content';
 import { Reveal } from '@/components/reveal';
 
+// المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
+// وإلا لما ظهرت الأنشطة المرفوعة بعد البناء إلا بنشر جديد.
+export const revalidate = 60;
+
 export const metadata = { title: 'تصفّح المناهج | منصة مناهج قطر' };
 
 export default async function BrowsePage() {

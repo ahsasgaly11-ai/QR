@@ -11,6 +11,10 @@ import { SEED_ACTIVITIES } from '@/data/curriculum';
 import { ActivityPlayer } from '@/components/activity-player';
 import { ActivityCard } from '@/components/activity-card';
 
+// المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
+// وإلا لما ظهرت الأنشطة المرفوعة بعد البناء إلا بنشر جديد.
+export const revalidate = 30;
+
 export function generateStaticParams() {
   return SEED_ACTIVITIES.map((a) => ({ activityId: a.id }));
 }

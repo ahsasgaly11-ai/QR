@@ -14,6 +14,8 @@ import { OryxMascot } from './oryx-mascot';
  */
 export function LocalPlay({ activityId }: { activityId: string }) {
   const [state, setState] = useState<'loading' | 'found' | 'missing'>('loading');
+  // من أين جاء النشاط: مخزن المتصفّح (وضع العرض) أم Firestore (منشور فعلًا)
+  const [source, setSource] = useState<'local' | 'remote'>('local');
   const [activity, setActivity] = useState<Activity | null>(null);
   const [html, setHtml] = useState<string>('');
 
@@ -35,10 +37,27 @@ export function LocalPlay({ activityId }: { activityId: string }) {
         if (rec?.activity && rec.html) {
           setActivity(rec.activity);
           setHtml(rec.html);
+          setSource('local');
           setState('found');
           return;
         }
       }
+
+      // قد يكون نشاطًا رُفع قبل لحظات ولم تلتقطه الصفحة المُخزَّنة بعد —
+      // اقرأه مباشرة من Firestore بدل إظهار «لم نجد هذا النشاط» خطأً.
+      const { getActivityLive } = await import('@/lib/content');
+      for (const id of candidates) {
+        const a = await getActivityLive(id);
+        if (!alive) return;
+        if (a) {
+          setActivity(a);
+          setHtml('');
+          setSource('remote');
+          setState('found');
+          return;
+        }
+      }
+
       if (alive) setState('missing');
     })();
 
@@ -99,13 +118,15 @@ export function LocalPlay({ activityId }: { activityId: string }) {
         <p className="short-hide mb-4 max-w-3xl text-muted-foreground">{activity.description}</p>
       )}
 
-      <div className="short-hide mb-6 flex items-start gap-3 rounded-2xl border border-[color:var(--gold)]/35 bg-[color:var(--gold)]/10 p-4 text-sm">
-        <HardDrive className="mt-0.5 h-5 w-5 shrink-0 text-[color:var(--gold)]" />
-        <p>
-          <b>وضع العرض:</b> هذا النشاط محفوظ في متصفّحك فقط. فعّل Firebase ليظهر
-          لجميع الزوّار وتُجمَع إحصاءاته.
-        </p>
-      </div>
+      {source === 'local' && (
+        <div className="short-hide mb-6 flex items-start gap-3 rounded-2xl border border-[color:var(--gold)]/35 bg-[color:var(--gold)]/10 p-4 text-sm">
+          <HardDrive className="mt-0.5 h-5 w-5 shrink-0 text-[color:var(--gold)]" />
+          <p>
+            <b>وضع العرض:</b> هذا النشاط محفوظ في متصفّحك فقط. فعّل Firebase ليظهر
+            لجميع الزوّار وتُجمَع إحصاءاته.
+          </p>
+        </div>
+      )}
 
       <ActivityPlayer activity={activity} localHtml={html} />
     </div>
