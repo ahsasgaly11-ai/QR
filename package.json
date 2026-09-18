@@ -7,6 +7,8 @@
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
     "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
     "tripo": "node scripts/tripo-fetch.mjs",
+    "models:build": "node scripts/build-anatomy-models.mjs",
+    "models:verify": "node scripts/verify-glb.mjs models/*.glb",
     "build": "NODE_ENV=production next build",
     "start": "next start",
     "lint": "next lint",
