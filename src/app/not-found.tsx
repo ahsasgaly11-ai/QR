@@ -15,7 +15,7 @@ export default function NotFound() {
       </p>
       <Link
         href="/"
-        className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-[color:var(--qa-maroon)] px-7 py-3.5 font-black text-white shadow-lg transition hover:-translate-y-1 hover:bg-[color:var(--qa-maroon-deep)]"
+        className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-[color:var(--maroon)] px-7 py-3.5 font-black text-white shadow-lg transition hover:-translate-y-1 hover:bg-[color:var(--maroon-700)]"
       >
         <Home className="h-5 w-5" /> العودة للرئيسية
       </Link>

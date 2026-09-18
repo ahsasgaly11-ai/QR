@@ -14,7 +14,7 @@ export default async function BrowsePage() {
         <p className="diamond-divider mx-auto max-w-xs text-sm font-black">
           المكتبة التعليمية
         </p>
-        <h1 className="mt-3 font-display text-4xl font-black text-[color:var(--qa-maroon)] sm:text-5xl">
+        <h1 className="mt-3 font-display text-4xl font-black text-[color:var(--maroon)] sm:text-5xl">
           تصفّح المناهج الدراسية
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
@@ -29,7 +29,7 @@ export default async function BrowsePage() {
           const units = s.grades.reduce((n, g) => n + g.units.length, 0);
           const card = (
             <div
-              className="card-3d relative flex h-64 flex-col justify-between overflow-hidden rounded-3xl p-7 text-white shadow-xl"
+              className="card-premium relative flex h-64 flex-col justify-between overflow-hidden rounded-3xl p-7 text-white shadow-xl"
               style={{ background: `linear-gradient(135deg, ${s.color}, ${s.accent})` }}
             >
               <div className="absolute -left-10 -top-10 h-36 w-36 rounded-full bg-white/10" />

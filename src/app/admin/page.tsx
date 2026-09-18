@@ -9,10 +9,10 @@ export default async function AdminPage() {
   return (
     <div className="mx-auto max-w-3xl px-6 py-14">
       <div className="mb-8 text-center">
-        <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-[color:var(--qa-maroon)] text-white shadow-lg">
+        <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-[color:var(--maroon)] text-white shadow-lg">
           <UploadCloud className="h-8 w-8" />
         </span>
-        <h1 className="mt-4 font-display text-3xl font-black text-[color:var(--qa-maroon)] sm:text-4xl">
+        <h1 className="mt-4 font-display text-3xl font-black text-[color:var(--maroon)] sm:text-4xl">
           رفع نشاط تفاعلي جديد
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-muted-foreground">

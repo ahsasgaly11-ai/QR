@@ -41,10 +41,10 @@ export function StatsDashboard({ activities }: { activities: Row[] }) {
   const maxViews = Math.max(1, ...rows.map((r) => r.views));
 
   const cards = [
-    { icon: Users, label: 'إجمالي الزوّار', value: site.visitors, color: 'var(--qa-maroon)' },
-    { icon: Eye, label: 'إجمالي المشاهدات', value: site.views, color: 'var(--qa-sky)' },
-    { icon: Download, label: 'إجمالي التنزيلات', value: site.downloads, color: 'var(--qa-teal)' },
-    { icon: Sparkles, label: 'عدد الأنشطة', value: activities.length, color: 'var(--qa-gold)' },
+    { icon: Users, label: 'إجمالي الزوّار', value: site.visitors, color: 'var(--maroon)' },
+    { icon: Eye, label: 'إجمالي المشاهدات', value: site.views, color: 'var(--sky)' },
+    { icon: Download, label: 'إجمالي التنزيلات', value: site.downloads, color: 'var(--teal)' },
+    { icon: Sparkles, label: 'عدد الأنشطة', value: activities.length, color: 'var(--gold)' },
   ];
 
   return (
@@ -54,7 +54,7 @@ export function StatsDashboard({ activities }: { activities: Row[] }) {
         {cards.map((c) => (
           <div
             key={c.label}
-            className="card-3d relative overflow-hidden rounded-3xl border border-[color:var(--qa-gold)]/20 bg-[color:var(--qa-cream)] p-6 shadow-lg"
+            className="card-premium relative overflow-hidden rounded-3xl border border-[color:var(--gold)]/20 bg-[color:var(--surface)] p-6 shadow-lg"
           >
             <div
               className="absolute -left-6 -top-6 h-24 w-24 rounded-full opacity-10"
@@ -75,24 +75,24 @@ export function StatsDashboard({ activities }: { activities: Row[] }) {
       </div>
 
       {/* chart: most viewed */}
-      <div className="rounded-3xl border border-[color:var(--qa-gold)]/20 bg-[color:var(--qa-cream)] p-6 shadow-lg sm:p-8">
+      <div className="rounded-3xl border border-[color:var(--gold)]/20 bg-[color:var(--surface)] p-6 shadow-lg sm:p-8">
         <div className="mb-6 flex items-center gap-2">
-          <TrendingUp className="h-6 w-6 text-[color:var(--qa-maroon)]" />
-          <h2 className="font-display text-xl font-black text-[color:var(--qa-maroon)]">
+          <TrendingUp className="h-6 w-6 text-[color:var(--maroon)]" />
+          <h2 className="font-display text-xl font-black text-[color:var(--maroon)]">
             الأنشطة الأكثر مشاهدة
           </h2>
         </div>
         <div className="space-y-4">
           {rows.slice(0, 8).map((r, i) => (
             <div key={r.id} className="flex items-center gap-3">
-              <span className="w-6 shrink-0 text-center font-display text-lg font-black text-[color:var(--qa-gold)]">
+              <span className="w-6 shrink-0 text-center font-display text-lg font-black text-[color:var(--gold)]">
                 {i + 1}
               </span>
               <div className="min-w-0 flex-1">
                 <div className="mb-1 flex items-center justify-between gap-2">
                   <Link
                     href={`/play/${r.id}`}
-                    className="truncate text-sm font-bold text-foreground hover:text-[color:var(--qa-maroon)]"
+                    className="truncate text-sm font-bold text-foreground hover:text-[color:var(--maroon)]"
                   >
                     {r.title}
                   </Link>
@@ -105,7 +105,7 @@ export function StatsDashboard({ activities }: { activities: Row[] }) {
                     className="h-full rounded-full transition-all duration-1000"
                     style={{
                       width: loaded ? `${(r.views / maxViews) * 100}%` : '0%',
-                      background: `linear-gradient(90deg, ${ACTIVITY_META[r.type].color}, var(--qa-maroon))`,
+                      background: `linear-gradient(90deg, ${ACTIVITY_META[r.type].color}, var(--maroon))`,
                     }}
                   />
                 </div>
@@ -116,11 +116,11 @@ export function StatsDashboard({ activities }: { activities: Row[] }) {
       </div>
 
       {/* full table */}
-      <div className="overflow-hidden rounded-3xl border border-[color:var(--qa-gold)]/20 bg-[color:var(--qa-cream)] shadow-lg">
+      <div className="overflow-hidden rounded-3xl border border-[color:var(--gold)]/20 bg-[color:var(--surface)] shadow-lg">
         <div className="overflow-x-auto">
           <table className="w-full text-right text-sm">
             <thead>
-              <tr className="border-b border-[color:var(--qa-gold)]/20 bg-[color:var(--qa-maroon)]/5 text-[color:var(--qa-maroon)]">
+              <tr className="border-b border-[color:var(--gold)]/20 bg-[color:var(--maroon)]/5 text-[color:var(--maroon)]">
                 <th className="p-4 font-black">النشاط</th>
                 <th className="p-4 font-black">النوع</th>
                 <th className="p-4 font-black">المشاهدات</th>
@@ -132,7 +132,7 @@ export function StatsDashboard({ activities }: { activities: Row[] }) {
               {rows.map((r) => (
                 <tr
                   key={r.id}
-                  className="border-b border-[color:var(--qa-gold)]/10 transition hover:bg-black/[0.02]"
+                  className="border-b border-[color:var(--gold)]/10 transition hover:bg-black/[0.02]"
                 >
                   <td className="p-4 font-bold text-foreground">{r.title}</td>
                   <td className="p-4">
@@ -147,7 +147,7 @@ export function StatsDashboard({ activities }: { activities: Row[] }) {
                   <td className="p-4">
                     <Link
                       href={`/play/${r.id}`}
-                      className="inline-flex items-center gap-1 rounded-lg bg-[color:var(--qa-maroon)] px-3 py-1.5 text-xs font-black text-white hover:bg-[color:var(--qa-maroon-deep)]"
+                      className="inline-flex items-center gap-1 rounded-lg bg-[color:var(--maroon)] px-3 py-1.5 text-xs font-black text-white hover:bg-[color:var(--maroon-700)]"
                     >
                       <Play className="h-3 w-3 fill-current" /> تشغيل
                     </Link>

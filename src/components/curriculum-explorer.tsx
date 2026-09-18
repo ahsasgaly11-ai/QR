@@ -15,7 +15,7 @@ export function CurriculumExplorer({ subject }: { subject: Subject }) {
 
   if (!grade) {
     return (
-      <div className="rounded-3xl border border-dashed border-[color:var(--qa-gold)]/40 p-12 text-center text-muted-foreground">
+      <div className="rounded-3xl border border-dashed border-[color:var(--gold)]/40 p-12 text-center text-muted-foreground">
         لا توجد مستويات متاحة لهذه المادة بعد.
       </div>
     );
@@ -33,8 +33,8 @@ export function CurriculumExplorer({ subject }: { subject: Subject }) {
               className={cn(
                 'rounded-full px-5 py-2 text-sm font-black transition-all',
                 g.id === grade.id
-                  ? 'bg-[color:var(--qa-maroon)] text-white shadow-md'
-                  : 'bg-white/70 text-[color:var(--qa-maroon)] hover:bg-[color:var(--qa-maroon)]/10'
+                  ? 'bg-[color:var(--maroon)] text-white shadow-md'
+                  : 'bg-[color:var(--surface)]/75 text-[color:var(--maroon)] hover:bg-[color:var(--maroon)]/10'
               )}
             >
               {g.title}
@@ -53,7 +53,7 @@ export function CurriculumExplorer({ subject }: { subject: Subject }) {
           return (
             <div
               key={unit.id}
-              className="overflow-hidden rounded-3xl border border-[color:var(--qa-gold)]/25 bg-[color:var(--qa-cream)] shadow-md"
+              className="overflow-hidden rounded-3xl border border-[color:var(--gold)]/25 bg-[color:var(--surface)] shadow-md"
             >
               <button
                 onClick={() =>
@@ -63,12 +63,12 @@ export function CurriculumExplorer({ subject }: { subject: Subject }) {
               >
                 <span
                   className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-white shadow"
-                  style={{ background: unit.color ?? 'var(--qa-maroon)' }}
+                  style={{ background: unit.color ?? 'var(--maroon)' }}
                 >
                   <BookMarked className="h-6 w-6" />
                 </span>
                 <span className="flex-1">
-                  <span className="block font-display text-lg font-black text-[color:var(--qa-maroon)]">
+                  <span className="block font-display text-lg font-black text-[color:var(--maroon)]">
                     {unit.title}
                   </span>
                   {unit.summary && (
@@ -77,24 +77,24 @@ export function CurriculumExplorer({ subject }: { subject: Subject }) {
                     </span>
                   )}
                 </span>
-                <span className="hidden shrink-0 rounded-full bg-[color:var(--qa-maroon)]/10 px-3 py-1 text-xs font-black text-[color:var(--qa-maroon)] sm:block">
+                <span className="hidden shrink-0 rounded-full bg-[color:var(--maroon)]/10 px-3 py-1 text-xs font-black text-[color:var(--maroon)] sm:block">
                   {count} نشاط
                 </span>
                 <ChevronDown
                   className={cn(
-                    'h-6 w-6 shrink-0 text-[color:var(--qa-maroon)] transition-transform',
+                    'h-6 w-6 shrink-0 text-[color:var(--maroon)] transition-transform',
                     isOpen && 'rotate-180'
                   )}
                 />
               </button>
 
               {isOpen && (
-                <div className="border-t border-[color:var(--qa-gold)]/20 bg-black/[0.015] p-5">
+                <div className="border-t border-[color:var(--gold)]/20 bg-black/[0.015] p-5">
                   <div className="space-y-6">
                     {unit.lessons.map((lesson) => (
                       <div key={lesson.id}>
-                        <div className="mb-3 flex items-center gap-2 text-[color:var(--qa-maroon)]">
-                          <FolderOpen className="h-5 w-5 text-[color:var(--qa-gold)]" />
+                        <div className="mb-3 flex items-center gap-2 text-[color:var(--maroon)]">
+                          <FolderOpen className="h-5 w-5 text-[color:var(--gold)]" />
                           <h4 className="font-display text-base font-black">
                             {lesson.title}
                           </h4>
@@ -109,7 +109,7 @@ export function CurriculumExplorer({ subject }: { subject: Subject }) {
                             ))}
                           </div>
                         ) : (
-                          <div className="flex items-center gap-2 rounded-2xl border border-dashed border-[color:var(--qa-gold)]/40 p-4 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-2 rounded-2xl border border-dashed border-[color:var(--gold)]/40 p-4 text-sm text-muted-foreground">
                             <Inbox className="h-4 w-4" />
                             لا توجد أنشطة في هذا الدرس بعد — قريبًا بإذن الله.
                           </div>

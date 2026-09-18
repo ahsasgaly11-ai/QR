@@ -36,7 +36,7 @@ export function ActivityCard({
 
   return (
     <div
-      className="card-3d group relative flex flex-col overflow-hidden rounded-3xl border border-[color:var(--qa-gold)]/20 bg-[color:var(--qa-cream)] p-5 shadow-lg shadow-black/5"
+      className="card-premium group relative flex flex-col overflow-hidden rounded-3xl border border-[color:var(--gold)]/20 bg-[color:var(--surface)] p-5 shadow-lg shadow-black/5"
       style={{ animationDelay: `${index * 60}ms` }}
     >
       {/* top accent ribbon */}
@@ -50,7 +50,7 @@ export function ActivityCard({
         </div>
       </div>
 
-      <h3 className="font-display text-lg font-black leading-snug text-[color:var(--qa-maroon)]">
+      <h3 className="font-display text-lg font-black leading-snug text-[color:var(--maroon)]">
         {activity.title}
       </h3>
       {activity.description && (
@@ -62,7 +62,7 @@ export function ActivityCard({
       <div className="mt-5 flex items-center gap-2">
         <Link
           href={`/play/${activity.id}`}
-          className="group/btn flex flex-1 items-center justify-center gap-2 rounded-xl bg-[color:var(--qa-maroon)] px-4 py-2.5 text-sm font-black text-white shadow-md shadow-[color:var(--qa-maroon)]/25 transition-all hover:-translate-y-0.5 hover:bg-[color:var(--qa-maroon-deep)]"
+          className="group/btn flex flex-1 items-center justify-center gap-2 rounded-xl bg-[color:var(--maroon)] px-4 py-2.5 text-sm font-black text-white shadow-md shadow-[color:var(--maroon)]/25 transition-all hover:-translate-y-0.5 hover:bg-[color:var(--maroon-700)]"
         >
           <Play className="h-4 w-4 fill-current transition-transform group-hover/btn:scale-110" />
           جرّب الآن
@@ -72,7 +72,7 @@ export function ActivityCard({
           download
           onClick={onDownload}
           className={cn(
-            'flex items-center justify-center gap-2 rounded-xl border-2 border-[color:var(--qa-gold)] px-4 py-2.5 text-sm font-black text-[color:var(--qa-maroon)] transition-all hover:-translate-y-0.5 hover:bg-[color:var(--qa-gold)]/15'
+            'flex items-center justify-center gap-2 rounded-xl border-2 border-[color:var(--gold)] px-4 py-2.5 text-sm font-black text-[color:var(--maroon)] transition-all hover:-translate-y-0.5 hover:bg-[color:var(--gold)]/15'
           )}
           title="تحميل النشاط للعمل دون اتصال"
         >

@@ -11,10 +11,10 @@ export const ACTIVITY_META: Record<
   ActivityType,
   { label: string; icon: string; color: string }
 > = {
-  experiment: { label: 'تجربة عملية', icon: 'flask', color: 'var(--qa-teal)' },
-  simulation: { label: 'محاكاة', icon: 'atom', color: 'var(--qa-sky)' },
-  quiz: { label: 'أسئلة تفاعلية', icon: 'help', color: 'var(--qa-gold)' },
-  game: { label: 'لعبة تعليمية', icon: 'gamepad', color: 'var(--qa-coral)' },
+  experiment: { label: 'تجربة عملية', icon: 'flask', color: 'var(--teal)' },
+  simulation: { label: 'محاكاة', icon: 'atom', color: 'var(--sky)' },
+  quiz: { label: 'أسئلة تفاعلية', icon: 'help', color: 'var(--gold)' },
+  game: { label: 'لعبة تعليمية', icon: 'gamepad', color: 'var(--coral)' },
 };
 
 export interface Activity {

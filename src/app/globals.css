@@ -4,75 +4,102 @@
 
 /* =========================================================================
    منصة مناهج قطر — Qatar Curriculum Platform
-   Design language: Qatar MOEHE identity (maroon + gold), the science
-   book's playful blue, the national flag's serrated edge, and the
-   emblem's heritage motifs (dhow, palms, crossed swords).
+   Design language: "Qatar Heritage Modern"
+   Refined MOEHE identity (maroon + gold) over warm editorial neutrals,
+   layered elevation, a grain-and-aurora atmosphere, and restrained motion.
    ========================================================================= */
 
 :root {
-  /* Brand palette --------------------------------------------------------- */
-  --qa-maroon: #8a1538;          /* Qatar maroon (official)            */
-  --qa-maroon-deep: #5f0e26;     /* deep maroon for shadows/depth      */
-  --qa-maroon-light: #b03654;    /* lighter maroon for highlights      */
-  --qa-gold: #c9a227;            /* heritage gold (Amir frame)         */
-  --qa-gold-light: #e7cf6f;      /* soft gold sheen                    */
-  --qa-sky: #1b9bd8;             /* science-book blue                  */
-  --qa-sky-light: #6fd0f2;       /* airy sky                           */
-  --qa-teal: #17a398;            /* experiments / simulations accent   */
-  --qa-coral: #ef5b3c;           /* the mascot's "3" ball accent       */
-  --qa-sand: #fbf6ec;            /* warm paper background              */
-  --qa-cream: #fffdf8;           /* card paper                         */
-  --qa-ink: #241a14;             /* warm near-black ink                */
+  /* --- Brand ------------------------------------------------------------- */
+  --maroon: #8a1538;
+  --maroon-700: #6e1029;
+  --maroon-800: #530a1e;
+  --maroon-300: #c06079;
+  --maroon-100: #f4dde3;
+  --gold: #b0892e;
+  --gold-500: #c9a227;
+  --gold-200: #ecd9a6;
+  --sky: #1a86c9;
+  --sky-200: #bfe3f5;
+  --teal: #12897f;
+  --coral: #e5573a;
 
-  /* shadcn / tailwind tokens (HSL triplets) ------------------------------- */
-  --background: 39 60% 96%;
-  --foreground: 25 30% 12%;
-  --card: 44 100% 99%;
-  --card-foreground: 25 30% 12%;
-  --popover: 44 100% 99%;
-  --popover-foreground: 25 30% 12%;
+  /* --- Warm neutral scale ----------------------------------------------- */
+  --paper: #faf6f0;
+  --surface: #fffdfa;
+  --surface-2: #f6efe5;
+  --ink: #211619;
+  --ink-2: #4b3d3a;
+  --muted: #6f6058;
+  --hairline: rgba(33, 22, 25, 0.09);
+  --hairline-strong: rgba(33, 22, 25, 0.14);
+
+  /* --- Elevation (layered, soft) ---------------------------------------- */
+  --shadow-sm: 0 1px 2px rgba(33, 22, 25, 0.06), 0 1px 3px rgba(33, 22, 25, 0.05);
+  --shadow-md: 0 2px 6px rgba(33, 22, 25, 0.05), 0 14px 30px -12px rgba(138, 21, 56, 0.20);
+  --shadow-lg: 0 4px 10px rgba(33, 22, 25, 0.06), 0 34px 64px -24px rgba(138, 21, 56, 0.30);
+  --shadow-gold: 0 10px 34px -14px rgba(176, 137, 46, 0.55);
+
+  /* --- shadcn/tailwind tokens (HSL) ------------------------------------- */
+  --background: 33 45% 96%;
+  --foreground: 340 12% 12%;
+  --card: 40 100% 99%;
+  --card-foreground: 340 12% 12%;
+  --popover: 40 100% 99%;
+  --popover-foreground: 340 12% 12%;
   --primary: 340 73% 31%;
-  --primary-foreground: 40 60% 97%;
-  --secondary: 45 68% 47%;
-  --secondary-foreground: 25 40% 15%;
-  --muted: 40 30% 90%;
-  --muted-foreground: 30 12% 40%;
-  --accent: 200 78% 48%;
+  --primary-foreground: 40 60% 98%;
+  --secondary: 42 60% 43%;
+  --secondary-foreground: 30 40% 15%;
+  --muted-c: 34 24% 90%;
+  --muted-foreground: 20 12% 40%;
+  --accent: 202 77% 45%;
   --accent-foreground: 0 0% 100%;
-  --destructive: 8 78% 52%;
+  --destructive: 9 76% 56%;
   --destructive-foreground: 0 0% 100%;
-  --border: 38 30% 85%;
-  --input: 38 30% 85%;
+  --border: 33 20% 86%;
+  --input: 33 20% 86%;
   --ring: 340 73% 31%;
-  --chart-1: 340 73% 41%;
-  --chart-2: 200 78% 48%;
-  --chart-3: 45 68% 47%;
-  --chart-4: 172 76% 36%;
-  --chart-5: 8 78% 58%;
-  --radius: 1rem;
+  --radius: 1.15rem;
 }
 
+:root[data-theme='dark'],
 .dark {
-  --qa-sand: #17110d;
-  --qa-cream: #221913;
-  --qa-ink: #f6ecdd;
-  --background: 25 35% 7%;
-  --foreground: 40 40% 92%;
-  --card: 25 30% 11%;
-  --card-foreground: 40 40% 92%;
-  --popover: 25 30% 11%;
-  --popover-foreground: 40 40% 92%;
-  --primary: 340 65% 55%;
-  --primary-foreground: 25 40% 8%;
-  --secondary: 45 60% 55%;
-  --secondary-foreground: 25 40% 8%;
-  --muted: 25 20% 18%;
-  --muted-foreground: 40 20% 65%;
-  --accent: 200 70% 55%;
-  --accent-foreground: 25 40% 8%;
-  --border: 25 20% 20%;
-  --input: 25 20% 22%;
-  --ring: 340 65% 55%;
+  --paper: #130c0e;
+  --surface: #1c1315;
+  --surface-2: #241a1c;
+  --ink: #f5ece4;
+  --ink-2: #d9c9c1;
+  --muted: #b3a099;
+  --hairline: rgba(245, 236, 228, 0.10);
+  --hairline-strong: rgba(245, 236, 228, 0.16);
+  --maroon: #d46a86;
+  --maroon-300: #e493a8;
+  --maroon-100: #3a1420;
+  --gold: #e3c26b;
+  --gold-200: #4a3c1c;
+  --sky: #59b6e8;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.4), 0 16px 34px -14px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 4px 10px rgba(0, 0, 0, 0.45), 0 36px 70px -26px rgba(0, 0, 0, 0.7);
+
+  --background: 340 18% 6%;
+  --foreground: 34 40% 92%;
+  --card: 340 15% 10%;
+  --card-foreground: 34 40% 92%;
+  --popover: 340 15% 10%;
+  --popover-foreground: 34 40% 92%;
+  --primary: 340 58% 62%;
+  --primary-foreground: 340 30% 8%;
+  --secondary: 42 60% 60%;
+  --secondary-foreground: 340 30% 8%;
+  --muted-c: 340 12% 18%;
+  --muted-foreground: 34 18% 68%;
+  --accent: 202 68% 60%;
+  --accent-foreground: 340 30% 8%;
+  --border: 340 12% 20%;
+  --input: 340 12% 22%;
+  --ring: 340 58% 62%;
 }
 
 * {
@@ -81,237 +108,283 @@
 
 html {
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background-color: hsl(var(--background));
-  color: hsl(var(--foreground));
+  background-color: var(--paper);
+  color: var(--ink);
   font-family: 'Tajawal', system-ui, sans-serif;
+  font-weight: 500;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
   overflow-x: hidden;
-  background-image:
-    radial-gradient(circle at 12% -5%, rgba(138, 21, 56, 0.07), transparent 42%),
-    radial-gradient(circle at 90% 0%, rgba(27, 155, 216, 0.07), transparent 40%),
-    radial-gradient(circle at 50% 120%, rgba(201, 162, 39, 0.08), transparent 45%);
+  position: relative;
+  min-height: 100vh;
+}
+
+/* Grain + aurora atmosphere (fixed, behind everything) */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(60% 55% at 15% -10%, rgba(138, 21, 56, 0.10), transparent 60%),
+    radial-gradient(55% 50% at 92% 0%, rgba(26, 134, 201, 0.10), transparent 60%),
+    radial-gradient(65% 60% at 50% 115%, rgba(176, 137, 46, 0.12), transparent 62%);
+  animation: aurora 24s ease-in-out infinite alternate;
+}
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.dark body::after { opacity: 0.08; }
+
+@keyframes aurora {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  100% { transform: translate3d(0, -3%, 0) scale(1.08); }
 }
 
 /* =========================================================================
-   Typography helpers
+   Typography
    ========================================================================= */
 .font-display {
-  font-family: 'Tajawal', system-ui, sans-serif;
-  font-weight: 900;
-  letter-spacing: -0.01em;
+  font-family: 'Reem Kufi', 'Tajawal', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.25;
+}
+.font-playful {
+  font-family: 'Baloo Bhaijaan 2', 'Tajawal', sans-serif;
+  font-weight: 800;
+}
+
+.eyebrow {
+  font-family: 'Reem Kufi', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  font-size: 0.82rem;
+  color: var(--gold);
+  text-transform: none;
 }
 
 .text-gradient-maroon {
-  background: linear-gradient(120deg, var(--qa-maroon), var(--qa-maroon-light) 55%, var(--qa-gold));
+  background: linear-gradient(105deg, var(--maroon), var(--maroon-300) 60%, var(--gold));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
-
 .text-gradient-sky {
-  background: linear-gradient(120deg, var(--qa-sky), var(--qa-teal));
+  background: linear-gradient(105deg, var(--sky), var(--teal));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
 /* =========================================================================
-   Qatar flag — serrated edge motif (nine points)
+   Qatar flag serration — used sparingly as a refined accent
    ========================================================================= */
-.flag-serration {
-  --serr: 14px;
-  background: linear-gradient(90deg, var(--qa-maroon), var(--qa-maroon-deep));
-  -webkit-mask: repeating-linear-gradient(
-      to bottom,
-      #000 0 calc(100% / 9 - var(--serr)),
-      transparent calc(100% / 9 - var(--serr)) calc(100% / 9)
-    ),
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: source-out;
-  mask-composite: subtract;
-}
-
 .flag-strip {
   background-image: repeating-linear-gradient(
-    -35deg,
-    var(--qa-maroon) 0 18px,
-    var(--qa-gold) 18px 20px,
-    var(--qa-maroon) 20px 22px
+    -37deg,
+    var(--maroon) 0 20px,
+    var(--gold-200) 20px 22px,
+    var(--maroon) 22px 24px
   );
+}
+.flag-hairline {
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--gold), var(--maroon), var(--gold), transparent);
 }
 
 /* =========================================================================
-   3D scene helpers & cinematic motion
+   Surfaces & components
    ========================================================================= */
-.scene {
-  perspective: 1600px;
-  perspective-origin: 50% 40%;
+.surface {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  box-shadow: var(--shadow-sm);
 }
 
-.preserve-3d {
-  transform-style: preserve-3d;
-}
-
-/* --- The 3D book (curriculum cover) --- */
-.book-3d {
-  transform-style: preserve-3d;
-  transform: rotateY(-28deg) rotateX(6deg);
-  transition: transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
-  animation: book-float 7s ease-in-out infinite;
-}
-.book-3d:hover {
-  transform: rotateY(-8deg) rotateX(2deg) scale(1.03);
-}
-.book-face {
-  position: absolute;
-  inset: 0;
-  border-radius: 10px 16px 16px 10px;
-  backface-visibility: hidden;
-}
-
-@keyframes book-float {
-  0%, 100% { transform: rotateY(-28deg) rotateX(6deg) translateY(0); }
-  50% { transform: rotateY(-24deg) rotateX(4deg) translateY(-16px); }
-}
-
-/* --- floating orbs / particles --- */
-@keyframes float-slow {
-  0%, 100% { transform: translateY(0) translateX(0); }
-  50% { transform: translateY(-28px) translateX(10px); }
-}
-@keyframes float-mid {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-18px) rotate(8deg); }
-}
-.float-slow { animation: float-slow 9s ease-in-out infinite; }
-.float-mid { animation: float-mid 6s ease-in-out infinite; }
-
-@keyframes spin-slow {
-  to { transform: rotate(360deg); }
-}
-.spin-slow { animation: spin-slow 26s linear infinite; }
-.spin-slower { animation: spin-slow 60s linear infinite; }
-
-/* --- cinematic entrance --- */
-@keyframes rise-in {
-  from { opacity: 0; transform: translateY(38px) scale(0.97); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-.rise-in {
-  opacity: 0;
-  animation: rise-in 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-@keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-.fade-in { animation: fade-in 1.2s ease forwards; }
-
-/* reveal-on-scroll (JS toggles .is-visible) */
-.reveal {
-  opacity: 0;
-  transform: translateY(42px);
-  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: opacity, transform;
-}
-.reveal.is-visible {
-  opacity: 1;
-  transform: none;
-}
-
-/* --- gold shimmer sweep --- */
-@keyframes shimmer {
-  0% { background-position: -160% 0; }
-  100% { background-position: 260% 0; }
-}
-.shimmer {
-  background: linear-gradient(
-    100deg,
-    transparent 20%,
-    rgba(231, 207, 111, 0.55) 45%,
-    rgba(255, 255, 255, 0.7) 50%,
-    rgba(231, 207, 111, 0.55) 55%,
-    transparent 80%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 3.5s linear infinite;
-}
-
-/* =========================================================================
-   Surfaces
-   ========================================================================= */
 .glass {
-  background: rgba(255, 253, 248, 0.72);
-  backdrop-filter: blur(14px) saturate(140%);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
-  border: 1px solid rgba(201, 162, 39, 0.28);
-}
-.dark .glass {
-  background: rgba(34, 25, 19, 0.66);
-  border-color: rgba(201, 162, 39, 0.22);
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid var(--hairline);
 }
 
-.card-3d {
-  transform-style: preserve-3d;
-  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1),
-    box-shadow 0.45s ease;
+.card-premium {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  transition: transform 0.5s cubic-bezier(0.2, 0.9, 0.2, 1), box-shadow 0.5s ease, border-color 0.5s ease;
   will-change: transform;
 }
-.card-3d:hover {
-  transform: translateY(-10px) rotateX(4deg) rotateY(-4deg);
-  box-shadow: 0 30px 60px -22px rgba(138, 21, 56, 0.4);
+.card-premium:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-lg);
+  border-color: color-mix(in srgb, var(--gold) 45%, transparent);
 }
 
-.gold-ring {
-  box-shadow: 0 0 0 1px rgba(201, 162, 39, 0.5),
-    0 0 0 5px rgba(201, 162, 39, 0.14);
-}
-
-/* thin gold hairline divider with a diamond, echoing the ministry logo */
+/* thin gold divider with a heritage diamond */
 .diamond-divider {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.75rem;
-  color: var(--qa-gold);
+  gap: 0.7rem;
+  color: var(--gold);
 }
 .diamond-divider::before,
 .diamond-divider::after {
   content: '';
   height: 1px;
-  flex: 1;
-  background: linear-gradient(90deg, transparent, var(--qa-gold), transparent);
+  width: 2.4rem;
+  background: linear-gradient(90deg, transparent, var(--gold));
+}
+.diamond-divider::after {
+  background: linear-gradient(90deg, var(--gold), transparent);
 }
 
-/* subtle grid backdrop for hero / stat sections */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  padding: 0.3rem 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.gold-ring {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--gold) 55%, transparent),
+    0 0 0 5px color-mix(in srgb, var(--gold) 15%, transparent);
+}
+
+/* buttons */
+.btn-primary {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 1rem;
+  background: linear-gradient(180deg, var(--maroon), var(--maroon-700));
+  color: #fff;
+  font-weight: 800;
+  box-shadow: var(--shadow-md);
+  transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.2, 1), box-shadow 0.35s ease, filter 0.35s ease;
+  overflow: hidden;
+}
+.btn-primary:hover { transform: translateY(-2px); filter: brightness(1.06); box-shadow: var(--shadow-lg); }
+.btn-primary::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,.28) 50%, transparent 70%);
+  transform: translateX(-120%);
+  transition: transform 0.7s ease;
+}
+.btn-primary:hover::after { transform: translateX(120%); }
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 1rem;
+  border: 1.5px solid color-mix(in srgb, var(--gold) 55%, transparent);
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
+  color: var(--maroon);
+  font-weight: 800;
+  transition: transform 0.35s ease, background 0.35s ease, border-color 0.35s ease;
+}
+.btn-ghost:hover { transform: translateY(-2px); background: color-mix(in srgb, var(--gold) 12%, transparent); }
+
+/* =========================================================================
+   3D scene helpers & cinematic motion
+   ========================================================================= */
+.scene { perspective: 1800px; perspective-origin: 50% 42%; }
+.preserve-3d { transform-style: preserve-3d; }
+
+.book-3d {
+  transform-style: preserve-3d;
+  transform: rotateY(-26deg) rotateX(7deg);
+  transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: book-float 8s ease-in-out infinite;
+}
+.book-3d:hover { transform: rotateY(-10deg) rotateX(3deg) scale(1.02); animation-play-state: paused; }
+.book-face { position: absolute; inset: 0; border-radius: 8px 16px 16px 8px; backface-visibility: hidden; }
+@keyframes book-float {
+  0%, 100% { transform: rotateY(-26deg) rotateX(7deg) translateY(0); }
+  50% { transform: rotateY(-22deg) rotateX(5deg) translateY(-18px); }
+}
+
+@keyframes float-slow { 0%,100%{transform:translateY(0) translateX(0)} 50%{transform:translateY(-26px) translateX(10px)} }
+@keyframes float-mid { 0%,100%{transform:translateY(0) rotate(0)} 50%{transform:translateY(-16px) rotate(6deg)} }
+.float-slow { animation: float-slow 10s ease-in-out infinite; }
+.float-mid { animation: float-mid 6.5s ease-in-out infinite; }
+
+@keyframes spin-slow { to { transform: rotate(360deg); } }
+.spin-slow { animation: spin-slow 28s linear infinite; }
+.spin-slower { animation: spin-slow 70s linear infinite; }
+
+@keyframes rise-in { from { opacity: 0; transform: translateY(34px) scale(0.98); } to { opacity: 1; transform: none; } }
+.rise-in { opacity: 0; animation: rise-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+.fade-in { animation: fade-in 1.4s ease forwards; }
+
+.reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+.reveal.is-visible { opacity: 1; transform: none; }
+
+@keyframes shimmer { 0% { background-position: -160% 0; } 100% { background-position: 260% 0; } }
+.shimmer {
+  background: linear-gradient(100deg, transparent 20%, rgba(236,217,166,.5) 45%, rgba(255,255,255,.7) 50%, rgba(236,217,166,.5) 55%, transparent 80%);
+  background-size: 200% 100%;
+  animation: shimmer 4s linear infinite;
+}
+
+/* refined dotted/grid backdrops */
 .grid-backdrop {
   background-image:
-    linear-gradient(rgba(138, 21, 56, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(138, 21, 56, 0.05) 1px, transparent 1px);
-  background-size: 46px 46px;
+    linear-gradient(color-mix(in srgb, var(--maroon) 8%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--maroon) 8%, transparent) 1px, transparent 1px);
+  background-size: 48px 48px;
   -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000, transparent);
   mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000, transparent);
 }
-
-/* custom scrollbar */
-::-webkit-scrollbar { width: 12px; height: 12px; }
-::-webkit-scrollbar-track { background: hsl(var(--muted)); }
-::-webkit-scrollbar-thumb {
-  background: linear-gradient(var(--qa-maroon), var(--qa-maroon-deep));
-  border-radius: 999px;
-  border: 3px solid hsl(var(--muted));
+.dot-backdrop {
+  background-image: radial-gradient(color-mix(in srgb, var(--maroon) 14%, transparent) 1.1px, transparent 1.2px);
+  background-size: 22px 22px;
+  -webkit-mask-image: radial-gradient(ellipse 75% 70% at 50% 45%, #000, transparent);
+  mask-image: radial-gradient(ellipse 75% 70% at 50% 45%, #000, transparent);
 }
+
+/* scrollbar */
+::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar-track { background: var(--surface-2); }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(var(--maroon), var(--maroon-700));
+  border-radius: 999px;
+  border: 3px solid var(--surface-2);
+}
+
+::selection { background: color-mix(in srgb, var(--gold) 45%, transparent); color: var(--ink); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
+    transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-  .book-3d { transform: rotateY(-18deg) rotateX(4deg); }
+  .book-3d { transform: rotateY(-16deg) rotateX(4deg); }
 }

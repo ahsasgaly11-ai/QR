@@ -36,7 +36,7 @@ export default async function PlayPage({
     <div className="mx-auto max-w-6xl px-6 py-10">
       {/* breadcrumb */}
       <nav className="mb-5 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-        <Link href="/" className="flex items-center gap-1 hover:text-[color:var(--qa-maroon)]">
+        <Link href="/" className="flex items-center gap-1 hover:text-[color:var(--maroon)]">
           <Home className="h-4 w-4" /> الرئيسية
         </Link>
         <ChevronLeft className="h-4 w-4" />
@@ -44,7 +44,7 @@ export default async function PlayPage({
           <>
             <Link
               href={`/subject/${subject.id}`}
-              className="hover:text-[color:var(--qa-maroon)]"
+              className="hover:text-[color:var(--maroon)]"
             >
               {subject.title}
             </Link>
@@ -60,7 +60,7 @@ export default async function PlayPage({
         {lesson && <span className="font-bold text-foreground">{lesson.title}</span>}
       </nav>
 
-      <h1 className="mb-1 font-display text-3xl font-black text-[color:var(--qa-maroon)] sm:text-4xl">
+      <h1 className="mb-1 font-display text-3xl font-black text-[color:var(--maroon)] sm:text-4xl">
         {activity.title}
       </h1>
       {activity.description && (
@@ -71,7 +71,7 @@ export default async function PlayPage({
 
       {related.length > 0 && (
         <section className="mt-14">
-          <h2 className="mb-5 font-display text-2xl font-black text-[color:var(--qa-maroon)]">
+          <h2 className="mb-5 font-display text-2xl font-black text-[color:var(--maroon)]">
             أنشطة أخرى في الدرس نفسه
           </h2>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

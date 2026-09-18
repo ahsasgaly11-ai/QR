@@ -145,13 +145,13 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
   }
 
   const inputCls =
-    'w-full rounded-xl border border-[color:var(--qa-gold)]/30 bg-white px-4 py-2.5 text-sm font-medium text-foreground outline-none transition focus:border-[color:var(--qa-maroon)] focus:ring-2 focus:ring-[color:var(--qa-maroon)]/20';
-  const labelCls = 'mb-1.5 block text-sm font-black text-[color:var(--qa-maroon)]';
+    'w-full rounded-xl border border-[color:var(--gold)]/30 bg-white px-4 py-2.5 text-sm font-medium text-foreground outline-none transition focus:border-[color:var(--maroon)] focus:ring-2 focus:ring-[color:var(--maroon)]/20';
+  const labelCls = 'mb-1.5 block text-sm font-black text-[color:var(--maroon)]';
 
   if (done) {
     return (
-      <div className="rounded-3xl border border-[color:var(--qa-gold)]/30 bg-[color:var(--qa-cream)] p-8 shadow-lg">
-        <div className="mb-4 flex items-center gap-3 text-[color:var(--qa-teal)]">
+      <div className="rounded-3xl border border-[color:var(--gold)]/30 bg-[color:var(--surface)] p-8 shadow-lg">
+        <div className="mb-4 flex items-center gap-3 text-[color:var(--teal)]">
           <CheckCircle2 className="h-9 w-9" />
           <h3 className="font-display text-2xl font-black">
             {done === 'firebase' ? 'تم رفع النشاط بنجاح!' : 'النشاط جاهز للإضافة'}
@@ -215,7 +215,7 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
             setDescription('');
             setFile(null);
           }}
-          className="mt-6 rounded-xl bg-[color:var(--qa-maroon)] px-6 py-2.5 text-sm font-black text-white hover:bg-[color:var(--qa-maroon-deep)]"
+          className="mt-6 rounded-xl bg-[color:var(--maroon)] px-6 py-2.5 text-sm font-black text-white hover:bg-[color:var(--maroon-700)]"
         >
           رفع نشاط آخر
         </button>
@@ -226,11 +226,11 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
   return (
     <form
       onSubmit={onSubmit}
-      className="rounded-3xl border border-[color:var(--qa-gold)]/30 bg-[color:var(--qa-cream)] p-6 shadow-lg sm:p-8"
+      className="rounded-3xl border border-[color:var(--gold)]/30 bg-[color:var(--surface)] p-6 shadow-lg sm:p-8"
     >
       {!isFirebaseConfigured && (
-        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-[color:var(--qa-sky)]/30 bg-[color:var(--qa-sky)]/10 p-4 text-sm text-[color:var(--qa-maroon)]">
-          <Info className="mt-0.5 h-5 w-5 shrink-0 text-[color:var(--qa-sky)]" />
+        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-[color:var(--sky)]/30 bg-[color:var(--sky)]/10 p-4 text-sm text-[color:var(--maroon)]">
+          <Info className="mt-0.5 h-5 w-5 shrink-0 text-[color:var(--sky)]" />
           <p>
             <b>وضع العرض:</b> Firebase غير مُعدّ حاليًا، لذا سيُنشئ النموذج
             تعليمات وكائن بيانات جاهزًا للإضافة. بعد إعداد Firebase سيتم الرفع
@@ -322,7 +322,7 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
               className={`rounded-xl px-4 py-2 text-sm font-bold transition ${
                 type === t
                   ? 'text-white shadow-md'
-                  : 'bg-white text-[color:var(--qa-maroon)] hover:bg-black/5'
+                  : 'bg-white text-[color:var(--maroon)] hover:bg-black/5'
               }`}
               style={type === t ? { background: ACTIVITY_META[t].color } : {}}
             >
@@ -334,10 +334,10 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
 
       <div className="mt-5">
         <label className={labelCls}>ملف النشاط (HTML)</label>
-        <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[color:var(--qa-gold)]/50 bg-white/60 p-8 text-center transition hover:border-[color:var(--qa-maroon)] hover:bg-[color:var(--qa-gold)]/5">
+        <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[color:var(--gold)]/50 bg-[color:var(--surface)]/70 p-8 text-center transition hover:border-[color:var(--maroon)] hover:bg-[color:var(--gold)]/5">
           {file ? (
             <>
-              <FileCode2 className="h-9 w-9 text-[color:var(--qa-teal)]" />
+              <FileCode2 className="h-9 w-9 text-[color:var(--teal)]" />
               <span className="font-bold text-foreground">{file.name}</span>
               <span className="text-xs text-muted-foreground">
                 {(file.size / 1024).toFixed(1)} كيلوبايت — اضغط للتغيير
@@ -345,8 +345,8 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
             </>
           ) : (
             <>
-              <UploadCloud className="h-9 w-9 text-[color:var(--qa-maroon)]" />
-              <span className="font-bold text-[color:var(--qa-maroon)]">
+              <UploadCloud className="h-9 w-9 text-[color:var(--maroon)]" />
+              <span className="font-bold text-[color:var(--maroon)]">
                 اسحب ملف HTML هنا أو اضغط للاختيار
               </span>
               <span className="text-xs text-muted-foreground">
@@ -364,7 +364,7 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
       </div>
 
       {error && (
-        <p className="mt-4 rounded-xl bg-[color:var(--qa-coral)]/15 px-4 py-2.5 text-sm font-bold text-[color:var(--qa-coral)]">
+        <p className="mt-4 rounded-xl bg-[color:var(--coral)]/15 px-4 py-2.5 text-sm font-bold text-[color:var(--coral)]">
           {error}
         </p>
       )}
@@ -372,7 +372,7 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
       <button
         type="submit"
         disabled={busy}
-        className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-[color:var(--qa-maroon)] px-6 py-3.5 text-base font-black text-white shadow-xl shadow-[color:var(--qa-maroon)]/25 transition hover:-translate-y-0.5 hover:bg-[color:var(--qa-maroon-deep)] disabled:opacity-60"
+        className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-[color:var(--maroon)] px-6 py-3.5 text-base font-black text-white shadow-xl shadow-[color:var(--maroon)]/25 transition hover:-translate-y-0.5 hover:bg-[color:var(--maroon-700)] disabled:opacity-60"
       >
         {busy ? (
           <>

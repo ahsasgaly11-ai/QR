@@ -29,14 +29,14 @@ export default async function HomePage() {
       <section className="relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0 grid-backdrop" />
         {/* floating orbs */}
-        <div className="pointer-events-none absolute right-[8%] top-24 h-40 w-40 rounded-full bg-[color:var(--qa-sky)]/20 blur-3xl float-slow" />
-        <div className="pointer-events-none absolute left-[6%] top-64 h-52 w-52 rounded-full bg-[color:var(--qa-gold)]/20 blur-3xl float-mid" />
-        <div className="pointer-events-none absolute bottom-10 right-1/3 h-44 w-44 rounded-full bg-[color:var(--qa-maroon)]/15 blur-3xl float-slow" />
+        <div className="pointer-events-none absolute right-[8%] top-24 h-40 w-40 rounded-full bg-[color:var(--sky)]/20 blur-3xl float-slow" />
+        <div className="pointer-events-none absolute left-[6%] top-64 h-52 w-52 rounded-full bg-[color:var(--gold)]/20 blur-3xl float-mid" />
+        <div className="pointer-events-none absolute bottom-10 right-1/3 h-44 w-44 rounded-full bg-[color:var(--maroon)]/15 blur-3xl float-slow" />
 
         <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-6 py-16 lg:grid-cols-2 lg:py-24">
           <div className="order-2 text-center lg:order-1 lg:text-right">
-            <div className="rise-in inline-flex items-center gap-2 rounded-full border border-[color:var(--qa-gold)]/40 bg-white/70 px-4 py-1.5 text-xs font-bold text-[color:var(--qa-maroon)] shadow-sm">
-              <Sparkles className="h-4 w-4 text-[color:var(--qa-gold)]" />
+            <div className="rise-in inline-flex items-center gap-2 rounded-full border border-[color:var(--gold)]/40 bg-[color:var(--surface)]/75 px-4 py-1.5 text-xs font-bold text-[color:var(--maroon)] shadow-sm">
+              <Sparkles className="h-4 w-4 text-[color:var(--gold)]" />
               منصة تعليمية تفاعلية • دولة قطر
             </div>
 
@@ -65,14 +65,14 @@ export default async function HomePage() {
             >
               <Link
                 href="/browse"
-                className="group flex items-center gap-2 rounded-2xl bg-[color:var(--qa-maroon)] px-7 py-3.5 text-base font-black text-white shadow-xl shadow-[color:var(--qa-maroon)]/30 transition-all hover:-translate-y-1 hover:bg-[color:var(--qa-maroon-deep)]"
+                className="group flex items-center gap-2 rounded-2xl bg-[color:var(--maroon)] px-7 py-3.5 text-base font-black text-white shadow-xl shadow-[color:var(--maroon)]/30 transition-all hover:-translate-y-1 hover:bg-[color:var(--maroon-700)]"
               >
                 ابدأ الاستكشاف
                 <ArrowLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" />
               </Link>
               <Link
                 href="/dashboard"
-                className="flex items-center gap-2 rounded-2xl border-2 border-[color:var(--qa-gold)] bg-white/60 px-7 py-3.5 text-base font-black text-[color:var(--qa-maroon)] transition-all hover:-translate-y-1 hover:bg-[color:var(--qa-gold)]/15"
+                className="flex items-center gap-2 rounded-2xl border-2 border-[color:var(--gold)] bg-[color:var(--surface)]/70 px-7 py-3.5 text-base font-black text-[color:var(--maroon)] transition-all hover:-translate-y-1 hover:bg-[color:var(--gold)]/15"
               >
                 لوحة الإحصاءات
               </Link>
@@ -82,7 +82,7 @@ export default async function HomePage() {
           {/* 3D book */}
           <div className="order-1 flex justify-center lg:order-2">
             <div className="fade-in relative">
-              <div className="absolute -inset-8 rounded-full bg-gradient-to-tr from-[color:var(--qa-sky)]/15 to-[color:var(--qa-gold)]/15 blur-2xl" />
+              <div className="absolute -inset-8 rounded-full bg-gradient-to-tr from-[color:var(--sky)]/15 to-[color:var(--gold)]/15 blur-2xl" />
               <div className="relative">
                 <Book3D />
               </div>
@@ -102,7 +102,7 @@ export default async function HomePage() {
           <p className="diamond-divider mx-auto max-w-xs text-sm font-black">
             كيف تعمل المنصّة؟
           </p>
-          <h2 className="mt-3 font-display text-3xl font-black text-[color:var(--qa-maroon)] sm:text-4xl">
+          <h2 className="mt-3 font-display text-3xl font-black text-[color:var(--maroon)] sm:text-4xl">
             ثلاث خطوات نحو تعلّم ممتع
           </h2>
         </Reveal>
@@ -113,23 +113,23 @@ export default async function HomePage() {
               icon: Layers,
               title: 'تصفّح حسب المنهج',
               desc: 'اختر المادة ثم المستوى فالوحدة فالدرس لتصل إلى الأنشطة المناسبة.',
-              color: 'var(--qa-maroon)',
+              color: 'var(--maroon)',
             },
             {
               icon: MonitorPlay,
               title: 'جرّب مباشرة',
               desc: 'شغّل التجربة أو المحاكاة أو اللعبة داخل المتصفّح دون أي تثبيت.',
-              color: 'var(--qa-sky)',
+              color: 'var(--sky)',
             },
             {
               icon: DownloadCloud,
               title: 'حمّل واستخدم دون اتصال',
               desc: 'نزّل النشاط كملف HTML واحد يعمل على أي جهاز في الصف أو المنزل.',
-              color: 'var(--qa-teal)',
+              color: 'var(--teal)',
             },
           ].map((step, i) => (
             <Reveal key={step.title} delay={i * 120}>
-              <div className="card-3d relative h-full overflow-hidden rounded-3xl border border-[color:var(--qa-gold)]/20 bg-[color:var(--qa-cream)] p-7 shadow-lg">
+              <div className="card-premium relative h-full overflow-hidden rounded-3xl border border-[color:var(--gold)]/20 bg-[color:var(--surface)] p-7 shadow-lg">
                 <span
                   className="absolute left-5 top-5 font-display text-6xl font-black opacity-10"
                   aria-hidden
@@ -142,7 +142,7 @@ export default async function HomePage() {
                 >
                   <step.icon className="h-8 w-8" />
                 </span>
-                <h3 className="mt-5 font-display text-xl font-black text-[color:var(--qa-maroon)]">
+                <h3 className="mt-5 font-display text-xl font-black text-[color:var(--maroon)]">
                   {step.title}
                 </h3>
                 <p className="mt-2 text-sm leading-7 text-muted-foreground">
@@ -158,16 +158,16 @@ export default async function HomePage() {
       <section className="relative overflow-hidden py-16">
         <div className="mx-auto max-w-7xl px-6">
           <Reveal className="mb-10 text-center">
-            <h2 className="font-display text-3xl font-black text-[color:var(--qa-maroon)] sm:text-4xl">
+            <h2 className="font-display text-3xl font-black text-[color:var(--maroon)] sm:text-4xl">
               أربعة أنواع من الأنشطة التفاعلية
             </h2>
           </Reveal>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              { icon: FlaskConical, label: 'تجارب عملية', color: 'var(--qa-teal)' },
-              { icon: Atom, label: 'محاكاة تفاعلية', color: 'var(--qa-sky)' },
-              { icon: HelpCircle, label: 'أسئلة وتقويم', color: 'var(--qa-gold)' },
-              { icon: Gamepad2, label: 'ألعاب تعليمية', color: 'var(--qa-coral)' },
+              { icon: FlaskConical, label: 'تجارب عملية', color: 'var(--teal)' },
+              { icon: Atom, label: 'محاكاة تفاعلية', color: 'var(--sky)' },
+              { icon: HelpCircle, label: 'أسئلة وتقويم', color: 'var(--gold)' },
+              { icon: Gamepad2, label: 'ألعاب تعليمية', color: 'var(--coral)' },
             ].map((t, i) => (
               <Reveal key={t.label} delay={i * 90}>
                 <div
@@ -188,14 +188,14 @@ export default async function HomePage() {
       <section className="mx-auto max-w-7xl px-6 py-16">
         <Reveal className="mb-10 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-sm font-black text-[color:var(--qa-gold)]">المواد الدراسية</p>
-            <h2 className="mt-1 font-display text-3xl font-black text-[color:var(--qa-maroon)] sm:text-4xl">
+            <p className="text-sm font-black text-[color:var(--gold)]">المواد الدراسية</p>
+            <h2 className="mt-1 font-display text-3xl font-black text-[color:var(--maroon)] sm:text-4xl">
               اختر مادّتك
             </h2>
           </div>
           <Link
             href="/browse"
-            className="flex items-center gap-1 text-sm font-black text-[color:var(--qa-maroon)] hover:underline"
+            className="flex items-center gap-1 text-sm font-black text-[color:var(--maroon)] hover:underline"
           >
             كل المواد <ArrowLeft className="h-4 w-4" />
           </Link>
@@ -206,7 +206,7 @@ export default async function HomePage() {
             const available = s.grades.length > 0;
             const card = (
               <div
-                className="card-3d relative flex h-56 flex-col justify-between overflow-hidden rounded-3xl p-6 text-white shadow-xl"
+                className="card-premium relative flex h-56 flex-col justify-between overflow-hidden rounded-3xl p-6 text-white shadow-xl"
                 style={{
                   background: `linear-gradient(135deg, ${s.color}, ${s.accent})`,
                 }}
@@ -244,8 +244,8 @@ export default async function HomePage() {
       {/* ===================== FEATURED ===================== */}
       <section className="mx-auto max-w-7xl px-6 py-16">
         <Reveal className="mb-10 text-center">
-          <p className="text-sm font-black text-[color:var(--qa-gold)]">الأكثر تفاعلاً</p>
-          <h2 className="mt-1 font-display text-3xl font-black text-[color:var(--qa-maroon)] sm:text-4xl">
+          <p className="text-sm font-black text-[color:var(--gold)]">الأكثر تفاعلاً</p>
+          <h2 className="mt-1 font-display text-3xl font-black text-[color:var(--maroon)] sm:text-4xl">
             أنشطة مميّزة
           </h2>
         </Reveal>
@@ -261,9 +261,9 @@ export default async function HomePage() {
       {/* ===================== CTA ===================== */}
       <section className="mx-auto max-w-7xl px-6 pb-8">
         <Reveal>
-          <div className="relative overflow-hidden rounded-[2rem] bg-[color:var(--qa-maroon)] p-10 text-center text-white shadow-2xl md:p-16">
+          <div className="relative overflow-hidden rounded-[2rem] bg-[color:var(--maroon)] p-10 text-center text-white shadow-2xl md:p-16">
             <div className="pointer-events-none absolute inset-0 grid-backdrop opacity-40" />
-            <div className="pointer-events-none absolute -right-10 -top-10 h-48 w-48 rounded-full bg-[color:var(--qa-gold)]/20 blur-2xl spin-slower" />
+            <div className="pointer-events-none absolute -right-10 -top-10 h-48 w-48 rounded-full bg-[color:var(--gold)]/20 blur-2xl spin-slower" />
             <h2 className="relative font-display text-3xl font-black sm:text-4xl">
               هل لديك نشاط تفاعلي جاهز؟
             </h2>
@@ -273,7 +273,7 @@ export default async function HomePage() {
             </p>
             <Link
               href="/admin"
-              className="relative mt-7 inline-flex items-center gap-2 rounded-2xl bg-[color:var(--qa-gold)] px-8 py-3.5 font-black text-[color:var(--qa-maroon-deep)] shadow-lg transition-transform hover:-translate-y-1"
+              className="relative mt-7 inline-flex items-center gap-2 rounded-2xl bg-[color:var(--gold)] px-8 py-3.5 font-black text-[color:var(--maroon-700)] shadow-lg transition-transform hover:-translate-y-1"
             >
               ارفع نشاطك الآن
             </Link>

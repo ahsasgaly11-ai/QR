@@ -63,7 +63,7 @@ export function ActivityPlayer({ activity }: { activity: Activity }) {
               setLoading(true);
               setKey((k) => k + 1);
             }}
-            className="flex items-center gap-1.5 rounded-xl border border-[color:var(--qa-gold)]/40 bg-white/60 px-3 py-2 text-sm font-bold text-[color:var(--qa-maroon)] transition hover:bg-[color:var(--qa-gold)]/10"
+            className="flex items-center gap-1.5 rounded-xl border border-[color:var(--gold)]/40 bg-[color:var(--surface)]/70 px-3 py-2 text-sm font-bold text-[color:var(--maroon)] transition hover:bg-[color:var(--gold)]/10"
             title="إعادة تشغيل"
           >
             <RefreshCw className="h-4 w-4" />
@@ -72,13 +72,13 @@ export function ActivityPlayer({ activity }: { activity: Activity }) {
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 rounded-xl border border-[color:var(--qa-gold)]/40 bg-white/60 px-3 py-2 text-sm font-bold text-[color:var(--qa-maroon)] transition hover:bg-[color:var(--qa-gold)]/10"
+            className="flex items-center gap-1.5 rounded-xl border border-[color:var(--gold)]/40 bg-[color:var(--surface)]/70 px-3 py-2 text-sm font-bold text-[color:var(--maroon)] transition hover:bg-[color:var(--gold)]/10"
           >
             <ExternalLink className="h-4 w-4" /> فتح في نافذة
           </a>
           <button
             onClick={onFullscreen}
-            className="flex items-center gap-1.5 rounded-xl border border-[color:var(--qa-gold)]/40 bg-white/60 px-3 py-2 text-sm font-bold text-[color:var(--qa-maroon)] transition hover:bg-[color:var(--qa-gold)]/10"
+            className="flex items-center gap-1.5 rounded-xl border border-[color:var(--gold)]/40 bg-[color:var(--surface)]/70 px-3 py-2 text-sm font-bold text-[color:var(--maroon)] transition hover:bg-[color:var(--gold)]/10"
           >
             <Maximize2 className="h-4 w-4" /> ملء الشاشة
           </button>
@@ -86,7 +86,7 @@ export function ActivityPlayer({ activity }: { activity: Activity }) {
             href={url}
             download
             onClick={onDownload}
-            className="flex items-center gap-1.5 rounded-xl bg-[color:var(--qa-maroon)] px-4 py-2 text-sm font-black text-white shadow-md transition hover:bg-[color:var(--qa-maroon-deep)]"
+            className="flex items-center gap-1.5 rounded-xl bg-[color:var(--maroon)] px-4 py-2 text-sm font-black text-white shadow-md transition hover:bg-[color:var(--maroon-700)]"
           >
             <Download className="h-4 w-4" /> تحميل
           </a>
@@ -96,12 +96,12 @@ export function ActivityPlayer({ activity }: { activity: Activity }) {
       {/* stage */}
       <div
         ref={wrapRef}
-        className="relative overflow-hidden rounded-3xl border-2 border-[color:var(--qa-gold)]/30 bg-white shadow-2xl"
+        className="relative overflow-hidden rounded-3xl border-2 border-[color:var(--gold)]/30 bg-white shadow-2xl"
       >
         <div className="h-1.5 w-full flag-strip" />
         {loading && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-[color:var(--qa-cream)]">
-            <Loader2 className="h-10 w-10 animate-spin text-[color:var(--qa-maroon)]" />
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-[color:var(--surface)]">
+            <Loader2 className="h-10 w-10 animate-spin text-[color:var(--maroon)]" />
             <p className="text-sm font-bold text-muted-foreground">
               جارٍ تحميل النشاط…
             </p>

@@ -3,10 +3,10 @@ import Image from 'next/image';
 
 export function SiteFooter() {
   return (
-    <footer className="relative mt-24 overflow-hidden bg-[color:var(--qa-maroon-deep)] text-white/90">
+    <footer className="relative mt-24 overflow-hidden bg-[color:var(--maroon-700)] text-white/90">
       <div className="h-2 w-full flag-strip" aria-hidden />
       {/* faint heritage motif */}
-      <div className="pointer-events-none absolute -left-16 -top-10 h-64 w-64 rounded-full bg-[color:var(--qa-gold)]/10 blur-3xl" />
+      <div className="pointer-events-none absolute -left-16 -top-10 h-64 w-64 rounded-full bg-[color:var(--gold)]/10 blur-3xl" />
       <div className="mx-auto grid max-w-7xl gap-10 px-6 py-14 md:grid-cols-3">
         <div>
           <div className="mb-4 flex items-center gap-3">
@@ -33,7 +33,7 @@ export function SiteFooter() {
         </div>
 
         <div>
-          <h3 className="mb-4 font-display text-sm font-black text-[color:var(--qa-gold-light)]">
+          <h3 className="mb-4 font-display text-sm font-black text-[color:var(--gold-200)]">
             روابط سريعة
           </h3>
           <ul className="space-y-2 text-sm text-white/75">
@@ -45,7 +45,7 @@ export function SiteFooter() {
         </div>
 
         <div>
-          <h3 className="mb-4 font-display text-sm font-black text-[color:var(--qa-gold-light)]">
+          <h3 className="mb-4 font-display text-sm font-black text-[color:var(--gold-200)]">
             رؤية قطر الوطنية 2030
           </h3>
           <p className="text-sm leading-7 text-white/70">
