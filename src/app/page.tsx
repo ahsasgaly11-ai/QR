@@ -44,7 +44,7 @@ export default async function HomePage() {
             </div>
 
             <h1
-              className="rise-in mt-5 font-calli text-4xl font-bold leading-[1.15] sm:text-5xl lg:text-6xl"
+              className="rise-in mt-5 font-calli text-4xl font-bold sm:text-5xl lg:text-6xl"
               style={{ animationDelay: '80ms' }}
             >
               <span className="text-gradient-maroon">تعلّم العلوم</span>

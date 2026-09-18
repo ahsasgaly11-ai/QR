@@ -173,6 +173,18 @@ body::after {
   line-height: 1.6;
   letter-spacing: 0;
 }
+
+/* خط «أَرِف رقعة» حروفه ممتدّة رأسيًا ويعلوها التشكيل، فارتفاع السطر
+   المعتاد يجعل الأسطر تتراكب. أدوات Tailwind (text-3xl وأخواتها) تضبط
+   ارتفاع السطر أيضًا وتأتي بعد الفئات في الأسبقية فتُلغي القيمة أعلاه —
+   لذا نرفع الأسبقية بضمّ اسم الوسم إلى الفئة، دون اللجوء إلى !important.
+
+   و padding-bottom يمنع قصّ أطراف الحروف النازلة حين يُستخدم العنوان مع
+   تدرّج لوني (background-clip: text) فيُقصّ ما تجاوز صندوق السطر. */
+:is(h1, h2, h3, h4, h5, h6, p, span, div, a, button).font-calli {
+  line-height: 1.75;
+  padding-bottom: 0.08em;
+}
 .font-playful {
   font-family: 'Baloo Bhaijaan 2', 'Tajawal', sans-serif;
   font-weight: 800;
