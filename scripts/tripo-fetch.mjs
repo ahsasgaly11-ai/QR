@@ -35,12 +35,15 @@ const HELP = `
 
   npm run tripo -- --preset arm-muscles
   npm run tripo -- --prompt "human heart anatomy model" --name heart
+  npm run tripo -- --task https://studio.tripo3d.ai/3d-model/...-<uuid>
   npm run tripo -- --all --face-limit 30000
   node scripts/tripo-fetch.mjs --list-presets
 
 الخيارات:
   --preset <key>       استخدام وصف جاهز من scripts/tripo-presets.json (يمكن تكراره)
   --prompt <text>      وصف نصي حر (يمكن تكراره)
+  --task <id|url>      تنزيل مجسم مولّد سابقاً في حسابك عبر معرّفه أو رابط
+                       صفحته في Tripo Studio، بلا إعادة توليد ولا استهلاك رصيد
   --all                توليد كل الأوصاف الجاهزة
   --list-presets       عرض الأوصاف الجاهزة ثم الخروج
   --name <slug>        اسم ملف المخرجات (يصلح مع --prompt واحد فقط)
@@ -73,6 +76,29 @@ function log(msg) {
 function fail(msg) {
   process.stderr.write(`خطأ: ${msg}\n`);
   process.exit(1);
+}
+
+const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+
+// يقبل معرّف مهمة مباشرة أو رابط صفحة المجسم في Tripo Studio.
+// مثال: https://studio.tripo3d.ai/3d-model/<وصف>-<uuid>
+export function parseTaskReference(reference) {
+  const trimmed = reference.trim();
+  if (!/^https?:\/\//i.test(trimmed)) return { id: trimmed, slug: null };
+
+  let path;
+  try {
+    path = decodeURIComponent(new URL(trimmed).pathname);
+  } catch {
+    throw new Error(`رابط غير صالح: ${reference}`);
+  }
+
+  const match = path.match(UUID);
+  if (!match) throw new Error(`لم أجد معرّف مجسم في الرابط: ${reference}`);
+
+  const lastSegment = path.split("/").filter(Boolean).pop() ?? "";
+  const slug = lastSegment.slice(0, match.index === undefined ? 0 : lastSegment.lastIndexOf(match[0])).replace(/-+$/, "");
+  return { id: match[0], slug: slug || null };
 }
 
 function slugify(text) {
@@ -286,6 +312,7 @@ function parseOptions(argv) {
     options: {
       preset: { type: "string", multiple: true, default: [] },
       prompt: { type: "string", multiple: true, default: [] },
+      task: { type: "string", multiple: true, default: [] },
       all: { type: "boolean", default: false },
       "list-presets": { type: "boolean", default: false },
       name: { type: "string" },
@@ -318,6 +345,7 @@ function parseOptions(argv) {
   return {
     presets: values.preset,
     prompts: values.prompt,
+    tasks: values.task,
     all: values.all,
     listPresets: values["list-presets"],
     name: values.name,
@@ -371,13 +399,18 @@ async function main() {
     const name = opts.prompts.length === 1 && opts.name ? slugify(opts.name) : slugify(prompt);
     jobs.push({ name, label: prompt, prompt, preset: null, index });
   }
+  for (const reference of opts.tasks) {
+    const { id, slug } = parseTaskReference(reference);
+    const name = opts.tasks.length === 1 && opts.name ? slugify(opts.name) : slugify(slug ?? id);
+    jobs.push({ name, label: `مجسم موجود: ${slug ?? id}`, taskId: id, preset: null });
+  }
 
   if (jobs.length === 0) {
     log(HELP);
-    fail("لم تحدد أي مجسم. استخدم --preset أو --prompt أو --all");
+    fail("لم تحدد أي مجسم. استخدم --preset أو --prompt أو --task أو --all");
   }
-  if (opts.name && opts.prompts.length > 1) {
-    fail("--name يصلح مع وصف واحد فقط");
+  if (opts.name && opts.prompts.length + opts.tasks.length > 1) {
+    fail("--name يصلح مع مجسم واحد فقط");
   }
 
   const outDir = resolve(ROOT, opts.out);
@@ -388,7 +421,9 @@ async function main() {
     log(`عرض تجريبي (${jobs.length} مجسم) — لن يُستدعى Tripo:\n`);
     for (const job of jobs) {
       log(`  ${job.name}${extension}`);
-      log(`    ${JSON.stringify(buildBody(job, { ...opts, apiKey: "" }))}`);
+      log(job.taskId
+        ? `    تنزيل مجسم موجود، المعرّف: ${job.taskId}`
+        : `    ${JSON.stringify(buildBody(job, { ...opts, apiKey: "" }))}`);
     }
     return;
   }
@@ -414,7 +449,8 @@ async function main() {
     }
 
     try {
-      let taskId = await createTask(job, opts);
+      // المجسمات الموجودة تُقرأ بمعرّفها مباشرة بلا إعادة توليد.
+      let taskId = job.taskId ?? await createTask(job, opts);
       log(`  المهمة: ${taskId}`);
       let modelUrl = await waitForTask(taskId, opts);
 
@@ -434,10 +470,10 @@ async function main() {
         label: job.label,
         file: `${job.name}${extension}`,
         preset: job.preset,
-        prompt: job.prompt,
+        prompt: job.prompt ?? null,
         task_id: taskId,
         api: opts.api,
-        model: opts.model ?? null,
+        model: job.taskId ? null : (opts.model ?? null),
         format: opts.format ?? "GLB",
         bytes,
         sha256,
