@@ -5,7 +5,7 @@ import { Search, X, SlidersHorizontal } from 'lucide-react';
 import type { Activity, ActivityType } from '@/lib/types';
 import { ACTIVITY_META } from '@/lib/types';
 import { ActivityCard } from './activity-card';
-import { cn } from '@/lib/utils';
+import { cn, normalizeAr } from '@/lib/utils';
 
 export interface SearchRow {
   activity: Activity;
@@ -29,20 +29,20 @@ export function SearchExplorer({
   const [subject, setSubject] = useState<string>('all');
 
   const results = useMemo(() => {
-    const needle = q.trim().toLowerCase();
+    const needle = normalizeAr(q);
     return rows.filter((r) => {
       if (type !== 'all' && r.activity.type !== type) return false;
       if (subject !== 'all' && r.subjectId !== subject) return false;
       if (!needle) return true;
-      const hay = [
-        r.activity.title,
-        r.activity.description ?? '',
-        r.unitTitle,
-        r.lessonTitle,
-        r.subjectTitle,
-      ]
-        .join(' ')
-        .toLowerCase();
+      const hay = normalizeAr(
+        [
+          r.activity.title,
+          r.activity.description ?? '',
+          r.unitTitle,
+          r.lessonTitle,
+          r.subjectTitle,
+        ].join(' ')
+      );
       return hay.includes(needle);
     });
   }, [rows, q, type, subject]);

@@ -15,3 +15,26 @@ export function formatNumber(n: number): string {
 export function formatFull(n: number): string {
   return new Intl.NumberFormat('ar-QA').format(n);
 }
+
+/**
+ * تطبيع النص العربي للبحث: إزالة التشكيل والتطويل، وتوحيد الألف والهمزات
+ * والتاء المربوطة والألف المقصورة — حتى يطابق البحث بلا تشكيل العناوينَ
+ * المشكولة المأخوذة من الكتاب.
+ */
+export function normalizeAr(input: string): string {
+  return input
+    .normalize('NFKD')
+    // التشكيل والعلامات الفوقية والتطويل
+    .replace(/[ً-ٰٟۖ-ۭـ]/g, '')
+    // الألف بأشكالها
+    .replace(/[آأإٱ]/g, 'ا')
+    // الواو والياء بالهمزة
+    .replace(/ؤ/g, 'و')
+    .replace(/ئ/g, 'ي')
+    // الألف المقصورة والتاء المربوطة
+    .replace(/ى/g, 'ي')
+    .replace(/ة/g, 'ه')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}

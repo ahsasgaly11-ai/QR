@@ -126,10 +126,10 @@ export function CurriculumExplorer({ subject }: { subject: Subject }) {
                             ))}
                           </div>
                         ) : (
-                          <div className="flex items-center gap-2 rounded-2xl border border-dashed border-[color:var(--gold)]/40 p-4 text-sm text-muted-foreground">
-                            <Inbox className="h-4 w-4" />
-                            لا توجد أنشطة في هذا الدرس بعد — قريبًا بإذن الله.
-                          </div>
+                          <p className="flex items-center gap-1.5 pr-7 text-xs text-muted-foreground/70">
+                            <Inbox className="h-3.5 w-3.5" />
+                            لا توجد أنشطة بعد
+                          </p>
                         )}
                       </div>
                     ))}
