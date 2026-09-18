@@ -3,11 +3,20 @@ import './globals.css';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { VisitTracker } from '@/components/visit-tracker';
+import { Analytics } from '@/components/analytics';
+import { SITE_URL, SITE_NAME } from '@/lib/site';
+
+const DESC =
+  'منصة تعليمية تفاعلية لمناهج دولة قطر — تجارب عملية ومحاكاة ثلاثية الأبعاد وأسئلة وألعاب بصيغة HTML يمكن تجربتها مباشرة أو تحميلها. وزارة التربية والتعليم والتعليم العالي.';
 
 export const metadata: Metadata = {
-  title: 'منصة مناهج قطر التفاعلية | العلوم',
-  description:
-    'منصة تعليمية تفاعلية لمناهج دولة قطر — تجارب عملية ومحاكاة وأسئلة تفاعلية بصيغة HTML يمكن تجربتها أو تحميلها. وزارة التربية والتعليم والتعليم العالي.',
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: `${SITE_NAME} | العلوم`,
+    template: `%s`,
+  },
+  description: DESC,
+  applicationName: SITE_NAME,
   keywords: [
     'مناهج قطر',
     'العلوم',
@@ -15,8 +24,28 @@ export const metadata: Metadata = {
     'تجارب تفاعلية',
     'محاكاة',
     'ألعاب تعليمية',
+    'المستوى الثالث',
   ],
   authors: [{ name: 'وزارة التربية والتعليم والتعليم العالي - دولة قطر' }],
+  manifest: '/manifest.webmanifest',
+  icons: {
+    icon: '/icon.svg',
+    apple: '/icon.svg',
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'ar_QA',
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} | العلوم`,
+    description: DESC,
+    images: [{ url: '/images/science-book-cover.jpg', width: 1200, height: 1200, alt: 'كتاب العلوم' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: `${SITE_NAME} | العلوم`,
+    description: DESC,
+    images: ['/images/science-book-cover.jpg'],
+  },
 };
 
 export const viewport: Viewport = {
@@ -50,10 +79,19 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen antialiased">
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:absolute focus:right-4 focus:top-4 focus:z-[100] focus:rounded-xl focus:bg-[color:var(--maroon)] focus:px-4 focus:py-2 focus:text-white"
+        >
+          تخطَّ إلى المحتوى
+        </a>
         <VisitTracker />
         <SiteHeader />
-        <main className="relative">{children}</main>
+        <main id="main" className="relative">
+          {children}
+        </main>
         <SiteFooter />
+        <Analytics />
       </body>
     </html>
   );
