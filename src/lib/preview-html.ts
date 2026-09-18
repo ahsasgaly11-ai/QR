@@ -9,8 +9,10 @@
 // فتُحفَظ في وثيقة واحدة وتُقرأ بقراءة واحدة سريعة.
 // ---------------------------------------------------------------------------
 
-/** أقصى حجم لوثيقة المعاينة — دون حدّ Firestore (1 م.ب) بهامش أمان. */
-const MAX_PREVIEW_BYTES = 700_000;
+// أقصى حجم لوثيقة المعاينة. الحدّ ليس حدّ Firestore (1 م.ب) بل سرعة
+// التحميل: صفحة درس فيها عشر بطاقات تعني عشرة أضعاف هذا الرقم على
+// شبكة الجوال، فكلّما صغر كان فتح الصفحة أسرع.
+const MAX_PREVIEW_BYTES = 260_000;
 
 /** مقطع صوتي صامت صالح، يحلّ محلّ الموسيقى فلا ينكسر كود التشغيل. */
 const SILENT_AUDIO =
@@ -36,7 +38,7 @@ export function makePreviewHtml(html: string): string | null {
 
   // 2) الصور الكبيرة فقط — نُبقي الصغيرة لأنها غالبًا أيقونات تصنع الشكل
   out = out.replace(IMAGE_RE, (m, payload: string) =>
-    payload.length > 40_000 ? BLANK_PNG : m
+    payload.length > 12_000 ? BLANK_PNG : m
   );
   if (bytes(out) <= MAX_PREVIEW_BYTES) return out;
 

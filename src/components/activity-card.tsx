@@ -2,12 +2,12 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Play, Download, Eye } from 'lucide-react';
+import { Play, Download, Eye, Pencil, Trash2, Check, X, Loader2 } from 'lucide-react';
 import type { Activity, ActivityStats } from '@/lib/types';
 import { getActivityStats, trackDownload } from '@/lib/stats';
 import { ActivityTypeBadge } from './activity-type-badge';
 import { formatNumber, cn } from '@/lib/utils';
-import { getLocalRecord, htmlToBlobUrl } from '@/lib/local-store';
+import { getLocalRecord, htmlToBlobUrl, dropCachedPreview } from '@/lib/local-store';
 import { ActivityPreview } from './activity-preview';
 
 function fileUrl(a: Activity) {
@@ -17,11 +17,58 @@ function fileUrl(a: Activity) {
 export function ActivityCard({
   activity,
   index = 0,
+  isOwner = false,
+  onChanged,
 }: {
   activity: Activity;
   index?: number;
+  /** أدوات التعديل والحذف تظهر للمالك المسجَّل دخوله وحده */
+  isOwner?: boolean;
+  onChanged?: (id: string, patch: Partial<Activity> | null) => void;
 }) {
   const [stats, setStats] = useState<ActivityStats>({ views: 0, downloads: 0 });
+  const [editing, setEditing] = useState(false);
+  const [title, setTitle] = useState(activity.title);
+  const [busy, setBusy] = useState(false);
+  const [gone, setGone] = useState(false);
+
+  const canManage = isOwner && activity.stored === 'firestore';
+
+  async function saveTitle() {
+    const next = title.trim();
+    if (!next || next === activity.title) return setEditing(false);
+    setBusy(true);
+    try {
+      const { updateActivity } = await import('@/lib/content');
+      const { revalidateContent } = await import('@/lib/revalidate');
+      await updateActivity(activity.id, { title: next });
+      await revalidateContent({ subjectId: activity.subjectId, activityId: activity.id });
+      onChanged?.(activity.id, { title: next });
+      setEditing(false);
+    } catch {
+      setTitle(activity.title);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removeActivity() {
+    if (!confirm(`حذف «${activity.title}» نهائيًا؟ لا يمكن التراجع.`)) return;
+    setBusy(true);
+    try {
+      const { deleteActivity } = await import('@/lib/content');
+      const { revalidateContent } = await import('@/lib/revalidate');
+      await deleteActivity(activity.id);
+      await dropCachedPreview(activity.id);
+      await revalidateContent({ subjectId: activity.subjectId, activityId: activity.id });
+      onChanged?.(activity.id, null);
+      setGone(true);
+    } catch {
+      alert('تعذّر الحذف. تحقّق من اتصالك ثم أعد المحاولة.');
+    } finally {
+      setBusy(false);
+    }
+  }
 
   useEffect(() => {
     let active = true;
@@ -59,6 +106,8 @@ export function ActivityCard({
     setStats((s) => ({ ...s, downloads: s.downloads + 1 }));
   };
 
+  if (gone) return null;
+
   return (
     <div
       className="card-premium group relative flex flex-col overflow-hidden rounded-3xl border border-[color:var(--gold)]/20 bg-[color:var(--surface)] p-5 shadow-lg shadow-black/5"
@@ -66,6 +115,29 @@ export function ActivityCard({
     >
       {/* top accent ribbon */}
       <div className="absolute inset-x-0 top-0 h-1.5 flag-strip opacity-80" />
+
+      {/* أدوات المالك — لا تظهر للزوّار إطلاقًا */}
+      {canManage && !editing && (
+        <div className="absolute left-3 top-4 z-10 flex gap-1.5">
+          <button
+            onClick={() => setEditing(true)}
+            className="grid h-9 w-9 place-items-center rounded-xl bg-white/95 text-[color:var(--maroon)] shadow-md backdrop-blur transition hover:scale-105"
+            title="تعديل العنوان"
+            aria-label="تعديل العنوان"
+          >
+            <Pencil className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => void removeActivity()}
+            disabled={busy}
+            className="grid h-9 w-9 place-items-center rounded-xl bg-white/95 text-[color:var(--coral)] shadow-md backdrop-blur transition hover:scale-105 disabled:opacity-50"
+            title="حذف النشاط"
+            aria-label="حذف النشاط"
+          >
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+          </button>
+        </div>
+      )}
 
       {/* معاينة حيّة لشكل اللعبة */}
       <Link
@@ -99,9 +171,45 @@ export function ActivityCard({
         </div>
       </div>
 
-      <h3 className="font-display text-lg font-black leading-snug text-[color:var(--maroon)]">
-        {activity.title}
-      </h3>
+      {editing ? (
+        <div className="flex items-center gap-2">
+          <input
+            autoFocus
+            className="w-full rounded-xl border border-[color:var(--maroon)] bg-[color:var(--surface)] px-3 py-2 text-base font-black text-[color:var(--maroon)] outline-none"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') void saveTitle();
+              if (e.key === 'Escape') {
+                setTitle(activity.title);
+                setEditing(false);
+              }
+            }}
+          />
+          <button
+            onClick={() => void saveTitle()}
+            disabled={busy}
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[color:var(--maroon)] text-white"
+            title="حفظ"
+          >
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+          </button>
+          <button
+            onClick={() => {
+              setTitle(activity.title);
+              setEditing(false);
+            }}
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[color:var(--surface-2)] text-[color:var(--maroon)]"
+            title="إلغاء"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      ) : (
+        <h3 className="font-display text-lg font-black leading-snug text-[color:var(--maroon)]">
+          {activity.title}
+        </h3>
+      )}
       {activity.description && (
         <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted-foreground">
           {activity.description}
