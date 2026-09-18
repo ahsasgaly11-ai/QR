@@ -55,6 +55,18 @@ export function SiteFooter() {
         </div>
       </div>
 
+      {/* اعتماد التصميم */}
+      <div className="border-t border-white/10">
+        <div className="mx-auto max-w-7xl px-6 py-5 text-center">
+          <p className="inline-flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm">
+            <span className="text-white/55">تصميم</span>
+            <span className="font-display font-bold text-[color:var(--gold-200)]">
+              الأستاذ عبداللطيف الذهلي
+            </span>
+          </p>
+        </div>
+      </div>
+
       <div className="border-t border-white/10">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-6 py-5 text-xs text-white/60 sm:flex-row">
           <p>© {new Date().getFullYear()} وزارة التربية والتعليم والتعليم العالي — جميع الحقوق محفوظة.</p>
