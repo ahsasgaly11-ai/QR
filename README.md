@@ -34,7 +34,7 @@
 ## 🧱 التقنيات
 
 Next.js 15 (App Router) · React 19 · TypeScript · Tailwind CSS ·
-lucide-react · Firebase (Firestore + Storage + Auth) · Firebase App Hosting.
+lucide-react · Firebase (Firestore + Auth) · Vercel / Firebase App Hosting.
 
 ## 🚀 التشغيل محليًا
 
@@ -61,7 +61,11 @@ npm run build && npm run start
 ## 🔥 تفعيل Firebase (للرفع الحقيقي والعدّادات المشتركة وتسجيل الدخول)
 
 1. أنشئ مشروعًا على [Firebase Console](https://console.firebase.google.com).
-2. فعّل **Firestore** و**Storage** و**Authentication** (طريقة: البريد/كلمة المرور).
+2. فعّل **Firestore** و**Authentication** (طريقة: البريد/كلمة المرور).
+   > **Firebase Storage غير مطلوب** — ولا يجب تفعيله. منذ فبراير 2026 صار
+   > يتطلّب ربط بطاقة بنكية (خطة Blaze) حتى للاستخدام الصفري، لذا تُخزَّن
+   > ملفات الألعاب داخل Firestore نفسه (انظر «أين تُخزَّن الملفات؟» أدناه)
+   > ويبقى المشروع كلّه على الخطة المجانية Spark بلا بطاقة.
 3. أنشئ حسابك من Authentication ← Users ← Add user، ثم **انسخ الـ UID**.
 4. انسخ `.env.example` إلى `.env.local` واملأ قيم مشروعك:
 
@@ -69,7 +73,7 @@ npm run build && npm run start
 NEXT_PUBLIC_FIREBASE_API_KEY=...
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...   # اختياري — غير مستخدم
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
 NEXT_PUBLIC_FIREBASE_APP_ID=...
 # اختيارية:
@@ -81,7 +85,7 @@ NEXT_PUBLIC_ADMIN_PASSCODE=...        # رمز لوحة الإدارة في وض
 5. انشر قواعد الأمان:
 
 ```bash
-firebase deploy --only firestore:rules,storage
+firebase deploy --only firestore:rules
 ```
 
 ### ما الذي يتغيّر عند التفعيل؟
@@ -91,10 +95,27 @@ firebase deploy --only firestore:rules,storage
 | `activities` (Firestore) | الأنشطة المرفوعة (تُدمج مع المضمّنة) |
 | `curriculum/tree` (Firestore) | بنية المناهج المحرّرة من لوحة الإدارة |
 | `stats/site`, `activityStats/{id}` | عدّادات الزوّار/المشاهدات/التنزيلات |
-| `activities/**` (Storage) | ملفات HTML المرفوعة |
+| `activities/{id}/chunks/*` (Firestore) | ملف HTML للّعبة مقسّمًا إلى أجزاء |
 
 - **تسجيل الدخول:** تصبح لوحة `/admin` محميّة بمصادقة بريد/كلمة مرور حقيقية.
-- **الرفع والإدارة:** يُحفظ كل شيء فورًا في Firestore/Storage.
+- **الرفع والإدارة:** يُحفظ كل شيء فورًا في Firestore.
+
+### أين تُخزَّن ملفات الألعاب؟
+
+داخل **Firestore**، لا في Firebase Storage. حدّ الوثيقة الواحدة ≈ 1 ميجابايت،
+لذا يُقسَّم ملف الـ HTML إلى أجزاء بحجم ≤ 800 كيلوبايت تحت
+`activities/{id}/chunks/{0..n-1}`، وتُقرأ كلّها بطلب واحد وتُجمَع بالترتيب
+قبل التشغيل — فيعود الملف كما رُفع بايتًا ببايت.
+
+| | الحدّ المجاني (Spark) |
+|---|---|
+| مساحة التخزين | 1 جيجابايت (≈ 100–125 لعبة بحجم 8 م.ب) |
+| التحميل الشهري | 10 جيجابايت |
+| القراءات اليومية | 50,000 (لعبة 8 م.ب ≈ 10 قراءات لكل تشغيل) |
+| أقصى حجم لملف واحد | 30 ميجابايت (`MAX_GAME_BYTES`) |
+
+للتوسّع أبعد من ذلك، الترقية إلى Blaze تفتح Storage دون تغيير أي كود:
+الأنشطة القديمة تبقى تعمل لأن كل نشاط يحمل حقل `stored` يحدّد مصدره.
 
 ---
 
@@ -111,7 +132,7 @@ firebase deploy --only firestore:rules,storage
 **لماذا هذه الطريقة آمنة؟**
 - قواعد الأمان تمنع الكتابة على مجموعة `admins` **منعًا تامًا** (`allow write: if false`)،
   فلا يستطيع أحد ترقية نفسه إلى مشرف من الموقع — تُنشأ من Console فقط.
-- كل كتابة على الأنشطة أو بنية المناهج أو ملفات Storage تتحقّق من وجود
+- كل كتابة على الأنشطة أو أجزاء ملفاتها أو بنية المناهج تتحقّق من وجود
   وثيقتك، وتُرفض من الخادم إن لم تكن أنت — حتى لو تلاعب أحدهم بواجهة الموقع.
 
 ### نموذج الصلاحيات
@@ -121,7 +142,7 @@ firebase deploy --only firestore:rules,storage
 | تصفّح/تشغيل/تحميل الأنشطة | ✅ | ✅ |
 | رفع/تعديل/حذف الأنشطة | ❌ | ✅ |
 | تعديل بنية المناهج | ❌ | ✅ |
-| رفع ملفات إلى Storage | ❌ | ✅ |
+| رفع ملف اللعبة (أجزاء Firestore) | ❌ | ✅ |
 | زيادة عدّادات المشاهدة/التحميل | ✅ (+1 فقط) | ✅ |
 | تعيين العدّادات أو محوها | ❌ | ✅ |
 
@@ -131,7 +152,7 @@ firebase deploy --only firestore:rules,storage
 >   لعمل الإحصاءات)، ولا يمكن تعيينها بقيمة اعتباطية ولا حذفها.
 > - `NEXT_PUBLIC_ADMIN_PASSCODE` يخصّ **وضع العرض المحلي فقط** وليس حماية
 >   حقيقية (متغيّرات `NEXT_PUBLIC_` ظاهرة للجميع). الحماية الحقيقية هي قواعد
->   Firestore/Storage أعلاه.
+>   Firestore أعلاه.
 > - في وضع العرض (بدون Firebase) لا يوجد خادم أصلًا: ما يرفعه أي شخص يُحفظ
 >   في متصفّحه هو فقط ولا يؤثّر على الموقع أو على بقيّة الزوّار.
 

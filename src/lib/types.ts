@@ -28,6 +28,10 @@ export interface Activity {
   external?: boolean;
   /** true when the file lives only in this browser (وضع العرض المحلي). */
   local?: boolean;
+  /** محتوى الملف مُخزَّن مقسّمًا داخل Firestore (activities/{id}/chunks). */
+  stored?: 'firestore';
+  /** عدد أجزاء الملف عند التخزين في Firestore. */
+  chunks?: number;
   subjectId: string;
   gradeId: string;
   unitId: string;

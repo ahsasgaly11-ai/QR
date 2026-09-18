@@ -77,6 +77,15 @@ export function ActivityPreview({
             revoke = u;
             setUrl(u);
           } else setFailed(true);
+        } else if (activity.stored === 'firestore') {
+          const { loadGameHtml } = await import('@/lib/game-store');
+          const html = await loadGameHtml(activity.id);
+          if (!alive) return;
+          if (html) {
+            const u = htmlToBlobUrl(html);
+            revoke = u;
+            setUrl(u);
+          } else setFailed(true);
         } else {
           setUrl(fileUrl(activity));
         }
