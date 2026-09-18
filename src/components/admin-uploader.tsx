@@ -16,8 +16,9 @@ import {
 } from 'lucide-react';
 import type { ActivityType, Subject, Activity } from '@/lib/types';
 import { ACTIVITY_META } from '@/lib/types';
-import { isFirebaseConfigured, getDb, getBucket } from '@/lib/firebase';
+import { isFirebaseConfigured, getDb } from '@/lib/firebase';
 import { saveStructure, toStructure } from '@/lib/content';
+import { saveGameHtml, MAX_GAME_BYTES } from '@/lib/game-store';
 import {
   saveLocalActivity,
   saveLocalStructure,
@@ -65,6 +66,7 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
   const [type, setType] = useState<ActivityType>('experiment');
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<Result | null>(null);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
@@ -190,8 +192,13 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
     setBusy(true);
     try {
       const db = getDb();
-      const bucket = getBucket();
-      if (!db || !bucket) throw new Error('تعذّر الاتصال بخدمة التخزين.');
+      if (!db) throw new Error('تعذّر الاتصال بقاعدة البيانات.');
+      if (file.size > MAX_GAME_BYTES)
+        throw new Error(
+          `حجم الملف ${(file.size / 1048576).toFixed(1)} م.ب ويتجاوز الحدّ المسموح (${
+            MAX_GAME_BYTES / 1048576
+          } م.ب).`
+        );
 
       // 1) persist any new unit/lesson into the curriculum structure
       if (unitIsNew || lessonIsNew) {
@@ -221,19 +228,18 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
         await saveStructure(tree);
       }
 
-      // 2) upload the file
-      const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
-      const { doc, setDoc } = await import('firebase/firestore');
-      const path = `activities/${subjectId}/${id}-${file.name}`;
-      const storageRef = ref(bucket, path);
-      await uploadBytes(storageRef, file, { contentType: 'text/html' });
-      const downloadUrl = await getDownloadURL(storageRef);
+      // 2) رفع محتوى الملف مقسّمًا داخل Firestore
+      const html = await file.text();
+      const chunks = await saveGameHtml(id, html, (p) =>
+        setProgress(Math.round((p.done / p.total) * 100))
+      );
 
       // 3) write activity metadata
+      const { doc, setDoc } = await import('firebase/firestore');
       await setDoc(doc(db, 'activities', id), {
         ...baseActivity,
-        file: downloadUrl,
-        external: true,
+        stored: 'firestore',
+        chunks,
       });
 
       setResult({ mode: 'firebase', activity: baseActivity, fileName: file.name });
@@ -241,6 +247,7 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
       setError(err instanceof Error ? err.message : 'حدث خطأ أثناء رفع النشاط.');
     } finally {
       setBusy(false);
+      setProgress(0);
     }
   }
 
@@ -521,7 +528,8 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
       <button type="submit" disabled={busy} className="btn-primary mt-6 w-full justify-center py-3.5 text-base">
         {busy ? (
           <>
-            <Loader2 className="h-5 w-5 animate-spin" /> جارٍ الرفع…
+            <Loader2 className="h-5 w-5 animate-spin" />
+            {progress > 0 ? `جارٍ الرفع… ${progress}٪` : 'جارٍ الرفع…'}
           </>
         ) : (
           <>

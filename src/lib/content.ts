@@ -115,6 +115,10 @@ export const SEED_ACTIVITY_IDS = new Set(SEED_ACTIVITIES.map((a) => a.id));
 export async function deleteActivity(id: string): Promise<void> {
   const db = getDb();
   if (!db) throw new Error('Firebase غير مُعدّ.');
+  // احذف أجزاء الملف أولًا — حذف الوثيقة الأمّ في Firestore لا يحذف
+  // مجموعاتها الفرعية، فتبقى الأجزاء تستهلك المساحة بلا صاحب.
+  const { deleteGameChunks } = await import('@/lib/game-store');
+  await deleteGameChunks(id);
   const { doc, deleteDoc } = await import('firebase/firestore');
   await deleteDoc(doc(db, 'activities', id));
 }

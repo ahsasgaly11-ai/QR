@@ -31,21 +31,29 @@ export function ActivityCard({
     };
   }, [activity.id]);
 
+  const saveHtml = (html: string) => {
+    const url = htmlToBlobUrl(html);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = activity.file || 'activity.html';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  };
+
   const onDownload = async (e: React.MouseEvent<HTMLAnchorElement>) => {
     // الأنشطة المحفوظة محليًا (وضع العرض) تُنزَّل من مخزن المتصفّح
     if (activity.local) {
       e.preventDefault();
       const rec = await getLocalRecord(activity.id);
-      if (rec?.html) {
-        const url = htmlToBlobUrl(rec.html);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = activity.file || 'activity.html';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 2000);
-      }
+      if (rec?.html) saveHtml(rec.html);
+    } else if (activity.stored === 'firestore') {
+      // الملف مقسّم داخل Firestore — يُجمَّع ثم يُنزَّل
+      e.preventDefault();
+      const { loadGameHtml } = await import('@/lib/game-store');
+      const html = await loadGameHtml(activity.id);
+      if (html) saveHtml(html);
     }
     await trackDownload(activity.id);
     setStats((s) => ({ ...s, downloads: s.downloads + 1 }));

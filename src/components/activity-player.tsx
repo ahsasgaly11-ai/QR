@@ -29,15 +29,36 @@ export function ActivityPlayer({
   localHtml?: string;
 }) {
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [fetchFailed, setFetchFailed] = useState(false);
+  // الأنشطة المرفوعة تُخزَّن مقسّمة داخل Firestore وتُجمَّع هنا قبل التشغيل
+  const remote = !localHtml && activity.stored === 'firestore';
 
   useEffect(() => {
-    if (!localHtml) return;
-    const u = htmlToBlobUrl(localHtml);
-    setBlobUrl(u);
-    return () => URL.revokeObjectURL(u);
-  }, [localHtml]);
+    let revoke: string | null = null;
+    let alive = true;
 
-  const url = localHtml ? blobUrl ?? '' : fileUrl(activity);
+    if (localHtml) {
+      revoke = htmlToBlobUrl(localHtml);
+      setBlobUrl(revoke);
+    } else if (remote) {
+      setFetchFailed(false);
+      (async () => {
+        const { loadGameHtml } = await import('@/lib/game-store');
+        const html = await loadGameHtml(activity.id);
+        if (!alive) return;
+        if (!html) return setFetchFailed(true);
+        revoke = htmlToBlobUrl(html);
+        setBlobUrl(revoke);
+      })();
+    }
+
+    return () => {
+      alive = false;
+      if (revoke) URL.revokeObjectURL(revoke);
+    };
+  }, [localHtml, remote, activity.id]);
+
+  const url = localHtml || remote ? blobUrl ?? '' : fileUrl(activity);
   const frameRef = useRef<HTMLIFrameElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const [stats, setStats] = useState<ActivityStats>({ views: 0, downloads: 0 });
@@ -212,11 +233,24 @@ export function ActivityPlayer({
           </button>
         )}
 
-        {loading && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-[color:var(--surface)]">
-            <Loader2 className="h-10 w-10 animate-spin text-[color:var(--maroon)]" />
-            <p className="text-sm font-bold text-muted-foreground">جارٍ تحميل النشاط…</p>
+        {fetchFailed ? (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-[color:var(--surface)] px-6 text-center">
+            <p className="font-bold text-[color:var(--maroon)]">
+              تعذّر تحميل ملف النشاط.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              تحقّق من اتصالك بالإنترنت ثم أعد المحاولة.
+            </p>
           </div>
+        ) : (
+          loading && (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-[color:var(--surface)]">
+              <Loader2 className="h-10 w-10 animate-spin text-[color:var(--maroon)]" />
+              <p className="text-sm font-bold text-muted-foreground">
+                جارٍ تحميل النشاط…
+              </p>
+            </div>
+          )
         )}
 
         {url ? (
