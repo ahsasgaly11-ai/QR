@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import type { ActivityType, Subject, Activity } from '@/lib/types';
 import { ACTIVITY_META } from '@/lib/types';
-import { isFirebaseConfigured, getDb, getBucket, ensureAuth } from '@/lib/firebase';
+import { isFirebaseConfigured, getDb, getBucket } from '@/lib/firebase';
 import { saveStructure, toStructure } from '@/lib/content';
 import {
   saveLocalActivity,
@@ -189,7 +189,6 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
     // ---- Firebase mode ----
     setBusy(true);
     try {
-      await ensureAuth();
       const db = getDb();
       const bucket = getBucket();
       if (!db || !bucket) throw new Error('تعذّر الاتصال بخدمة التخزين.');

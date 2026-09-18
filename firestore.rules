@@ -51,34 +51,71 @@ service cloud.firestore {
 
     // =====================================================================
     //  منصة المناهج التفاعلية — Curriculum platform
-    //  الأنشطة المرفوعة وعدّادات الزوّار والمشاهدات والتنزيلات.
+    //
+    //  نموذج الصلاحيات:
+    //   • القراءة عامة للجميع (الزوّار يتصفّحون ويشغّلون ويحمّلون).
+    //   • الكتابة على المحتوى (الأنشطة/بنية المناهج) للمالك وحده.
+    //   • العدّادات يزيدها الزوّار بمقدار 1 فقط، ولا يمكن تعيينها أو محوها.
     // =====================================================================
 
-    // الأنشطة (الألعاب/التجارب/المحاكاة/الأسئلة) — قراءة عامة للجميع.
-    // ملاحظة أمنية: في بيئة الإنتاج قيّد الكتابة على المشرفين فقط،
-    // مثال: allow write: if isSignedIn() && request.auth.token.admin == true;
+    // قائمة المالكين: وثيقة واحدة معرّفها = UID حسابك.
+    // تُنشأ يدويًا من Firebase Console فقط — لا يمكن إنشاؤها من الموقع،
+    // لذا لا يستطيع أي شخص ترقية نفسه إلى مشرف.
+    function isOwner() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    match /admins/{uid} {
+      // يقرأ كل مستخدم وثيقته فقط (لتتحقّق الواجهة من صلاحيته)
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false; // لا أحد إطلاقًا — عبر Console حصرًا
+    }
+
+    // الأنشطة (الألعاب/التجارب/المحاكاة/الأسئلة)
     match /activities/{activityId} {
       allow read: if true;
-      allow write: if isSignedIn();
+      allow write: if isOwner();
     }
 
-    // إحصاءات الموقع (زوّار/مشاهدات/تنزيلات) — عدّادات تراكمية عامة.
-    match /stats/{docId} {
-      allow read: if true;
-      // يُسمح فقط بزيادة العدّادات (increment) وليس بكتابة قيم اعتباطية.
-      allow write: if true;
-    }
-
-    // إحصاءات كل نشاط (مشاهدات/تنزيلات).
-    match /activityStats/{activityId} {
-      allow read: if true;
-      allow write: if true;
-    }
-
-    // بنية المناهج القابلة للتحرير من لوحة الإدارة (المواد/الوحدات/الدروس).
+    // بنية المناهج (المواد/المستويات/الوحدات/الدروس)
     match /curriculum/{docId} {
       allow read: if true;
-      allow write: if isSignedIn();
+      allow write: if isOwner();
+    }
+
+    // --- العدّادات: زيادة فقط، بمقدار 1 كحدّ أقصى لكل عملية ---------------
+    function incrementsOnly(fields) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields)
+        && request.resource.data.get('visitors', 0) >= resource.data.get('visitors', 0)
+        && request.resource.data.get('visitors', 0) <= resource.data.get('visitors', 0) + 1
+        && request.resource.data.get('views', 0) >= resource.data.get('views', 0)
+        && request.resource.data.get('views', 0) <= resource.data.get('views', 0) + 1
+        && request.resource.data.get('downloads', 0) >= resource.data.get('downloads', 0)
+        && request.resource.data.get('downloads', 0) <= resource.data.get('downloads', 0) + 1;
+    }
+
+    // إحصاءات الموقع (زوّار/مشاهدات/تنزيلات)
+    match /stats/{docId} {
+      allow read: if true;
+      allow create: if request.resource.data.keys()
+                      .hasOnly(['visitors', 'views', 'downloads'])
+                    && request.resource.data.get('visitors', 0) <= 1
+                    && request.resource.data.get('views', 0) <= 1
+                    && request.resource.data.get('downloads', 0) <= 1;
+      allow update: if isOwner()
+                    || incrementsOnly(['visitors', 'views', 'downloads']);
+      allow delete: if isOwner();
+    }
+
+    // إحصاءات كل نشاط (مشاهدات/تنزيلات)
+    match /activityStats/{activityId} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasOnly(['views', 'downloads'])
+                    && request.resource.data.get('views', 0) <= 1
+                    && request.resource.data.get('downloads', 0) <= 1;
+      allow update: if isOwner() || incrementsOnly(['views', 'downloads']);
+      allow delete: if isOwner();
     }
   }
 }

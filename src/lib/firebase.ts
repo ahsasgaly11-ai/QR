@@ -62,20 +62,3 @@ export function getBucket(): FirebaseStorage | null {
     return null;
   }
 }
-
-/**
- * Ensures an auth session exists (anonymous) so Firestore/Storage writes pass
- * the `isSignedIn()` security rules. No-op when Firebase isn't configured.
- */
-export async function ensureAuth(): Promise<boolean> {
-  const a = getFirebaseApp();
-  if (!a) return false;
-  try {
-    const { getAuth, signInAnonymously } = await import('firebase/auth');
-    const auth = getAuth(a);
-    if (!auth.currentUser) await signInAnonymously(auth);
-    return true;
-  } catch {
-    return false;
-  }
-}

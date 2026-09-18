@@ -45,6 +45,27 @@ export async function signOutAdmin(): Promise<void> {
   await signOut(getAuth(firebaseApp()));
 }
 
+/**
+ * يتحقّق أنّ الحساب المسجَّل هو المالك فعلًا، بقراءة الوثيقة admins/{uid}
+ * من Firestore. هذه الوثيقة تُنشأ من Firebase Console فقط، ولا يمكن لأحد
+ * إنشاؤها من الموقع (قواعد الأمان تمنع الكتابة عليها تمامًا) — لذا لا
+ * يستطيع أي مستخدم ترقية نفسه إلى مشرف.
+ *
+ * ملاحظة: هذا تحقّق للواجهة فقط؛ الحماية الحقيقية في قواعد Firestore
+ * وStorage التي ترفض أي كتابة من غير المالك.
+ */
+export async function isOwnerUid(uid: string): Promise<boolean> {
+  const db = getDb();
+  if (!db) return false;
+  try {
+    const { doc, getDoc } = await import('firebase/firestore');
+    const snap = await getDoc(doc(db, 'admins', uid));
+    return snap.exists();
+  } catch {
+    return false;
+  }
+}
+
 export function watchAdmin(cb: (u: AdminUser | null) => void): () => void {
   if (!isFirebaseConfigured) {
     cb(null);

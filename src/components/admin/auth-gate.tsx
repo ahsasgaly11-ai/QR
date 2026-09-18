@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Lock, LogIn, Loader2, ShieldCheck, Info } from 'lucide-react';
+import { Lock, LogIn, Loader2, ShieldCheck, Info, ShieldX } from 'lucide-react';
 import {
   isFirebaseConfigured,
   signInAdmin,
+  signOutAdmin,
   watchAdmin,
+  isOwnerUid,
   type AdminUser,
   DEMO_PASSCODE,
 } from '@/lib/auth';
@@ -22,11 +24,20 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const [unlocked, setUnlocked] = useState(!DEMO_PASSCODE);
   const [code, setCode] = useState('');
 
+  // هل الحساب المسجَّل هو المالك؟ null = قيد التحقّق
+  const [owner, setOwner] = useState<boolean | null>(null);
+
   useEffect(() => {
     if (!isFirebaseConfigured) return;
     const unsub = watchAdmin((u) => {
       setUser(u);
       setLoading(false);
+      if (u) {
+        setOwner(null);
+        isOwnerUid(u.uid).then(setOwner);
+      } else {
+        setOwner(null);
+      }
     });
     return unsub;
   }, []);
@@ -82,6 +93,44 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         </LoginCard>
       );
     }
+    // مسجّل الدخول — لكن نتحقّق أنه المالك قبل إظهار أي أدوات تحكّم
+    if (owner === null) {
+      return (
+        <div className="grid place-items-center gap-3 py-24">
+          <Loader2 className="h-10 w-10 animate-spin text-[color:var(--maroon)]" />
+          <p className="text-sm font-bold text-muted-foreground">
+            جارٍ التحقّق من الصلاحية…
+          </p>
+        </div>
+      );
+    }
+
+    if (owner === false) {
+      return (
+        <div className="mx-auto max-w-md">
+          <div className="card-premium rounded-3xl p-8 text-center">
+            <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-[color:var(--coral)] text-white shadow-[var(--shadow-md)]">
+              <ShieldX className="h-8 w-8" />
+            </span>
+            <h2 className="mt-4 font-display text-2xl font-bold text-[color:var(--maroon)]">
+              غير مصرّح لك بالدخول
+            </h2>
+            <p className="mt-2 text-sm leading-7 text-muted-foreground">
+              هذا الحساب{user.email ? ` (${user.email})` : ''} ليس مالك المنصّة،
+              ولا يملك صلاحية الرفع أو التعديل. إدارة المحتوى محصورة بحساب
+              المالك وحده.
+            </p>
+            <button
+              onClick={() => signOutAdmin()}
+              className="btn-ghost btn-sm mt-6 px-6 text-sm"
+            >
+              تسجيل الخروج
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div>
         <AdminBadge email={user.email} />
