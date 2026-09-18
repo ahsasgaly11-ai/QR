@@ -11,8 +11,8 @@ export default {
     extend: {
       fontFamily: {
         body: ['"Tajawal"', 'sans-serif'],
-        headline: ['"Reem Kufi"', '"Tajawal"', 'sans-serif'],
-        display: ['"Reem Kufi"', '"Tajawal"', 'sans-serif'],
+        headline: ['"Tajawal"', 'sans-serif'],
+        display: ['"Aref Ruqaa"', '"Tajawal"', 'serif'],
         playful: ['"Baloo Bhaijaan 2"', '"Tajawal"', 'sans-serif'],
         code: ['"Source Code Pro"', 'monospace'],
       },

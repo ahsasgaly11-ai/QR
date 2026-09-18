@@ -28,7 +28,7 @@ export default async function SubjectPage({
           background: `linear-gradient(135deg, ${subject.color}, ${subject.accent})`,
         }}
       >
-        <div className="pointer-events-none absolute inset-0 grid-backdrop opacity-30" />
+        <div className="pointer-events-none absolute inset-0 girih-light" />
         <div className="pointer-events-none absolute -left-10 top-6 h-52 w-52 rounded-full bg-white/10 blur-2xl float-slow" />
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6">
           <div>
@@ -41,7 +41,7 @@ export default async function SubjectPage({
               <ChevronLeft className="h-4 w-4" />
               <span className="font-bold text-white">{subject.title}</span>
             </nav>
-            <h1 className="font-display text-4xl font-black sm:text-5xl">
+            <h1 className="font-calli text-4xl font-bold sm:text-5xl">
               {subject.title}
             </h1>
             <p className="mt-2 max-w-lg text-white/85">

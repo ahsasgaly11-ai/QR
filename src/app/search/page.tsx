@@ -31,7 +31,7 @@ export default async function SearchPage() {
         <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-[color:var(--maroon)] text-white shadow-[var(--shadow-md)]">
           <Search className="h-8 w-8" />
         </span>
-        <h1 className="mt-4 font-display text-4xl font-bold text-[color:var(--maroon)] sm:text-5xl">
+        <h1 className="mt-4 font-calli text-4xl font-bold text-[color:var(--maroon)] sm:text-5xl">
           ابحث في المنصّة
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-muted-foreground">

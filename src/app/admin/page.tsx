@@ -32,7 +32,7 @@ export default async function AdminPage() {
         <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-[color:var(--maroon)] text-white shadow-[var(--shadow-md)]">
           <Settings2 className="h-8 w-8" />
         </span>
-        <h1 className="mt-4 font-display text-3xl font-bold text-[color:var(--maroon)] sm:text-4xl">
+        <h1 className="mt-4 font-calli text-3xl font-bold text-[color:var(--maroon)] sm:text-4xl">
           لوحة الإدارة
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-muted-foreground">

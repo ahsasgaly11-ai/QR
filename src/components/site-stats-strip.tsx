@@ -14,9 +14,9 @@ export function SiteStatsStrip({ activities }: { activities: number }) {
 
   const items = [
     { icon: Users, label: 'الزوّار', value: s.visitors, color: 'var(--maroon)' },
-    { icon: Eye, label: 'المشاهدات', value: s.views, color: 'var(--sky)' },
-    { icon: Download, label: 'التنزيلات', value: s.downloads, color: 'var(--teal)' },
-    { icon: Sparkles, label: 'الأنشطة التفاعلية', value: activities, color: 'var(--gold)' },
+    { icon: Eye, label: 'المشاهدات', value: s.views, color: 'var(--maroon-700)' },
+    { icon: Download, label: 'التنزيلات', value: s.downloads, color: 'var(--gold)' },
+    { icon: Sparkles, label: 'الأنشطة التفاعلية', value: activities, color: 'var(--maroon-300)' },
   ];
 
   return (

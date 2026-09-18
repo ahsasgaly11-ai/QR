@@ -66,9 +66,9 @@ export function StatsDashboard({ activities }: { activities: Row[] }) {
 
   const cards = [
     { icon: Users, label: 'إجمالي الزوّار', value: site.visitors, color: 'var(--maroon)' },
-    { icon: Eye, label: 'إجمالي المشاهدات', value: site.views, color: 'var(--sky)' },
-    { icon: Download, label: 'إجمالي التنزيلات', value: site.downloads, color: 'var(--teal)' },
-    { icon: Sparkles, label: 'عدد الأنشطة', value: activities.length, color: 'var(--gold)' },
+    { icon: Eye, label: 'إجمالي المشاهدات', value: site.views, color: 'var(--maroon-700)' },
+    { icon: Download, label: 'إجمالي التنزيلات', value: site.downloads, color: 'var(--gold)' },
+    { icon: Sparkles, label: 'عدد الأنشطة', value: activities.length, color: 'var(--maroon-300)' },
   ];
 
   return (

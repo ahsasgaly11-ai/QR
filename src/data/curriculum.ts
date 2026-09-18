@@ -13,8 +13,8 @@ export const SUBJECTS: Subject[] = [
     title: 'العلوم',
     titleEn: 'Science',
     tagline: 'اكتشف • جرّب • تعلّم',
-    color: '#1a86c9',
-    accent: '#12897f',
+    color: '#8a173e',
+    accent: '#6a0f2e',
     emoji: '🔬',
     grades: [
       {

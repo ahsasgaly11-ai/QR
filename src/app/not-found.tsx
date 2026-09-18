@@ -6,7 +6,7 @@ export default function NotFound() {
   return (
     <div className="mx-auto flex max-w-xl flex-col items-center px-6 py-24 text-center">
       <OryxMascot className="h-40 w-auto float-mid" />
-      <h1 className="mt-6 font-display text-6xl font-black text-gradient-maroon">404</h1>
+      <h1 className="mt-6 font-calli text-6xl font-bold text-gradient-maroon">404</h1>
       <p className="mt-3 text-lg font-bold text-foreground">
         لم نعثر على هذه الصفحة
       </p>

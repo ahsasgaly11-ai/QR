@@ -240,7 +240,7 @@ export function ContentManager({ initial }: { initial: Subject[] }) {
       ))}
 
       <button
-        className="btn-ghost px-4 py-2.5 text-sm"
+        className="btn-ghost btn-sm px-4 py-2.5 text-sm"
         onClick={() =>
           update((t) =>
             t.push({
@@ -266,7 +266,7 @@ export function ContentManager({ initial }: { initial: Subject[] }) {
       )}
 
       <div className="flex flex-wrap items-center gap-3 border-t border-[color:var(--hairline)] pt-5">
-        <button onClick={onSave} disabled={busy} className="btn-primary px-6 py-3 text-sm">
+        <button onClick={onSave} disabled={busy} className="btn-primary btn-sm px-6 py-3 text-sm">
           {busy ? (
             <Loader2 className="h-5 w-5 animate-spin" />
           ) : saved ? (
@@ -276,7 +276,7 @@ export function ContentManager({ initial }: { initial: Subject[] }) {
           )}
           {saved ? 'تم الحفظ' : 'حفظ البنية'}
         </button>
-        <button onClick={copyJson} className="btn-ghost px-4 py-3 text-sm">
+        <button onClick={copyJson} className="btn-ghost btn-sm px-4 py-3 text-sm">
           {copied ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
           نسخ JSON
         </button>

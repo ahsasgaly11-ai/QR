@@ -98,12 +98,12 @@ export function ActivitiesManager({
                   <button
                     onClick={() => save(a.id)}
                     disabled={busy}
-                    className="btn-primary px-4 py-2 text-sm"
+                    className="btn-primary btn-sm px-4 py-2 text-sm"
                   >
                     {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                     حفظ
                   </button>
-                  <button onClick={() => setEditing(null)} className="btn-ghost px-4 py-2 text-sm">
+                  <button onClick={() => setEditing(null)} className="btn-ghost btn-sm px-4 py-2 text-sm">
                     <X className="h-4 w-4" /> إلغاء
                   </button>
                 </div>

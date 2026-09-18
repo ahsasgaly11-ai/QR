@@ -14,7 +14,7 @@ export default async function BrowsePage() {
         <p className="diamond-divider mx-auto max-w-xs text-sm font-black">
           المكتبة التعليمية
         </p>
-        <h1 className="mt-3 font-display text-4xl font-black text-[color:var(--maroon)] sm:text-5xl">
+        <h1 className="mt-3 font-calli text-4xl font-bold text-[color:var(--maroon)] sm:text-5xl">
           تصفّح المناهج الدراسية
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-muted-foreground">

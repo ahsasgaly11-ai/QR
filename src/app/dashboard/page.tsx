@@ -25,7 +25,7 @@ export default async function DashboardPage() {
           <BarChart3 className="h-7 w-7" />
         </span>
         <div>
-          <h1 className="font-display text-3xl font-black text-[color:var(--maroon)] sm:text-4xl">
+          <h1 className="font-calli text-3xl font-bold text-[color:var(--maroon)] sm:text-4xl">
             لوحة الإحصاءات
           </h1>
           <p className="text-muted-foreground">

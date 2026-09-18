@@ -284,7 +284,7 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
             </p>
           </div>
         )}
-        <button onClick={reset} className="btn-primary mt-6 px-6 py-2.5 text-sm">
+        <button onClick={reset} className="btn-primary btn-sm mt-6 px-6 py-2.5 text-sm">
           <UploadCloud className="h-4 w-4" /> رفع نشاط آخر
         </button>
       </div>

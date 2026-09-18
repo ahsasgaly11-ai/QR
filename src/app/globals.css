@@ -10,19 +10,21 @@
    ========================================================================= */
 
 :root {
-  /* --- Brand ------------------------------------------------------------- */
-  --maroon: #8a1538;
-  --maroon-700: #6e1029;
-  --maroon-800: #530a1e;
-  --maroon-300: #c06079;
-  --maroon-100: #f4dde3;
-  --gold: #b0892e;
+  /* --- Brand (official MOEHE identity: maroon-dominant) ------------------- */
+  --maroon: #8a173e;          /* اللون الرسمي المستخرج من شعار الوزارة */
+  --maroon-700: #6a0f2e;
+  --maroon-800: #4d0a21;
+  --maroon-300: #b8496a;
+  --maroon-200: #d98da4;
+  --maroon-100: #f6dfe6;
+  --gold: #b0892e;            /* الذهبي التراثي (إطار الشعار) */
   --gold-500: #c9a227;
   --gold-200: #ecd9a6;
-  --sky: #1a86c9;
-  --sky-200: #bfe3f5;
-  --teal: #12897f;
-  --coral: #e5573a;
+  /* ألوان تمييز محايدة وخفيفة فقط — لا تُستخدم كألوان مهيمنة */
+  --sky: #2f6f96;
+  --sky-200: #d5e6ef;
+  --teal: #2b7d74;
+  --coral: #c0526e;
 
   /* --- Warm neutral scale ----------------------------------------------- */
   --paper: #faf6f0;
@@ -109,6 +111,8 @@
 html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
+  /* المرحلة الابتدائية: حجم أساسي كبير (معيار الوزارة 18–20px) */
+  font-size: 18px;
 }
 
 body {
@@ -154,11 +158,20 @@ body::after {
 /* =========================================================================
    Typography
    ========================================================================= */
+/* عناوين واجهة المستخدم (وظيفية، واضحة) */
 .font-display {
-  font-family: 'Reem Kufi', 'Tajawal', sans-serif;
+  font-family: 'Tajawal', sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+/* العناوين الكبرى بخط الهوية الرسمي — للعناوين الضخمة فقط لضمان الوضوح */
+.font-calli {
+  font-family: 'Aref Ruqaa', 'Tajawal', serif;
   font-weight: 700;
+  line-height: 1.6;
   letter-spacing: 0;
-  line-height: 1.25;
 }
 .font-playful {
   font-family: 'Baloo Bhaijaan 2', 'Tajawal', sans-serif;
@@ -166,8 +179,8 @@ body::after {
 }
 
 .eyebrow {
-  font-family: 'Reem Kufi', sans-serif;
-  font-weight: 600;
+  font-family: 'Tajawal', sans-serif;
+  font-weight: 700;
   letter-spacing: 0.04em;
   font-size: 0.82rem;
   color: var(--gold);
@@ -182,6 +195,13 @@ body::after {
 }
 .text-gradient-sky {
   background: linear-gradient(105deg, var(--sky), var(--teal));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.text-gradient-gold {
+  background: linear-gradient(105deg, var(--gold), var(--gold-500) 55%, var(--maroon-300));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -272,12 +292,16 @@ body::after {
   position: relative;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
-  border-radius: 1rem;
-  background: linear-gradient(180deg, var(--maroon), var(--maroon-700));
+  /* مساحة لمس مريحة للمرحلة الابتدائية (≥ 60px) */
+  min-height: 60px;
+  border-radius: 1.15rem;
+  background: linear-gradient(180deg, var(--maroon-300) -40%, var(--maroon) 45%, var(--maroon-700));
   color: #fff;
   font-weight: 800;
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.18);
   transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.2, 1), box-shadow 0.35s ease, filter 0.35s ease;
   overflow: hidden;
 }
@@ -294,15 +318,23 @@ body::after {
 .btn-ghost {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
-  border-radius: 1rem;
-  border: 1.5px solid color-mix(in srgb, var(--gold) 55%, transparent);
+  min-height: 60px;
+  border-radius: 1.15rem;
+  border: 2px solid color-mix(in srgb, var(--gold) 60%, transparent);
   background: color-mix(in srgb, var(--surface) 60%, transparent);
   color: var(--maroon);
   font-weight: 800;
   transition: transform 0.35s ease, background 0.35s ease, border-color 0.35s ease;
 }
 .btn-ghost:hover { transform: translateY(-2px); background: color-mix(in srgb, var(--gold) 12%, transparent); }
+
+/* نسخة مضغوطة لأزرار الترويسة ولوحة الإدارة (خارج واجهة الطلبة) */
+.btn-sm {
+  min-height: 44px;
+  border-radius: 0.85rem;
+}
 
 /* =========================================================================
    3D scene helpers & cinematic motion
@@ -350,6 +382,33 @@ body::after {
   background: linear-gradient(100deg, transparent 20%, rgba(236,217,166,.5) 45%, rgba(255,255,255,.7) 50%, rgba(236,217,166,.5) 55%, transparent 80%);
   background-size: 200% 100%;
   animation: shimmer 4s linear infinite;
+}
+
+/* زخرفة هندسية عربية/إسلامية خفيفة (نجمة ثمانية + تناظر) مستوحاة من روح الشعار */
+.girih-backdrop {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%238a173e' stroke-width='1.1' stroke-opacity='0.5'%3E%3Cpath d='M60 6 74 32 102 34 82 54 88 82 60 68 32 82 38 54 18 34 46 32Z'/%3E%3Crect x='30' y='30' width='60' height='60' transform='rotate(45 60 60)'/%3E%3Crect x='32' y='32' width='56' height='56'/%3E%3Ccircle cx='60' cy='60' r='7'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 120px 120px;
+  opacity: 0.15;
+  -webkit-mask-image: radial-gradient(ellipse 72% 65% at 50% 42%, #000, transparent);
+  mask-image: radial-gradient(ellipse 72% 65% at 50% 42%, #000, transparent);
+}
+.dark .girih-backdrop { opacity: 0.12; filter: invert(1) hue-rotate(180deg); }
+
+/* نسخة فاتحة للاستخدام فوق الخلفيات العنّابية الداكنة */
+.girih-light {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='1.1' stroke-opacity='0.9'%3E%3Cpath d='M60 6 74 32 102 34 82 54 88 82 60 68 32 82 38 54 18 34 46 32Z'/%3E%3Crect x='30' y='30' width='60' height='60' transform='rotate(45 60 60)'/%3E%3Crect x='32' y='32' width='56' height='56'/%3E%3Ccircle cx='60' cy='60' r='7'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 120px 120px;
+  opacity: 0.12;
+  -webkit-mask-image: radial-gradient(ellipse 80% 75% at 50% 45%, #000, transparent);
+  mask-image: radial-gradient(ellipse 80% 75% at 50% 45%, #000, transparent);
+}
+
+/* حدّ مزخرف رفيع يستلهم الأمواج من الشعار */
+.wave-rule {
+  height: 10px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='10' viewBox='0 0 60 10'%3E%3Cpath d='M0 5 Q7.5 0 15 5 T30 5 T45 5 T60 5' fill='none' stroke='%23b0892e' stroke-width='1.6'/%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+  opacity: 0.7;
 }
 
 /* refined dotted/grid backdrops */

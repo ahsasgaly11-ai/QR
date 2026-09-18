@@ -56,7 +56,7 @@ export function AdminShell({
         {isFirebaseConfigured && (
           <button
             onClick={() => signOutAdmin()}
-            className="btn-ghost px-4 py-2 text-sm"
+            className="btn-ghost btn-sm px-4 py-2 text-sm"
           >
             <LogOut className="h-4 w-4" /> خروج
           </button>
