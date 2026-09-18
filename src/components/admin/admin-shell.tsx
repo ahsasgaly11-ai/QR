@@ -69,6 +69,7 @@ export function AdminShell({
           activities={activities}
           uploadedIds={uploadedIds}
           labels={labels}
+          structure={structure}
         />
       )}
       {tab === 'content' && <ContentManager initial={structure} />}
