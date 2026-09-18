@@ -2,6 +2,10 @@ import { Search } from 'lucide-react';
 import { getAllActivities, getSubjects, locateActivity } from '@/lib/content';
 import { SearchExplorer, type SearchRow } from '@/components/search-explorer';
 
+// المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
+// وإلا لما ظهرت الأنشطة المرفوعة بعد البناء إلا بنشر جديد.
+export const revalidate = 60;
+
 export const metadata = { title: 'بحث | منصة مناهج قطر' };
 
 export default async function SearchPage() {

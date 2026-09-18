@@ -104,6 +104,42 @@ export async function getAllActivities(): Promise<Activity[]> {
   return [...map.values()];
 }
 
+/**
+ * أنشطة مادة واحدة كما هي في Firestore الآن (لا كما كانت وقت البناء).
+ * تُستخدم من المتصفّح ليرى المالك ما رفعه فورًا قبل إعادة توليد الصفحة.
+ */
+export async function getUploadedActivitiesFor(
+  subjectId: string
+): Promise<Activity[]> {
+  if (!isFirebaseConfigured) return [];
+  const db = getDb();
+  if (!db) return [];
+  try {
+    const { collection, getDocs, query, where } = await import('firebase/firestore');
+    const snap = await getDocs(
+      query(collection(db, 'activities'), where('subjectId', '==', subjectId))
+    );
+    return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Activity, 'id'>) }));
+  } catch {
+    return [];
+  }
+}
+
+/** نشاط واحد كما هو في Firestore الآن (قراءة وثيقة واحدة فقط). */
+export async function getActivityLive(id: string): Promise<Activity | null> {
+  if (!isFirebaseConfigured) return null;
+  const db = getDb();
+  if (!db) return null;
+  try {
+    const { doc, getDoc } = await import('firebase/firestore');
+    const snap = await getDoc(doc(db, 'activities', id));
+    if (!snap.exists()) return null;
+    return { id: snap.id, ...(snap.data() as Omit<Activity, 'id'>) };
+  } catch {
+    return null;
+  }
+}
+
 /** Uploaded (Firestore) activity ids — these are editable/deletable in admin. */
 export async function getUploadedActivityIds(): Promise<Set<string>> {
   const uploaded = await fetchUploadedActivities();

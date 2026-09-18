@@ -2,6 +2,10 @@ import { BarChart3 } from 'lucide-react';
 import { getAllActivities, getSubjects, locateActivity } from '@/lib/content';
 import { StatsDashboard } from '@/components/stats-dashboard';
 
+// المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
+// وإلا لما ظهرت الأنشطة المرفوعة بعد البناء إلا بنشر جديد.
+export const revalidate = 60;
+
 export const metadata = { title: 'لوحة الإحصاءات | منصة مناهج قطر' };
 
 export default async function DashboardPage() {

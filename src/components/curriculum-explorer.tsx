@@ -16,15 +16,55 @@ export function CurriculumExplorer({ subject: serverSubject }: { subject: Subjec
   // ادمج ما رُفع في «وضع العرض» (محفوظ في هذا المتصفّح) مع ما يأتي من الخادم
   const [localActs, setLocalActs] = useState<Activity[]>([]);
   const [localStruct, setLocalStruct] = useState<Subject[] | null>(null);
+  // ما رفعه المالك للتوّ وقد لا تكون الصفحة المُخزَّنة قد التقطته بعد
+  const [liveActs, setLiveActs] = useState<Activity[]>([]);
+  const [liveStruct, setLiveStruct] = useState<Subject[] | null>(null);
 
   useEffect(() => {
     setLocalStruct(getLocalStructure());
     listLocalActivities().then(setLocalActs);
   }, []);
 
+  // الصفحة تُعاد توليدها كل 30 ثانية، فقد يتأخّر ظهور نشاط رُفع قبل لحظات.
+  // لذا يقرأ المالك وحده (المسجَّل دخوله) القائمة الحيّة ليرى رفعه فورًا؛
+  // أمّا الزائر فلا يُحمّل شيئًا إضافيًا ولا يُستهلك من حصّة القراءات.
+  useEffect(() => {
+    let alive = true;
+    let stop: (() => void) | undefined;
+    (async () => {
+      const { watchAdmin } = await import('@/lib/auth');
+      stop = watchAdmin(async (user) => {
+        if (!user) {
+          if (alive) {
+            setLiveActs([]);
+            setLiveStruct(null);
+          }
+          return;
+        }
+        const { getUploadedActivitiesFor, getStructure } = await import('@/lib/content');
+        // البنية أيضًا: قد يكون الرفع أنشأ وحدة أو درسًا جديدًا
+        const [rows, tree] = await Promise.all([
+          getUploadedActivitiesFor(serverSubject.id),
+          getStructure(),
+        ]);
+        if (!alive) return;
+        setLiveActs(rows);
+        setLiveStruct(tree);
+      });
+    })();
+    return () => {
+      alive = false;
+      stop?.();
+    };
+  }, [serverSubject.id]);
+
   const subject = useMemo(
-    () => mergeLocalIntoSubject(serverSubject, localStruct, localActs),
-    [serverSubject, localStruct, localActs]
+    () =>
+      mergeLocalIntoSubject(serverSubject, liveStruct ?? localStruct, [
+        ...liveActs,
+        ...localActs,
+      ]),
+    [serverSubject, localStruct, liveStruct, localActs, liveActs]
   );
 
   const [gradeId, setGradeId] = useState(serverSubject.grades[0]?.id ?? '');
