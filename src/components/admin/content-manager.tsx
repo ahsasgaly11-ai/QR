@@ -27,6 +27,21 @@ function uid(prefix: string) {
 
 const EMOJIS = ['🔬', '➗', '📖', '🌍', '🧪', '🧮', '✏️', '🎨', '💻', '⚗️'];
 
+/**
+ * ألوان المواد — مشتقّة من هوية وزارة التربية والتعليم أو منسجمة معها،
+ * فلا تظهر مادة جديدة بلون غريب عن بقيّة الموقع. كل مادة لونان: أساسي
+ * ومكمّل يُبنى منهما تدرّج ترويسة المادة.
+ */
+const PALETTE: { name: string; color: string; accent: string }[] = [
+  { name: 'عنّابي', color: '#8a173e', accent: '#6a0f2e' },
+  { name: 'ذهبي', color: '#b0892e', accent: '#8c6a20' },
+  { name: 'أخضر', color: '#3f7a4a', accent: '#2c5a36' },
+  { name: 'أزرق', color: '#1a5f9c', accent: '#123f6b' },
+  { name: 'تركوازي', color: '#14746f', accent: '#0d514e' },
+  { name: 'بنفسجي', color: '#6a3d8f', accent: '#4c2a68' },
+  { name: 'نحاسي', color: '#b4602a', accent: '#8a441c' },
+];
+
 export function ContentManager({ initial }: { initial: Subject[] }) {
   const [tree, setTree] = useState<Subject[]>(() =>
     JSON.parse(JSON.stringify(initial))
@@ -82,8 +97,10 @@ export function ContentManager({ initial }: { initial: Subject[] }) {
     setBusy(true);
     try {
       await saveStructure(tree);
-      // البنية الجديدة تظهر للجميع فورًا بدل انتظار المهلة الدورية
-      await revalidateContent({ subjectId: tree[0]?.id });
+      // كل مادة تُحدَّث صفحتها، لا الأولى فقط — وإلا لما ظهرت مادة أُضيفت للتوّ
+      await Promise.all(
+        tree.map((s) => revalidateContent({ subjectId: s.id }))
+      );
       setSaved(true);
     } catch {
       setError('تعذّر حفظ البنية. تحقّق من إعداد Firebase وصلاحياتك.');
@@ -152,6 +169,31 @@ export function ContentManager({ initial }: { initial: Subject[] }) {
             >
               <Trash2 className="h-4 w-4" />
             </button>
+          </div>
+
+          {/* لون المادة — يظهر في ترويستها وبطاقتها في الرئيسية */}
+          <div className="mt-3 flex flex-wrap items-center gap-2 pr-11">
+            <span className="text-xs font-bold text-muted-foreground">اللون:</span>
+            {PALETTE.map((c) => (
+              <button
+                key={c.color}
+                onClick={() =>
+                  update((t) => {
+                    t[si].color = c.color;
+                    t[si].accent = c.accent;
+                  })
+                }
+                title={c.name}
+                aria-label={`لون ${c.name}`}
+                className={
+                  'h-6 w-6 rounded-full transition hover:scale-110 ' +
+                  (s.color.toLowerCase() === c.color
+                    ? 'ring-2 ring-[color:var(--foreground)] ring-offset-2 ring-offset-[color:var(--surface)]'
+                    : '')
+                }
+                style={{ background: `linear-gradient(135deg, ${c.color}, ${c.accent})` }}
+              />
+            ))}
           </div>
 
           {/* grades */}
@@ -293,8 +335,8 @@ export function ContentManager({ initial }: { initial: Subject[] }) {
               title: 'مادة جديدة',
               titleEn: 'New Subject',
               tagline: 'اكتشف • جرّب • تعلّم',
-              color: '#1a86c9',
-              accent: '#12897f',
+              color: PALETTE[0].color,
+              accent: PALETTE[0].accent,
               emoji: '🧪',
               grades: [],
             })

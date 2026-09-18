@@ -15,7 +15,6 @@ import { Book3D } from '@/components/book-3d';
 import { Reveal } from '@/components/reveal';
 import { SiteStatsStrip } from '@/components/site-stats-strip';
 import { ActivityCard } from '@/components/activity-card';
-import { SUBJECTS } from '@/data/curriculum';
 
 // المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
 // وإلا لما ظهرت الأنشطة المرفوعة بعد البناء إلا بنشر جديد.
@@ -206,7 +205,9 @@ export default async function HomePage() {
         </Reveal>
 
         <div className="grid gap-6 md:grid-cols-3">
-          {SUBJECTS.map((s, i) => {
+          {/* المواد الحيّة من قاعدة البيانات، لا القائمة المضمّنة —
+              وإلا لما ظهرت أي مادة يضيفها المشرف من لوحة الإدارة. */}
+          {subjects.map((s, i) => {
             const available = s.grades.length > 0;
             const card = (
               <div
