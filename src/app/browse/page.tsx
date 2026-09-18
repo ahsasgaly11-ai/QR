@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { ArrowLeft, Layers } from 'lucide-react';
 import { getSubjects, countActivities } from '@/lib/content';
 import { Reveal } from '@/components/reveal';
+import { BackButton } from '@/components/back-button';
 
 // المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
 // وإلا لما ظهرت الأنشطة المرفوعة بعد البناء إلا بنشر جديد.
@@ -14,6 +15,9 @@ export default async function BrowsePage() {
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-14">
+      <div className="mb-6 flex">
+        <BackButton fallback="/" />
+      </div>
       <Reveal className="mb-10 text-center">
         <p className="diamond-divider mx-auto max-w-xs text-sm font-black">
           المكتبة التعليمية

@@ -10,6 +10,7 @@ import {
 import { SEED_ACTIVITIES } from '@/data/curriculum';
 import { ActivityPlayer } from '@/components/activity-player';
 import { ActivityCard } from '@/components/activity-card';
+import { BackButton } from '@/components/back-button';
 
 // المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
 // وإلا لما ظهرت الأنشطة المرفوعة بعد البناء إلا بنشر جديد.
@@ -40,6 +41,10 @@ export default async function PlayPage({
   return (
     <div className="short-tight mx-auto max-w-6xl px-4 py-10 sm:px-6">
       {/* breadcrumb */}
+      <div className="mb-5 flex items-center gap-3">
+        <BackButton fallback={`/subject/${activity.subjectId}`} />
+      </div>
+
       <nav className="short-hide mb-5 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         <Link href="/" className="flex items-center gap-1 hover:text-[color:var(--maroon)]">
           <Home className="h-4 w-4" /> الرئيسية

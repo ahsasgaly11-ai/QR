@@ -1,6 +1,7 @@
 import { BarChart3 } from 'lucide-react';
 import { getAllActivities, getSubjects, locateActivity } from '@/lib/content';
 import { StatsDashboard } from '@/components/stats-dashboard';
+import { BackButton } from '@/components/back-button';
 
 // المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
 // وإلا لما ظهرت الأنشطة المرفوعة بعد البناء إلا بنشر جديد.
@@ -24,6 +25,9 @@ export default async function DashboardPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-14">
+      <div className="mb-6 flex">
+        <BackButton fallback="/" />
+      </div>
       <div className="mb-10 flex items-center gap-4">
         <span className="grid h-14 w-14 place-items-center rounded-2xl bg-[color:var(--maroon)] text-white shadow-lg">
           <BarChart3 className="h-7 w-7" />

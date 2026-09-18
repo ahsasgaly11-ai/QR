@@ -5,6 +5,7 @@ import { getSubject } from '@/lib/content';
 import { SUBJECTS } from '@/data/curriculum';
 import { CurriculumExplorer } from '@/components/curriculum-explorer';
 import { OryxMascot } from '@/components/oryx-mascot';
+import { BackButton } from '@/components/back-button';
 
 // المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
 // وإلا لما ظهرت الأنشطة المرفوعة بعد البناء إلا بنشر جديد.
@@ -36,6 +37,12 @@ export default async function SubjectPage({
         <div className="pointer-events-none absolute -left-10 top-6 h-52 w-52 rounded-full bg-white/10 blur-2xl float-slow" />
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6">
           <div>
+            <div className="mb-4 flex">
+              <BackButton
+                fallback="/browse"
+                className="border-white/40 bg-white/15 text-white shadow-none backdrop-blur hover:border-white hover:bg-white/25"
+              />
+            </div>
             <nav className="mb-4 flex items-center gap-2 text-sm text-white/80">
               <Link href="/" className="flex items-center gap-1 hover:text-white">
                 <Home className="h-4 w-4" /> الرئيسية
