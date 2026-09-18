@@ -15,7 +15,8 @@ export const runtime = 'nodejs';
 
 const MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
 
-const PROMPT = `هذه صورة فهرس (جدول محتويات) من كتاب مدرسي عربي.
+const PROMPT = `هذه صفحات فهرس (جدول محتويات) من كتاب مدرسي عربي.
+قد تكون أكثر من صفحة — عالِجها بالترتيب المُعطى وأخرِج فهرسًا واحدًا متصلًا.
 استخرج أسطر الفهرس فقط كنص عادي، سطرًا لكل عنصر، بالترتيب نفسه.
 - اكتب النص العربي كما هو تمامًا بما في ذلك التشكيل إن وُجد.
 - أبقِ ترقيم الوحدات والدروس (مثل: الوحدة 1، الدرس 2.3).
@@ -53,7 +54,18 @@ export async function POST(req: Request) {
     );
   }
 
-  let body: { image?: string; mimeType?: string; idToken?: string };
+  interface FilePart {
+    data: string;
+    mimeType?: string;
+  }
+  let body: {
+    /** ملف واحد (توافق مع النسخة السابقة) */
+    image?: string;
+    mimeType?: string;
+    /** عدّة ملفات: صور فهرس متعدّدة الصفحات أو ملف PDF */
+    files?: FilePart[];
+    idToken?: string;
+  };
   try {
     body = await req.json();
   } catch {
@@ -67,13 +79,50 @@ export async function POST(req: Request) {
     );
   }
 
-  const base64 = (body.image ?? '').replace(/^data:[^;]+;base64,/, '');
-  if (!base64) {
-    return NextResponse.json({ error: 'لم تُرفق صورة.' }, { status: 400 });
+  // وحّد المدخلات: ملف واحد أو عدّة ملفات
+  const incoming: FilePart[] =
+    body.files && body.files.length
+      ? body.files
+      : body.image
+        ? [{ data: body.image, mimeType: body.mimeType }]
+        : [];
+
+  const MAX_FILES = 8;
+  if (incoming.length === 0) {
+    return NextResponse.json({ error: 'لم تُرفق أي ملفات.' }, { status: 400 });
   }
-  // حدّ أقصى ~8 ميجابايت للصورة
-  if (base64.length > 8 * 1024 * 1024 * 1.37) {
-    return NextResponse.json({ error: 'الصورة كبيرة جدًا (الحد 8 ميجابايت).' }, { status: 413 });
+  if (incoming.length > MAX_FILES) {
+    return NextResponse.json(
+      { error: `الحد الأقصى ${MAX_FILES} ملفات في المرة الواحدة.` },
+      { status: 400 }
+    );
+  }
+
+  const parts = incoming.map((f) => ({
+    mimeType: f.mimeType || 'image/jpeg',
+    data: (f.data ?? '').replace(/^data:[^;]+;base64,/, ''),
+  }));
+
+  if (parts.some((p) => !p.data)) {
+    return NextResponse.json({ error: 'أحد الملفات فارغ.' }, { status: 400 });
+  }
+
+  const ALLOWED = /^(image\/(jpeg|png|webp|heic|heif)|application\/pdf)$/;
+  const bad = parts.find((p) => !ALLOWED.test(p.mimeType));
+  if (bad) {
+    return NextResponse.json(
+      { error: `نوع ملف غير مدعوم: ${bad.mimeType}` },
+      { status: 415 }
+    );
+  }
+
+  // حدّ أقصى ~15 ميجابايت إجمالًا
+  const totalBytes = parts.reduce((n, p) => n + p.data.length / 1.37, 0);
+  if (totalBytes > 15 * 1024 * 1024) {
+    return NextResponse.json(
+      { error: 'حجم الملفات كبير جدًا (الحد 15 ميجابايت إجمالًا).' },
+      { status: 413 }
+    );
   }
 
   try {
@@ -87,12 +136,9 @@ export async function POST(req: Request) {
             {
               parts: [
                 { text: PROMPT },
-                {
-                  inline_data: {
-                    mime_type: body.mimeType || 'image/jpeg',
-                    data: base64,
-                  },
-                },
+                ...parts.map((p) => ({
+                  inline_data: { mime_type: p.mimeType, data: p.data },
+                })),
               ],
             },
           ],

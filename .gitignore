@@ -30,3 +30,4 @@ firebase-debug.log*
 
 # typescript
 *.tsbuildinfo
+public/vendor/

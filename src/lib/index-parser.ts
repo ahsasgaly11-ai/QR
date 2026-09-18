@@ -29,7 +29,12 @@ function cleanLine(raw: string): string {
     .trim();
 }
 
-const UNIT_RE = /(^|\s)الوحده\s*(\d+|الاولي|الثانيه|الثالثه|الرابعه|الخامسه|السادسه|السابعه|الثامنه|التاسعه|العاشره)/u;
+const ORDINALS =
+  'الاولي|الثانيه|الثالثه|الرابعه|الخامسه|السادسه|السابعه|الثامنه|التاسعه|العاشره';
+const UNIT_RE = new RegExp(`(^|\\s)الوحده\\s*(\\d+|${ORDINALS})`, 'u');
+/** نسخة متسامحة: تُطبَّق على النص بعد إزالة كل المسافات، لأن استخراج
+ *  الـ PDF/القراءة البصرية قد يُقحم مسافات داخل الكلمة الواحدة. */
+const UNIT_TIGHT_RE = new RegExp(`الوحده(\\d+|${ORDINALS})`, 'u');
 const LESSON_NUM_RE = /(^|\s)(\d{1,2})\s*[.٫،]\s*(\d{1,2})(\s|$)/u;
 const LESSON_WORD_RE = /(^|\s)الدرس(\s|$)/u;
 const REVIEW_RE = /ماذا\s+استطيع\s+ان\s+افعل/u;
@@ -46,9 +51,10 @@ export function parseIndexText(text: string): ParsedUnit[] {
     const line = cleanLine(rawLine);
     if (!line || line.length < 3) continue;
     const norm = normalizeAr(line);
+    const tight = norm.replace(/\s+/g, '');
 
     // --- وحدة جديدة ---
-    if (UNIT_RE.test(norm) && !LESSON_NUM_RE.test(norm)) {
+    if ((UNIT_RE.test(norm) || UNIT_TIGHT_RE.test(tight)) && !LESSON_NUM_RE.test(norm)) {
       current = { title: line, include: true, lessons: [] };
       units.push(current);
       continue;

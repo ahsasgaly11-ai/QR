@@ -10,6 +10,7 @@ import {
   ListChecks,
   AlertTriangle,
   Wand2,
+  FileText,
 } from 'lucide-react';
 import type { Subject } from '@/lib/types';
 import {
@@ -36,6 +37,7 @@ export function IndexImporter({
   const [raw, setRaw] = useState('');
   const [units, setUnits] = useState<ParsedUnit[]>([]);
   const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState('');
   const [error, setError] = useState('');
 
   const withGrades = subjects.filter((s) => s.grades.length > 0);
@@ -57,30 +59,70 @@ export function IndexImporter({
     setMode('review');
   }
 
-  async function onImage(file: File) {
+  const toDataUrl = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onload = () => resolve(String(fr.result));
+      fr.onerror = () => reject(new Error(`تعذّر قراءة ${file.name}`));
+      fr.readAsDataURL(file);
+    });
+
+  /** يرسل الملفات (صور أو PDF ممسوح) إلى الخادم للقراءة البصرية. */
+  async function readViaServer(files: File[]) {
+    setStatus(
+      files.length > 1
+        ? `جارٍ قراءة ${files.length} صفحات…`
+        : 'جارٍ قراءة الملف…'
+    );
+    const payload = await Promise.all(
+      files.map(async (f) => ({ data: await toDataUrl(f), mimeType: f.type }))
+    );
+    const idToken = await getIdToken();
+    const res = await fetch('/api/import-index', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ files: payload, idToken }),
+    });
+    const data = (await res.json()) as { text?: string; error?: string };
+    if (!res.ok) throw new Error(data.error || 'تعذّر تحليل الملفات.');
+    return data.text ?? '';
+  }
+
+  /** المعالج الموحّد: صور متعدّدة أو ملف PDF. */
+  async function onFiles(fileList: FileList) {
+    const files = Array.from(fileList);
+    if (files.length === 0) return;
     setError('');
     setBusy(true);
     try {
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const fr = new FileReader();
-        fr.onload = () => resolve(String(fr.result));
-        fr.onerror = () => reject(new Error('تعذّر قراءة الصورة.'));
-        fr.readAsDataURL(file);
-      });
-      const idToken = await getIdToken();
-      const res = await fetch('/api/import-index', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: dataUrl, mimeType: file.type, idToken }),
-      });
-      const data = (await res.json()) as { text?: string; error?: string };
-      if (!res.ok) throw new Error(data.error || 'تعذّر تحليل الصورة.');
-      setRaw(data.text ?? '');
-      analyse(data.text ?? '');
+      const pdf = files.find((f) => f.type === 'application/pdf');
+      let text = '';
+
+      if (pdf) {
+        // 1) جرّب استخراج النص محليًا (بلا خادم وبلا تكلفة)
+        setStatus('جارٍ استخراج النص من الـ PDF…');
+        const { extractPdfText } = await import('@/lib/pdf-text');
+        const out = await extractPdfText(pdf, {
+          onProgress: (n, t) => setStatus(`قراءة صفحة ${n} من ${t}…`),
+        });
+        if (!out.looksScanned && out.text.trim().length > 40) {
+          text = out.text;
+        } else {
+          // 2) ملف ممسوح ضوئيًا — اقرأه بصريًا عبر الخادم
+          setStatus('الملف ممسوح ضوئيًا — جارٍ القراءة البصرية…');
+          text = await readViaServer([pdf]);
+        }
+      } else {
+        text = await readViaServer(files);
+      }
+
+      setRaw(text);
+      analyse(text);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'تعذّر تحليل الصورة.');
+      setError(e instanceof Error ? e.message : 'تعذّر تحليل الملفات.');
     } finally {
       setBusy(false);
+      setStatus('');
     }
   }
 
@@ -148,42 +190,69 @@ export function IndexImporter({
 
         {/* ---------- اختيار الطريقة ---------- */}
         {mode === 'choose' && (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-[color:var(--gold)]/50 bg-[color:var(--surface-2)]/60 p-8 text-center transition hover:border-[color:var(--maroon)]">
-              {busy ? (
-                <Loader2 className="h-9 w-9 animate-spin text-[color:var(--maroon)]" />
-              ) : (
-                <ImagePlus className="h-9 w-9 text-[color:var(--maroon)]" />
-              )}
-              <span className="font-bold text-[color:var(--maroon)]">
-                {busy ? 'جارٍ قراءة الصورة…' : 'رفع صورة الفهرس'}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                صوّر صفحة الفهرس من الكتاب
-              </span>
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                disabled={busy}
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) onImage(f);
-                }}
-              />
-            </label>
+          <>
+            {busy && (
+              <div className="mb-4 flex items-center justify-center gap-3 rounded-2xl bg-[color:var(--surface-2)] p-5 text-sm font-bold text-[color:var(--maroon)]">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                {status || 'جارٍ المعالجة…'}
+              </div>
+            )}
 
-            <button
-              onClick={() => setMode('text')}
-              className="flex flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-[color:var(--gold)]/50 bg-[color:var(--surface-2)]/60 p-8 text-center transition hover:border-[color:var(--maroon)]"
-            >
-              <ClipboardPaste className="h-9 w-9 text-[color:var(--maroon)]" />
-              <span className="font-bold text-[color:var(--maroon)]">لصق نص الفهرس</span>
-              <span className="text-xs text-muted-foreground">
-                يعمل دائمًا وبلا أي إعداد
-              </span>
-            </button>
-          </div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <label
+                className={cn(
+                  'flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-[color:var(--gold)]/50 bg-[color:var(--surface-2)]/60 p-6 text-center transition hover:border-[color:var(--maroon)]',
+                  busy && 'pointer-events-none opacity-50'
+                )}
+              >
+                <ImagePlus className="h-8 w-8 text-[color:var(--maroon)]" />
+                <span className="font-bold text-[color:var(--maroon)]">صور الفهرس</span>
+                <span className="text-xs text-muted-foreground">
+                  يمكن اختيار عدة صفحات معًا
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  disabled={busy}
+                  onChange={(e) => e.target.files && onFiles(e.target.files)}
+                />
+              </label>
+
+              <label
+                className={cn(
+                  'flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-[color:var(--gold)]/50 bg-[color:var(--surface-2)]/60 p-6 text-center transition hover:border-[color:var(--maroon)]',
+                  busy && 'pointer-events-none opacity-50'
+                )}
+              >
+                <FileText className="h-8 w-8 text-[color:var(--maroon)]" />
+                <span className="font-bold text-[color:var(--maroon)]">ملف PDF</span>
+                <span className="text-xs text-muted-foreground">
+                  يُقرأ داخل متصفّحك بلا إعداد
+                </span>
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  className="hidden"
+                  disabled={busy}
+                  onChange={(e) => e.target.files && onFiles(e.target.files)}
+                />
+              </label>
+
+              <button
+                onClick={() => setMode('text')}
+                disabled={busy}
+                className="flex flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-[color:var(--gold)]/50 bg-[color:var(--surface-2)]/60 p-6 text-center transition hover:border-[color:var(--maroon)] disabled:opacity-50"
+              >
+                <ClipboardPaste className="h-8 w-8 text-[color:var(--maroon)]" />
+                <span className="font-bold text-[color:var(--maroon)]">لصق النص</span>
+                <span className="text-xs text-muted-foreground">
+                  الأدقّ دائمًا وبلا تكلفة
+                </span>
+              </button>
+            </div>
+          </>
         )}
 
         {/* ---------- لصق النص ---------- */}
