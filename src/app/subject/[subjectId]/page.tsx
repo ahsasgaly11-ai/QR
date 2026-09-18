@@ -53,7 +53,7 @@ export default async function SubjectPage({
               حمّلها للعمل دون اتصال.
             </p>
           </div>
-          <OryxMascot className="hidden h-40 w-auto float-mid drop-shadow-2xl md:block" />
+          <OryxMascot priority className="hidden h-40 w-auto float-mid drop-shadow-2xl md:block" />
         </div>
       </section>
 
