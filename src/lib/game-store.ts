@@ -140,12 +140,15 @@ export async function loadGameHtml(id: string): Promise<string | null> {
 export async function savePreviewHtml(id: string, html: string): Promise<boolean> {
   const db = getDb();
   if (!db) return false;
-  const { makePreviewHtml } = await import('@/lib/preview-html');
+  const { makePreviewHtml, PREVIEW_VERSION } = await import('@/lib/preview-html');
   const light = makePreviewHtml(html);
   if (!light) return false;
   try {
     const { doc, setDoc } = await import('firebase/firestore');
-    await setDoc(doc(db, 'activities', id, 'preview', 'doc'), { s: light });
+    await setDoc(doc(db, 'activities', id, 'preview', 'doc'), {
+      s: light,
+      v: PREVIEW_VERSION,
+    });
     return true;
   } catch {
     return false;

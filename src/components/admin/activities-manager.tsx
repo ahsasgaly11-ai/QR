@@ -8,6 +8,7 @@ import type { Activity, ActivityType, Subject } from '@/lib/types';
 import { ACTIVITY_META } from '@/lib/types';
 import { updateActivity, deleteActivity } from '@/lib/content';
 import { revalidateContent } from '@/lib/revalidate';
+import { PREVIEW_VERSION } from '@/lib/preview-html';
 import { isFirebaseConfigured } from '@/lib/firebase';
 import { ActivityTypeBadge } from '@/components/activity-type-badge';
 
@@ -78,7 +79,7 @@ export function ActivitiesManager({
    */
   async function buildMissingPreviews() {
     const targets = rows.filter(
-      (a) => a.stored === 'firestore' && !a.hasPreview && uploaded.has(a.id)
+      (a) => a.stored === 'firestore' && (!a.hasPreview || a.previewV !== PREVIEW_VERSION) && uploaded.has(a.id)
     );
     if (!targets.length) {
       setBackfillMsg('كل الأنشطة لديها معاينة بالفعل.');
@@ -93,9 +94,16 @@ export function ActivitiesManager({
       try {
         const html = await loadGameHtml(a.id);
         if (html && (await savePreviewHtml(a.id, html))) {
-          await updateActivity(a.id, { hasPreview: true });
+          await updateActivity(a.id, {
+            hasPreview: true,
+            previewV: PREVIEW_VERSION,
+          });
           setRows((r) =>
-            r.map((x) => (x.id === a.id ? { ...x, hasPreview: true } : x))
+            r.map((x) =>
+              x.id === a.id
+                ? { ...x, hasPreview: true, previewV: PREVIEW_VERSION }
+                : x
+            )
           );
           ok++;
         }
@@ -119,7 +127,7 @@ export function ActivitiesManager({
     : rows;
 
   const missingPreviews = rows.filter(
-    (a) => a.stored === 'firestore' && !a.hasPreview && uploaded.has(a.id)
+    (a) => a.stored === 'firestore' && (!a.hasPreview || a.previewV !== PREVIEW_VERSION) && uploaded.has(a.id)
   ).length;
 
   return (
@@ -128,8 +136,7 @@ export function ActivitiesManager({
         <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-[color:var(--gold)]/35 bg-[color:var(--gold)]/10 p-4 text-sm">
           <Images className="h-5 w-5 shrink-0 text-[color:var(--gold)]" />
           <p className="flex-1">
-            <b>{missingPreviews}</b> نشاطًا بلا معاينة في بطاقة الدرس (رُفعت قبل
-            إضافة هذه الميزة).
+            <b>{missingPreviews}</b> نشاطًا بحاجة إلى بناء المعاينة أو تحديثها.
           </p>
           <button
             onClick={buildMissingPreviews}

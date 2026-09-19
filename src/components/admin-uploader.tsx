@@ -19,6 +19,7 @@ import { ACTIVITY_META } from '@/lib/types';
 import { isFirebaseConfigured, getDb } from '@/lib/firebase';
 import { saveStructure, toStructure } from '@/lib/content';
 import { saveGameHtml, savePreviewHtml, MAX_GAME_BYTES } from '@/lib/game-store';
+import { PREVIEW_VERSION } from '@/lib/preview-html';
 import { revalidateContent } from '@/lib/revalidate';
 import {
   saveLocalActivity,
@@ -245,6 +246,7 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
         stored: 'firestore',
         chunks,
         hasPreview,
+        previewV: hasPreview ? PREVIEW_VERSION : 0,
       });
 
       // حدّث الصفحات فورًا ليظهر النشاط للجميع بلا انتظار

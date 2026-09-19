@@ -156,21 +156,34 @@ interface CachedPreview {
   id: string;
   html: string;
   at: number;
+  /** نسخة مولّد المعاينة — تُبطِل الذاكرة تلقائيًا عند تحسين المولّد */
+  v?: number;
 }
 
-export async function getCachedPreview(id: string): Promise<string | null> {
+export async function getCachedPreview(
+  id: string,
+  version?: number
+): Promise<string | null> {
   const rec = await tx<CachedPreview>(
     'readonly',
     (s) => s.get(id),
     PREVIEW_STORE
   );
-  return rec?.html ?? null;
+  if (!rec) return null;
+  // معاينة بُنيت بنسخة أقدم: تجاهلها وأعد تحميلها من الخادم
+  if (version !== undefined && rec.v !== version) return null;
+  return rec.html ?? null;
 }
 
-export async function putCachedPreview(id: string, html: string): Promise<void> {
+export async function putCachedPreview(
+  id: string,
+  html: string,
+  version?: number
+): Promise<void> {
   await tx(
     'readwrite',
-    (s) => s.put({ id, html, at: Date.now() }) as IDBRequest<IDBValidKey>,
+    (s) =>
+      s.put({ id, html, at: Date.now(), v: version }) as IDBRequest<IDBValidKey>,
     PREVIEW_STORE
   );
 }

@@ -21,9 +21,12 @@ const MAX_DOC_BYTES = 850_000;
 const SILENT_AUDIO =
   'data:audio/mpeg;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tAAA=';
 
-/** بكسل شفّاف، يحلّ محلّ الصور الضخمة. */
-const BLANK_PNG =
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+/**
+ * بكسل شفّاف تمامًا (0,0,0,0)، يحلّ محلّ الصور الضخمة.
+ * وُلِّد وتُحقّق من قيمته بدل نسخه: النسخة الشائعة المتداولة أخضر نصف
+ * شفّاف (0,255,0,127)، فكانت كل صورة مستبدَلة تظهر مستطيلًا أخضر.
+ */
+const BLANK_PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNgYGBgAAAABQABeqhXUAAAAABJRU5ErkJggg==';
 
 const MEDIA_RE = /data:(?:audio|video)\/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=]+/gi;
 const IMAGE_RE = /data:image\/[a-z0-9.+-]+;base64,([A-Za-z0-9+/=]+)/gi;
@@ -38,9 +41,15 @@ const IMAGE_RE = /data:image\/[a-z0-9.+-]+;base64,([A-Za-z0-9+/=]+)/gi;
  */
 const B64_LITERAL_RE = /(["'`])([A-Za-z0-9+/=]{3000,})\1/g;
 
-/** بديل صالح كصورة، ويفشل بهدوء إن كان الأصل صوتًا. */
+/** بديل صالح كصورة (شفّاف)، ويفشل بهدوء إن كان الأصل صوتًا. */
 const TINY_B64 =
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNgYGBgAAAABQABeqhXUAAAAABJRU5ErkJggg==';
+
+/**
+ * نسخة مولّد المعاينة. تُحفَظ مع كل معاينة، فإن تغيّر المولّد عرفت اللوحة
+ * أي المعاينات بُنيت بنسخة قديمة وتحتاج إعادة توليد.
+ */
+export const PREVIEW_VERSION = 2;
 
 const bytes = (s: string) => new TextEncoder().encode(s).length;
 
