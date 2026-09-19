@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Gamepad2, Loader2 } from 'lucide-react';
 import type { Activity } from '@/lib/types';
-import { PREVIEW_VERSION } from '@/lib/preview-html';
+import { PREVIEW_VERSION, repairLegacyPreview } from '@/lib/preview-html';
 import {
   getLocalRecord,
   htmlToBlobUrl,
@@ -100,6 +100,8 @@ export function ActivityPreview({
               html = await loadGameHtml(activity.id);
             }
             if (!alive) return;
+            // أصلح المعاينات المبنيّة بالنسخة المعطوبة قبل عرضها أو حفظها
+            if (html) html = repairLegacyPreview(html);
             if (html) void putCachedPreview(activity.id, html, PREVIEW_VERSION);
           }
 
