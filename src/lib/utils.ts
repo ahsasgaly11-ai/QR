@@ -5,7 +5,11 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-/** Arabic-Indic-friendly compact number formatting (uses Latin digits). */
+/**
+ * الأرقام في المنصّة تُعرض بالصيغة اللاتينية (1، 2، 3) لا الهندية (١، ٢، ٣).
+ * هذا اختيار مقصود: الأرقام اللاتينية هي المعتمدة في الكتب المدرسية القطرية
+ * وفي فهرس الكتاب نفسه (الدرس 1.2)، فتبقى الواجهة متّسقة مع ما يقرأه الطالب.
+ */
 export function formatNumber(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
   if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
@@ -13,7 +17,7 @@ export function formatNumber(n: number): string {
 }
 
 export function formatFull(n: number): string {
-  return new Intl.NumberFormat('ar-QA').format(n);
+  return new Intl.NumberFormat('en-US').format(n);
 }
 
 /**

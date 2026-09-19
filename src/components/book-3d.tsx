@@ -76,7 +76,8 @@ export function Book3D() {
                 className="absolute -top-1 right-8 z-10 grid h-12 w-12 place-items-center rounded-full font-playful text-2xl text-white shadow-lg"
                 style={{ background: 'radial-gradient(circle at 35% 30%,#ff8064,#e5573a)' }}
               >
-                ٣
+                {/* لاتيني ليتّسق مع بقيّة أرقام الموقع ومع شارة التميمة */}
+                3
               </span>
               <OryxMascot className="h-48 w-auto float-mid drop-shadow-xl" />
             </div>
