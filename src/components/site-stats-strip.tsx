@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Users, Eye, Download, Sparkles } from 'lucide-react';
 import { getSiteStats } from '@/lib/stats';
 import { CountUp } from './count-up';
+import { Icon3D } from '@/components/icon-3d';
 
 export function SiteStatsStrip({ activities }: { activities: number }) {
   const [s, setS] = useState({ visitors: 0, views: 0, downloads: 0 });
@@ -26,12 +27,7 @@ export function SiteStatsStrip({ activities }: { activities: number }) {
           key={it.label}
           className="card-premium glass flex items-center gap-3 rounded-2xl p-4"
         >
-          <span
-            className="grid h-12 w-12 shrink-0 place-items-center rounded-xl text-white shadow-md"
-            style={{ background: it.color }}
-          >
-            <it.icon className="h-6 w-6" />
-          </span>
+          <Icon3D icon={it.icon} color={it.color} size="md" />
           <div className="leading-tight">
             <div className="font-display text-2xl font-black text-foreground">
               <CountUp value={it.value} />

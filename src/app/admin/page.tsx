@@ -8,6 +8,7 @@ import {
 } from '@/lib/content';
 import { AdminShell } from '@/components/admin/admin-shell';
 import { BackButton } from '@/components/back-button';
+import { Icon3D } from '@/components/icon-3d';
 
 // لوحة المالك تُقرأ حيّة دائمًا حتى يرى ما رفعه فورًا بلا انتظار.
 export const dynamic = 'force-dynamic';
@@ -36,9 +37,7 @@ export default async function AdminPage() {
         <BackButton fallback="/" />
       </div>
       <div className="mb-8 text-center">
-        <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-[color:var(--maroon)] text-white shadow-[var(--shadow-md)]">
-          <Settings2 className="h-8 w-8" />
-        </span>
+        <Icon3D icon={Settings2} size="lg" className="mx-auto" />
         <h1 className="mt-4 font-calli text-3xl font-bold text-[color:var(--maroon)] sm:text-4xl">
           لوحة الإدارة
         </h1>

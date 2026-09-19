@@ -21,10 +21,10 @@ export function ActivityTypeBadge({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold text-white shadow-sm',
+        'icon-3d inline-flex !place-items-stretch items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold text-white',
         className
       )}
-      style={{ background: meta.color }}
+      style={{ ['--i3d' as string]: meta.color }}
     >
       <Icon className="h-3.5 w-3.5" />
       {meta.label}
