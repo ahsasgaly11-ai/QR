@@ -34,6 +34,8 @@ export interface Activity {
   chunks?: number;
   /** توجد نسخة معاينة خفيفة تُعرض في بطاقة الدرس. */
   hasPreview?: boolean;
+  /** نسخة مولّد المعاينة التي بُنيت بها — لإعادة التوليد عند تحسينه. */
+  previewV?: number;
   subjectId: string;
   gradeId: string;
   unitId: string;

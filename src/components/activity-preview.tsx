@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Gamepad2, Loader2 } from 'lucide-react';
 import type { Activity } from '@/lib/types';
+import { PREVIEW_VERSION } from '@/lib/preview-html';
 import {
   getLocalRecord,
   htmlToBlobUrl,
@@ -84,7 +85,7 @@ export function ActivityPreview({
           } else setFailed(true);
         } else if (activity.stored === 'firestore') {
           // 1) الذاكرة المحلية: المعاينة لا تتغيّر، فالزيارة الثانية فورية
-          let html = await getCachedPreview(activity.id);
+          let html = await getCachedPreview(activity.id, PREVIEW_VERSION);
           if (!alive) return;
 
           if (!html) {
@@ -99,7 +100,7 @@ export function ActivityPreview({
               html = await loadGameHtml(activity.id);
             }
             if (!alive) return;
-            if (html) void putCachedPreview(activity.id, html);
+            if (html) void putCachedPreview(activity.id, html, PREVIEW_VERSION);
           }
 
           if (html) {
