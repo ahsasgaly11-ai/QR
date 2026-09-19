@@ -18,7 +18,7 @@ export function OryxMascot({
   return (
     <Image
       src="/mascot-oryx.png"
-      alt="المها العربي — تميمة منصّة مناهج قطر"
+      alt="المها العربي — تميمة منصّة منهاج قطر التفاعلية"
       width={407}
       height={520}
       priority={priority}
