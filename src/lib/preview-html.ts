@@ -49,7 +49,7 @@ const TINY_B64 =
  * نسخة مولّد المعاينة. تُحفَظ مع كل معاينة، فإن تغيّر المولّد عرفت اللوحة
  * أي المعاينات بُنيت بنسخة قديمة وتحتاج إعادة توليد.
  */
-export const PREVIEW_VERSION = 2;
+export const PREVIEW_VERSION = 3;
 
 const bytes = (s: string) => new TextEncoder().encode(s).length;
 

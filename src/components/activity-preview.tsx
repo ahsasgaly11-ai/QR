@@ -100,10 +100,12 @@ export function ActivityPreview({
               html = await loadGameHtml(activity.id);
             }
             if (!alive) return;
-            // أصلح المعاينات المبنيّة بالنسخة المعطوبة قبل عرضها أو حفظها
-            if (html) html = repairLegacyPreview(html);
             if (html) void putCachedPreview(activity.id, html, PREVIEW_VERSION);
           }
+
+          // أصلح البكسل الأخضر في كل المسارات — بما فيها نسخة مخزَّنة محليًا
+          // سبق أن حُفظت قبل الإصلاح، وإلا بقي الظلّ الأخضر ظاهرًا للزائر.
+          if (html) html = repairLegacyPreview(html);
 
           if (html) {
             const u = htmlToBlobUrl(html);
