@@ -167,6 +167,75 @@ body::after {
 }
 
 /* العناوين الكبرى بخط الهوية الرسمي — للعناوين الضخمة فقط لضمان الوضوح */
+/* ===========================================================================
+   أيقونات ثلاثية الأبعاد
+   ---------------------------------------------------------------------------
+   العمق مبنيّ من ثلاث طبقات لا من صورة جاهزة، فيبقى حادًّا على أي دقّة شاشة
+   ويأخذ لون المادة تلقائيًا:
+     • تدرّج قُطري يوحي بمصدر ضوء واحد من أعلى اليسار
+     • ظلّ داخلي فاتح عند الحافة العليا وداكن عند السفلى (حافة مشطوفة)
+     • ظلّ خارجي ملوّن يرفع العنصر عن السطح بدل رماديّ ميّت
+   و ::before طبقة لمعان زجاجي في النصف العلوي.
+   =========================================================================== */
+.icon-3d {
+  position: relative;
+  display: grid;
+  place-items: center;
+  isolation: isolate;
+  color: #fff;
+  background-image: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--i3d) 88%, white),
+    var(--i3d) 45%,
+    color-mix(in srgb, var(--i3d) 78%, black)
+  );
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.22),
+    0 6px 14px -4px color-mix(in srgb, var(--i3d) 55%, transparent),
+    0 2px 4px rgba(0, 0, 0, 0.12);
+  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.28s ease;
+}
+
+.icon-3d::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.28),
+    rgba(255, 255, 255, 0) 55%
+  );
+}
+
+.icon-3d > svg {
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3));
+}
+
+/* يُرفع العنصر قليلًا عند المرور عليه أو على البطاقة الحاوية له */
+.icon-3d-lift:hover,
+.group:hover .icon-3d-lift {
+  transform: translateY(-2px) scale(1.04);
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.22),
+    0 12px 22px -6px color-mix(in srgb, var(--i3d) 65%, transparent),
+    0 3px 6px rgba(0, 0, 0, 0.14);
+}
+
+/* حبيبات ناعمة تمنع تشريط التدرّج على الشاشات الكبيرة */
+@media (prefers-reduced-motion: reduce) {
+  .icon-3d,
+  .icon-3d-lift:hover,
+  .group:hover .icon-3d-lift {
+    transition: none;
+    transform: none;
+  }
+}
+
 .font-calli {
   font-family: 'Aref Ruqaa', 'Tajawal', serif;
   font-weight: 700;

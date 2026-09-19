@@ -2,6 +2,7 @@ import { Search } from 'lucide-react';
 import { getAllActivities, getSubjects, locateActivity } from '@/lib/content';
 import { SearchExplorer, type SearchRow } from '@/components/search-explorer';
 import { BackButton } from '@/components/back-button';
+import { Icon3D } from '@/components/icon-3d';
 
 // المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
 // وإلا لما ظهرت الأنشطة المرفوعة بعد البناء إلا بنشر جديد.
@@ -36,9 +37,7 @@ export default async function SearchPage() {
         <BackButton fallback="/" />
       </div>
       <div className="mb-10 text-center">
-        <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-[color:var(--maroon)] text-white shadow-[var(--shadow-md)]">
-          <Search className="h-8 w-8" />
-        </span>
+        <Icon3D icon={Search} size="lg" className="mx-auto" />
         <h1 className="mt-4 font-calli text-4xl font-bold text-[color:var(--maroon)] sm:text-5xl">
           ابحث في المنصّة
         </h1>

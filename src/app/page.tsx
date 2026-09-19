@@ -15,6 +15,7 @@ import { Book3D } from '@/components/book-3d';
 import { Reveal } from '@/components/reveal';
 import { SiteStatsStrip } from '@/components/site-stats-strip';
 import { ActivityCard } from '@/components/activity-card';
+import { Icon3D } from '@/components/icon-3d';
 
 // المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
 // وإلا لما ظهرت الأنشطة المرفوعة بعد البناء إلا بنشر جديد.
@@ -139,12 +140,7 @@ export default async function HomePage() {
                 >
                   {i + 1}
                 </span>
-                <span
-                  className="grid h-16 w-16 place-items-center rounded-2xl text-white shadow-lg"
-                  style={{ background: step.color }}
-                >
-                  <step.icon className="h-8 w-8" />
-                </span>
+                <Icon3D icon={step.icon} color={step.color} size="lg" />
                 <h3 className="mt-5 font-display text-xl font-black text-[color:var(--maroon)]">
                   {step.title}
                 </h3>
@@ -178,7 +174,12 @@ export default async function HomePage() {
                   style={{ background: t.color }}
                 >
                   <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10 transition-transform group-hover:scale-150" />
-                  <t.icon className="h-12 w-12 transition-transform group-hover:scale-110" />
+                  <Icon3D
+                    icon={t.icon}
+                    color="rgba(255,255,255,0.22)"
+                    size="xl"
+                    className="backdrop-blur-sm"
+                  />
                   <span className="font-display text-lg font-black">{t.label}</span>
                 </div>
               </Reveal>
