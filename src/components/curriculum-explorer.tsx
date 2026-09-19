@@ -86,9 +86,9 @@ export function CurriculumExplorer({ subject: serverSubject }: { subject: Subjec
 
   const [gradeId, setGradeId] = useState(serverSubject.grades[0]?.id ?? '');
   const grade = subject.grades.find((g) => g.id === gradeId) ?? subject.grades[0];
-  const [open, setOpen] = useState<Record<string, boolean>>(
-    grade ? { [grade.units[0]?.id ?? '']: true } : {}
-  );
+  // عند دخول الصفحة تُعرض عناوين الوحدات فقط (كلّها مطويّة)، ولا تنسدل دروس
+  // أي وحدة إلا عند نقر الزائر عليها.
+  const [open, setOpen] = useState<Record<string, boolean>>({});
 
   if (!grade) {
     return (
