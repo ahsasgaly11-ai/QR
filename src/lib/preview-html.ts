@@ -82,3 +82,17 @@ export function makePreviewHtml(html: string): string | null {
 
   return null;
 }
+
+/**
+ * بصمة البكسل الأخضر الذي استُخدم بالخطأ في النسخة الأولى من المولّد.
+ * معاينات بُنيت بها ما زالت محفوظة، فنُصلحها لحظة العرض بدل انتظار إعادة
+ * توليدها — فيرى الطالب صورة سليمة فورًا دون أي إجراء من المشرف.
+ */
+const LEGACY_GREEN = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+
+/** يستبدل البكسل الأخضر القديم بالشفّاف في معاينة محفوظة سابقًا. */
+export function repairLegacyPreview(html: string): string {
+  return html.includes(LEGACY_GREEN)
+    ? html.split(LEGACY_GREEN).join(TINY_B64)
+    : html;
+}
