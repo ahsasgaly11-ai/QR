@@ -3,50 +3,56 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- وظائف مساعدة ---
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    // --- المعلمون والبيانات التابعة لهم ---
+    // --- المعلمون والبيانات التابعة لهم (قديمة من تطبيق QR — غير مستخدمة) ---
+    //  كانت معزولة بـ uid == teacherId، لكنها تتيح لأي حساب مسجَّل كتابة
+    //  بيانات غير محدودة تحت وثيقته (استنزاف حصّة Firestore). وبما أنها لم
+    //  تعد مستخدمة، أُغلقت تمامًا؛ الوصول الإداري يبقى عبر Console/Admin SDK.
     match /teachers/{teacherId} {
-      allow read, write: if isSignedIn() && request.auth.uid == teacherId;
+      allow read, write, delete: if false;
 
       match /classes/{classId} {
-        allow read, write, delete: if isSignedIn() && request.auth.uid == teacherId;
+        allow read, write, delete: if false;
       }
 
       match /lessons/{lessonId} {
-        allow read, write, delete: if isSignedIn() && request.auth.uid == teacherId;
+        allow read, write, delete: if false;
       }
-      
-      // بنك الأسئلة الخاص بالمعلم
+
       match /questionBank/{itemId} {
-        allow read, write, delete: if isSignedIn() && request.auth.uid == teacherId;
+        allow read, write, delete: if false;
       }
     }
 
-    // --- الطلاب ---
+    // =====================================================================
+    //  مجموعات قديمة من تطبيق الحضور (QR) — لم تعد مستخدمة في المنصّة الحالية.
+    //
+    //  ⚠️ أمان: كانت هذه المجموعات مفتوحة لأي مستخدم مسجَّل (isSignedIn())
+    //  بلا أي عزل بين المعلّمين، فكان بإمكان أي حساب — وإنشاء الحسابات متاح
+    //  للجميع عبر مزوّد البريد/كلمة المرور — قراءةَ وحذفَ بيانات كل الطلاب
+    //  وأولياء الأمور (بما فيها أرقام واتساب). لذا أُغلقت تمامًا.
+    //
+    //  الوصول الإداري للبيانات القديمة يبقى متاحًا عبر Firebase Console أو
+    //  Admin SDK (يتجاوزان القواعد). وإن أُعيد إحياء تطبيق المعلّمين مستقبلًا
+    //  فيجب كتابة قواعد معزولة صراحةً (resource.data.teacherId == request.auth.uid).
+    // =====================================================================
     match /students/{studentId} {
-      allow read, write, delete: if isSignedIn();
-    }
-    
-    // --- الجلسات والردود ---
-    match /sessions/{sessionId} {
-        allow read, write, delete: if isSignedIn();
-    }
-    
-    match /studentResponses/{responseId} {
-       allow read, write, delete: if isSignedIn();
+      allow read, write, delete: if false;
     }
 
-    // --- أولياء الأمور والجداول المساعدة ---
+    match /sessions/{sessionId} {
+      allow read, write, delete: if false;
+    }
+
+    match /studentResponses/{responseId} {
+      allow read, write, delete: if false;
+    }
+
     match /parents/{parentId} {
-      allow read, write: if isSignedIn();
+      allow read, write, delete: if false;
     }
 
     match /parentLookupsByWhatsapp/{whatsappNumber} {
-        allow read, write: if isSignedIn();
+      allow read, write, delete: if false;
     }
 
     // =====================================================================
