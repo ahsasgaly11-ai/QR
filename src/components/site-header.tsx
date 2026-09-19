@@ -58,7 +58,7 @@ export function SiteHeader() {
                 منصة مناهج قطر التفاعلية
               </p>
               <p className="hidden truncate text-[11px] font-medium text-muted-foreground sm:block">
-                التفاعلية • وزارة التربية والتعليم
+                وزارة التربية والتعليم والتعليم العالي
               </p>
             </div>
           </Link>
