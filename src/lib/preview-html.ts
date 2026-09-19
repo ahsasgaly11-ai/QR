@@ -14,6 +14,9 @@
 // شبكة الجوال، فكلّما صغر كان فتح الصفحة أسرع.
 const MAX_PREVIEW_BYTES = 260_000;
 
+/** الحدّ الأقصى المطلق — دون حدّ وثيقة Firestore (1 م.ب) بهامش أمان. */
+const MAX_DOC_BYTES = 850_000;
+
 /** مقطع صوتي صامت صالح، يحلّ محلّ الموسيقى فلا ينكسر كود التشغيل. */
 const SILENT_AUDIO =
   'data:audio/mpeg;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tAAA=';
@@ -25,6 +28,20 @@ const BLANK_PNG =
 const MEDIA_RE = /data:(?:audio|video)\/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=]+/gi;
 const IMAGE_RE = /data:image\/[a-z0-9.+-]+;base64,([A-Za-z0-9+/=]+)/gi;
 
+/**
+ * نصّ Base64 طويل داخل علامتَي اقتباس في كود JavaScript.
+ *
+ * كثير من الألعاب لا تضع الموسيقى في وسم HTML بل في متغيّر:
+ *   const MUSIC_B64 = "SUQzBAAA…";  ثم  audio.src = "data:audio/mp3;base64," + MUSIC_B64
+ * فلا يلتقطها البحث عن data: لأن البادئة مفصولة عن الحمولة. وهذه الحمولة
+ * وحدها قد تبلغ مليونَي حرف — أي كامل ثقل الملف.
+ */
+const B64_LITERAL_RE = /(["'`])([A-Za-z0-9+/=]{3000,})\1/g;
+
+/** بديل صالح كصورة، ويفشل بهدوء إن كان الأصل صوتًا. */
+const TINY_B64 =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+
 const bytes = (s: string) => new TextEncoder().encode(s).length;
 
 /**
@@ -32,20 +49,27 @@ const bytes = (s: string) => new TextEncoder().encode(s).length;
  * لا يُعدَّل الملف الأصلي إطلاقًا — هذه نسخة منفصلة للعرض فقط.
  */
 export function makePreviewHtml(html: string): string | null {
-  // 1) الصوت والفيديو: الأثقل دائمًا، ولا معنى لهما في صورة ساكنة
+  // 1) الصوت والفيديو المكتوبان بصيغة data: كاملة
   let out = html.replace(MEDIA_RE, SILENT_AUDIO);
   if (bytes(out) <= MAX_PREVIEW_BYTES) return out;
 
-  // 2) الصور الكبيرة فقط — نُبقي الصغيرة لأنها غالبًا أيقونات تصنع الشكل
+  // 2) حمولات Base64 الطويلة داخل كود JavaScript — غالبًا هي الأثقل
+  out = out.replace(B64_LITERAL_RE, (_m, q: string) => `${q}${TINY_B64}${q}`);
+  if (bytes(out) <= MAX_PREVIEW_BYTES) return out;
+
+  // 3) الصور الكبيرة فقط — نُبقي الصغيرة لأنها غالبًا أيقونات تصنع الشكل
   out = out.replace(IMAGE_RE, (m, payload: string) =>
     payload.length > 12_000 ? BLANK_PNG : m
   );
   if (bytes(out) <= MAX_PREVIEW_BYTES) return out;
 
-  // 3) كل الصور
+  // 4) كل الصور
   out = out.replace(IMAGE_RE, BLANK_PNG);
   if (bytes(out) <= MAX_PREVIEW_BYTES) return out;
 
-  // 4) ما زال كبيرًا: معاينة مشوّهة أسوأ من لا معاينة
+  // 5) تجاوزنا الحجم المفضَّل لكنه ما زال دون حدّ الوثيقة: معاينة أبطأ
+  //    قليلًا خير من بطاقة فارغة، فنقبلها بدل التخلّي عنها.
+  if (bytes(out) <= MAX_DOC_BYTES) return out;
+
   return null;
 }
