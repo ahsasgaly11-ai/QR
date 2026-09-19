@@ -13,7 +13,7 @@ import { Icon3D } from '@/components/icon-3d';
 // لوحة المالك تُقرأ حيّة دائمًا حتى يرى ما رفعه فورًا بلا انتظار.
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'لوحة الإدارة | منصة مناهج قطر' };
+export const metadata = { title: 'لوحة الإدارة | منصة مناهج قطر التفاعلية' };
 
 export default async function AdminPage() {
   const [subjects, structure, activities, uploadedIds] = await Promise.all([

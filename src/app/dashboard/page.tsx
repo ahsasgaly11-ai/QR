@@ -8,7 +8,7 @@ import { Icon3D } from '@/components/icon-3d';
 // وإلا لما ظهرت الأنشطة المرفوعة بعد البناء إلا بنشر جديد.
 export const revalidate = 60;
 
-export const metadata = { title: 'لوحة الإحصاءات | منصة مناهج قطر' };
+export const metadata = { title: 'لوحة الإحصاءات | منصة مناهج قطر التفاعلية' };
 
 export default async function DashboardPage() {
   const activities = await getAllActivities();

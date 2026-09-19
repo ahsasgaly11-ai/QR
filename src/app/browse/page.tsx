@@ -8,7 +8,7 @@ import { BackButton } from '@/components/back-button';
 // وإلا لما ظهرت الأنشطة المرفوعة بعد البناء إلا بنشر جديد.
 export const revalidate = 60;
 
-export const metadata = { title: 'تصفّح المناهج | منصة مناهج قطر' };
+export const metadata = { title: 'تصفّح المناهج | منصة مناهج قطر التفاعلية' };
 
 export default async function BrowsePage() {
   const subjects = await getSubjects();
