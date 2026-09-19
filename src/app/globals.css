@@ -168,6 +168,78 @@ body::after {
 
 /* العناوين الكبرى بخط الهوية الرسمي — للعناوين الضخمة فقط لضمان الوضوح */
 /* ===========================================================================
+   تنقّلات الصفحات
+   =========================================================================== */
+
+/* حركة دخول الصفحة — تعمل في كل المتصفّحات */
+@keyframes route-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.route-enter {
+  animation: route-enter 0.32s cubic-bezier(0.22, 0.8, 0.28, 1) both;
+}
+
+/* انتقال المتصفّح الأصلي: تلاشٍ متقاطع بدل الوميض الافتراضي.
+   الاتجاه من اليمين لأن الواجهة عربية: الجديد يدخل من اليسار والقديم
+   ينسحب إلى اليمين، فيقرأ الطالب الحركة كتقدّم لا كرجوع. */
+@keyframes vt-out {
+  to {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+}
+@keyframes vt-in {
+  from {
+    opacity: 0;
+    transform: translateX(-28px);
+  }
+}
+
+::view-transition-old(root) {
+  animation: vt-out 0.28s cubic-bezier(0.4, 0, 1, 1) both;
+}
+::view-transition-new(root) {
+  animation: vt-in 0.34s cubic-bezier(0, 0, 0.2, 1) both;
+}
+
+/* غلاف اللعبة يكبر ليصبح المشغّل — اللحظة السينمائية الأساسية */
+::view-transition-group(game-stage) {
+  animation-duration: 0.42s;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+::view-transition-old(game-stage),
+::view-transition-new(game-stage) {
+  /* يملأ الإطار أثناء التحوّل فلا تتشوّه النِّسب بين الحجمين */
+  height: 100%;
+  object-fit: cover;
+  mix-blend-mode: normal;
+}
+
+/* العنصر الذي سيتحوّل في الصفحة الهدف */
+.vt-game-stage {
+  view-transition-name: game-stage;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-enter {
+    animation: none;
+  }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+/* ===========================================================================
    أيقونات ثلاثية الأبعاد
    ---------------------------------------------------------------------------
    العمق مبنيّ من ثلاث طبقات لا من صورة جاهزة، فيبقى حادًّا على أي دقّة شاشة

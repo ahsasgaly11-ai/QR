@@ -214,7 +214,7 @@ export function ActivityPlayer({
       <div
         ref={wrapRef}
         className={cn(
-          'relative overflow-hidden bg-white',
+          'vt-game-stage relative overflow-hidden bg-white',
           immersive
             ? 'fixed inset-0 z-[100] rounded-none border-0'
             : 'rounded-3xl border-2 border-[color:var(--gold)]/30 shadow-2xl'
