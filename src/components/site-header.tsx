@@ -55,7 +55,7 @@ export function SiteHeader() {
             </div>
             <div className="min-w-0 leading-tight">
               <p className="truncate font-display text-[15px] font-bold text-[color:var(--maroon)] sm:text-[17px]">
-                منصة مناهج قطر التفاعلية
+                منصة منهاج قطر التفاعلية
               </p>
               <p className="hidden truncate text-[11px] font-medium text-muted-foreground sm:block">
                 وزارة التربية والتعليم والتعليم العالي

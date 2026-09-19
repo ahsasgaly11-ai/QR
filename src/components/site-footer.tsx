@@ -20,7 +20,7 @@ export function SiteFooter() {
               />
             </div>
             <div>
-              <p className="font-display text-lg font-black">منصة مناهج قطر التفاعلية</p>
+              <p className="font-display text-lg font-black">منصة منهاج قطر التفاعلية</p>
               <p className="text-xs text-white/70">
                 وزارة التربية والتعليم والتعليم العالي — دولة قطر
               </p>

@@ -2,8 +2,8 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'منصة مناهج قطر التفاعلية',
-    short_name: 'مناهج قطر',
+    name: 'منصة منهاج قطر التفاعلية',
+    short_name: 'منهاج قطر',
     description:
       'منصة تعليمية تفاعلية لمناهج دولة قطر — تجارب ومحاكاة وأسئلة وألعاب تعليمية.',
     start_url: '/',
