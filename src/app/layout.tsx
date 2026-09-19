@@ -3,6 +3,7 @@ import './globals.css';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { FloatingMascot } from '@/components/mascot-cheer';
+import { ContactFab } from '@/components/contact-fab';
 import { RouteTransitions } from '@/components/route-transitions';
 import { VisitTracker } from '@/components/visit-tracker';
 import { Analytics } from '@/components/analytics';
@@ -96,6 +97,7 @@ export default function RootLayout({
         </main>
         <SiteFooter />
         <FloatingMascot />
+        <ContactFab />
         <Analytics />
       </body>
     </html>
