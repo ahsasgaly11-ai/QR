@@ -18,6 +18,7 @@ import { ACTIVITY_META } from '@/lib/types';
 import { CountUp } from './count-up';
 import { ActivityTypeBadge } from './activity-type-badge';
 import { formatFull } from '@/lib/utils';
+import { Icon3D } from './icon-3d';
 
 interface Row {
   id: string;
@@ -86,19 +87,25 @@ export function StatsDashboard({ activities: serverActivities }: { activities: R
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5 sm:space-y-8">
       {/* stat tiles */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {cards.map((c) => (
-          <div key={c.label} className="card-premium relative overflow-hidden rounded-3xl p-6">
-            <div className="absolute -left-6 -top-6 h-24 w-24 rounded-full opacity-[0.08]" style={{ background: c.color }} />
-            <span className="grid h-12 w-12 place-items-center rounded-2xl text-white shadow-[var(--shadow-sm)]" style={{ background: c.color }}>
-              <c.icon className="h-6 w-6" />
-            </span>
-            <div className="mt-4 font-display text-4xl font-bold text-foreground">
+          <div
+            key={c.label}
+            className="card-premium relative overflow-hidden rounded-2xl p-4 sm:rounded-3xl sm:p-6"
+          >
+            <div
+              className="absolute -left-6 -top-6 h-24 w-24 rounded-full opacity-[0.08]"
+              style={{ background: c.color }}
+            />
+            <Icon3D icon={c.icon} color={c.color} size="sm" className="sm:h-12 sm:w-12" />
+            <div className="mt-3 font-display text-2xl font-bold leading-none text-foreground tabular-nums sm:mt-4 sm:text-4xl">
               <CountUp value={c.value} />
             </div>
-            <p className="mt-1 text-sm font-bold text-muted-foreground">{c.label}</p>
+            <p className="mt-1.5 text-xs font-bold leading-snug text-muted-foreground sm:text-sm">
+              {c.label}
+            </p>
           </div>
         ))}
       </div>
@@ -116,28 +123,34 @@ export function StatsDashboard({ activities: serverActivities }: { activities: R
         </div>
       ) : (
       <>
-      <div className="grid gap-6 lg:grid-cols-5">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-5">
         {/* ranking: most viewed (single-hue magnitude; identity via type badge) */}
-        <figure className="card-premium rounded-3xl p-6 sm:p-7 lg:col-span-3">
-          <figcaption className="mb-6 flex items-center gap-2">
+        <figure className="card-premium min-w-0 rounded-2xl p-4 sm:rounded-3xl sm:p-7 lg:col-span-3">
+          <figcaption className="mb-4 flex items-center gap-2 sm:mb-6">
             <TrendingUp className="h-5 w-5 text-[color:var(--maroon)]" />
             <h2 className="font-display text-lg font-bold text-[color:var(--maroon)]">
               الأنشطة الأكثر مشاهدة
             </h2>
           </figcaption>
-          <div className="space-y-5">
+          <div className="space-y-4 sm:space-y-5">
             {rows.slice(0, 8).map((r, i) => (
               <div key={r.id} className="group" title={`${r.title} — ${formatFull(r.views)} مشاهدة`}>
-                <div className="mb-1.5 flex items-center justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span className="w-5 shrink-0 text-center font-display text-sm font-bold text-[color:var(--gold)]">
+                <div className="mb-1.5 flex items-center justify-between gap-2 sm:gap-3">
+                  {/* min-w-0 على الرابط نفسه لا على الحاوية فقط: عنصر مرن
+                      بنصّ غير قابل للالتفاف لا يتقلّص بدونه، فكان العنوان
+                      يمدّ البطاقة 300 بكسل خارج شاشة الهاتف. */}
+                  <Link
+                    href={`/play/${r.id}`}
+                    className="flex min-w-0 flex-1 items-center gap-2 py-1.5 hover:text-[color:var(--maroon)]"
+                  >
+                    <span className="w-5 shrink-0 text-center font-display text-sm font-bold text-[color:var(--gold)] tabular-nums">
                       {i + 1}
                     </span>
-                    <Link href={`/play/${r.id}`} className="truncate text-sm font-bold text-foreground hover:text-[color:var(--maroon)]">
+                    <span className="min-w-0 flex-1 truncate text-sm font-bold text-foreground">
                       {r.title}
-                    </Link>
-                    <ActivityTypeBadge type={r.type} className="hidden shrink-0 sm:inline-flex" />
-                  </div>
+                    </span>
+                    <ActivityTypeBadge type={r.type} className="hidden shrink-0 md:inline-flex" />
+                  </Link>
                   <span className="shrink-0 text-sm font-black tabular-nums text-muted-foreground">
                     {formatFull(r.views)}
                   </span>
@@ -158,24 +171,27 @@ export function StatsDashboard({ activities: serverActivities }: { activities: R
         </figure>
 
         {/* type breakdown (each bar directly labeled: name + icon carry identity) */}
-        <figure className="card-premium rounded-3xl p-6 sm:p-7 lg:col-span-2">
-          <figcaption className="mb-6 flex items-center gap-2">
+        <figure className="card-premium min-w-0 rounded-2xl p-4 sm:rounded-3xl sm:p-7 lg:col-span-2">
+          <figcaption className="mb-4 flex items-center gap-2 sm:mb-6">
             <PieChart className="h-5 w-5 text-[color:var(--maroon)]" />
             <h2 className="font-display text-lg font-bold text-[color:var(--maroon)]">
               المشاهدات حسب النوع
             </h2>
           </figcaption>
-          <div className="space-y-5">
+          <div className="space-y-4 sm:space-y-5">
             {byType.map((t) => {
               const meta = ACTIVITY_META[t.type];
               return (
                 <div key={t.type} title={`${meta.label} — ${formatFull(t.views)} مشاهدة (${t.count} نشاط)`}>
-                  <div className="mb-1.5 flex items-center justify-between gap-2">
-                    <span className="flex items-center gap-2 text-sm font-bold text-foreground">
-                      <span className="h-3 w-3 rounded-sm" style={{ background: meta.color }} />
-                      {meta.label}
+                  <div className="mb-1.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                    <span className="flex min-w-0 items-center gap-2 text-sm font-bold text-foreground">
+                      <span
+                        className="h-3 w-3 shrink-0 rounded-sm"
+                        style={{ background: meta.color }}
+                      />
+                      <span className="truncate">{meta.label}</span>
                     </span>
-                    <span className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
+                    <span className="flex shrink-0 items-center gap-2 text-xs font-bold text-muted-foreground">
                       <span className="tabular-nums">{formatFull(t.views)} مشاهدة</span>
                       <span className="text-[color:var(--gold)]">•</span>
                       <span className="tabular-nums">{t.count} نشاط</span>

@@ -7,14 +7,26 @@
 
 export type ActivityType = 'experiment' | 'simulation' | 'quiz' | 'game';
 
+/**
+ * ألوان أنواع الأنشطة — لوحة تصنيفية (هوية لا مقدار).
+ *
+ * كانت أربع درجات من العنّابي والذهبي، وفحص اللوحة أظهر أن درجتَي
+ * العنّابي (#8a173e و #6a0f2e) لا يفرّق بينهما الناظر العادي أصلًا
+ * (ΔE 7.7، والحدّ 15)، فضلًا عن عمى الألوان. فاستُبدلت بلوحة تُبقي
+ * العنّابي والذهبي من هوية الوزارة وتضيف لونين متباينين.
+ *
+ * تم التحقّق بمُحقّق اللوحات في الوضعين الفاتح والليلي: كل الفحوص تمرّ
+ * (نطاق الإضاءة، حدّ التشبّع، فصل عمى الألوان، الفصل للرؤية العادية،
+ * التباين مع الخلفية).
+ */
 export const ACTIVITY_META: Record<
   ActivityType,
   { label: string; icon: string; color: string }
 > = {
-  experiment: { label: 'تجربة عملية', icon: 'flask', color: 'var(--maroon-700)' },
-  simulation: { label: 'محاكاة', icon: 'atom', color: 'var(--maroon)' },
-  quiz: { label: 'أسئلة تفاعلية', icon: 'help', color: 'var(--gold)' },
-  game: { label: 'لعبة تعليمية', icon: 'gamepad', color: 'var(--maroon-300)' },
+  experiment: { label: 'تجربة عملية', icon: 'flask', color: '#a8244e' },
+  simulation: { label: 'محاكاة', icon: 'atom', color: '#0f8f7c' },
+  quiz: { label: 'أسئلة تفاعلية', icon: 'help', color: '#b0892e' },
+  game: { label: 'لعبة تعليمية', icon: 'gamepad', color: '#6a4c93' },
 };
 
 export interface Activity {
