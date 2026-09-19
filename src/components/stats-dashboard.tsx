@@ -11,14 +11,16 @@ import {
   Play,
   PieChart,
   Table2,
+  Library,
 } from 'lucide-react';
 import { getSiteStats, getAllActivityStats } from '@/lib/stats';
 import type { ActivityStats, ActivityType } from '@/lib/types';
 import { ACTIVITY_META } from '@/lib/types';
 import { CountUp } from './count-up';
 import { ActivityTypeBadge } from './activity-type-badge';
-import { formatFull } from '@/lib/utils';
+import { formatFull, formatPercent } from '@/lib/utils';
 import { Icon3D } from './icon-3d';
+import { DonutChart, type DonutSlice } from './charts/donut-chart';
 
 interface Row {
   id: string;
@@ -33,6 +35,8 @@ export function StatsDashboard({ activities: serverActivities }: { activities: R
   const [map, setMap] = useState<Record<string, ActivityStats>>({});
   const [loaded, setLoaded] = useState(false);
   const [localRows, setLocalRows] = useState<Row[]>([]);
+  /** النوع المُحدَّد بالمؤشّر — تتشارك فيه الحلقتان والمفتاح معًا. */
+  const [activeType, setActiveType] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([getSiteStats(), getAllActivityStats()]).then(([s, m]) => {
@@ -65,19 +69,52 @@ export function StatsDashboard({ activities: serverActivities }: { activities: R
 
   const maxViews = Math.max(1, ...rows.map((r) => r.views));
 
-  // type breakdown (count + views per type)
+  // توزيع حسب النوع: عدد الأنشطة + مجموع المشاهدات
   const types = Object.keys(ACTIVITY_META) as ActivityType[];
   const byType = types
     .map((t) => {
       const list = rows.filter((r) => r.type === t);
       return {
         type: t,
+        label: ACTIVITY_META[t].label,
+        color: ACTIVITY_META[t].color,
         count: list.length,
         views: list.reduce((n, r) => n + r.views, 0),
       };
     })
     .filter((x) => x.count > 0);
-  const maxTypeViews = Math.max(1, ...byType.map((t) => t.views));
+
+  const totalCount = byType.reduce((n, t) => n + t.count, 0);
+  const totalTypeViews = byType.reduce((n, t) => n + t.views, 0);
+
+  const countSlices: DonutSlice[] = byType.map((t) => ({
+    key: t.type,
+    label: t.label,
+    value: t.count,
+    color: t.color,
+  }));
+  const viewSlices: DonutSlice[] = byType.map((t) => ({
+    key: t.type,
+    label: t.label,
+    value: t.views,
+    color: t.color,
+  }));
+
+  const hot = activeType ? byType.find((t) => t.type === activeType) : null;
+
+  // توزيع المشاهدات حسب المادة (مقدار بدرجة لون واحدة، لا هوية)
+  const bySubject = (() => {
+    const m = new Map<string, { views: number; count: number }>();
+    for (const r of rows) {
+      const key = r.subject || 'أنشطة محفوظة محليًّا';
+      const cur = m.get(key) ?? { views: 0, count: 0 };
+      m.set(key, { views: cur.views + r.views, count: cur.count + 1 });
+    }
+    return [...m.entries()]
+      .map(([subject, v]) => ({ subject, ...v }))
+      .sort((a, b) => b.views - a.views || b.count - a.count);
+  })();
+  const maxSubjectViews = Math.max(1, ...bySubject.map((s) => s.views));
 
   const cards = [
     { icon: Users, label: 'إجمالي الزوّار', value: site.visitors, color: 'var(--maroon)' },
@@ -123,6 +160,90 @@ export function StatsDashboard({ activities: serverActivities }: { activities: R
         </div>
       ) : (
       <>
+      {/* ---------------------------------------------------------------
+          حلقتان تشتركان في مفتاح واحد: نفس الفئات وقياسان مختلفان،
+          فتُقارَن «حصّة النوع من المكتبة» بـ«حصّته من الاهتمام».
+         --------------------------------------------------------------- */}
+      <figure className="card-premium rounded-2xl p-4 sm:rounded-3xl sm:p-7">
+        <figcaption className="mb-5 flex items-center gap-2 sm:mb-7">
+          <PieChart className="h-5 w-5 text-[color:var(--maroon)]" />
+          <h2 className="font-display text-lg font-bold text-[color:var(--maroon)]">
+            التوزيع حسب نوع النشاط
+          </h2>
+        </figcaption>
+
+        <div className="grid gap-6 sm:gap-8 lg:grid-cols-[auto_1fr] lg:items-center">
+          <div className="grid grid-cols-2 gap-4 sm:gap-8">
+            <div>
+              <DonutChart
+                data={countSlices}
+                size={150}
+                thickness={21}
+                animate={loaded}
+                activeKey={activeType}
+                onActiveChange={setActiveType}
+                centerValue={
+                  hot ? formatFull(hot.count) : formatFull(totalCount)
+                }
+                centerLabel={hot ? hot.label : 'إجمالي الأنشطة'}
+              />
+              <p className="mt-3 text-center text-xs font-black text-[color:var(--maroon)] sm:text-sm">
+                عدد الأنشطة
+              </p>
+            </div>
+            <div>
+              <DonutChart
+                data={viewSlices}
+                size={150}
+                thickness={21}
+                animate={loaded}
+                activeKey={activeType}
+                onActiveChange={setActiveType}
+                centerValue={
+                  hot ? formatFull(hot.views) : formatFull(totalTypeViews)
+                }
+                centerLabel={hot ? hot.label : 'إجمالي المشاهدات'}
+              />
+              <p className="mt-3 text-center text-xs font-black text-[color:var(--maroon)] sm:text-sm">
+                المشاهدات
+              </p>
+            </div>
+          </div>
+
+          {/* المفتاح: الهوية باسم مكتوب لا باللون وحده */}
+          <ul className="w-full space-y-1 lg:max-w-xl">
+            {byType.map((t) => (
+              <li
+                key={t.type}
+                onMouseEnter={() => setActiveType(t.type)}
+                onMouseLeave={() => setActiveType(null)}
+                className={
+                  'flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl px-3 py-2.5 transition ' +
+                  (activeType === t.type ? 'bg-[color:var(--surface-2)]' : '')
+                }
+              >
+                <span className="flex min-w-0 items-center gap-2 text-sm font-bold text-foreground">
+                  <span
+                    className="h-3 w-3 shrink-0 rounded-sm"
+                    style={{ background: t.color }}
+                    aria-hidden
+                  />
+                  <span className="truncate">{t.label}</span>
+                </span>
+                <span className="flex shrink-0 items-center gap-2 text-xs font-bold text-muted-foreground">
+                  <span className="tabular-nums">{formatFull(t.count)} نشاط</span>
+                  <span className="text-[color:var(--gold)]">•</span>
+                  <span className="tabular-nums">{formatFull(t.views)} مشاهدة</span>
+                  <span className="rounded-md bg-[color:var(--surface-2)] px-1.5 py-0.5 tabular-nums text-[color:var(--maroon)]">
+                    {formatPercent(t.views, totalTypeViews)}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </figure>
+
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-5">
         {/* ranking: most viewed (single-hue magnitude; identity via type badge) */}
         <figure className="card-premium min-w-0 rounded-2xl p-4 sm:rounded-3xl sm:p-7 lg:col-span-3">
@@ -170,42 +291,38 @@ export function StatsDashboard({ activities: serverActivities }: { activities: R
           </div>
         </figure>
 
-        {/* type breakdown (each bar directly labeled: name + icon carry identity) */}
+        {/* subjects: مقدار بدرجة واحدة — الترتيب هو الرسالة، لا اللون */}
         <figure className="card-premium min-w-0 rounded-2xl p-4 sm:rounded-3xl sm:p-7 lg:col-span-2">
           <figcaption className="mb-4 flex items-center gap-2 sm:mb-6">
-            <PieChart className="h-5 w-5 text-[color:var(--maroon)]" />
+            <Library className="h-5 w-5 text-[color:var(--maroon)]" />
             <h2 className="font-display text-lg font-bold text-[color:var(--maroon)]">
-              المشاهدات حسب النوع
+              المشاهدات حسب المادة
             </h2>
           </figcaption>
           <div className="space-y-4 sm:space-y-5">
-            {byType.map((t) => {
-              const meta = ACTIVITY_META[t.type];
-              return (
-                <div key={t.type} title={`${meta.label} — ${formatFull(t.views)} مشاهدة (${t.count} نشاط)`}>
-                  <div className="mb-1.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-                    <span className="flex min-w-0 items-center gap-2 text-sm font-bold text-foreground">
-                      <span
-                        className="h-3 w-3 shrink-0 rounded-sm"
-                        style={{ background: meta.color }}
-                      />
-                      <span className="truncate">{meta.label}</span>
-                    </span>
-                    <span className="flex shrink-0 items-center gap-2 text-xs font-bold text-muted-foreground">
-                      <span className="tabular-nums">{formatFull(t.views)} مشاهدة</span>
-                      <span className="text-[color:var(--gold)]">•</span>
-                      <span className="tabular-nums">{t.count} نشاط</span>
-                    </span>
-                  </div>
-                  <div className="h-2.5 w-full overflow-hidden rounded-full bg-[color:var(--surface-2)]">
-                    <div
-                      className="h-full rounded-full transition-[width] duration-[900ms] ease-out"
-                      style={{ width: loaded ? `${(t.views / maxTypeViews) * 100}%` : '0%', background: meta.color }}
-                    />
-                  </div>
+            {bySubject.map((s) => (
+              <div key={s.subject} title={`${s.subject} — ${formatFull(s.views)} مشاهدة (${s.count} نشاط)`}>
+                <div className="mb-1.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                  <span className="min-w-0 truncate text-sm font-bold text-foreground">
+                    {s.subject}
+                  </span>
+                  <span className="flex shrink-0 items-center gap-2 text-xs font-bold text-muted-foreground">
+                    <span className="tabular-nums">{formatFull(s.views)} مشاهدة</span>
+                    <span className="text-[color:var(--gold)]">•</span>
+                    <span className="tabular-nums">{formatFull(s.count)} نشاط</span>
+                  </span>
                 </div>
-              );
-            })}
+                <div className="h-2.5 w-full overflow-hidden rounded-full bg-[color:var(--surface-2)]">
+                  <div
+                    className="h-full rounded-full transition-[width] duration-[900ms] ease-out"
+                    style={{
+                      width: loaded ? `${(s.views / maxSubjectViews) * 100}%` : '0%',
+                      background: 'linear-gradient(90deg, var(--gold), var(--maroon))',
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
           </div>
         </figure>
       </div>

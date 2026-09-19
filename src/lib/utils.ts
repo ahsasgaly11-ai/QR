@@ -42,3 +42,10 @@ export function normalizeAr(input: string): string {
     .replace(/\s+/g, ' ')
     .trim();
 }
+
+/** نسبة مئوية بالأرقام اللاتينية، بمنزلة عشرية واحدة عند الحاجة فقط. */
+export function formatPercent(part: number, whole: number): string {
+  if (!whole) return '0%';
+  const p = (part / whole) * 100;
+  return `${p >= 10 || p === 0 ? Math.round(p) : p.toFixed(1).replace(/\.0$/, '')}%`;
+}
