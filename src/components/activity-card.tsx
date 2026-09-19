@@ -110,6 +110,7 @@ export function ActivityCard({
 
   return (
     <div
+      data-vt-scope
       className="card-premium group relative flex flex-col overflow-hidden rounded-3xl border border-[color:var(--gold)]/20 bg-[color:var(--surface)] p-5 shadow-lg shadow-black/5"
       style={{ animationDelay: `${index * 60}ms` }}
     >
@@ -142,10 +143,13 @@ export function ActivityCard({
       {/* معاينة حيّة لشكل اللعبة */}
       <Link
         href={`/play/${activity.id}`}
+        data-vt-morph="[data-vt-preview]"
         className="group/prev relative mb-4 block overflow-hidden rounded-2xl"
         aria-label={`تشغيل ${activity.title}`}
       >
-        <ActivityPreview activity={activity} />
+        <span data-vt-preview className="block">
+          <ActivityPreview activity={activity} />
+        </span>
         <span className="pointer-events-none absolute inset-0 grid place-items-center bg-[color:var(--maroon)]/0 transition-colors duration-300 group-hover/prev:bg-[color:var(--maroon)]/35">
           <span className="grid h-12 w-12 scale-75 place-items-center rounded-full bg-white/95 text-[color:var(--maroon)] opacity-0 shadow-lg transition-all duration-300 group-hover/prev:scale-100 group-hover/prev:opacity-100">
             <Play className="h-5 w-5 fill-current" />
@@ -219,6 +223,7 @@ export function ActivityCard({
       <div className="mt-5 flex items-center gap-2">
         <Link
           href={`/play/${activity.id}`}
+          data-vt-morph="[data-vt-preview]"
           className="group/btn flex flex-1 items-center justify-center gap-2 rounded-xl bg-[color:var(--maroon)] px-4 py-2.5 text-sm font-black text-white shadow-md shadow-[color:var(--maroon)]/25 transition-all hover:-translate-y-0.5 hover:bg-[color:var(--maroon-700)]"
         >
           <Play className="h-4 w-4 fill-current transition-transform group-hover/btn:scale-110" />
