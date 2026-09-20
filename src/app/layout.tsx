@@ -8,7 +8,7 @@ import { RouteTransitions } from '@/components/route-transitions';
 import { AccessibilityPanel } from '@/components/accessibility-panel';
 import { VisitTracker } from '@/components/visit-tracker';
 import { Analytics } from '@/components/analytics';
-import { SITE_URL, SITE_NAME } from '@/lib/site';
+import { SITE_URL, SITE_NAME, GOOGLE_SITE_VERIFICATION } from '@/lib/site';
 
 const DESC =
   'منصة تعليمية تفاعلية لمناهج دولة قطر — تجارب عملية ومحاكاة ثلاثية الأبعاد وأسئلة وألعاب بصيغة HTML يمكن تجربتها مباشرة أو تحميلها. وزارة التربية والتعليم والتعليم العالي.';
@@ -21,6 +21,10 @@ export const metadata: Metadata = {
   },
   description: DESC,
   applicationName: SITE_NAME,
+  alternates: { canonical: '/' },
+  ...(GOOGLE_SITE_VERIFICATION
+    ? { verification: { google: GOOGLE_SITE_VERIFICATION } }
+    : {}),
   keywords: [
     'مناهج قطر',
     'العلوم',
