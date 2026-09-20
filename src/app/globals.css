@@ -532,6 +532,14 @@ body::after {
 .spin-slow { animation: spin-slow 28s linear infinite; }
 .spin-slower { animation: spin-slow 70s linear infinite; }
 
+/* --- أفاتار مرشد لغة الإشارة (يحترم تقليل الحركة تلقائيًّا) --------------- */
+@keyframes sign-wave    { 0%,100%{transform:rotate(-8deg)} 50%{transform:rotate(16deg)} }
+@keyframes sign-present { 0%,100%{transform:translateY(0) rotate(0)} 50%{transform:translateY(-5px) rotate(-6deg)} }
+@keyframes sign-breathe { 0%,100%{transform:translateY(0) scaleY(1)} 50%{transform:translateY(-2px) scaleY(1.01)} }
+.sign-body         { transform-origin: 50% 100%; animation: sign-breathe 3.4s ease-in-out infinite; }
+.sign-hand--wave   { transform-origin: 16% 96%; animation: sign-wave 1.15s ease-in-out infinite; }
+.sign-hand--present{ transform-origin: 16% 96%; animation: sign-present 1.9s ease-in-out infinite; }
+
 @keyframes rise-in { from { opacity: 0; transform: translateY(34px) scale(0.98); } to { opacity: 1; transform: none; } }
 .rise-in { opacity: 0; animation: rise-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }

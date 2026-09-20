@@ -8,6 +8,7 @@ import {
   sourceWords,
   type SignManifest,
 } from '@/lib/sign-interpreter';
+import { SignAvatar } from './sign-avatar';
 import { cn } from '@/lib/utils';
 
 // ---------------------------------------------------------------------------
@@ -114,29 +115,45 @@ export function SignLanguagePlayer({ text }: { text: string }) {
       {/* المسرح */}
       <div className="relative grid aspect-square w-full place-items-center bg-black">
         {step.media === 'video' && step.src ? (
-          <video
-            key={`${i}-${step.src}`}
-            src={step.src}
-            autoPlay
-            muted
-            playsInline
-            onEnded={next}
-            className="h-full w-full object-contain"
-          />
-        ) : step.media === 'img' && step.src ? (
-          <img
-            src={step.src}
-            alt={`إشارة: ${step.gloss}`}
-            className="h-full w-full object-contain"
-          />
-        ) : (
-          // لا إشارة موثّقة — نعرض الرمز نصًّا بوضوح دون تلفيق يد
-          <div className="flex flex-col items-center gap-2 px-4 text-center">
-            <span className="font-display text-[5.5rem] font-black leading-none text-white">
-              {step.glyph}
+          <>
+            <video
+              key={`${i}-${step.src}`}
+              src={step.src}
+              autoPlay
+              muted
+              playsInline
+              onEnded={next}
+              className="h-full w-full object-contain"
+            />
+            {/* المرشد حاضر بحجم صغير في الزاوية */}
+            <span className="absolute bottom-2 left-2 h-16 w-16 rounded-full bg-white/90 p-1 shadow-md">
+              <SignAvatar state="greet" />
             </span>
-            <span className="text-[11px] font-bold text-white/70">
-              {step.kind === 'word' ? 'كلمة' : step.kind === 'letter' ? 'حرف' : 'رمز'}
+          </>
+        ) : step.media === 'img' && step.src ? (
+          <>
+            <img
+              src={step.src}
+              alt={`إشارة: ${step.gloss}`}
+              className="h-full w-full object-contain"
+            />
+            <span className="absolute bottom-2 left-2 h-16 w-16 rounded-full bg-white/90 p-1 shadow-md">
+              <SignAvatar state="greet" />
+            </span>
+          </>
+        ) : (
+          // لا إشارة موثّقة — المرشد يوجّه إلى الرمز المعروض نصًّا (دون تلفيق يد)
+          <div className="flex w-full items-center justify-center gap-2 px-4">
+            <span className="h-28 w-28 shrink-0 sm:h-32 sm:w-32">
+              <SignAvatar state={playing ? 'present' : 'greet'} />
+            </span>
+            <span className="flex flex-col items-center text-center">
+              <span className="font-display text-[4.5rem] font-black leading-none text-white sm:text-[5.5rem]">
+                {step.glyph}
+              </span>
+              <span className="mt-1 text-[11px] font-bold text-white/70">
+                {step.kind === 'word' ? 'كلمة' : step.kind === 'letter' ? 'حرف' : 'رمز'}
+              </span>
             </span>
           </div>
         )}
