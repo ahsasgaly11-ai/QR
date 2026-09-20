@@ -193,7 +193,11 @@ export function ActivityPlayer({
           >
             <RefreshCw className="h-4 w-4" />
           </button>
-          <SignLanguageButton src={resolveSignLanguageSrc(activity.signLang)} />
+          <SignLanguageButton
+            src={resolveSignLanguageSrc(activity.signLang)}
+            title={activity.title}
+            description={activity.description}
+          />
           <a href={url} target="_blank" rel="noopener noreferrer" className={toolbarBtn}>
             <ExternalLink className="h-4 w-4" /> فتح في نافذة
           </a>
