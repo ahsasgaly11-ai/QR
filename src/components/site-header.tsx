@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { Menu, X, Home, BookOpen, BarChart3, UploadCloud, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from './theme-toggle';
+import { SITE_NAME } from '@/lib/site';
 
 const NAV = [
   { href: '/', label: 'الرئيسية', icon: Home },
@@ -55,7 +56,7 @@ export function SiteHeader() {
             </div>
             <div className="min-w-0 leading-tight">
               <p className="truncate font-display text-[15px] font-bold text-[color:var(--maroon)] sm:text-[17px]">
-                منصة منهاج قطر التفاعلية
+                {SITE_NAME}
               </p>
               <p className="hidden truncate text-[11px] font-medium text-muted-foreground sm:block">
                 وزارة التربية والتعليم والتعليم العالي

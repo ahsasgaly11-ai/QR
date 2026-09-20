@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   description: DESC,
   applicationName: SITE_NAME,
   keywords: [
-    'منهاج قطر',
+    'مناهج قطر',
     'العلوم',
     'وزارة التربية والتعليم والتعليم العالي',
     'تجارب تفاعلية',

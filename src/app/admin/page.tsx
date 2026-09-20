@@ -9,11 +9,12 @@ import {
 import { AdminShell } from '@/components/admin/admin-shell';
 import { BackButton } from '@/components/back-button';
 import { Icon3D } from '@/components/icon-3d';
+import { SITE_NAME } from '@/lib/site';
 
 // لوحة المالك تُقرأ حيّة دائمًا حتى يرى ما رفعه فورًا بلا انتظار.
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'لوحة الإدارة | منصة منهاج قطر التفاعلية' };
+export const metadata = { title: `لوحة الإدارة | ${SITE_NAME}` };
 
 export default async function AdminPage() {
   const [subjects, structure, activities, uploadedIds] = await Promise.all([

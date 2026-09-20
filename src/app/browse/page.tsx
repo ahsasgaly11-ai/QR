@@ -3,12 +3,13 @@ import { ArrowLeft, Layers } from 'lucide-react';
 import { getSubjects, countActivities } from '@/lib/content';
 import { Reveal } from '@/components/reveal';
 import { BackButton } from '@/components/back-button';
+import { SITE_NAME } from '@/lib/site';
 
 // المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
 // وإلا لما ظهرت الأنشطة المرفوعة بعد البناء إلا بنشر جديد.
 export const revalidate = 60;
 
-export const metadata = { title: 'تصفّح المناهج | منصة منهاج قطر التفاعلية' };
+export const metadata = { title: `تصفّح المناهج | ${SITE_NAME}` };
 
 export default async function BrowsePage() {
   const subjects = await getSubjects();

@@ -3,12 +3,13 @@ import { getAllActivities, getSubjects, locateActivity } from '@/lib/content';
 import { SearchExplorer, type SearchRow } from '@/components/search-explorer';
 import { BackButton } from '@/components/back-button';
 import { Icon3D } from '@/components/icon-3d';
+import { SITE_NAME } from '@/lib/site';
 
 // المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
 // وإلا لما ظهرت الأنشطة المرفوعة بعد البناء إلا بنشر جديد.
 export const revalidate = 60;
 
-export const metadata = { title: 'بحث | منصة منهاج قطر التفاعلية' };
+export const metadata = { title: `بحث | ${SITE_NAME}` };
 
 export default async function SearchPage() {
   const [activities, subjects] = await Promise.all([

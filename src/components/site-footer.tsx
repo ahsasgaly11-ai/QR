@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import { SITE_NAME } from '@/lib/site';
 
 export function SiteFooter() {
   return (
@@ -20,7 +21,7 @@ export function SiteFooter() {
               />
             </div>
             <div>
-              <p className="font-display text-lg font-black">منصة منهاج قطر التفاعلية</p>
+              <p className="font-display text-lg font-black">{SITE_NAME}</p>
               <p className="text-xs text-white/70">
                 وزارة التربية والتعليم والتعليم العالي — دولة قطر
               </p>
