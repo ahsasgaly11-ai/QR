@@ -47,13 +47,44 @@ export const GESTURES: Record<string, HandPose> = {
 // ---------------------------------------------------------------------------
 const DRAFT = 'مسودّة غير معتمدة — بحاجة لمراجعة مترجم معتمد قبل الاعتماد';
 
+function draft(
+  fingers: [number, number, number, number],
+  thumb: number,
+  label: string,
+  rot = 0
+): HandshapeEntry {
+  return { pose: { fingers, thumb, rot, label }, verified: false, note: DRAFT };
+}
+
 export const LETTERS: Record<string, HandshapeEntry> = {
-  ا: { pose: { fingers: [0, 0, 0, 0], thumb: 1, label: 'ألف' }, verified: false, note: DRAFT },
-  ب: { pose: { fingers: [1, 0, 0, 0], thumb: 0, label: 'باء' }, verified: false, note: DRAFT },
-  ت: { pose: { fingers: [1, 1, 0, 0], thumb: 0, label: 'تاء' }, verified: false, note: DRAFT },
-  ث: { pose: { fingers: [1, 1, 1, 0], thumb: 0, label: 'ثاء' }, verified: false, note: DRAFT },
-  ل: { pose: { fingers: [1, 0, 0, 0], thumb: 1, label: 'لام' }, verified: false, note: DRAFT },
-  و: { pose: { fingers: [0, 0, 0, 1], thumb: 1, label: 'واو' }, verified: false, note: DRAFT },
+  ا: draft([0, 0, 0, 0], 1, 'ألف'),
+  ب: draft([1, 0, 0, 0], 0, 'باء'),
+  ت: draft([1, 1, 0, 0], 0, 'تاء'),
+  ث: draft([1, 1, 1, 0], 0, 'ثاء'),
+  ج: draft([0, 0, 0, 0], 0, 'جيم', 22),
+  ح: draft([1, 1, 1, 1], 0, 'حاء'),
+  خ: draft([1, 1, 1, 1], 1, 'خاء', 15),
+  د: draft([1, 0, 0, 0], 1, 'دال', -12),
+  ذ: draft([1, 0, 0, 0], 1, 'ذال', 22),
+  ر: draft([0, 1, 1, 0], 0, 'راء'),
+  ز: draft([0, 1, 0, 0], 0, 'زاي'),
+  س: draft([1, 1, 1, 0], 1, 'سين'),
+  ش: draft([1, 1, 1, 1], 1, 'شين'),
+  ص: draft([0, 0, 0, 1], 1, 'صاد'),
+  ض: draft([0, 0, 1, 1], 0, 'ضاد'),
+  ط: draft([1, 0, 0, 1], 0, 'طاء'),
+  ظ: draft([1, 0, 0, 1], 1, 'ظاء'),
+  ع: draft([0, 1, 0, 0], 1, 'عين'),
+  غ: draft([0, 1, 0, 0], 1, 'غين', 22),
+  ف: draft([1, 1, 0, 0], 1, 'فاء'),
+  ق: draft([1, 1, 0, 0], 1, 'قاف', 22),
+  ك: draft([1, 0, 1, 0], 0, 'كاف'),
+  ل: draft([1, 0, 0, 0], 1, 'لام'),
+  م: draft([0, 0, 0, 0], 1, 'ميم', 30),
+  ن: draft([0, 1, 0, 0], 0, 'نون'),
+  ه: draft([0, 0, 1, 0], 1, 'هاء'),
+  و: draft([0, 0, 0, 1], 1, 'واو'),
+  ي: draft([0, 0, 0, 1], 0, 'ياء'),
 };
 
 /** هل «وضع المراجعة» مُفعَّل؟ (للمترجم فقط — يكشف المسودّات غير المعتمدة). */
