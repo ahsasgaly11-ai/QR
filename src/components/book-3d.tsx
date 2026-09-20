@@ -101,7 +101,7 @@ export function Book3D({ subjects = [] }: { subjects?: BookSubject[] }) {
                   textShadow: '0 4px 0 #f1dcc6, 0 8px 16px rgba(138,23,62,.3)',
                 }}
               >
-                مناهج قطر
+                منهاج قطر
               </h3>
               <p className="mt-2 inline-block rounded-full bg-[color:var(--gold)]/15 px-4 py-1 text-[13px] font-bold text-[#6a0f2e]">
                 كتاب الطالب التفاعلي

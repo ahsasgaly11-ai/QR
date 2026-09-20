@@ -15,7 +15,7 @@ const DESC =
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${SITE_NAME} | مناهج تفاعلية`,
+    default: SITE_NAME,
     template: `%s`,
   },
   description: DESC,
@@ -39,13 +39,13 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'ar_QA',
     siteName: SITE_NAME,
-    title: `${SITE_NAME} | مناهج تفاعلية`,
+    title: SITE_NAME,
     description: DESC,
-    images: [{ url: '/images/science-book-cover.jpg', width: 1200, height: 1200, alt: 'منصة مناهج قطر التفاعلية' }],
+    images: [{ url: '/images/science-book-cover.jpg', width: 1200, height: 1200, alt: SITE_NAME }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: `${SITE_NAME} | مناهج تفاعلية`,
+    title: SITE_NAME,
     description: DESC,
     images: ['/images/science-book-cover.jpg'],
   },
