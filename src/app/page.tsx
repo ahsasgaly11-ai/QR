@@ -15,6 +15,7 @@ import { Book3D } from '@/components/book-3d';
 import { Reveal } from '@/components/reveal';
 import { SiteStatsStrip } from '@/components/site-stats-strip';
 import { ActivityCard } from '@/components/activity-card';
+import { LearningPath } from '@/components/learning-path';
 import { Icon3D } from '@/components/icon-3d';
 
 // المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
@@ -106,6 +107,9 @@ export default async function HomePage() {
           <SiteStatsStrip activities={total} />
         </div>
       </section>
+
+      {/* ===== رحلة الطالب التكيّفية (تظهر بعد بدء أي نشاط) ===== */}
+      <LearningPath activities={activities} />
 
       {/* ===================== HOW IT WORKS ===================== */}
       <section className="mx-auto max-w-7xl px-6 py-16">
