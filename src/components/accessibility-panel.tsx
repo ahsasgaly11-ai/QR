@@ -12,6 +12,7 @@ import {
   Sparkles,
   RotateCcw,
   Check,
+  Hand,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -26,9 +27,10 @@ import { cn } from '@/lib/utils';
 //   data-reading  = normal | comfort    (القراءة الميسّرة لعُسر القراءة)
 //   data-text     = base | lg | xl      (حجم الخط)
 //   data-motion   = auto | reduce       (تقليل الحركة)
+//   data-signlang = on | off            (رفيق لغة الإشارة القطرية)
 // ---------------------------------------------------------------------------
 
-type Attr = 'theme' | 'contrast' | 'reading' | 'text' | 'motion';
+type Attr = 'theme' | 'contrast' | 'reading' | 'text' | 'motion' | 'signlang';
 
 const STORE: Record<Attr, string> = {
   theme: 'qa-theme',
@@ -36,6 +38,7 @@ const STORE: Record<Attr, string> = {
   reading: 'qa-a11y-reading',
   text: 'qa-a11y-text',
   motion: 'qa-a11y-motion',
+  signlang: 'qa-a11y-signlang',
 };
 
 const DEFAULTS: Record<Attr, string> = {
@@ -44,6 +47,7 @@ const DEFAULTS: Record<Attr, string> = {
   reading: 'normal',
   text: 'base',
   motion: 'auto',
+  signlang: 'off',
 };
 
 function readAttr(a: Attr): string {
@@ -78,6 +82,7 @@ export function AccessibilityPanel() {
       reading: readAttr('reading'),
       text: readAttr('text'),
       motion: readAttr('motion'),
+      signlang: readAttr('signlang'),
     });
     // زامن اللوحة مع زر الهيدر إن غيّر الوضع الليلي
     const obs = new MutationObserver(() =>
@@ -338,6 +343,14 @@ export function AccessibilityPanel() {
                 label="تقليل الحركة"
                 desc="إيقاف الحركات والانتقالات"
                 icon={Sparkles}
+              />
+              <Toggle
+                attr="signlang"
+                onValue="on"
+                offValue="off"
+                label="لغة الإشارة القطرية"
+                desc="يفتح رفيق لغة الإشارة تلقائيًا في كل نشاط"
+                icon={Hand}
               />
             </div>
 

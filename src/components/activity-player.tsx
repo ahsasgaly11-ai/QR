@@ -14,6 +14,7 @@ import type { Activity, ActivityStats } from '@/lib/types';
 import { getActivityStats, trackView, trackDownload } from '@/lib/stats';
 import { ActivityTypeBadge } from './activity-type-badge';
 import { SignLanguageButton } from './sign-language';
+import { resolveSignLanguageSrc } from '@/lib/sign-language';
 import { formatFull, cn } from '@/lib/utils';
 import { htmlToBlobUrl } from '@/lib/local-store';
 
@@ -192,7 +193,7 @@ export function ActivityPlayer({
           >
             <RefreshCw className="h-4 w-4" />
           </button>
-          <SignLanguageButton src={activity.signLang} />
+          <SignLanguageButton src={resolveSignLanguageSrc(activity.signLang)} />
           <a href={url} target="_blank" rel="noopener noreferrer" className={toolbarBtn}>
             <ExternalLink className="h-4 w-4" /> فتح في نافذة
           </a>
