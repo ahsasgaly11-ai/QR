@@ -9,6 +9,8 @@ import {
   type SignManifest,
 } from '@/lib/sign-interpreter';
 import { SignAvatar } from './sign-avatar';
+import { HandSign } from './hand-sign';
+import { getLetterHandshape, isSignReviewMode } from '@/lib/handshapes';
 import { cn } from '@/lib/utils';
 
 // ---------------------------------------------------------------------------
@@ -27,6 +29,9 @@ export function SignLanguagePlayer({ text }: { text: string }) {
   const [ready, setReady] = useState(false);
   const [i, setI] = useState(0);
   const [playing, setPlaying] = useState(true);
+  // وضع المراجعة (للمترجم المعتمد فقط) — يكشف أوضاع الحروف المسودّة غير المعتمدة.
+  const [review, setReview] = useState(false);
+  useEffect(() => setReview(isSignReviewMode()), []);
   // مصادر تعذّر تحميلها (مقطع مُخطَّط لم يُصوَّر بعد) — نتراجع بلطف للنصّ.
   const [failed, setFailed] = useState<Set<string>>(new Set());
   const markFailed = useCallback((src?: string) => {
@@ -61,6 +66,11 @@ export function SignLanguagePlayer({ text }: { text: string }) {
   // هل نعرض وسيطًا فعليًّا الآن؟ (له أصل، ولم يتعذّر تحميله)
   const broken = !!step?.src && failed.has(step.src);
   const showMedia = !!step && !!step.media && !!step.src && !broken;
+  // وضع يد الشخصية للحرف الحالي (الموثّق للطلبة، والمسودّات أيضًا في المراجعة)
+  const handshape =
+    step && step.kind === 'letter' && !showMedia
+      ? getLetterHandshape(step.glyph, review)
+      : null;
 
   const goto = useCallback(
     (n: number) => {
@@ -116,8 +126,16 @@ export function SignLanguagePlayer({ text }: { text: string }) {
 
   return (
     <div className="flex flex-col">
+      {/* وضع المراجعة: تنبيه للمترجم أنّ أوضاع اليد مسودّات غير معتمدة */}
+      {review && (
+        <p className="flex items-start gap-2 bg-[color:var(--gold)]/90 px-3 py-2 text-[11px] font-black leading-5 text-black">
+          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          وضع المراجعة (للمترجم المعتمد): أوضاع اليد المعروضة مسودّات غير معتمدة —
+          راجِعها واعتمدها قبل عرضها على الطلبة.
+        </p>
+      )}
       {/* شريط صدق: يُعلن حين لا يحوي القاموس أصولًا موثّقة بعد */}
-      {!anyAsset && (
+      {!anyAsset && !review && (
         <p className="flex items-start gap-2 bg-[color:var(--maroon-100)] px-3 py-2 text-[11px] font-bold leading-5 text-[color:var(--maroon)]">
           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           لم تُضَف بعد أصول القاموس الإشاري الموثّق، فيُعرَض النصّ حرفًا حرفًا
@@ -156,6 +174,24 @@ export function SignLanguagePlayer({ text }: { text: string }) {
               <SignAvatar state="greet" />
             </div>
           </>
+        ) : handshape ? (
+          // الشخصية تؤدّي وضع اليد للحرف من بياناته
+          <div className="flex w-full items-center justify-center gap-1 px-4">
+            <div className="h-36 w-32 shrink-0 sm:h-40 sm:w-36">
+              <HandSign pose={handshape.pose} />
+            </div>
+            <span className="font-display text-[3.5rem] font-black leading-none text-white sm:text-[4.5rem]">
+              {step.glyph}
+            </span>
+            {!handshape.verified && (
+              <span className="absolute right-2 top-2 rounded-lg bg-[color:var(--gold)] px-2 py-0.5 text-[11px] font-black text-black shadow">
+                قيد المراجعة
+              </span>
+            )}
+            <div className="absolute bottom-2 left-2 grid h-14 w-14 place-items-end overflow-hidden rounded-full bg-white/90 shadow-md">
+              <SignAvatar state="present" />
+            </div>
+          </div>
         ) : (
           // لا إشارة موثّقة — المرشد يوجّه إلى الرمز المعروض نصًّا (دون تلفيق يد)
           <div className="flex w-full items-center justify-center gap-2 px-4">
