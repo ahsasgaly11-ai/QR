@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import {
-  Pencil, Trash2, X, Check, Loader2, Lock, Eye, Download, Images, Search, FolderInput,
+  Pencil, Trash2, X, Check, Loader2, Lock, Eye, Download, Images, Search, FolderInput, Hand,
 } from 'lucide-react';
 import type { Activity, ActivityType, Subject } from '@/lib/types';
 import { ACTIVITY_META } from '@/lib/types';
@@ -213,6 +213,27 @@ export function ActivitiesManager({
                     </button>
                   ))}
                 </div>
+                {/* مقطع لغة الإشارة القطرية (اختياري) */}
+                <div className="rounded-xl border border-[color:var(--hairline)] p-3">
+                  <label className="mb-2 flex items-center gap-1.5 text-xs font-black text-[color:var(--maroon)]">
+                    <Hand className="h-4 w-4" /> مقطع لغة الإشارة القطرية
+                  </label>
+                  <input
+                    className={inp}
+                    value={draft.signLang ?? ''}
+                    onChange={(e) =>
+                      setDraft((d) => ({ ...d, signLang: e.target.value }))
+                    }
+                    placeholder="رابط mp4 أو يوتيوب/فيميو (اختياري)"
+                    dir="ltr"
+                  />
+                  <p className="mt-1.5 text-[11px] font-medium leading-5 text-muted-foreground">
+                    خيار لغة الإشارة متاح على كل نشاط تلقائيًا. أضِف رابطًا هنا
+                    ليظهر شرح خاصّ بهذا النشاط للطلبة الصمّ وضعاف السمع؛ واتركه
+                    فارغًا ليُستخدم المقطع العام إن كان مضبوطًا.
+                  </p>
+                </div>
+
                 {/* نقل النشاط إلى وحدة أو درس آخر */}
                 <div className="rounded-xl border border-[color:var(--hairline)] p-3">
                   <p className="mb-2 flex items-center gap-1.5 text-xs font-black text-[color:var(--maroon)]">
@@ -289,6 +310,7 @@ export function ActivitiesManager({
                         title: a.title,
                         description: a.description,
                         type: a.type,
+                        signLang: a.signLang ?? '',
                         subjectId: a.subjectId,
                         gradeId: a.gradeId,
                         unitId: a.unitId,

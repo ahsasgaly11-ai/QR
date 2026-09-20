@@ -3,12 +3,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { Hand, X, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { SIGN_LANG_ATTR, isSignLanguageOn } from '@/lib/sign-language';
 
 // ---------------------------------------------------------------------------
 // رفيق لغة الإشارة القطرية
 // زرّ يفتح نافذة عائمة (Picture-in-Picture) تعرض مقطع الشرح بلغة الإشارة
 // المرفق بالنشاط. عند غياب مقطع، تظهر رسالة لبقة تشرح الميزة وكيف تُضيف
 // الوزارة المقاطع لاحقًا (يكفي تعبئة الحقل signLang للنشاط) — دون تلفيق محتوى.
+//
+// الخيار متاح تلقائيًا على كل نشاط. ومن فعّل «لغة الإشارة القطرية» من لوحة
+// إمكانية الوصول يُفتح له الرفيق تلقائيًا عند فتح أي نشاط (data-signlang).
 // ---------------------------------------------------------------------------
 
 function toEmbed(url: string): { kind: 'video' | 'iframe'; src: string } {
@@ -30,7 +34,25 @@ export function SignLanguageButton({
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [preferOn, setPreferOn] = useState(false);
   const closeRef = useRef<HTMLButtonElement | null>(null);
+
+  // من فعّل الخيار من لوحة الوصول يُفتح له الرفيق تلقائيًا عند فتح النشاط،
+  // ويظل يتابع تغيّر الإعداد فيُفتح عند التفعيل ويُغلق عند الإيقاف.
+  useEffect(() => {
+    const sync = () => {
+      const on = isSignLanguageOn();
+      setPreferOn(on);
+      setOpen(on);
+    };
+    sync();
+    const obs = new MutationObserver(sync);
+    obs.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: [`data-${SIGN_LANG_ATTR}`],
+    });
+    return () => obs.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -51,13 +73,23 @@ export function SignLanguageButton({
         type="button"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
+        aria-pressed={preferOn}
         className={cn(
-          'flex items-center gap-1.5 rounded-xl border border-[color:var(--gold)]/40 bg-[color:var(--surface)]/70 px-3 py-2 text-sm font-bold text-[color:var(--maroon)] transition hover:bg-[color:var(--gold)]/10',
+          'flex items-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-bold transition',
+          preferOn
+            ? 'border-[color:var(--maroon)] bg-[color:var(--maroon-100)] text-[color:var(--maroon)]'
+            : 'border-[color:var(--gold)]/40 bg-[color:var(--surface)]/70 text-[color:var(--maroon)] hover:bg-[color:var(--gold)]/10',
           className
         )}
         title="شرح النشاط بلغة الإشارة"
       >
         <Hand className="h-4 w-4" /> لغة الإشارة
+        {preferOn && (
+          <span
+            aria-hidden
+            className="h-2 w-2 rounded-full bg-[color:var(--maroon)]"
+          />
+        )}
       </button>
 
       {open && (
@@ -109,9 +141,10 @@ export function SignLanguageButton({
                 لا يتوفّر شرح بلغة الإشارة لهذا النشاط بعد.
               </p>
               <p className="text-xs font-medium leading-6 text-muted-foreground">
-                هذه الميزة جاهزة: عند إضافة مقطع لغة الإشارة القطرية للنشاط
-                (من لوحة الإدارة) سيظهر هنا تلقائيًا لخدمة الطلبة الصمّ وضعاف
-                السمع.
+                الخيار مُفعَّل ومتاح على كل نشاط تلقائيًا. عند إضافة مقطع لغة
+                الإشارة القطرية للنشاط (من لوحة الإدارة) سيظهر هنا مباشرةً لخدمة
+                الطلبة الصمّ وضعاف السمع. ويمكنك تفعيله دائمًا من لوحة إمكانية
+                الوصول ليُفتح تلقائيًا في كل نشاط.
               </p>
             </div>
           )}
