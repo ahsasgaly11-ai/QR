@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import type { Activity, ActivityStats } from '@/lib/types';
 import { getActivityStats, trackView, trackDownload } from '@/lib/stats';
+import { isActivityEvent, recordActivityEvent } from '@/lib/activity-events';
 import { ActivityTypeBadge } from './activity-type-badge';
 import { SignLanguageButton } from './sign-language';
 import { formatFull, cn } from '@/lib/utils';
@@ -76,6 +77,19 @@ export function ActivityPlayer({
     getActivityStats(activity.id).then((s) =>
       setStats({ views: s.views, downloads: s.downloads })
     );
+  }, [activity.id]);
+
+  // مستمع عقد التتبّع: يستقبل نتائج الطالب التي تبثّها اللعبة من داخل الـ
+  // iframe (postMessage) ويحفظ التقدّم محليًّا — أساس المحرّك التكيّفي.
+  useEffect(() => {
+    const onMessage = (e: MessageEvent) => {
+      // نقبل فقط الرسائل الصادرة من إطار هذا النشاط ووفق العقد المعتمد
+      if (e.source !== frameRef.current?.contentWindow) return;
+      if (!isActivityEvent(e.data)) return;
+      recordActivityEvent(activity.id, e.data);
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
   }, [activity.id]);
 
   const onDownload = async () => {
