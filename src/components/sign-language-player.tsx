@@ -27,6 +27,12 @@ export function SignLanguagePlayer({ text }: { text: string }) {
   const [ready, setReady] = useState(false);
   const [i, setI] = useState(0);
   const [playing, setPlaying] = useState(true);
+  // مصادر تعذّر تحميلها (مقطع مُخطَّط لم يُصوَّر بعد) — نتراجع بلطف للنصّ.
+  const [failed, setFailed] = useState<Set<string>>(new Set());
+  const markFailed = useCallback((src?: string) => {
+    if (!src) return;
+    setFailed((prev) => (prev.has(src) ? prev : new Set(prev).add(src)));
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -52,6 +58,9 @@ export function SignLanguagePlayer({ text }: { text: string }) {
   const total = steps.length;
   const step = steps[i];
   const atEnd = i >= total - 1;
+  // هل نعرض وسيطًا فعليًّا الآن؟ (له أصل، ولم يتعذّر تحميله)
+  const broken = !!step?.src && failed.has(step.src);
+  const showMedia = !!step && !!step.media && !!step.src && !broken;
 
   const goto = useCallback(
     (n: number) => {
@@ -76,14 +85,18 @@ export function SignLanguagePlayer({ text }: { text: string }) {
     setPlaying(true);
   }, []);
 
-  // التقدّم التلقائي للصور/النصّ (المقاطع تتقدّم على onEnded).
+  // التقدّم التلقائي للصور/النصّ (المقاطع العاملة تتقدّم على onEnded).
   useEffect(() => {
-    if (!playing || !step || step.media === 'video') return;
+    if (!playing || !step) return;
+    if (showMedia && step.media === 'video') return;
     const t = setTimeout(next, step.kind === 'word' ? WORD_MS : IMG_MS);
     return () => clearTimeout(t);
-  }, [playing, i, step, next]);
+  }, [playing, i, step, showMedia, next]);
 
-  const anyAsset = useMemo(() => steps.some((s) => s.hasAsset), [steps]);
+  const anyAsset = useMemo(
+    () => steps.some((s) => s.hasAsset && !failed.has(s.src!)),
+    [steps, failed]
+  );
 
   if (!ready) {
     return (
@@ -114,7 +127,7 @@ export function SignLanguagePlayer({ text }: { text: string }) {
 
       {/* المسرح */}
       <div className="relative grid aspect-square w-full place-items-center bg-black">
-        {step.media === 'video' && step.src ? (
+        {showMedia && step.media === 'video' ? (
           <>
             <video
               key={`${i}-${step.src}`}
@@ -123,6 +136,7 @@ export function SignLanguagePlayer({ text }: { text: string }) {
               muted
               playsInline
               onEnded={next}
+              onError={() => markFailed(step.src)}
               className="h-full w-full object-contain"
             />
             {/* المرشد حاضر بحجم صغير في الزاوية */}
@@ -130,11 +144,12 @@ export function SignLanguagePlayer({ text }: { text: string }) {
               <SignAvatar state="greet" />
             </span>
           </>
-        ) : step.media === 'img' && step.src ? (
+        ) : showMedia && step.media === 'img' ? (
           <>
             <img
               src={step.src}
               alt={`إشارة: ${step.gloss}`}
+              onError={() => markFailed(step.src)}
               className="h-full w-full object-contain"
             />
             <span className="absolute bottom-2 left-2 h-16 w-16 rounded-full bg-white/90 p-1 shadow-md">

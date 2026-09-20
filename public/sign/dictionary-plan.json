@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "note": "خطة قاموس لغة الإشارة القطرية للمنصّة — قائمة ما يُصوَّر (ليست إشارات جاهزة). صوّر كل عنصر مع مترجم لغة إشارة قطري معتمد باسم الملف المذكور، ثم شغّل: npm run sign:manifest — فيلتقط المحرّك والأفاتار المقاطع تلقائيًّا على كل نشاط. لا تُدرَج أي إشارة في manifest.json قبل تصويرها فعليًّا.",
+  "letters": [
+    { "key": "ا", "name": "ألف", "file": "letters/alef.mp4" },
+    { "key": "ب", "name": "باء", "file": "letters/ba.mp4" },
+    { "key": "ت", "name": "تاء", "file": "letters/ta.mp4" },
+    { "key": "ث", "name": "ثاء", "file": "letters/tha.mp4" },
+    { "key": "ج", "name": "جيم", "file": "letters/jim.mp4" },
+    { "key": "ح", "name": "حاء", "file": "letters/hha.mp4" },
+    { "key": "خ", "name": "خاء", "file": "letters/kha.mp4" },
+    { "key": "د", "name": "دال", "file": "letters/dal.mp4" },
+    { "key": "ذ", "name": "ذال", "file": "letters/dhal.mp4" },
+    { "key": "ر", "name": "راء", "file": "letters/ra.mp4" },
+    { "key": "ز", "name": "زاي", "file": "letters/zay.mp4" },
+    { "key": "س", "name": "سين", "file": "letters/sin.mp4" },
+    { "key": "ش", "name": "شين", "file": "letters/shin.mp4" },
+    { "key": "ص", "name": "صاد", "file": "letters/sad.mp4" },
+    { "key": "ض", "name": "ضاد", "file": "letters/dad.mp4" },
+    { "key": "ط", "name": "طاء", "file": "letters/tta.mp4" },
+    { "key": "ظ", "name": "ظاء", "file": "letters/dha.mp4" },
+    { "key": "ع", "name": "عين", "file": "letters/ain.mp4" },
+    { "key": "غ", "name": "غين", "file": "letters/ghain.mp4" },
+    { "key": "ف", "name": "فاء", "file": "letters/fa.mp4" },
+    { "key": "ق", "name": "قاف", "file": "letters/qaf.mp4" },
+    { "key": "ك", "name": "كاف", "file": "letters/kaf.mp4" },
+    { "key": "ل", "name": "لام", "file": "letters/lam.mp4" },
+    { "key": "م", "name": "ميم", "file": "letters/mim.mp4" },
+    { "key": "ن", "name": "نون", "file": "letters/nun.mp4" },
+    { "key": "ه", "name": "هاء", "file": "letters/ha.mp4" },
+    { "key": "و", "name": "واو", "file": "letters/waw.mp4" },
+    { "key": "ي", "name": "ياء", "file": "letters/ya.mp4" }
+  ],
+  "categories": [
+    {
+      "id": "basics",
+      "title": "تحيّات وأساسيات",
+      "words": [
+        { "key": "مرحبا", "gloss": "مرحبًا", "file": "words/basics/marhaba.mp4" },
+        { "key": "شكرا", "gloss": "شكرًا", "file": "words/basics/shukran.mp4" },
+        { "key": "عفوا", "gloss": "عفوًا", "file": "words/basics/afwan.mp4" },
+        { "key": "نعم", "gloss": "نعم", "file": "words/basics/naam.mp4" },
+        { "key": "لا", "gloss": "لا", "file": "words/basics/la.mp4" },
+        { "key": "قطر", "gloss": "قطر", "file": "words/basics/qatar.mp4" },
+        { "key": "الدوحه", "gloss": "الدوحة", "file": "words/basics/doha.mp4" },
+        { "key": "اسم", "gloss": "اسم", "file": "words/basics/ism.mp4" }
+      ]
+    },
+    {
+      "id": "classroom",
+      "title": "المدرسة والصفّ",
+      "words": [
+        { "key": "مدرسه", "gloss": "مدرسة", "file": "words/classroom/madrasa.mp4" },
+        { "key": "معلم", "gloss": "معلّم", "file": "words/classroom/muallim.mp4" },
+        { "key": "طالب", "gloss": "طالب", "file": "words/classroom/talib.mp4" },
+        { "key": "كتاب", "gloss": "كتاب", "file": "words/classroom/kitab.mp4" },
+        { "key": "قلم", "gloss": "قلم", "file": "words/classroom/qalam.mp4" },
+        { "key": "درس", "gloss": "درس", "file": "words/classroom/dars.mp4" },
+        { "key": "سوال", "gloss": "سؤال", "file": "words/classroom/sual.mp4" },
+        { "key": "جواب", "gloss": "جواب", "file": "words/classroom/jawab.mp4" },
+        { "key": "صح", "gloss": "صح", "file": "words/classroom/sah.mp4" },
+        { "key": "خطا", "gloss": "خطأ", "file": "words/classroom/khata.mp4" },
+        { "key": "احسنت", "gloss": "أحسنت", "file": "words/classroom/ahsant.mp4" },
+        { "key": "اقرا", "gloss": "اقرأ", "file": "words/classroom/iqra.mp4" },
+        { "key": "اكتب", "gloss": "اكتب", "file": "words/classroom/uktub.mp4" },
+        { "key": "اسمع", "gloss": "اسمع", "file": "words/classroom/isma.mp4" },
+        { "key": "انظر", "gloss": "انظر", "file": "words/classroom/unzur.mp4" }
+      ]
+    },
+    {
+      "id": "science",
+      "title": "مصطلحات العلوم",
+      "words": [
+        { "key": "علوم", "gloss": "علوم", "file": "words/science/uloom.mp4" },
+        { "key": "تجربه", "gloss": "تجربة", "file": "words/science/tajriba.mp4" },
+        { "key": "ماء", "gloss": "ماء", "file": "words/science/maa.mp4" },
+        { "key": "هواء", "gloss": "هواء", "file": "words/science/hawaa.mp4" },
+        { "key": "نار", "gloss": "نار", "file": "words/science/nar.mp4" },
+        { "key": "نبات", "gloss": "نبات", "file": "words/science/nabat.mp4" },
+        { "key": "حيوان", "gloss": "حيوان", "file": "words/science/hayawan.mp4" },
+        { "key": "انسان", "gloss": "إنسان", "file": "words/science/insan.mp4" },
+        { "key": "جسم", "gloss": "جسم", "file": "words/science/jism.mp4" },
+        { "key": "عضله", "gloss": "عضلة", "file": "words/science/adala.mp4" },
+        { "key": "قلب", "gloss": "قلب", "file": "words/science/qalb.mp4" },
+        { "key": "طاقه", "gloss": "طاقة", "file": "words/science/taqa.mp4" },
+        { "key": "حراره", "gloss": "حرارة", "file": "words/science/harara.mp4" },
+        { "key": "ضوء", "gloss": "ضوء", "file": "words/science/daw.mp4" },
+        { "key": "صوت", "gloss": "صوت", "file": "words/science/sawt.mp4" },
+        { "key": "ارض", "gloss": "أرض", "file": "words/science/ard.mp4" },
+        { "key": "شمس", "gloss": "شمس", "file": "words/science/shams.mp4" },
+        { "key": "قمر", "gloss": "قمر", "file": "words/science/qamar.mp4" },
+        { "key": "نجم", "gloss": "نجم", "file": "words/science/najm.mp4" }
+      ]
+    },
+    {
+      "id": "numbers",
+      "title": "الأرقام ١–١٠",
+      "words": [
+        { "key": "واحد", "gloss": "واحد", "file": "words/numbers/1.mp4" },
+        { "key": "اثنان", "gloss": "اثنان", "file": "words/numbers/2.mp4" },
+        { "key": "ثلاثه", "gloss": "ثلاثة", "file": "words/numbers/3.mp4" },
+        { "key": "اربعه", "gloss": "أربعة", "file": "words/numbers/4.mp4" },
+        { "key": "خمسه", "gloss": "خمسة", "file": "words/numbers/5.mp4" },
+        { "key": "سته", "gloss": "ستة", "file": "words/numbers/6.mp4" },
+        { "key": "سبعه", "gloss": "سبعة", "file": "words/numbers/7.mp4" },
+        { "key": "ثمانيه", "gloss": "ثمانية", "file": "words/numbers/8.mp4" },
+        { "key": "تسعه", "gloss": "تسعة", "file": "words/numbers/9.mp4" },
+        { "key": "عشره", "gloss": "عشرة", "file": "words/numbers/10.mp4" }
+      ]
+    },
+    {
+      "id": "community",
+      "title": "الأسرة والمجتمع",
+      "words": [
+        { "key": "اب", "gloss": "أب", "file": "words/community/ab.mp4" },
+        { "key": "ام", "gloss": "أم", "file": "words/community/umm.mp4" },
+        { "key": "اخ", "gloss": "أخ", "file": "words/community/akh.mp4" },
+        { "key": "اخت", "gloss": "أخت", "file": "words/community/ukht.mp4" },
+        { "key": "صديق", "gloss": "صديق", "file": "words/community/sadiq.mp4" },
+        { "key": "اسره", "gloss": "أسرة", "file": "words/community/usra.mp4" }
+      ]
+    }
+  ]
+}
