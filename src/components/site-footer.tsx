@@ -12,7 +12,7 @@ export function SiteFooter() {
           <div className="mb-4 flex items-center gap-3">
             <div className="relative h-14 w-14 overflow-hidden rounded-xl bg-white p-1.5">
               <Image
-                src="/images/ministry-logo.jpg"
+                src="/images/moehe-mark.png"
                 alt="شعار الوزارة"
                 fill
                 sizes="56px"
