@@ -13,11 +13,11 @@ const FALLBACK_SPINES = ['#0f8f7c', '#b0892e', '#6a4c93'];
 
 /**
  * الكتاب ثلاثي الأبعاد في الواجهة — غلاف عامّ لكل المناهج لا لمادّة بعينها:
- * شعار الوزارة، واسم المنصّة، وشريطٌ يعرض المواد المتاحة فعلًا (يتحدّث من
- * تبويب «إدارة المناهج»)، وخلفه كتبٌ متراصّة بألوان المواد تدلّ على الشمول.
+ * شعار الوزارة، واسم المنصّة، والتميمة، وخلفه كتبٌ متراصّة بألوان المواد
+ * تدلّ على الشمول. لا يُذكر اسم مادّةٍ بعينها على الواجهة كي لا يبدو الغلاف
+ * كأنّه كتاب مادّةٍ واحدة حين تكون المادة المُضافة واحدة فقط.
  */
 export function Book3D({ subjects = [] }: { subjects?: BookSubject[] }) {
-  const chips = subjects.slice(0, 4);
   // الكتب الخلفية: ألوان المواد الأخرى إن وُجدت، وإلا درجات محايدة من اللوحة
   const stack = [0, 1].map(
     (i) => subjects[i + 1]?.color || FALLBACK_SPINES[i] || '#b0892e'
@@ -112,23 +112,7 @@ export function Book3D({ subjects = [] }: { subjects?: BookSubject[] }) {
               <OryxMascot className="h-40 w-auto float-mid drop-shadow-xl" />
             </div>
 
-            {/* المواد المتاحة — الشمول مكتوبٌ لا مُفترَض */}
-            {chips.length > 0 && (
-              <ul className="mb-1.5 flex flex-wrap items-center justify-center gap-1">
-                {chips.map((s) => (
-                  <li
-                    key={s.id}
-                    className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-black leading-tight text-white"
-                    style={{ background: s.color || '#8a173e' }}
-                  >
-                    {s.emoji && <span aria-hidden>{s.emoji}</span>}
-                    <span>{s.title}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            <div className="h-2 w-full rounded-full flag-strip" />
+            <div className="mt-1.5 h-2 w-full rounded-full flag-strip" />
           </div>
         </div>
 
