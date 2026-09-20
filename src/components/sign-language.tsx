@@ -1,15 +1,17 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Hand, X, Info } from 'lucide-react';
+import { Hand, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SIGN_LANG_ATTR, isSignLanguageOn } from '@/lib/sign-language';
+import { SignLanguagePlayer } from './sign-language-player';
 
 // ---------------------------------------------------------------------------
 // رفيق لغة الإشارة القطرية
-// زرّ يفتح نافذة عائمة (Picture-in-Picture) تعرض مقطع الشرح بلغة الإشارة
-// المرفق بالنشاط. عند غياب مقطع، تظهر رسالة لبقة تشرح الميزة وكيف تُضيف
-// الوزارة المقاطع لاحقًا (يكفي تعبئة الحقل signLang للنشاط) — دون تلفيق محتوى.
+// نافذة عائمة (Picture-in-Picture) تخدم الطلبة الصمّ وضعاف السمع بطريقتين:
+//   • «الترجمة التلقائية»: محرّك يقرأ عنوان النشاط ووصفه ويعرضهما إشارةً إشارة
+//     من قاموس موثّق — يتعرّف على كل نشاط تلقائيًّا دون أي إعداد لكلٍّ على حدة.
+//   • «فيديو الشرح»: مقطع بشري مرفَق بالنشاط (إن أضافته الوزارة) — أدقّ عرض.
 //
 // الخيار متاح تلقائيًا على كل نشاط. ومن فعّل «لغة الإشارة القطرية» من لوحة
 // إمكانية الوصول يُفتح له الرفيق تلقائيًا عند فتح أي نشاط (data-signlang).
@@ -28,14 +30,30 @@ function toEmbed(url: string): { kind: 'video' | 'iframe'; src: string } {
 
 export function SignLanguageButton({
   src,
+  title,
+  description,
   className,
 }: {
+  /** رابط مقطع الشرح البشري المرفَق بالنشاط (اختياري). */
   src?: string;
+  /** عنوان النشاط — مصدر الترجمة التلقائية. */
+  title?: string;
+  /** وصف النشاط — يُضاف لنصّ الترجمة التلقائية. */
+  description?: string;
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [preferOn, setPreferOn] = useState(false);
+  const [tab, setTab] = useState<'auto' | 'video'>('auto');
   const closeRef = useRef<HTMLButtonElement | null>(null);
+
+  const embed = src ? toEmbed(src) : null;
+  const autoText = [title, description].filter(Boolean).join('. ');
+
+  // عند وجود فيديو بشري نبدأ به (أدقّ عرض)، وإلا بالترجمة التلقائية.
+  useEffect(() => {
+    setTab(embed ? 'video' : 'auto');
+  }, [embed]);
 
   // من فعّل الخيار من لوحة الوصول يُفتح له الرفيق تلقائيًا عند فتح النشاط،
   // ويظل يتابع تغيّر الإعداد فيُفتح عند التفعيل ويُغلق عند الإيقاف.
@@ -65,7 +83,7 @@ export function SignLanguageButton({
     };
   }, [open]);
 
-  const embed = src ? toEmbed(src) : null;
+  const showVideo = tab === 'video' && embed;
 
   return (
     <>
@@ -85,10 +103,7 @@ export function SignLanguageButton({
       >
         <Hand className="h-4 w-4" /> لغة الإشارة
         {preferOn && (
-          <span
-            aria-hidden
-            className="h-2 w-2 rounded-full bg-[color:var(--maroon)]"
-          />
+          <span aria-hidden className="h-2 w-2 rounded-full bg-[color:var(--maroon)]" />
         )}
       </button>
 
@@ -97,11 +112,11 @@ export function SignLanguageButton({
           role="dialog"
           aria-modal="true"
           aria-label="شرح النشاط بلغة الإشارة القطرية"
-          className="fixed bottom-4 left-4 z-[110] w-[min(92vw,22rem)] overflow-hidden rounded-2xl border-2 border-[color:var(--gold)]/60 bg-[color:var(--surface)] shadow-[var(--shadow-lg)]"
+          className="fixed bottom-4 left-4 z-[110] w-[min(94vw,24rem)] overflow-hidden rounded-2xl border-2 border-[color:var(--gold)]/60 bg-[color:var(--surface)] shadow-[var(--shadow-lg)]"
         >
           <div className="flex items-center justify-between gap-2 bg-[color:var(--maroon)] px-3 py-2 text-white">
             <span className="flex items-center gap-1.5 text-sm font-black">
-              <Hand className="h-4 w-4" /> لغة الإشارة
+              <Hand className="h-4 w-4" /> لغة الإشارة القطرية
             </span>
             <button
               ref={closeRef}
@@ -113,7 +128,33 @@ export function SignLanguageButton({
             </button>
           </div>
 
-          {embed ? (
+          {/* مبدّل الوضعَين — يظهر فقط عند وجود فيديو شرح بشري */}
+          {embed && (
+            <div className="grid grid-cols-2 gap-1 bg-[color:var(--surface-2)] p-1">
+              {(
+                [
+                  ['auto', 'الترجمة التلقائية'],
+                  ['video', 'فيديو الشرح'],
+                ] as const
+              ).map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => setTab(key)}
+                  aria-pressed={tab === key}
+                  className={cn(
+                    'rounded-lg px-2 py-1.5 text-xs font-black transition',
+                    tab === key
+                      ? 'bg-[color:var(--maroon)] text-white shadow-sm'
+                      : 'text-[color:var(--maroon)] hover:bg-[color:var(--surface)]'
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {showVideo ? (
             embed.kind === 'video' ? (
               <video
                 src={embed.src}
@@ -133,20 +174,7 @@ export function SignLanguageButton({
               />
             )
           ) : (
-            <div className="flex flex-col items-center gap-2 px-4 py-6 text-center">
-              <span className="grid h-12 w-12 place-items-center rounded-2xl bg-[color:var(--maroon-100)] text-[color:var(--maroon)]">
-                <Info className="h-6 w-6" />
-              </span>
-              <p className="text-sm font-black text-[color:var(--ink)]">
-                لا يتوفّر شرح بلغة الإشارة لهذا النشاط بعد.
-              </p>
-              <p className="text-xs font-medium leading-6 text-muted-foreground">
-                الخيار مُفعَّل ومتاح على كل نشاط تلقائيًا. عند إضافة مقطع لغة
-                الإشارة القطرية للنشاط (من لوحة الإدارة) سيظهر هنا مباشرةً لخدمة
-                الطلبة الصمّ وضعاف السمع. ويمكنك تفعيله دائمًا من لوحة إمكانية
-                الوصول ليُفتح تلقائيًا في كل نشاط.
-              </p>
-            </div>
+            <SignLanguagePlayer text={autoText} />
           )}
         </div>
       )}
