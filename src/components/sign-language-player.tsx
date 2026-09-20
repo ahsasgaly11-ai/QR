@@ -140,9 +140,9 @@ export function SignLanguagePlayer({ text }: { text: string }) {
               className="h-full w-full object-contain"
             />
             {/* المرشد حاضر بحجم صغير في الزاوية */}
-            <span className="absolute bottom-2 left-2 h-16 w-16 rounded-full bg-white/90 p-1 shadow-md">
+            <div className="absolute bottom-2 left-2 grid h-16 w-16 place-items-end overflow-hidden rounded-full bg-white/90 shadow-md">
               <SignAvatar state="greet" />
-            </span>
+            </div>
           </>
         ) : showMedia && step.media === 'img' ? (
           <>
@@ -152,16 +152,16 @@ export function SignLanguagePlayer({ text }: { text: string }) {
               onError={() => markFailed(step.src)}
               className="h-full w-full object-contain"
             />
-            <span className="absolute bottom-2 left-2 h-16 w-16 rounded-full bg-white/90 p-1 shadow-md">
+            <div className="absolute bottom-2 left-2 grid h-16 w-16 place-items-end overflow-hidden rounded-full bg-white/90 shadow-md">
               <SignAvatar state="greet" />
-            </span>
+            </div>
           </>
         ) : (
           // لا إشارة موثّقة — المرشد يوجّه إلى الرمز المعروض نصًّا (دون تلفيق يد)
           <div className="flex w-full items-center justify-center gap-2 px-4">
-            <span className="h-28 w-28 shrink-0 sm:h-32 sm:w-32">
+            <div className="h-28 w-28 shrink-0 sm:h-32 sm:w-32">
               <SignAvatar state={playing ? 'present' : 'greet'} />
-            </span>
+            </div>
             <span className="flex flex-col items-center text-center">
               <span className="font-display text-[4.5rem] font-black leading-none text-white sm:text-[5.5rem]">
                 {step.glyph}
