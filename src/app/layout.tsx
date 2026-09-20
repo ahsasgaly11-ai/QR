@@ -5,6 +5,7 @@ import { SiteFooter } from '@/components/site-footer';
 import { FloatingMascot } from '@/components/mascot-cheer';
 import { ContactFab } from '@/components/contact-fab';
 import { RouteTransitions } from '@/components/route-transitions';
+import { AccessibilityPanel } from '@/components/accessibility-panel';
 import { VisitTracker } from '@/components/visit-tracker';
 import { Analytics } from '@/components/analytics';
 import { SITE_URL, SITE_NAME } from '@/lib/site';
@@ -77,9 +78,10 @@ export default function RootLayout({
         />
         <script
           dangerouslySetInnerHTML={{
-            // الافتراضي دائمًا: الوضع النهاري. لا يُفعّل الليلي إلا إذا اختاره
-            // الزائر صراحةً من زر التبديل (ولا نتبع إعداد نظام الجهاز).
-            __html: `(function(){try{var d=localStorage.getItem('qa-theme')==='dark';var r=document.documentElement;r.setAttribute('data-theme',d?'dark':'light');r.classList.toggle('dark',d);}catch(e){}})();`,
+            // يُطبَّق قبل الرسم لمنع الوميض: الوضع الليلي + إعدادات إمكانية
+            // الوصول (التباين، القراءة الميسّرة، حجم الخط، تقليل الحركة).
+            // الافتراضي دائمًا: نهاري وبلا تعديلات، ولا نتبع إعداد النظام.
+            __html: `(function(){try{var r=document.documentElement,g=function(k,d){try{return localStorage.getItem(k)||d}catch(e){return d}};var t=g('qa-theme','light');r.setAttribute('data-theme',t);r.classList.toggle('dark',t==='dark');r.setAttribute('data-contrast',g('qa-a11y-contrast','normal'));r.setAttribute('data-reading',g('qa-a11y-reading','normal'));r.setAttribute('data-text',g('qa-a11y-text','base'));r.setAttribute('data-motion',g('qa-a11y-motion','auto'));}catch(e){}})();`,
           }}
         />
       </head>
@@ -98,6 +100,7 @@ export default function RootLayout({
         <SiteFooter />
         <FloatingMascot />
         <ContactFab />
+        <AccessibilityPanel />
         <Analytics />
       </body>
     </html>

@@ -671,3 +671,130 @@ body::after {
     transform: translateY(0) scale(1);
   }
 }
+
+/* =========================================================================
+   إمكانية الوصول (Accessibility)
+   -------------------------------------------------------------------------
+   إعدادات يتحكّم بها الزائر من لوحة «إمكانية الوصول» عبر سمات على <html>:
+     data-text     = base | lg | xl     حجم الخط
+     data-contrast = normal | high      التباين العالي
+     data-reading  = normal | comfort   القراءة الميسّرة (عُسر القراءة)
+     data-motion   = auto | reduce      تقليل الحركة
+   ========================================================================= */
+
+/* --- مؤشّر تركيز واضح لمستخدمي لوحة المفاتيح وقارئ الشاشة --------------- */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* --- حجم الخط -------------------------------------------------------------
+   الأساس 18px (معيار الابتدائي). التكبير عبر الجذر فيتناسب كل ما يقيس بـ rem. */
+:root[data-text='lg'] { font-size: 20px; }
+:root[data-text='xl'] { font-size: 22px; }
+
+/* --- القراءة الميسّرة (عُسر القراءة) --------------------------------------
+   ملاحظة مهمّة: العربية خطّ متّصل، فزيادة تباعد الحروف (letter-spacing) تفكّك
+   الكلمات وتضرّ لا تنفع — لذا نوسّع الأسطر والكلمات والفقرات فقط، ونلغي ضبط
+   المحاذاة، ونهدّئ الخلفية. */
+:root[data-reading='comfort'] body {
+  line-height: 2;
+  word-spacing: 0.16em;
+  font-weight: 600;
+}
+:root[data-reading='comfort'] p,
+:root[data-reading='comfort'] li,
+:root[data-reading='comfort'] .prose {
+  line-height: 2.1;
+  max-width: 66ch;
+}
+:root[data-reading='comfort'] p {
+  margin-bottom: 0.9em;
+}
+:root[data-reading='comfort'] * {
+  text-align: start !important;   /* لا محاذاة مضبوطة (justify) */
+  letter-spacing: normal !important;
+}
+/* خلفية هادئة تقلّل التشتّت */
+:root[data-reading='comfort'] body::before,
+:root[data-reading='comfort'] body::after {
+  display: none;
+}
+
+/* --- التباين العالي — الوضع النهاري -------------------------------------- */
+:root[data-contrast='high'] {
+  --paper: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f2f2f2;
+  --ink: #000000;
+  --ink-2: #101010;
+  --muted: #1c1c1c;
+  --maroon: #6a0f2e;
+  --maroon-100: #f3d9e1;
+  --gold: #7a5a00;
+  --hairline: rgba(0, 0, 0, 0.55);
+  --hairline-strong: rgba(0, 0, 0, 0.85);
+
+  --background: 0 0% 100%;
+  --foreground: 0 0% 0%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 0%;
+  --muted-foreground: 0 0% 12%;
+  --border: 0 0% 20%;
+  --input: 0 0% 20%;
+  --primary: 340 78% 24%;
+  --ring: 42 100% 24%;
+}
+
+/* --- التباين العالي — الوضع الليلي --------------------------------------- */
+:root[data-theme='dark'][data-contrast='high'],
+.dark[data-contrast='high'] {
+  --paper: #000000;
+  --surface: #000000;
+  --surface-2: #0d0d0d;
+  --ink: #ffffff;
+  --ink-2: #f2f2f2;
+  --muted: #e6e6e6;
+  --maroon: #ff9fb6;
+  --maroon-100: #2a0d16;
+  --gold: #ffd86b;
+  --hairline: rgba(255, 255, 255, 0.6);
+  --hairline-strong: rgba(255, 255, 255, 0.9);
+
+  --background: 0 0% 0%;
+  --foreground: 0 0% 100%;
+  --card: 0 0% 0%;
+  --card-foreground: 0 0% 100%;
+  --muted-foreground: 0 0% 90%;
+  --border: 0 0% 82%;
+  --input: 0 0% 82%;
+  --primary: 340 90% 82%;
+  --ring: 45 100% 70%;
+}
+
+/* في التباين العالي: أطفئ الأجواء الزخرفية وأبرِز الحدود والروابط */
+:root[data-contrast='high'] body::before,
+:root[data-contrast='high'] body::after {
+  display: none;
+}
+:root[data-contrast='high'] a:not([class]),
+:root[data-contrast='high'] .prose a {
+  text-decoration: underline;
+}
+:root[data-contrast='high'] :where(button, .card, [class*='border']) {
+  border-color: var(--hairline-strong) !important;
+}
+
+/* --- تقليل الحركة (اختيار الزائر) — يعكس سلوك prefers-reduced-motion ------ */
+:root[data-motion='reduce'] *,
+:root[data-motion='reduce'] *::before,
+:root[data-motion='reduce'] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+:root[data-motion='reduce'] body::before {
+  animation: none !important;
+}
