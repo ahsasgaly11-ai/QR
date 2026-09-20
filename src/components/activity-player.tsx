@@ -13,8 +13,8 @@ import {
 import type { Activity, ActivityStats } from '@/lib/types';
 import { getActivityStats, trackView, trackDownload } from '@/lib/stats';
 import { ActivityTypeBadge } from './activity-type-badge';
-import { SignLanguageButton } from './sign-language';
-import { resolveSignLanguageSrc } from '@/lib/sign-language';
+import { SignLanguageButton, SignLanguagePanel } from './sign-language';
+import { resolveSignLanguageSrc, isSignLanguageOn, SIGN_LANG_ATTR } from '@/lib/sign-language';
 import { formatFull, cn } from '@/lib/utils';
 import { htmlToBlobUrl } from '@/lib/local-store';
 
@@ -66,6 +66,24 @@ export function ActivityPlayer({
   const [stats, setStats] = useState<ActivityStats>({ views: 0, downloads: 0 });
   const [loading, setLoading] = useState(true);
   const [key, setKey] = useState(0);
+
+  // رفيق لغة الإشارة: حالة الفتح والتفضيل (تُدار هنا لضبط موضع اللوحة في التدفّق).
+  const [signOpen, setSignOpen] = useState(false);
+  const [signPref, setSignPref] = useState(false);
+  useEffect(() => {
+    const sync = () => {
+      const on = isSignLanguageOn();
+      setSignPref(on);
+      setSignOpen(on);
+    };
+    sync();
+    const obs = new MutationObserver(sync);
+    obs.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: [`data-${SIGN_LANG_ATTR}`],
+    });
+    return () => obs.disconnect();
+  }, []);
 
   // وضع العرض الكامل: طبقة ثابتة داخل الصفحة (لا تعتمد على Fullscreen API)
   // حتى لا يُنهيها التمرير على الجوال، وتعمل على iOS الذي لا يدعم ملء شاشة
@@ -193,11 +211,7 @@ export function ActivityPlayer({
           >
             <RefreshCw className="h-4 w-4" />
           </button>
-          <SignLanguageButton
-            src={resolveSignLanguageSrc(activity.signLang)}
-            title={activity.title}
-            description={activity.description}
-          />
+          <SignLanguageButton active={signPref} onClick={() => setSignOpen(true)} />
           <a href={url} target="_blank" rel="noopener noreferrer" className={toolbarBtn}>
             <ExternalLink className="h-4 w-4" /> فتح في نافذة
           </a>
@@ -214,6 +228,18 @@ export function ActivityPlayer({
           </a>
         </div>
       </div>
+
+      {/* رفيق لغة الإشارة: على الجوّال ضمن التدفّق (فوق اللعبة، بلا تغطية)،
+          وعلى الشاشات الكبيرة لوحة عائمة. لا يظهر أثناء ملء الشاشة. */}
+      {!immersive && (
+        <SignLanguagePanel
+          open={signOpen}
+          onClose={() => setSignOpen(false)}
+          src={resolveSignLanguageSrc(activity.signLang)}
+          title={activity.title}
+          description={activity.description}
+        />
+      )}
 
       {/* حافظ على مكان المسرح في الصفحة أثناء وضع العرض الكامل */}
       {immersive && <div className="game-stage w-full" aria-hidden />}
