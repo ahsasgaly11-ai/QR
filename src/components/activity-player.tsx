@@ -13,6 +13,7 @@ import {
 import type { Activity, ActivityStats } from '@/lib/types';
 import { getActivityStats, trackView, trackDownload } from '@/lib/stats';
 import { isActivityEvent, recordActivityEvent } from '@/lib/activity-events';
+import { injectGameObserver } from '@/lib/game-observer';
 import { ActivityTypeBadge } from './activity-type-badge';
 import { SignLanguageButton } from './sign-language';
 import { formatFull, cn } from '@/lib/utils';
@@ -278,7 +279,11 @@ export function ActivityPlayer({
             className={cn('w-full bg-white', immersive ? 'h-full' : 'game-stage')}
             style={!immersive && fitH ? { height: fitH, minHeight: 0 } : undefined}
             sandbox="allow-scripts allow-same-origin allow-popups allow-downloads allow-forms allow-modals"
-            onLoad={() => setLoading(false)}
+            onLoad={() => {
+              setLoading(false);
+              // اقرأ تقدّم الطالب من اللعبة المرفقة دون تعديلها
+              injectGameObserver(frameRef.current);
+            }}
           />
         ) : (
           <div
