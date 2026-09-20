@@ -48,7 +48,7 @@ export default async function HomePage() {
               className="rise-in mt-5 font-calli text-4xl font-bold sm:text-5xl lg:text-6xl"
               style={{ animationDelay: '80ms' }}
             >
-              <span className="text-gradient-maroon">تعلّم العلوم</span>
+              <span className="text-gradient-maroon">تعلّم مناهجك</span>
               <br />
               <span className="text-foreground">باللمس والتجربة</span>
               <span className="text-gradient-gold"> والاكتشاف</span>
@@ -58,9 +58,9 @@ export default async function HomePage() {
               className="rise-in mx-auto mt-5 max-w-xl text-base leading-8 text-muted-foreground lg:mx-0 lg:text-lg"
               style={{ animationDelay: '160ms' }}
             >
-              تجارب عملية ومحاكاة ثلاثية الأبعاد وأسئلة تفاعلية لمنهج العلوم
-              للمستوى الثالث الابتدائي — جرّبها مباشرة من المتصفّح أو حمّلها
-              للعمل دون اتصال. صُمّمت بروح المناهج القطرية.
+              تجارب عملية ومحاكاة ثلاثية الأبعاد وأسئلة تفاعلية وألعاب
+              تعليمية عبر مواد المناهج القطرية — جرّبها مباشرة من المتصفّح أو
+              حمّلها للعمل دون اتصال. صُمّمت بروح المناهج القطرية.
             </p>
 
             <div
@@ -88,7 +88,14 @@ export default async function HomePage() {
             <div className="fade-in relative max-w-full">
               <div className="pointer-events-none absolute -inset-2 rounded-full bg-gradient-to-tr from-[color:var(--maroon)]/15 to-[color:var(--gold)]/15 blur-2xl sm:-inset-8" />
               <div className="relative">
-                <Book3D />
+                <Book3D
+                  subjects={subjects.map((s) => ({
+                    id: s.id,
+                    title: s.title,
+                    emoji: s.emoji,
+                    color: s.color,
+                  }))}
+                />
               </div>
             </div>
           </div>

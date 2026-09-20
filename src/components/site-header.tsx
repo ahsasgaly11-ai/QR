@@ -45,7 +45,7 @@ export function SiteHeader() {
           <Link href="/" className="group flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
             <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-2xl bg-white p-1 gold-ring transition-transform duration-500 group-hover:scale-105 group-hover:rotate-3 sm:h-11 sm:w-11">
               <Image
-                src="/images/ministry-logo.jpg"
+                src="/images/moehe-mark.png"
                 alt="شعار وزارة التربية والتعليم والتعليم العالي"
                 fill
                 sizes="44px"
