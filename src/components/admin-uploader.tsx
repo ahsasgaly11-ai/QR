@@ -65,6 +65,7 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [signLang, setSignLang] = useState('');
   const [type, setType] = useState<ActivityType>('experiment');
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
@@ -125,6 +126,7 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
       id,
       title: title.trim(),
       description: description.trim(),
+      ...(signLang.trim() ? { signLang: signLang.trim() } : {}),
       type,
       file: file.name,
       subjectId,
@@ -479,6 +481,20 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
           onChange={(e) => setDescription(e.target.value)}
           placeholder="وصف موجز يظهر للطلبة…"
         />
+      </div>
+
+      <div className="mt-5">
+        <label className={labelCls}>رابط شرح بلغة الإشارة (اختياري)</label>
+        <input
+          className={inputCls}
+          value={signLang}
+          onChange={(e) => setSignLang(e.target.value)}
+          placeholder="رابط فيديو mp4 أو يوتيوب/فيميو — يظهر كزرّ «لغة الإشارة» للطلبة"
+          dir="ltr"
+        />
+        <p className="mt-1 text-xs text-muted-foreground">
+          لخدمة الطلبة الصمّ وضعاف السمع — يُعرض داخل مشغّل النشاط عند توفّره.
+        </p>
       </div>
 
       <div className="mt-5">
