@@ -11,6 +11,7 @@ import { SEED_ACTIVITIES } from '@/data/curriculum';
 import { ActivityPlayer } from '@/components/activity-player';
 import { ActivityCard } from '@/components/activity-card';
 import { BackButton } from '@/components/back-button';
+import { SchoolGate } from '@/components/school-gate';
 
 // المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
 // وإلا لما ظهرت الأنشطة المرفوعة بعد البناء إلا بنشر جديد.
@@ -77,7 +78,9 @@ export default async function PlayPage({
         <p className="short-hide mb-6 max-w-3xl text-muted-foreground">{activity.description}</p>
       )}
 
-      <ActivityPlayer activity={activity} />
+      <SchoolGate>
+        <ActivityPlayer activity={activity} />
+      </SchoolGate>
 
       {related.length > 0 && (
         <section className="mt-14">
