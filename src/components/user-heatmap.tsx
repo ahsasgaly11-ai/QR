@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { MapPin, Flame, Users, GraduationCap, Building2, Trophy } from 'lucide-react';
+import { MapPin, Flame, Users, GraduationCap, Building2, Trophy, Maximize2 } from 'lucide-react';
 import {
   QATAR_SCHOOLS,
   MUNICIPALITIES,
@@ -10,6 +10,7 @@ import {
 import { QATAR_OUTLINE, QATAR_BBOX as GEO } from '@/data/qatar-geo';
 import { getSchoolStats, getSelectedSchool } from '@/lib/school-store';
 import { formatFull, formatPercent } from '@/lib/utils';
+import { HeatmapExplorer } from './heatmap-explorer';
 
 const LAT_MID = (GEO.latMin + GEO.latMax) / 2;
 const ASPECT =
@@ -70,6 +71,7 @@ export function UserHeatmap({ className = '' }: { className?: string }) {
   const [loaded, setLoaded] = useState(false);
   const [size, setSize] = useState({ w: 300, h: 300 * ASPECT });
   const [mySchoolId, setMySchoolId] = useState<string | null>(null);
+  const [explore, setExplore] = useState(false);
   const lutRef = useRef<Uint8ClampedArray | null>(null);
 
   useEffect(() => {
@@ -249,11 +251,19 @@ export function UserHeatmap({ className = '' }: { className?: string }) {
 
   return (
     <figure className={`card-premium rounded-2xl p-4 sm:rounded-3xl sm:p-7 ${className}`}>
-      <figcaption className="mb-5 flex items-center gap-2">
-        <Flame className="h-5 w-5 text-[color:var(--maroon)]" />
-        <h2 className="font-display text-lg font-bold text-[color:var(--maroon)]">
-          الخريطة الحرارية لمستخدمي الألعاب حسب المدرسة
-        </h2>
+      <figcaption className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <span className="flex items-center gap-2">
+          <Flame className="h-5 w-5 text-[color:var(--maroon)]" />
+          <h2 className="font-display text-lg font-bold text-[color:var(--maroon)]">
+            الخريطة الحرارية لمستخدمي الألعاب حسب المدرسة
+          </h2>
+        </span>
+        <button
+          onClick={() => setExplore(true)}
+          className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[color:var(--maroon)] px-3.5 py-2 text-sm font-black text-white shadow-sm transition hover:bg-[color:var(--maroon-700)]"
+        >
+          <Maximize2 className="h-4 w-4" /> فتح بملء الشاشة
+        </button>
       </figcaption>
 
       {/* بطاقات المؤشّرات */}
@@ -417,6 +427,14 @@ export function UserHeatmap({ className = '' }: { className?: string }) {
           )}
         </div>
       </div>
+
+      {explore && (
+        <HeatmapExplorer
+          stats={stats}
+          mySchoolId={mySchoolId}
+          onClose={() => setExplore(false)}
+        />
+      )}
     </figure>
   );
 }
