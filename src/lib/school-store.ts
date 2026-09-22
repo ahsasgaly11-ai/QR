@@ -11,7 +11,7 @@
 // ---------------------------------------------------------------------------
 
 import { getDb, isFirebaseConfigured } from '@/lib/firebase';
-import { SCHOOL_BY_ID, type QatarSchool } from '@/data/qatar-schools';
+import { type QatarSchool } from '@/data/qatar-schools';
 
 const SEL_KEY = 'qa-school-v1';
 const COUNTED_KEY = 'qa-school-counted-v1';
@@ -32,9 +32,10 @@ export function getSelectedSchool(): StoredSchool | null {
     const raw = localStorage.getItem(SEL_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as StoredSchool;
-    // تحقّق من بقاء المدرسة في القائمة (قد تكون حُذفت في تحديث لاحق).
-    if (!parsed?.id || !SCHOOL_BY_ID[parsed.id]) return parsed?.id ? parsed : null;
-    return parsed;
+    // نحتفظ بالاسم والبلدية المخزّنَين حتى لو تغيّرت معرّفات القائمة في تحديث
+    // لاحق، فلا يُعاد حجب المستخدم؛ ومؤشّر «مدرستك» على الخريطة يُحلّ بأمان
+    // (يغيب إن لم يعُد المعرّف موجودًا) بدل إسقاط الاختيار كلّه.
+    return parsed?.id && parsed?.name ? parsed : null;
   } catch {
     return null;
   }
