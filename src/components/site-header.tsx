@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Menu, X, Home, BookOpen, BarChart3, UploadCloud, Search } from 'lucide-react';
+import { Menu, X, Home, BookOpen, BarChart3, UploadCloud, Search, Flame } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from './theme-toggle';
 import { SITE_NAME } from '@/lib/site';
@@ -14,6 +14,7 @@ const NAV = [
   { href: '/browse', label: 'المناهج', icon: BookOpen },
   { href: '/search', label: 'بحث', icon: Search },
   { href: '/dashboard', label: 'الإحصاءات', icon: BarChart3 },
+  { href: '/heatmap', label: 'الخريطة الحرارية', icon: Flame },
 ];
 
 export function SiteHeader() {
