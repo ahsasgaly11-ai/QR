@@ -27,7 +27,8 @@ export function SchoolPicker({
   const [q, setQ] = useState('');
   const inputRef = useRef<HTMLInputElement | null>(null);
 
-  const results = useMemo(() => searchSchools(q, 60), [q]);
+  // حدّ مرتفع يضمن ظهور جميع المدارس (لا اقتصار على أوّل 60) في القائمة والبحث.
+  const results = useMemo(() => searchSchools(q, 1000), [q]);
 
   // تجميع النتائج حسب البلدية مع الحفاظ على ترتيب الظهور.
   const groups = useMemo(() => {
