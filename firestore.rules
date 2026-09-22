@@ -137,21 +137,30 @@ service cloud.firestore {
       allow delete: if isOwner();
     }
 
-    // --- عدّاد مستخدمي كل مدرسة (للخريطة الحرارية) ------------------------
-    //  يختار المستخدم مدرسته قبل اللعب/التحميل، فيُزاد عدّادها بمقدار 1 فقط.
-    //  القراءة عامة (لرسم الخريطة)، والزيادة بمقدار 1 كحدّ أقصى لكل عملية،
-    //  ولا يمكن تعيين قيمة اعتباطية ولا الحذف إلا للمالك.
-    function countIncrementsOnly() {
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['count'])
-        && request.resource.data.get('count', 0) >= resource.data.get('count', 0)
-        && request.resource.data.get('count', 0) <= resource.data.get('count', 0) + 1;
+    // --- مقاييس كل مدرسة (للخريطة الحرارية) --------------------------------
+    //  يختار المستخدم مدرسته قبل اللعب/التحميل، فتُزاد مقاييسها:
+    //   users (اختيار المدرسة) · plays (لعب) · downloads (تحميل) · days (توزيع
+    //   يومي للمستخدمين). القراءة عامة، والزيادة بمقدار 1 كحدّ أقصى لكل عملية
+    //   على العدّادات الرقمية، ولا حذف إلا للمالك.
+    function schoolFieldsOk() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['users', 'plays', 'downloads', 'days'])
+        && request.resource.data.get('users', 0) >= resource.data.get('users', 0)
+        && request.resource.data.get('users', 0) <= resource.data.get('users', 0) + 1
+        && request.resource.data.get('plays', 0) >= resource.data.get('plays', 0)
+        && request.resource.data.get('plays', 0) <= resource.data.get('plays', 0) + 1
+        && request.resource.data.get('downloads', 0) >= resource.data.get('downloads', 0)
+        && request.resource.data.get('downloads', 0) <= resource.data.get('downloads', 0) + 1;
     }
 
     match /schoolStats/{schoolId} {
       allow read: if true;
-      allow create: if request.resource.data.keys().hasOnly(['count'])
-                    && request.resource.data.get('count', 0) <= 1;
-      allow update: if isOwner() || countIncrementsOnly();
+      allow create: if request.resource.data.keys()
+                      .hasOnly(['users', 'plays', 'downloads', 'days'])
+                    && request.resource.data.get('users', 0) <= 1
+                    && request.resource.data.get('plays', 0) <= 1
+                    && request.resource.data.get('downloads', 0) <= 1;
+      allow update: if isOwner() || schoolFieldsOk();
       allow delete: if isOwner();
     }
   }
