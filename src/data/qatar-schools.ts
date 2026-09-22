@@ -17,6 +17,8 @@
 //    السجلّ الرسمي الكامل لوزارة التربية، استبدل هذين المصدرين بملف الوزارة.
 // ---------------------------------------------------------------------------
 
+import { normalizeAr } from '@/lib/utils';
+
 export type MunicipalityId =
   | 'doha'
   | 'rayyan'
@@ -353,17 +355,13 @@ export const GENDER_LABEL: Record<SchoolGender, string> = {
   mixed: 'مختلطة',
 };
 
-/** تطبيع نص عربي للبحث: إزالة التشكيل وتوحيد الألف والهاء والياء. */
+/**
+ * تطبيع نص عربي للبحث والمطابقة — يفوّض للدالة المشتركة `normalizeAr` في
+ * lib/utils حتى يتّسق التطبيع (والفهرسة/إزالة التكرار) مع بقيّة الموقع
+ * (بحث الأنشطة يستخدمها كذلك)، فلا تتباعد المطابقة بين شاشتين.
+ */
 export function normalizeArabic(s: string): string {
-  return s
-    .replace(/[ً-ْٰ]/g, '')
-    .replace(/[أإآ]/g, 'ا')
-    .replace(/ى/g, 'ي')
-    .replace(/ة/g, 'ه')
-    .replace(/ؤ/g, 'و')
-    .replace(/ئ/g, 'ي')
-    .replace(/\s+/g, ' ')
-    .trim();
+  return normalizeAr(s);
 }
 
 /** بحث في المدارس بالاسم أو اسم البلدية (يتحمّل اختلاف التشكيل والهمزات). */

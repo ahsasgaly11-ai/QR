@@ -67,6 +67,7 @@ interface MuniAgg {
 export function UserHeatmap({ className = '' }: { className?: string }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const [stats, setStats] = useState<Record<string, number>>({});
   const [loaded, setLoaded] = useState(false);
   const [size, setSize] = useState({ w: 300, h: 300 * ASPECT });
@@ -83,10 +84,13 @@ export function UserHeatmap({ className = '' }: { className?: string }) {
   }, []);
 
   useEffect(() => {
-    const el = wrapRef.current;
+    // نقيس الحاوية الأمّ (لا العنصر المضبوط عرضه)، وإلا صار القياس حلقة
+    // مغلقة تُثبّت العرض على قيمته الأولى ولا يتكيّف مع الشاشة.
+    const el = containerRef.current;
     if (!el) return;
     const measure = () => {
-      const w = Math.min(el.clientWidth, 330);
+      const avail = el.clientWidth - 24; // بطاقة الخريطة بحاشية p-3 (12px×2)
+      const w = Math.max(200, Math.min(avail, 330));
       setSize({ w, h: w * ASPECT });
     };
     measure();
@@ -95,8 +99,10 @@ export function UserHeatmap({ className = '' }: { className?: string }) {
     return () => ro.disconnect();
   }, []);
 
+  // مجموع المستخدمين محسوبٌ من المدارس الموجودة فقط، فيتّسق مع مجاميع المناطق
+  // والنِّسب (تجاهُل أي عدّادات Firestore لمعرّفات لم تعد في القائمة).
   const total = useMemo(
-    () => Object.values(stats).reduce((n, v) => n + (v || 0), 0),
+    () => QATAR_SCHOOLS.reduce((n, s) => n + (stats[s.id] || 0), 0),
     [stats]
   );
 
@@ -286,7 +292,7 @@ export function UserHeatmap({ className = '' }: { className?: string }) {
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,340px)_1fr] lg:items-start">
         {/* الخريطة */}
-        <div className="mx-auto w-full max-w-[340px]">
+        <div ref={containerRef} className="mx-auto w-full max-w-[340px]">
           <div className="rounded-3xl border border-[color:var(--hairline)] bg-gradient-to-b from-[color:var(--surface)] to-[color:var(--surface-2)]/50 p-3">
             <div
               ref={wrapRef}

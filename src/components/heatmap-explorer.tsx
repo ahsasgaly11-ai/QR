@@ -83,6 +83,10 @@ export function HeatmapExplorer({
   const dirtyRef = useRef(false);
   const pointers = useRef<Map<number, { x: number; y: number }>>(new Map());
   const pinchRef = useRef<{ dist: number; cx: number; cy: number } | null>(null);
+  // أثناء السحب/التكبير نرسم الحرارة بدقّة أخفّ وبلا تنعيم (أداء أنعم)، ثم
+  // نُعيد رسمها بجودة كاملة بعد سكون قصير.
+  const interactingRef = useRef(false);
+  const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [scalePct, setScalePct] = useState(100);
   const [hint, setHint] = useState(true);
   const [mounted, setMounted] = useState(false);
@@ -152,7 +156,8 @@ export function HeatmapExplorer({
     })).filter((p) => p.w > 0 && p.x > -200 && p.x < W + 200 && p.y > -200 && p.y < H + 200);
 
     if (points.length > 0) {
-      const RES = 0.6; // دقّة الشبكة (تُنعَّم لاحقًا بضبابية)
+      // دقّة أخفّ أثناء التفاعل لتقليل كلفة إعادة الحساب لكل إطار.
+      const RES = interactingRef.current ? 0.4 : 0.6;
       const gw = Math.max(2, Math.round(W * RES));
       const gh = Math.max(2, Math.round(H * RES));
       const grid = new Float32Array(gw * gh);
@@ -202,7 +207,7 @@ export function HeatmapExplorer({
         ctx.save();
         ctx.clip(land);
         ctx.imageSmoothingEnabled = true;
-        ctx.filter = 'blur(4px)';
+        if (!interactingRef.current) ctx.filter = 'blur(4px)';
         ctx.drawImage(heat, 0, 0, W, H);
         ctx.filter = 'none';
         ctx.restore();
@@ -318,6 +323,16 @@ export function HeatmapExplorer({
     rafRef.current = requestAnimationFrame(loop);
   }, [draw]);
 
+  // تُعلّم أنّ تفاعلًا جارٍ (للرسم المخفّف)، وتجدول رسمًا كامل الجودة بعد سكون.
+  const markInteracting = useCallback(() => {
+    interactingRef.current = true;
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = setTimeout(() => {
+      interactingRef.current = false;
+      requestDraw();
+    }, 180);
+  }, [requestDraw]);
+
   // ضبط الإطار الأولي (احتواء الخريطة في المنتصف).
   const fit = useCallback(() => {
     const wrap = wrapRef.current;
@@ -358,6 +373,7 @@ export function HeatmapExplorer({
       window.removeEventListener('keydown', onKey);
       document.body.style.overflow = prev;
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
     };
   }, [mounted, fit, onClose]);
 
@@ -371,13 +387,14 @@ export function HeatmapExplorer({
       t.panX = px - (px - t.panX) * k;
       t.panY = py - (py - t.panY) * k;
       t.scale = next;
+      markInteracting();
       if (next === 1) fit();
       else {
         setScalePct(Math.round(next * 100));
         requestDraw();
       }
     },
-    [fit, requestDraw]
+    [fit, requestDraw, markInteracting]
   );
 
   // --- أحداث المؤشّر (سحب + تقريب باللمس) ----------------------------------
@@ -415,6 +432,7 @@ export function HeatmapExplorer({
       const t = tRef.current;
       t.panX += cur.x - prev.x;
       t.panY += cur.y - prev.y;
+      markInteracting();
       requestDraw();
     }
   };
