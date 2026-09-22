@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import type { Activity, ActivityStats } from '@/lib/types';
 import { getActivityStats, trackView, trackDownload } from '@/lib/stats';
+import { trackSchoolPlay, trackSchoolDownload } from '@/lib/school-store';
 import { ActivityTypeBadge } from './activity-type-badge';
 import { SignLanguageButton, SignLanguagePanel } from './sign-language';
 import { resolveSignLanguageSrc, isSignLanguageOn, SIGN_LANG_ATTR } from '@/lib/sign-language';
@@ -92,6 +93,7 @@ export function ActivityPlayer({
 
   useEffect(() => {
     trackView(activity.id);
+    trackSchoolPlay(); // ينسب اللعب لمدرسة المستخدم المختارة (طبقة الخريطة)
     getActivityStats(activity.id).then((s) =>
       setStats({ views: s.views, downloads: s.downloads })
     );
@@ -99,6 +101,7 @@ export function ActivityPlayer({
 
   const onDownload = async () => {
     await trackDownload(activity.id);
+    trackSchoolDownload(); // ينسب التحميل لمدرسة المستخدم المختارة
     setStats((s) => ({ ...s, downloads: s.downloads + 1 }));
   };
 

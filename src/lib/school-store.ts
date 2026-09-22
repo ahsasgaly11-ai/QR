@@ -12,6 +12,7 @@
 
 import { getDb, isFirebaseConfigured } from '@/lib/firebase';
 import { type QatarSchool } from '@/data/qatar-schools';
+import { emptyMetric, type SchoolMetric } from '@/lib/heatmap-shared';
 
 const SEL_KEY = 'qa-school-v1';
 const COUNTED_KEY = 'qa-school-counted-v1';
@@ -87,18 +88,32 @@ export function onSchoolChange(cb: () => void): () => void {
   };
 }
 
-// --- عدّادات المستخدمين لكل مدرسة -------------------------------------------
-function readLocalStats(): Record<string, number> {
+// --- مقاييس كل مدرسة (مستخدمون/لعب/تنزيل + توزيع يومي) ----------------------
+function today(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+type MetricMap = Record<string, SchoolMetric>;
+
+function readLocalStats(): MetricMap {
   if (typeof window === 'undefined') return {};
   try {
     const raw = localStorage.getItem(LOCAL_STATS_KEY);
-    return raw ? (JSON.parse(raw) as Record<string, number>) : {};
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    const out: MetricMap = {};
+    for (const [id, v] of Object.entries(parsed)) {
+      // ترقية الصيغة القديمة (رقم = عدد المستخدمين) إلى الصيغة الغنية.
+      if (typeof v === 'number') out[id] = { ...emptyMetric(), users: v };
+      else out[id] = { ...emptyMetric(), ...(v as Partial<SchoolMetric>) };
+    }
+    return out;
   } catch {
     return {};
   }
 }
 
-function writeLocalStats(stats: Record<string, number>) {
+function writeLocalStats(stats: MetricMap) {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(LOCAL_STATS_KEY, JSON.stringify(stats));
@@ -107,7 +122,14 @@ function writeLocalStats(stats: Record<string, number>) {
   }
 }
 
-/** يزيد عدّاد المدرسة مرّة واحدة فقط لكل مدرسة على هذا المتصفّح. */
+function bumpLocal(schoolId: string, apply: (m: SchoolMetric) => void) {
+  const local = readLocalStats();
+  const m = (local[schoolId] ??= emptyMetric());
+  apply(m);
+  writeLocalStats(local);
+}
+
+/** يزيد عدّاد المستخدمين مرّة واحدة فقط لكل مدرسة على هذا المتصفّح. */
 async function countSchoolUser(schoolId: string): Promise<void> {
   let counted: string[] = [];
   try {
@@ -123,10 +145,11 @@ async function countSchoolUser(schoolId: string): Promise<void> {
     /* ignore */
   }
 
-  // عدّاد محلي (يعمل دائمًا، ويشكّل الاحتياطي في وضع العرض).
-  const local = readLocalStats();
-  local[schoolId] = (local[schoolId] ?? 0) + 1;
-  writeLocalStats(local);
+  const d = today();
+  bumpLocal(schoolId, (m) => {
+    m.users += 1;
+    m.days[d] = (m.days[d] || 0) + 1;
+  });
 
   if (!isFirebaseConfigured) return;
   const db = getDb();
@@ -135,7 +158,7 @@ async function countSchoolUser(schoolId: string): Promise<void> {
     const { doc, setDoc, increment } = await import('firebase/firestore');
     await setDoc(
       doc(db, 'schoolStats', schoolId),
-      { count: increment(1) },
+      { users: increment(1), days: { [d]: increment(1) } },
       { merge: true }
     );
   } catch {
@@ -143,8 +166,43 @@ async function countSchoolUser(schoolId: string): Promise<void> {
   }
 }
 
-/** يقرأ عدّادات كل المدارس (Firestore عند التفعيل، وإلا محليًا). */
-export async function getSchoolStats(): Promise<Record<string, number>> {
+/** يسجّل تشغيل/تحميل لعبة على مدرسة المستخدم المختارة (يفصل الطبقات). */
+async function bumpSchoolMetric(
+  schoolId: string,
+  field: 'plays' | 'downloads'
+): Promise<void> {
+  bumpLocal(schoolId, (m) => {
+    m[field] += 1;
+  });
+  if (!isFirebaseConfigured) return;
+  const db = getDb();
+  if (!db) return;
+  try {
+    const { doc, setDoc, increment } = await import('firebase/firestore');
+    await setDoc(
+      doc(db, 'schoolStats', schoolId),
+      { [field]: increment(1) },
+      { merge: true }
+    );
+  } catch {
+    /* ignore */
+  }
+}
+
+/** يُستدعى من المشغّل عند تشغيل لعبة (إن كانت هناك مدرسة مختارة). */
+export function trackSchoolPlay(): void {
+  const s = getSelectedSchool();
+  if (s?.id) void bumpSchoolMetric(s.id, 'plays');
+}
+
+/** يُستدعى من المشغّل عند تحميل لعبة (إن كانت هناك مدرسة مختارة). */
+export function trackSchoolDownload(): void {
+  const s = getSelectedSchool();
+  if (s?.id) void bumpSchoolMetric(s.id, 'downloads');
+}
+
+/** يقرأ مقاييس كل المدارس (Firestore عند التفعيل، وإلا محليًا). */
+export async function getSchoolMetrics(): Promise<MetricMap> {
   const local = readLocalStats();
   if (!isFirebaseConfigured) return local;
   const db = getDb();
@@ -152,10 +210,15 @@ export async function getSchoolStats(): Promise<Record<string, number>> {
   try {
     const { collection, getDocs } = await import('firebase/firestore');
     const snap = await getDocs(collection(db, 'schoolStats'));
-    const out: Record<string, number> = { ...local };
+    const out: MetricMap = { ...local };
     snap.docs.forEach((d) => {
-      const data = d.data() as { count?: number };
-      out[d.id] = data.count ?? 0;
+      const data = d.data() as Partial<SchoolMetric> & { count?: number };
+      out[d.id] = {
+        users: data.users ?? data.count ?? 0, // count: توافق مع الصيغة القديمة
+        plays: data.plays ?? 0,
+        downloads: data.downloads ?? 0,
+        days: (data.days as Record<string, number>) ?? {},
+      };
     });
     return out;
   } catch {
