@@ -56,6 +56,8 @@ export interface QatarSchool {
   lng: number;
   /** true إن كانت الإحداثيات فعلية (GPS) لا محسوبة من مركز البلدية. */
   real?: boolean;
+  /** true إن كان موقع/بلدية المدرسة تقديريًّا (لم يُذكر في المصدر الرسمي بعد). */
+  approx?: boolean;
 }
 
 // --- بلديات قطر الثماني (مراكز تقريبية) ------------------------------------
@@ -289,6 +291,202 @@ function slug(name: string, munId: string, i: number): string {
 }
 
 // --- بناء قائمة المدارس النهائية (دمج + إزالة التكرار بالاسم) ----------------
+// ===========================================================================
+//  3) قائمة المدارس الرسمية المستوردة من دليل الوزارة (2025-2026).
+//     [الاسم, الجنس, المرحلة, البلدية, تقديري؟] — الأسماء/المراحل/الأجناس من
+//     أعمدة الدليل؛ والبلدية من عمودَي البلدية/المنطقة أو من اسم المدرسة.
+//     ما لم يُذكر له موقع في المصدر يُوسَم approx ويُجمع مبدئيًّا تحت الدوحة
+//     ريثما تُعتمد بلديته/إحداثياته من خدمة «أين مدرستي؟»/نظام GIS قطر.
+// ===========================================================================
+type Official = [
+  name: string,
+  gender: SchoolGender,
+  stage: SchoolStage,
+  mun: MunicipalityId,
+  approx?: boolean
+];
+
+const OFFICIAL_SCHOOLS: Official[] = [
+  ['أروى بنت عبد المطلب الثانوية', 'girls', 'secondary', 'doha', true],
+  ['أسماء بنت أبي بكر الابتدائية', 'girls', 'primary', 'doha', true],
+  ['أسماء بنت يزيد الأنصارية الثانوية', 'girls', 'secondary', 'doha', true],
+  ['الاسراء الابتدائية للبنات', 'girls', 'primary', 'doha'],
+  ['الأندلس الابتدائية', 'girls', 'primary', 'doha', true],
+  ['البيان الابتدائية الأولى', 'girls', 'primary', 'doha', true],
+  ['البيان الاعدادية للبنات', 'girls', 'prep', 'doha'],
+  ['البيان الاولى للبنات', 'girls', 'primary', 'doha'],
+  ['التعاون الابتدائية', 'girls', 'primary', 'doha', true],
+  ['الثمامة الابتدائية للبنات', 'girls', 'primary', 'doha'],
+  ['الثمامة الثانوية للبنات', 'girls', 'secondary', 'doha'],
+  ['الجميلية الابتدائية الإعدادية الثانوية للبنات', 'girls', 'complex', 'shahaniya'],
+  ['الخرسعة الابتدائية الإعدادية', 'girls', 'complex', 'rayyan'],
+  ['الخرسعة الابتدائية الإعدادية الثانوية للبنات', 'girls', 'complex', 'rayyan'],
+  ['الخرسعة الابتدائية للبنات', 'girls', 'primary', 'rayyan'],
+  ['الخريطيات الابتدائية للبنات', 'girls', 'primary', 'ummslal'],
+  ['الخنساء الابتدائية', 'girls', 'primary', 'doha', true],
+  ['الخوارزمي الابتدائية', 'girls', 'primary', 'doha', true],
+  ['الرسالة الثانوية للبنات', 'girls', 'secondary', 'doha'],
+  ['السيلية الثانوية', 'girls', 'secondary', 'rayyan'],
+  ['الشحانية الإعدادية الثانوية للبنات', 'girls', 'complex', 'shahaniya'],
+  ['الشحانية الإعدادية للبنات', 'girls', 'prep', 'shahaniya'],
+  ['الشفاء بنت عبد الرحمن الأنصارية الابتدائية', 'girls', 'primary', 'doha', true],
+  ['الشقب الابتدائية', 'girls', 'primary', 'doha', true],
+  ['الشمال الابتدائية للبنات', 'girls', 'primary', 'shamal'],
+  ['الشمال الاعدادية الثانوية للبنات', 'girls', 'complex', 'shamal'],
+  ['الشيماء الثانوية', 'girls', 'secondary', 'doha', true],
+  ['الظعاين الابتدائية', 'girls', 'primary', 'daayen'],
+  ['العب الثانوية', 'girls', 'secondary', 'doha', true],
+  ['الغويرية الابتدائية الاعدادية الثانوية للبنات', 'girls', 'complex', 'doha'],
+  ['الفلاح الابتدائية', 'girls', 'primary', 'doha', true],
+  ['الكرعانة الابتدائية الاعدادية الثانوية للبنات', 'girls', 'complex', 'rayyan'],
+  ['الكعبان الابتدائية الإعدادية الثانوية للبنات', 'girls', 'complex', 'khor'],
+  ['الكوثر الثانوية', 'girls', 'secondary', 'doha', true],
+  ['المرخية الابتدائية', 'girls', 'primary', 'doha', true],
+  ['النهضة الابتدائية', 'girls', 'primary', 'doha', true],
+  ['الهداية لذوي الاحتياجات الخاصة (الثمامة)', 'girls', 'complex', 'doha', true],
+  ['الهداية لذوي الاحتياجات الخاصة (الصخامة)', 'girls', 'complex', 'doha', true],
+  ['الهدى الابتدائية للبنات', 'girls', 'primary', 'rayyan'],
+  ['الوجبة الإعدادية', 'girls', 'prep', 'rayyan'],
+  ['الوكير الابتدائية للبنات', 'girls', 'primary', 'wakrah'],
+  ['أم ايمن الثانوية', 'girls', 'secondary', 'doha', true],
+  ['أم حكيم الثانوية', 'girls', 'secondary', 'doha', true],
+  ['أم معبد الإعدادية', 'girls', 'prep', 'doha', true],
+  ['أمامه الابتدائية للبنات', 'girls', 'primary', 'rayyan'],
+  ['أمامة بنت حمزة الابتدائية', 'girls', 'primary', 'doha', true],
+  ['آمنة بنت الأرقم المخزومية الثانوية للبنات', 'girls', 'secondary', 'khor'],
+  ['آمنه بنت وهب الثانوية للبنات', 'girls', 'secondary', 'doha'],
+  ['آمنة محمود الجيدة الابتدائية', 'girls', 'primary', 'doha', true],
+  ['برزان الإعدادية', 'girls', 'prep', 'doha', true],
+  ['بروق الابتدائية', 'girls', 'primary', 'doha', true],
+  ['جويرية بنت الحارث الابتدائية', 'girls', 'primary', 'doha', true],
+  ['دخان الابتدائية الاعدادية الثانوية للبنات', 'girls', 'complex', 'shahaniya'],
+  ['رابعة العدوية الثانوية للبنات', 'girls', 'secondary', 'doha'],
+  ['رفيدة بنت كعب الاعدادية للبنات', 'girls', 'prep', 'rayyan'],
+  ['رقية الاعدادية للبنات', 'girls', 'prep', 'doha'],
+  ['رملة بنت أبي سفيان الثانوية للبنات', 'girls', 'secondary', 'ummslal'],
+  ['روضة بنت جاسم الثانوية', 'girls', 'secondary', 'doha', true],
+  ['روضة بنت محمد الثانوية', 'girls', 'secondary', 'doha', true],
+  ['روضة راشد الابتدائية الإعدادية الثانوية للبنات', 'girls', 'complex', 'rayyan'],
+  ['زبيدة الثانوية', 'girls', 'secondary', 'doha', true],
+  ['زكريت الابتدائية', 'girls', 'primary', 'doha', true],
+  ['زينب الإعدادية', 'girls', 'prep', 'doha', true],
+  ['زينب بنت جحش الابتدائية', 'girls', 'primary', 'doha', true],
+  ['سكينة الاعدادية للبنات', 'girls', 'prep', 'rayyan'],
+  ['سكينة بنت الحسين الإعدادية', 'girls', 'prep', 'doha', true],
+  ['سودة بنت زمعة الإعدادية', 'girls', 'prep', 'doha', true],
+  ['صفية بنت عبد المطلب الابتدائية', 'girls', 'primary', 'doha', true],
+  ['طيبة الابتدائية للبنات', 'girls', 'primary', 'doha'],
+  ['عائشة بنت أبي بكر الثانوية للبنات', 'girls', 'secondary', 'rayyan'],
+  ['فاطمة الزهراء الإعدادية', 'girls', 'prep', 'doha', true],
+  ['فاطمة بنت الخطاب الابتدائية', 'girls', 'primary', 'doha', true],
+  ['فاطمة بنت الوليد بن المغيرة الإعدادية', 'girls', 'prep', 'doha', true],
+  ['قطر الابتدائية', 'girls', 'primary', 'doha', true],
+  ['قطر الإعدادية', 'girls', 'prep', 'doha', true],
+  ['قطر التقنية الثانوية للبنات - الشمال', 'girls', 'secondary', 'shamal'],
+  ['قطر للعلوم المصرفية وإدارة الأعمال الثانوية', 'girls', 'secondary', 'doha', true],
+  ['لعبيب الابتدائية', 'girls', 'primary', 'doha', true],
+  ['مارية القبطية الإعدادية', 'girls', 'prep', 'doha', true],
+  ['مجمع التربية السمعية', 'girls', 'complex', 'doha'],
+  ['مدرسة الهداية لذوي الاحتياجات الخاصَّة', 'girls', 'complex', 'doha'],
+  ['مريم بنت عمران الابتدائية', 'girls', 'primary', 'doha', true],
+  ['مسيعيد الابتدائية الإعدادية الثانوية', 'girls', 'complex', 'doha', true],
+  ['معيذر الإعدادية', 'girls', 'prep', 'rayyan'],
+  ['معيذر الثانوية للبنات', 'girls', 'secondary', 'rayyan'],
+  ['موزة بنت محمد الابتدائية', 'girls', 'primary', 'doha', true],
+  ['نسيبة بنت كعب الابتدائية', 'girls', 'primary', 'doha', true],
+  ['هاجر الابتدائية', 'girls', 'primary', 'doha', true],
+  ['هند بنت أبى سفيان الثانوية', 'girls', 'secondary', 'doha', true],
+  ['هند بنت عتبة الإعدادية للبنات', 'girls', 'prep', 'rayyan'],
+  ['هند بنت عمرو الأنصارية الإعدادية للبنات', 'girls', 'prep', 'ummslal'],
+  ['ابن تيمية الثانوية للبنين', 'boys', 'secondary', 'ummslal'],
+  ['أبي عبيدة الاعدادية للبنين', 'boys', 'prep', 'rayyan'],
+  ['أحمد بن حنبل الثانوية للبنين', 'boys', 'secondary', 'doha'],
+  ['أحمد بن راشد المريخي الابتدائية', 'boys', 'primary', 'doha', true],
+  ['أحمد بن محمد الثانوية', 'boys', 'secondary', 'doha', true],
+  ['أحمد منصور الابتدائية', 'boys', 'primary', 'doha', true],
+  ['أسامة بن زيد الإعدادية', 'boys', 'prep', 'doha', true],
+  ['الأحنف بن قيس الإعدادية', 'boys', 'prep', 'doha', true],
+  ['الإخلاص النموذجية', 'boys', 'complex', 'doha', true],
+  ['الامام الشافعي الاعدادية للبنين', 'boys', 'prep', 'rayyan'],
+  ['الخليج العربي النموذجية', 'boys', 'complex', 'doha', true],
+  ['الدوحة الإعدادية', 'boys', 'prep', 'doha', true],
+  ['الذخيرة النموذجية لبنين', 'boys', 'primary', 'khor'],
+  ['الرازي الاعدادية للبنين', 'boys', 'prep', 'doha'],
+  ['الرشاد النموذجية', 'boys', 'complex', 'doha', true],
+  ['الزبارة الابتدائية الإعدادية الثانوية للبنين', 'boys', 'complex', 'doha', true],
+  ['الزبير بن العوام الابتدائية', 'boys', 'primary', 'doha', true],
+  ['الشحانية النموذجية', 'boys', 'complex', 'shahaniya'],
+  ['الشروق النموذجية', 'boys', 'complex', 'doha', true],
+  ['الشمال الابتدائية الإعدادية', 'boys', 'complex', 'shamal'],
+  ['الشمال الإعدادية للبنين', 'boys', 'prep', 'shamal'],
+  ['الشمال الثانوية للبنين', 'boys', 'secondary', 'shamal'],
+  ['القادسية النموذجية للبنين', 'boys', 'complex', 'doha', true],
+  ['القدس النموذجية', 'boys', 'complex', 'doha', true],
+  ['الكعبان الابتدائية الإعدادية', 'boys', 'complex', 'doha', true],
+  ['المثنى بن حارثة النموذجية', 'boys', 'complex', 'doha', true],
+  ['المعهد الديني الإعدادي الثانوي', 'boys', 'complex', 'doha', true],
+  ['المنار النموذجية للبنين', 'boys', 'complex', 'doha', true],
+  ['أم العمد النموذجية', 'boys', 'complex', 'doha', true],
+  ['أم القرى الابتدائية', 'boys', 'primary', 'doha', true],
+  ['أم صلال محمد النموذجية للبنين', 'boys', 'primary', 'ummslal'],
+  ['بلال بن رباح النموذجية للبنين', 'boys', 'primary', 'rayyan'],
+  ['جابر بن حيان الابتدائية', 'boys', 'primary', 'doha', true],
+  ['جوعان بن جاسم النموذجية', 'boys', 'complex', 'doha', true],
+  ['حسان بن ثابت الثانوية', 'boys', 'secondary', 'doha', true],
+  ['حمد بن عبد الله بن جاسم الثانوية', 'boys', 'secondary', 'doha', true],
+  ['حمزة الاعدادية للبنين', 'boys', 'prep', 'doha'],
+  ['حمزة بن عبد المطلب الإعدادية', 'boys', 'prep', 'doha', true],
+  ['خالد بن أحمد الاعدادية للبنين', 'boys', 'prep', 'doha'],
+  ['خالد بن الوليد الإعدادية', 'boys', 'prep', 'doha', true],
+  ['خليفة الثانوية', 'boys', 'secondary', 'doha', true],
+  ['سعد بن أبي وقاص النموذجية', 'boys', 'complex', 'doha', true],
+  ['سعود بن عبد الرحمن النموذجية', 'boys', 'complex', 'doha', true],
+  ['سعيد بن زيد الإعدادية للبنين', 'boys', 'prep', 'wakrah'],
+  ['سميسمة الإعدادية', 'boys', 'prep', 'daayen'],
+  ['سميسمة الثانوية', 'boys', 'secondary', 'daayen'],
+  ['صلاح الدين الايوبي الاعدادية للبنين', 'boys', 'prep', 'rayyan'],
+  ['طارق بن زياد الثانوية للبنين', 'boys', 'secondary', 'doha'],
+  ['طلحة بن عبيد الله الإعدادية للبنين', 'boys', 'prep', 'daayen'],
+  ['عبد الحميد الدايل النموذجية', 'boys', 'complex', 'doha', true],
+  ['عبد الرحمن بن جاسم الإعدادية', 'boys', 'prep', 'doha', true],
+  ['عبد الرحمن بن عوف الإعدادية', 'boys', 'prep', 'doha', true],
+  ['عبد الله بن الزبير النموذجية', 'boys', 'complex', 'doha', true],
+  ['عبد الله بن تركي السبيعي النموذجية', 'boys', 'complex', 'doha', true],
+  ['عبد الله بن جاسم آل ثاني النموذجية', 'boys', 'complex', 'doha', true],
+  ['عبد الله بن رواحة الابتدائية', 'boys', 'primary', 'doha', true],
+  ['عبد الله بن زيد آل محمود النموذجية للبنين', 'boys', 'primary', 'rayyan'],
+  ['عبدالله بن علي المسند الاعدادية للبنين', 'boys', 'prep', 'khor'],
+  ['عبدالله بن علي المسند الثانوية للبنين', 'boys', 'secondary', 'khor'],
+  ['عثمان بن عفان النموذجية', 'boys', 'complex', 'doha', true],
+  ['علي بن أبي طالب الإعدادية', 'boys', 'prep', 'doha', true],
+  ['علي بن جاسم بن محمد آل ثاني الثانوية', 'boys', 'secondary', 'doha', true],
+  ['علي بن عبد الله النموذجية', 'boys', 'complex', 'doha', true],
+  ['عمر بن الخطاب الابتدائية الأولى', 'boys', 'primary', 'doha', true],
+  ['عمر بن الخطاب الابتدائية الثانوية', 'boys', 'complex', 'doha', true],
+  ['عمر بن الخطاب الإعدادية', 'boys', 'prep', 'doha', true],
+  ['عمر بن عبد العزيز الثانوية للبنين', 'boys', 'secondary', 'doha'],
+  ['عمرو بن العاص الثانوية للبنين', 'boys', 'secondary', 'wakrah'],
+  ['قطر التقنية الثانوية', 'boys', 'secondary', 'doha', true],
+  ['قطر للعلوم والتكنولوجيا الثانوية', 'boys', 'secondary', 'doha', true],
+  ['كمال ناجي النموذجية', 'boys', 'complex', 'doha', true],
+  ['مالك بن أنس النموذجية', 'boys', 'complex', 'doha', true],
+  ['محمد بن جاسم بن محمد آل ثاني الإعدادية', 'boys', 'prep', 'doha', true],
+  ['مصعب بن عمير الثانوية', 'boys', 'secondary', 'doha', true],
+  ['معاذ بن جبل الابتدائية للبنين', 'boys', 'primary', 'doha', true],
+  ['ناصر بن عبد الله العطية الثانوية', 'boys', 'secondary', 'doha', true],
+  ['التمكن الشاملة', 'mixed', 'complex', 'doha', true],
+  ['مدرسة الهداية للاحتياجات الخاصة', 'mixed', 'complex', 'doha'],
+  ['روضة الإسراء للبنات', 'girls', 'kindergarten', 'doha'],
+  ['روضة الخوارزمي', 'girls', 'kindergarten', 'ummslal'],
+  ['روضة الشفاء بنت عبد الرحمن الأنصارية للبنات', 'girls', 'kindergarten', 'doha', true],
+  ['روضة الهدى للبنات', 'girls', 'kindergarten', 'rayyan'],
+  ['روضة الوكرة الابتدئية للبنات', 'girls', 'kindergarten', 'wakrah'],
+  ['روضة أمامة للبنات', 'girls', 'kindergarten', 'doha', true],
+  ['روضة زكريت', 'girls', 'kindergarten', 'daayen'],
+  ['روضة فاطمة بنت الخطاب', 'girls', 'kindergarten', 'doha', true],
+  ['روضة عبدالله بن زيد آلمحمود للبنين', 'boys', 'kindergarten', 'doha', true],
+];
+
 export const QATAR_SCHOOLS: QatarSchool[] = (() => {
   const out: QatarSchool[] = [];
   const seen = new Set<string>();
@@ -333,6 +531,26 @@ export const QATAR_SCHOOLS: QatarSchool[] = (() => {
       });
     });
   }
+
+  // 3) الرسمية المستوردة (إحداثيات من مركز البلدية + إزاحة).
+  OFFICIAL_SCHOOLS.forEach(([name, gender, stage, mun, approx], i) => {
+    const k = key(name);
+    if (seen.has(k)) return;
+    seen.add(k);
+    const base = MUNICIPALITY_BY_ID[mun];
+    const id = `off-${i}-${hashString(name).toString(36)}`;
+    const [ja, jb] = jitter(id);
+    out.push({
+      id,
+      name,
+      municipalityId: mun,
+      gender,
+      stage,
+      lat: +(base.lat + jb * base.spread * 0.8).toFixed(4),
+      lng: +(base.lng + ja * base.spread).toFixed(4),
+      ...(approx ? { approx: true } : {}),
+    });
+  });
 
   return out;
 })();
