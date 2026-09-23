@@ -180,10 +180,9 @@ export function UserHeatmap({ className = '' }: { className?: string }) {
           ctx.save(); ctx.clip(land); ctx.filter = 'blur(5px)'; ctx.drawImage(heat, 0, 0); ctx.filter = 'none'; ctx.restore();
         }
       }
-      ctx.save(); ctx.clip(land);
+      // بلا قصّ على اليابسة: المخطّط الساحلي مبسّط فتقع بعض المدارس الساحلية خارجه.
       ctx.fillStyle = dark ? 'rgba(227,194,107,0.4)' : 'rgba(106,15,46,0.28)';
       for (const s of QATAR_SCHOOLS) { ctx.beginPath(); ctx.arc(SX(s.lng), SY(s.lat), 1.3, 0, Math.PI * 2); ctx.fill(); }
-      ctx.restore();
       ctx.lineJoin = 'round';
       ctx.lineWidth = 1.4; ctx.strokeStyle = dark ? 'rgba(227,194,107,0.5)' : 'rgba(106,15,46,0.55)';
       ctx.stroke(land);
