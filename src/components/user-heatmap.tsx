@@ -188,6 +188,33 @@ export function UserHeatmap({ className = '' }: { className?: string }) {
       ctx.lineWidth = 1.4; ctx.strokeStyle = dark ? 'rgba(227,194,107,0.5)' : 'rgba(106,15,46,0.55)';
       ctx.stroke(land);
     }
+
+    // أسماء المناطق (البلديات) مباشرةً على الخريطة — لتظهر قبل فتح ملء الشاشة.
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'center';
+    ctx.direction = 'rtl';
+    ctx.font = '800 10px Tajawal, "Noto Kufi Arabic", sans-serif';
+    for (const m of MUNICIPALITIES) {
+      const shp = SHAPE_BY_ID[m.id];
+      const cx = shp ? shp.centroid[0] : m.lng;
+      const cy = shp ? shp.centroid[1] : m.lat;
+      const active = !selMuni || selMuni === m.id;
+      const x = SX(cx);
+      // نرفع البطاقة قليلًا فوق المركز حتى لا تحجبها فقاعة القيمة.
+      const y = SY(cy) - 11;
+      const padX = 5, bh = 15;
+      const tw = ctx.measureText(m.name).width;
+      const bw = tw + padX * 2;
+      const bx = x - bw / 2, by = y - bh / 2;
+      ctx.globalAlpha = active ? 1 : 0.35;
+      ctx.fillStyle = dark ? 'rgba(18,11,13,0.85)' : 'rgba(106,15,46,0.92)';
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(bx, by, bw, bh, 6); else ctx.rect(bx, by, bw, bh);
+      ctx.fill();
+      ctx.fillStyle = dark ? '#f5ece4' : '#ffffff';
+      ctx.fillText(m.name, x, y + 0.5);
+      ctx.globalAlpha = 1;
+    }
   }, [size, metrics, metric, mode, selMuni]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // نقر الخريطة → تحديد المنطقة.
