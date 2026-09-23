@@ -31,6 +31,8 @@ type Rect = { x: number; y: number; w: number; h: number };
 function overlaps(a: Rect, b: Rect) {
   return !(a.x + a.w < b.x || b.x + b.w < a.x || a.y + a.h < b.y || b.y + b.h < a.y);
 }
+/** أقصى تكبير — مرتفع بما يكفي لتنفصل تسميات المدارس المتجاورة (بعضها على بُعد عشرات الأمتار). */
+const MAX_SCALE = 40;
 const SHAPE_BY_ID = Object.fromEntries(MUNICIPALITY_SHAPES.map((s) => [s.id, s]));
 
 export function HeatmapExplorer({
@@ -230,8 +232,9 @@ export function HeatmapExplorer({
     }
 
     // نقاط المدارس (حجمها حسب القيمة) + الإبراز.
+    // بلا قصّ على حدود اليابسة: المخطّط الساحلي مبسّط، فبعض المدارس الساحلية
+    // (الثمامة، الدفنة…) تقع خارجه وكانت تختفي من الخريطة.
     const maxSchool = Math.max(1, ...QATAR_SCHOOLS.map((s) => valueOf(s.id)));
-    ctx.save(); ctx.clip(land);
     for (const s of QATAR_SCHOOLS) {
       const v = valueOf(s.id);
       const x = SX(s.lng), y = SY(s.lat);
@@ -242,7 +245,6 @@ export function HeatmapExplorer({
         : (dark ? 'rgba(245,236,228,0.22)' : 'rgba(106,15,46,0.25)');
       ctx.fill();
     }
-    ctx.restore();
 
     // --- التسميات (تصادم بسيط) ---
     const occupied: Rect[] = [];
@@ -297,12 +299,22 @@ export function HeatmapExplorer({
         const x = SX(s.lng), y = SY(s.lat);
         if (x < 4 || x > W - 4 || y < 4 || y > H - 4) continue;
         const tw = Math.min(180, ctx.measureText(s.name).width);
-        const box: Rect = { x: x - tw / 2 - 5, y: y + 6, w: tw + 10, h: 16 };
-        if (occupied.some((o) => overlaps(o, box))) continue;
+        const bw = tw + 10, bh = 16;
+        // مواضع بديلة (أسفل/أعلى/يسار/يمين النقطة) حتى لا يُحذف اسم لمجرّد تجاوره
+        // مع مدرسة قريبة؛ ويظهر كل اسم متى كبّرت الخريطة بما يكفي.
+        const box = ([
+          { x: x - bw / 2, y: y + 6 },
+          { x: x - bw / 2, y: y - 6 - bh },
+          { x: x - bw - 7, y: y - bh / 2 },
+          { x: x + 7, y: y - bh / 2 },
+        ] as const)
+          .map((p): Rect => ({ x: p.x, y: p.y, w: bw, h: bh }))
+          .find((b) => !occupied.some((o) => overlaps(o, b)));
+        if (!box) continue;
         ctx.fillStyle = dark ? 'rgba(28,19,21,0.9)' : 'rgba(255,255,255,0.9)';
         roundRect(ctx, box.x, box.y, box.w, box.h, 7); ctx.fill();
         ctx.fillStyle = dark ? '#e3c26b' : '#5a1029';
-        ctx.fillText(s.name, x, box.y + box.h / 2, 176);
+        ctx.fillText(s.name, box.x + bw / 2, box.y + bh / 2, 176);
         occupied.push(box);
       }
     }
@@ -374,7 +386,7 @@ export function HeatmapExplorer({
 
   const zoomAt = useCallback((factor: number, px: number, py: number) => {
     const t = tRef.current;
-    const next = Math.min(9, Math.max(1, t.scale * factor));
+    const next = Math.min(MAX_SCALE, Math.max(1, t.scale * factor));
     const k = next / t.scale;
     t.panX = px - (px - t.panX) * k;
     t.panY = py - (py - t.panY) * k;
@@ -562,7 +574,7 @@ export function HeatmapExplorer({
   };
 
   // --- البحث ----------------------------------------------------------------
-  const searchResults = useMemo(() => (searchQ ? searchSchools(searchQ, 8) : []), [searchQ]);
+  const searchResults = useMemo(() => (searchQ ? searchSchools(searchQ, QATAR_SCHOOLS.length) : []), [searchQ]);
   const locateSchool = (id: string) => {
     const s = SCHOOL_BY_ID[id]; if (!s) return;
     setHighlight(id);
