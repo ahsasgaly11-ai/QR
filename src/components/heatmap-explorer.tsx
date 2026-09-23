@@ -31,8 +31,10 @@ type Rect = { x: number; y: number; w: number; h: number };
 function overlaps(a: Rect, b: Rect) {
   return !(a.x + a.w < b.x || b.x + b.w < a.x || a.y + a.h < b.y || b.y + b.h < a.y);
 }
-/** أقصى تكبير — مرتفع بما يكفي لتنفصل تسميات المدارس المتجاورة (بعضها على بُعد عشرات الأمتار). */
-const MAX_SCALE = 40;
+/** أقصى تكبير (8000%) — مرتفع بما يكفي لتنفصل تسميات المدارس المتجاورة (بعضها على بُعد عشرات الأمتار). */
+const MAX_SCALE = 80;
+/** من هذا التكبير تُكدَّس أسماء المدارس المتلاصقة بدل إخفائها. */
+const STACK_SCALE = 20;
 const SHAPE_BY_ID = Object.fromEntries(MUNICIPALITY_SHAPES.map((s) => [s.id, s]));
 
 export function HeatmapExplorer({
@@ -295,7 +297,12 @@ export function HeatmapExplorer({
     // أسماء المدارس عند التكبير (≥ 200%).
     if (t.scale >= 2) {
       ctx.font = '700 12px Tajawal, sans-serif';
-      const ordered = [...QATAR_SCHOOLS].sort((a, b) => valueOf(b.id) - valueOf(a.id));
+      // الأقرب إلى وسط الشاشة أولًا: المدرسة التي تُكبِّر عندها يظهر اسمها دائمًا.
+      const cx = W / 2, cy = H / 2;
+      const ordered = QATAR_SCHOOLS
+        .map((s) => ({ s, d: Math.hypot(SX(s.lng) - cx, SY(s.lat) - cy) }))
+        .sort((a, b) => a.d - b.d || valueOf(b.s.id) - valueOf(a.s.id))
+        .map((o) => o.s);
       for (const s of ordered) {
         // المدرسة المبرَزة/مدرستك لها تسميتها الخاصة أعلاه.
         if (s.id === highlightRef.current || s.id === myRef.current) continue;
@@ -303,17 +310,28 @@ export function HeatmapExplorer({
         if (x < 4 || x > W - 4 || y < 4 || y > H - 4) continue;
         const tw = Math.min(180, ctx.measureText(s.name).width);
         const bw = tw + 10, bh = 16;
-        // مواضع بديلة (أسفل/أعلى/يسار/يمين النقطة) حتى لا يُحذف اسم لمجرّد تجاوره
-        // مع مدرسة قريبة؛ ويظهر كل اسم متى كبّرت الخريطة بما يكفي.
-        const box = ([
+        // مواضع بديلة (أسفل/أعلى/يسار/يمين النقطة، ثم مكدّسة أبعد مع خطّ دالّ)
+        // حتى لا يُحذف اسم لمجرّد تجاوره مع مدارس قريبة؛ فمن تكبير ≈ 4000% تظهر
+        // أسماء كل المدارس حتى في المجمّعات المتلاصقة.
+        const cands = [
           { x: x - bw / 2, y: y + 6 },
           { x: x - bw / 2, y: y - 6 - bh },
           { x: x - bw - 7, y: y - bh / 2 },
           { x: x + 7, y: y - bh / 2 },
-        ] as const)
-          .map((p): Rect => ({ x: p.x, y: p.y, w: bw, h: bh }))
-          .find((b) => !occupied.some((o) => overlaps(o, b)));
-        if (!box) continue;
+        ];
+        // التكديس عند التكبير العالي فقط، وإلا ابتعدت الأسماء عن مدارسها وازدحمت الخريطة.
+        if (t.scale >= STACK_SCALE) for (let k = 1; k <= 4; k++) {
+          cands.push({ x: x - bw / 2, y: y + 6 + k * (bh + 3) }, { x: x - bw / 2, y: y - 6 - bh - k * (bh + 3) });
+        }
+        const idx = cands.findIndex((p) => !occupied.some((o) => overlaps(o, { x: p.x, y: p.y, w: bw, h: bh })));
+        if (idx === -1) continue;
+        const box: Rect = { x: cands[idx].x, y: cands[idx].y, w: bw, h: bh };
+        if (idx >= 4) {
+          ctx.beginPath(); ctx.moveTo(x, y);
+          ctx.lineTo(x, box.y > y ? box.y : box.y + bh);
+          ctx.lineWidth = 1; ctx.strokeStyle = dark ? 'rgba(227,194,107,0.6)' : 'rgba(90,16,41,0.5)';
+          ctx.stroke();
+        }
         ctx.fillStyle = dark ? 'rgba(28,19,21,0.9)' : 'rgba(255,255,255,0.9)';
         roundRect(ctx, box.x, box.y, box.w, box.h, 7); ctx.fill();
         ctx.fillStyle = dark ? '#e3c26b' : '#5a1029';
