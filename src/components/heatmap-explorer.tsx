@@ -280,7 +280,8 @@ export function HeatmapExplorer({
       ctx.font = '800 13px Tajawal, sans-serif';
       const full = `${label}: ${s.name}`;
       const tw = ctx.measureText(full).width;
-      const box: Rect = { x: x - tw / 2 - 7, y: y + 9, w: tw + 14, h: 18 };
+      // فوق النقطة: أسفلها غالبًا مدارس المجمّع نفسه فلا تُغطّى نقاطها.
+      const box: Rect = { x: x - tw / 2 - 7, y: y - 27, w: tw + 14, h: 18 };
       ctx.fillStyle = color; roundRect(ctx, box.x, box.y, box.w, box.h, 8); ctx.fill();
       ctx.fillStyle = '#fff'; ctx.fillText(full, x, box.y + box.h / 2);
       occupied.push(box);
@@ -296,6 +297,8 @@ export function HeatmapExplorer({
       ctx.font = '700 12px Tajawal, sans-serif';
       const ordered = [...QATAR_SCHOOLS].sort((a, b) => valueOf(b.id) - valueOf(a.id));
       for (const s of ordered) {
+        // المدرسة المبرَزة/مدرستك لها تسميتها الخاصة أعلاه.
+        if (s.id === highlightRef.current || s.id === myRef.current) continue;
         const x = SX(s.lng), y = SY(s.lat);
         if (x < 4 || x > W - 4 || y < 4 || y > H - 4) continue;
         const tw = Math.min(180, ctx.measureText(s.name).width);
@@ -582,7 +585,15 @@ export function HeatmapExplorer({
     const wrap = wrapRef.current; if (!wrap) return;
     const W = wrap.clientWidth, H = wrap.clientHeight;
     const t = tRef.current;
-    const target = 3.4;
+    // تكبير يكفي لفصل أقرب مدرسة مجاورة (≈ 45px) حتى لا يغطّي إبرازُها أسماءَ
+    // جاراتها في المجمّع نفسه (مثل مدارس سميسمة الثلاث).
+    let nearest = Infinity;
+    for (const o of QATAR_SCHOOLS) {
+      if (o.id === id) continue;
+      const d = Math.hypot((o.lng - s.lng) * t.baseW / (GEO.lngMax - GEO.lngMin), (o.lat - s.lat) * t.baseH / (GEO.latMax - GEO.latMin));
+      if (d > 0 && d < nearest) nearest = d;
+    }
+    const target = Math.min(MAX_SCALE, Math.max(3.4, 45 / nearest));
     t.scale = target;
     t.panX = W / 2 - normX(s.lng) * t.baseW * target;
     t.panY = H / 2 - normY(s.lat) * t.baseH * target;
