@@ -3,6 +3,7 @@ import { getAllActivities, getSubjects, locateActivity } from '@/lib/content';
 import { StatsDashboard } from '@/components/stats-dashboard';
 import { UserHeatmap } from '@/components/user-heatmap';
 import { BackButton } from '@/components/back-button';
+import { StatsSyncNotice } from '@/components/stats-sync-notice';
 import { Icon3D } from '@/components/icon-3d';
 import { SITE_NAME } from '@/lib/site';
 
@@ -42,6 +43,7 @@ export default async function DashboardPage() {
           </p>
         </div>
       </div>
+      <StatsSyncNotice />
       <StatsDashboard activities={rows} />
 
       <div className="mt-5 sm:mt-8">
