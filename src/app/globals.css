@@ -836,7 +836,6 @@ body { padding-bottom: var(--ticker-h); }
   display: flex;
   flex-shrink: 0;
   align-items: center;
-  gap: 0.4rem;
   padding-inline: 0.9rem 1.35rem;
   font-size: 0.8rem;
   font-weight: 800;
@@ -857,30 +856,49 @@ body { padding-bottom: var(--ticker-h); }
   mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
 }
 
-.vision-ticker-track {
-  display: flex;
-  width: max-content;
-  height: 100%;
-  animation: vision-marquee 45s linear infinite;
-}
-.vision-ticker:hover .vision-ticker-track { animation-play-state: paused; }
-
-.vision-ticker-half { display: flex; height: 100%; }
-
-.vision-ticker-item {
+/* الرسالة الحالية: تُحرَّك بـ Web Animations من الحافّة اليمنى إلى خارج اليسار.
+   قبل بدء الحركة تبقى خارج الإطار فلا تومض في موضعها الابتدائي. */
+.vision-ticker-msg {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
   display: inline-flex;
   align-items: center;
   gap: 0.85rem;
-  padding-inline: 1.6rem;
-  font-size: 0.9rem;
-  font-weight: 600;
   white-space: nowrap;
-  color: rgba(255, 255, 255, 0.86);
+  font-size: 0.9rem;
+  transform: translateX(100vw);
+  will-change: transform;
 }
-.vision-ticker-item strong {
+.vision-ticker-msg strong {
   font-weight: 800;
   color: #fff;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+/* تقليل الحركة: الرسالة ثابتة بمحاذاة اليمين، ويُقصّ ما زاد بنقاط */
+.vision-ticker-msg.is-static {
+  left: auto;
+  right: 0;
+  max-width: 100%;
+  padding-inline: 1rem;
+  transform: none;
+}
+.vision-ticker-msg.is-static strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vision-ticker-msg.is-static .vision-ticker-gem:last-child { display: none; }
+
+/* تبدّل نص الشارة بانزلاق ناعم مع كل رسالة جديدة */
+.vision-ticker-badge-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  animation: ticker-badge-in 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes ticker-badge-in {
+  from { opacity: 0; transform: translateY(60%); }
+  to { opacity: 1; transform: none; }
 }
 
 /* معيّن ذهبي بين العبارات */
@@ -893,20 +911,10 @@ body { padding-bottom: var(--ticker-h); }
   box-shadow: 0 0 8px rgba(233, 196, 90, 0.7);
 }
 
-/* إزاحة نصف المسار (نسخة كاملة) إلى اليسار = حركة من اليمين لليسار بلا قفزة */
-@keyframes vision-marquee {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .vision-ticker-track { animation: none; }
-}
-
 @media (max-width: 640px) {
   :root { --ticker-h: 36px; }
   .vision-ticker-badge { padding-inline: 0.7rem 1.1rem; font-size: 0.72rem; }
-  .vision-ticker-item { font-size: 0.82rem; padding-inline: 1.1rem; }
+  .vision-ticker-msg { font-size: 0.82rem; }
 }
 
 @media (max-height: 520px) {

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   MapPin, Flame, Users, GraduationCap, Building2, Trophy,
-  Maximize2, LayoutGrid, Play, Download, Clock, ChevronRight,
+  Maximize2, Expand, LayoutGrid, Play, Download, Clock, ChevronRight,
 } from 'lucide-react';
 import {
   QATAR_SCHOOLS, MUNICIPALITIES, MUNICIPALITY_BY_ID, type MunicipalityId,
@@ -289,7 +289,18 @@ export function UserHeatmap({ className = '' }: { className?: string }) {
       <div className="grid gap-6 lg:grid-cols-[minmax(0,340px)_1fr] lg:items-start">
         {/* الخريطة */}
         <div ref={containerRef} className="mx-auto w-full max-w-[340px]">
-          <div className="rounded-3xl border border-[color:var(--hairline)] bg-gradient-to-b from-[color:var(--surface)] to-[color:var(--surface-2)]/50 p-3">
+          <div className="relative rounded-3xl border border-[color:var(--hairline)] bg-gradient-to-b from-[color:var(--surface)] to-[color:var(--surface-2)]/50 p-3">
+            {/* أسهم التكبير على طرف الخريطة — طريقة إضافية لفتحها بكامل الصفحة */}
+            <button
+              type="button"
+              onClick={() => setExplore(true)}
+              className="icon-3d icon-3d-lift group absolute right-2.5 top-2.5 z-20 h-9 w-9 rounded-xl"
+              style={{ ['--i3d' as string]: 'var(--maroon)' }}
+              aria-label="فتح الخريطة بكامل الصفحة"
+              title="فتح الخريطة بكامل الصفحة"
+            >
+              <Expand className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
+            </button>
             <div ref={wrapRef} onClick={onMapClick} className="relative mx-auto cursor-pointer" style={{ width: size.w, height: size.h }}>
               <canvas ref={canvasRef} style={{ width: size.w, height: size.h }} className="block"
                 role="img" aria-label="خريطة قطر الحرارية لتركيز مستخدمي الألعاب حسب المدرسة" />
