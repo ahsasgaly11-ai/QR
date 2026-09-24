@@ -7,6 +7,7 @@ import { ContactFab } from '@/components/contact-fab';
 import { RouteTransitions } from '@/components/route-transitions';
 import { AccessibilityPanel } from '@/components/accessibility-panel';
 import { VisitTracker } from '@/components/visit-tracker';
+import { VisionTicker } from '@/components/vision-ticker';
 import { Analytics } from '@/components/analytics';
 import { SITE_URL, SITE_NAME, GOOGLE_SITE_VERIFICATION } from '@/lib/site';
 
@@ -102,6 +103,7 @@ export default function RootLayout({
           <RouteTransitions>{children}</RouteTransitions>
         </main>
         <SiteFooter />
+        <VisionTicker />
         <FloatingMascot />
         <ContactFab />
         <AccessibilityPanel />

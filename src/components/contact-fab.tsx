@@ -55,7 +55,7 @@ export function ContactFab() {
   };
 
   return (
-    <div ref={wrapRef} className="fixed bottom-4 right-4 z-50 print:hidden">
+    <div ref={wrapRef} className="fixed bottom-[calc(var(--ticker-h)+1rem)] right-4 z-50 print:hidden">
       {open && (
         <div
           role="dialog"
