@@ -107,7 +107,7 @@ export function SignLanguagePanel({
         // الجوّال: ضمن التدفّق فوق اللعبة (لا تغطية)
         'relative mb-4 w-full',
         // الشاشات الكبيرة: لوحة عائمة أسفل اليسار
-        'sm:fixed sm:bottom-4 sm:left-4 sm:mb-0 sm:w-[min(94vw,24rem)]'
+        'sm:fixed sm:bottom-[calc(var(--ticker-h)+1rem)] sm:left-4 sm:mb-0 sm:w-[min(94vw,24rem)]'
       )}
     >
       <div className="flex items-center justify-between gap-2 bg-[color:var(--maroon)] px-3 py-2 text-white">
