@@ -1,16 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { UploadCloud, ListChecks, Layers, LogOut } from 'lucide-react';
+import { UploadCloud, ListChecks, Layers, LogOut, Megaphone } from 'lucide-react';
 import type { Subject, Activity } from '@/lib/types';
 import { AuthGate } from './auth-gate';
 import { AdminUploader } from '@/components/admin-uploader';
 import { ActivitiesManager } from './activities-manager';
 import { ContentManager } from './content-manager';
+import { TickerManager } from './ticker-manager';
 import { signOutAdmin, isFirebaseConfigured } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 
-type Tab = 'upload' | 'activities' | 'content';
+type Tab = 'upload' | 'activities' | 'content' | 'ticker';
 
 export function AdminShell({
   subjects,
@@ -31,6 +32,7 @@ export function AdminShell({
     { id: 'upload', label: 'رفع نشاط', icon: UploadCloud },
     { id: 'activities', label: 'إدارة الأنشطة', icon: ListChecks },
     { id: 'content', label: 'إدارة المناهج', icon: Layers },
+    { id: 'ticker', label: 'الشريط المتحرّك', icon: Megaphone },
   ];
 
   return (
@@ -73,6 +75,7 @@ export function AdminShell({
         />
       )}
       {tab === 'content' && <ContentManager initial={structure} />}
+      {tab === 'ticker' && <TickerManager />}
     </AuthGate>
   );
 }
