@@ -856,7 +856,7 @@ body { padding-bottom: var(--ticker-h); }
   mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
 }
 
-/* الرسالة الحالية: تُحرَّك بـ Web Animations من الحافّة اليمنى إلى خارج اليسار.
+/* الرسالة الحالية: تُحرَّك بـ Web Animations من الحافّة اليسرى إلى خارج اليمين.
    قبل بدء الحركة تبقى خارج الإطار فلا تومض في موضعها الابتدائي. */
 .vision-ticker-msg {
   position: absolute;
