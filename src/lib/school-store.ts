@@ -13,6 +13,7 @@
 import { getDb, isFirebaseConfigured } from '@/lib/firebase';
 import { type QatarSchool } from '@/data/qatar-schools';
 import { emptyMetric, type SchoolMetric } from '@/lib/heatmap-shared';
+import { reportSyncError, reportSyncOk } from '@/lib/stats-sync';
 
 const SEL_KEY = 'qa-school-v1';
 const COUNTED_KEY = 'qa-school-counted-v1';
@@ -129,14 +130,16 @@ function bumpLocal(schoolId: string, apply: (m: SchoolMetric) => void) {
   writeLocalStats(local);
 }
 
-/** يزيد عدّاد المستخدمين مرّة واحدة فقط لكل مدرسة على هذا المتصفّح. */
-async function countSchoolUser(schoolId: string): Promise<void> {
-  let counted: string[] = [];
+function readCounted(): string[] {
   try {
-    counted = JSON.parse(localStorage.getItem(COUNTED_KEY) || '[]');
+    return JSON.parse(localStorage.getItem(COUNTED_KEY) || '[]');
   } catch {
-    counted = [];
+    return [];
   }
+}
+
+function markCounted(schoolId: string) {
+  const counted = readCounted();
   if (counted.includes(schoolId)) return;
   counted.push(schoolId);
   try {
@@ -144,16 +147,32 @@ async function countSchoolUser(schoolId: string): Promise<void> {
   } catch {
     /* ignore */
   }
+}
+
+/** طلبات احتساب جارية — تمنع الاحتساب المزدوج قبل وصول ردّ Firestore. */
+const inFlight = new Set<string>();
+
+/**
+ * يزيد عدّاد المستخدمين مرّة واحدة فقط لكل مدرسة على هذا المتصفّح.
+ * مع Firestore لا تُعلَّم المدرسة كمحتسبة إلا بعد نجاح الحفظ، فإن فشل
+ * (انقطاع أو قواعد غير منشورة) تُعاد المحاولة عند اللعب/التحميل التالي.
+ */
+async function countSchoolUser(schoolId: string): Promise<void> {
+  if (typeof window === 'undefined') return;
+  if (readCounted().includes(schoolId) || inFlight.has(schoolId)) return;
 
   const d = today();
-  bumpLocal(schoolId, (m) => {
-    m.users += 1;
-    m.days[d] = (m.days[d] || 0) + 1;
-  });
-
-  if (!isFirebaseConfigured) return;
+  if (!isFirebaseConfigured) {
+    markCounted(schoolId);
+    bumpLocal(schoolId, (m) => {
+      m.users += 1;
+      m.days[d] = (m.days[d] || 0) + 1;
+    });
+    return;
+  }
   const db = getDb();
   if (!db) return;
+  inFlight.add(schoolId);
   try {
     const { doc, setDoc, increment } = await import('firebase/firestore');
     await setDoc(
@@ -161,8 +180,16 @@ async function countSchoolUser(schoolId: string): Promise<void> {
       { users: increment(1), days: { [d]: increment(1) } },
       { merge: true }
     );
-  } catch {
-    /* ignore */
+    markCounted(schoolId);
+    bumpLocal(schoolId, (m) => {
+      m.users += 1;
+      m.days[d] = (m.days[d] || 0) + 1;
+    });
+    reportSyncOk();
+  } catch (e) {
+    reportSyncError(e, 'حفظ مستخدم المدرسة للخريطة الحرارية');
+  } finally {
+    inFlight.delete(schoolId);
   }
 }
 
@@ -184,21 +211,29 @@ async function bumpSchoolMetric(
       { [field]: increment(1) },
       { merge: true }
     );
-  } catch {
-    /* ignore */
+    reportSyncOk();
+  } catch (e) {
+    reportSyncError(
+      e,
+      field === 'plays' ? 'حفظ مرّات اللعب للمدرسة' : 'حفظ تنزيلات المدرسة'
+    );
   }
 }
 
 /** يُستدعى من المشغّل عند تشغيل لعبة (إن كانت هناك مدرسة مختارة). */
 export function trackSchoolPlay(): void {
   const s = getSelectedSchool();
-  if (s?.id) void bumpSchoolMetric(s.id, 'plays');
+  if (!s?.id) return;
+  void countSchoolUser(s.id); // إعادة محاولة احتساب المستخدم إن فشل سابقًا
+  void bumpSchoolMetric(s.id, 'plays');
 }
 
 /** يُستدعى من المشغّل عند تحميل لعبة (إن كانت هناك مدرسة مختارة). */
 export function trackSchoolDownload(): void {
   const s = getSelectedSchool();
-  if (s?.id) void bumpSchoolMetric(s.id, 'downloads');
+  if (!s?.id) return;
+  void countSchoolUser(s.id);
+  void bumpSchoolMetric(s.id, 'downloads');
 }
 
 /** يقرأ مقاييس كل المدارس (Firestore عند التفعيل، وإلا محليًا). */
@@ -210,7 +245,9 @@ export async function getSchoolMetrics(): Promise<MetricMap> {
   try {
     const { collection, getDocs } = await import('firebase/firestore');
     const snap = await getDocs(collection(db, 'schoolStats'));
-    const out: MetricMap = { ...local };
+    // المقاييس المشتركة فقط — لا نخلطها بعدّادات هذا المتصفّح، وإلا رأى
+    // اللاعب أرقامًا لا يراها المشرف ولا غيره.
+    const out: MetricMap = {};
     snap.docs.forEach((d) => {
       const data = d.data() as Partial<SchoolMetric> & { count?: number };
       out[d.id] = {
@@ -221,7 +258,8 @@ export async function getSchoolMetrics(): Promise<MetricMap> {
       };
     });
     return out;
-  } catch {
+  } catch (e) {
+    reportSyncError(e, 'قراءة مقاييس المدارس');
     return local;
   }
 }

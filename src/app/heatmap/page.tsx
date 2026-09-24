@@ -1,6 +1,7 @@
 import { Flame } from 'lucide-react';
 import { UserHeatmap } from '@/components/user-heatmap';
 import { BackButton } from '@/components/back-button';
+import { StatsSyncNotice } from '@/components/stats-sync-notice';
 import { Icon3D } from '@/components/icon-3d';
 import { SITE_NAME } from '@/lib/site';
 
@@ -23,6 +24,7 @@ export default function HeatmapPage() {
           </p>
         </div>
       </div>
+      <StatsSyncNotice />
       <UserHeatmap />
     </div>
   );

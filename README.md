@@ -87,11 +87,21 @@ NEXT_PUBLIC_SITE_URL=https://...      # لخريطة الموقع وبطاقات
 NEXT_PUBLIC_ADMIN_PASSCODE=...        # رمز لوحة الإدارة في وضع العرض فقط
 ```
 
-5. انشر قواعد الأمان:
+5. انشر قواعد الأمان (**خطوة إلزامية للإحصاءات والخريطة الحرارية**):
 
 ```bash
-firebase deploy --only firestore:rules
+npm i -g firebase-tools
+firebase login
+firebase deploy --only firestore:rules --project <PROJECT_ID>
 ```
+
+أو بلا سطر أوامر: انسخ محتوى `firestore.rules` كاملًا إلى
+Firebase Console ← **Firestore Database** ← **Rules** ثم **Publish**.
+
+> ⚠️ بدون هذه القواعد يرفض Firestore عدّادات الزوّار (المشاهدات/التنزيلات/
+> مقاييس المدارس)، فتبقى الإحصاءات في متصفّح من لعب أو حمّل فقط ولا يراها
+> المشرف ولا بقيّة المستخدمين. تعرض لوحة الإحصاءات والخريطة الحرارية تنبيهًا
+> واضحًا عند حدوث ذلك، ويُطبع السبب في Console المتصفّح (`[stats] …`).
 
 ### ما الذي يتغيّر عند التفعيل؟
 
