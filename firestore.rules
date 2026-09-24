@@ -97,7 +97,8 @@ service cloud.firestore {
       }
     }
 
-    // بنية المناهج (المواد/المستويات/الوحدات/الدروس)
+    // بنية المناهج (المواد/المستويات/الوحدات/الدروس) — curriculum/tree
+    // ورسائل الشريط المتحرّك أسفل الموقع — curriculum/ticker
     match /curriculum/{docId} {
       allow read: if true;
       allow write: if isOwner();

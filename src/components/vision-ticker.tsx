@@ -1,31 +1,27 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Quote, Sparkles, type LucideIcon } from 'lucide-react';
+import {
+  BookOpen,
+  GraduationCap,
+  Info,
+  Megaphone,
+  Quote,
+  Sparkles,
+  Star,
+  type LucideIcon,
+} from 'lucide-react';
+import { subscribeTicker, type TickerIcon, type TickerSettings } from '@/lib/ticker';
 
-interface TickerMessage {
-  /** نص الشارة الذهبية على الشاشات المتوسّطة فأكبر */
-  badge: string;
-  /** نص مختصر للشارة على الجوال */
-  badgeShort: string;
-  icon: LucideIcon;
-  text: string;
-}
-
-const MESSAGES: TickerMessage[] = [
-  {
-    badge: 'رؤية الوزارة',
-    badgeShort: 'رؤية الوزارة',
-    icon: Sparkles,
-    text: 'متعلّم ريادي لتنمية مستدامة',
-  },
-  {
-    badge: 'من أقوال سمو الأمير تميم بن حمد آل ثاني',
-    badgeShort: 'من أقوال سمو الأمير',
-    icon: Quote,
-    text: '«إننا نؤمن أن رأس المال البشري هو الثروة الحقيقية لأي دولة، ولذلك فإننا ماضون في تطوير منظومة التعليم والتدريب، وتأهيل كوادرنا الوطنية للمستقبل»',
-  },
-];
+export const TICKER_ICON_COMPONENTS: Record<TickerIcon, LucideIcon> = {
+  sparkles: Sparkles,
+  quote: Quote,
+  megaphone: Megaphone,
+  star: Star,
+  graduation: GraduationCap,
+  book: BookOpen,
+  info: Info,
+};
 
 /** سرعة مرور النص بالبكسل في الثانية — ثابتة مهما طال النص. */
 const SPEED = 70;
@@ -40,12 +36,15 @@ function prefersReducedMotion(): boolean {
 }
 
 /**
- * شريط مثبّت أسفل الصفحة يتناوب بين رؤية الوزارة ومن أقوال سمو الأمير:
- * تدخل كل رسالة من الحافّة اليسرى وتعبر حتى تخرج من اليمين، ثم تبدأ التالية
- * وتتبدّل معها الشارة الذهبية. يتوقّف عند المرور عليه، ولمن اختار تقليل
- * الحركة تُعرض الرسائل ثابتة وتتبدّل كل بضع ثوانٍ.
+ * شريط مثبّت أسفل الصفحة يتناوب بين رسائل يحرّرها المشرف من لوحة التحكّم
+ * (رؤية الوزارة، من أقوال سمو الأمير، …): تدخل كل رسالة من الحافّة اليسرى
+ * وتعبر حتى تخرج من اليمين، ثم تبدأ التالية وتتبدّل معها الشارة الذهبية.
+ * يتوقّف عند المرور عليه، ولمن اختار تقليل الحركة تُعرض الرسائل ثابتة
+ * وتتبدّل كل بضع ثوانٍ.
  */
 export function VisionTicker() {
+  // null = لم تصل الإعدادات بعد: لا نعرض نصًّا افتراضيًا قد يستبدله المنشور فورًا.
+  const [settings, setSettings] = useState<TickerSettings | null>(null);
   const [idx, setIdx] = useState(0);
   const [animated, setAnimated] = useState(true);
   const viewRef = useRef<HTMLDivElement | null>(null);
@@ -53,11 +52,30 @@ export function VisionTicker() {
   const animRef = useRef<Animation | null>(null);
   const hoverRef = useRef(false);
 
+  useEffect(() => subscribeTicker(setSettings), []);
+
+  const messages = settings?.enabled ? settings.messages : [];
+  const count = messages.length;
+  const current = count ? messages[idx % count] : null;
+  // مفتاح المحتوى: لا تُعاد الحركة من أوّلها إلا إذا تغيّر النص فعلًا
+  const currentKey = current ? JSON.stringify(current) : '';
+
+  // الشريط المخفي لا يحجز مساحة أسفل الصفحة ولا يرفع الأزرار العائمة
+  const hidden = settings !== null && count === 0;
+  useEffect(() => {
+    const root = document.documentElement;
+    if (hidden) root.style.setProperty('--ticker-h', '0px');
+    else root.style.removeProperty('--ticker-h');
+    return () => {
+      root.style.removeProperty('--ticker-h');
+    };
+  }, [hidden]);
+
   useEffect(() => {
     const view = viewRef.current;
     const msg = msgRef.current;
-    if (!view || !msg) return;
-    const next = () => setIdx((i) => (i + 1) % MESSAGES.length);
+    if (!view || !msg || !currentKey) return;
+    const next = () => setIdx((i) => (i + 1) % count);
 
     if (prefersReducedMotion() || typeof msg.animate !== 'function') {
       setAnimated(false);
@@ -82,15 +100,16 @@ export function VisionTicker() {
       anim.cancel();
       animRef.current = null;
     };
-  }, [idx]);
+  }, [idx, count, currentKey]);
 
-  const current = MESSAGES[idx];
-  const Icon = current.icon;
+  if (hidden) return null;
+
+  const Icon = current ? TICKER_ICON_COMPONENTS[current.icon] : null;
 
   return (
     <aside
       className="vision-ticker print:hidden"
-      aria-label="رؤية الوزارة ومن أقوال سمو الأمير"
+      aria-label="رسائل الوزارة"
       onMouseEnter={() => {
         hoverRef.current = true;
         animRef.current?.pause();
@@ -101,32 +120,37 @@ export function VisionTicker() {
       }}
     >
       <div className="vision-ticker-badge" aria-hidden>
-        <span key={idx} className="vision-ticker-badge-label">
-          <Icon className="h-3.5 w-3.5 shrink-0" />
-          <span className="hidden sm:inline">{current.badge}</span>
-          <span className="sm:hidden">{current.badgeShort}</span>
-        </span>
+        {current && Icon && (
+          <span key={`${idx}-${currentKey}`} className="vision-ticker-badge-label">
+            <Icon className="h-3.5 w-3.5 shrink-0" />
+            <span className="hidden sm:inline">{current.badge}</span>
+            <span className="sm:hidden">{current.badgeShort || current.badge}</span>
+          </span>
+        )}
       </div>
 
-      {/* قارئ الشاشة يقرأ الرسالتين مرّة واحدة بدل متابعة الحركة */}
+      {/* قارئ الشاشة يقرأ الرسائل مرّة واحدة بدل متابعة الحركة */}
       <ul className="sr-only">
-        {MESSAGES.map((m) => (
-          <li key={m.badge}>
-            {m.badge}: {m.text}
+        {messages.map((m, i) => (
+          <li key={i}>
+            {m.badge ? `${m.badge}: ` : ''}
+            {m.text}
           </li>
         ))}
       </ul>
 
       <div ref={viewRef} className="vision-ticker-viewport" dir="ltr" aria-hidden>
-        <div
-          ref={msgRef}
-          className={animated ? 'vision-ticker-msg' : 'vision-ticker-msg is-static'}
-          dir="rtl"
-        >
-          <span className="vision-ticker-gem" />
-          <strong>{current.text}</strong>
-          <span className="vision-ticker-gem" />
-        </div>
+        {current && (
+          <div
+            ref={msgRef}
+            className={animated ? 'vision-ticker-msg' : 'vision-ticker-msg is-static'}
+            dir="rtl"
+          >
+            <span className="vision-ticker-gem" />
+            <strong>{current.text}</strong>
+            <span className="vision-ticker-gem" />
+          </div>
+        )}
       </div>
     </aside>
   );
