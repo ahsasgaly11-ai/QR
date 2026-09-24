@@ -14,6 +14,8 @@ export default {
         headline: ['"Tajawal"', 'sans-serif'],
         display: ['"Aref Ruqaa"', '"Tajawal"', 'serif'],
         playful: ['"Baloo Bhaijaan 2"', '"Tajawal"', 'sans-serif'],
+        // خط رسمي هادئ قريب من أسلوب البوابات الحكومية — لروابط الشريط العلوي
+        gov: ['"IBM Plex Sans Arabic"', '"Tajawal"', 'sans-serif'],
         code: ['"Source Code Pro"', 'monospace'],
       },
       colors: {

@@ -82,7 +82,7 @@ export function SiteHeader() {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    'group relative flex items-center gap-2 rounded-full py-1.5 pe-4 ps-1.5 text-sm font-bold transition-all duration-300',
+                    'group relative flex items-center gap-2 rounded-full py-1.5 pe-4 ps-1.5 font-gov text-[14.5px] font-semibold transition-all duration-300',
                     active
                       ? 'bg-[color:var(--surface)] text-[color:var(--maroon)] shadow-[var(--shadow-sm)] ring-1 ring-[color:var(--hairline)]'
                       : 'text-foreground/65 hover:text-[color:var(--maroon)]'
@@ -102,7 +102,7 @@ export function SiteHeader() {
             <ThemeToggle />
             <Link
               href="/admin"
-              className="btn-primary btn-sm hidden px-4 py-2 text-sm sm:inline-flex"
+              className="btn-primary btn-sm hidden px-4 py-2 font-gov text-sm font-semibold sm:inline-flex"
             >
               <UploadCloud className="h-4 w-4" />
               رفع نشاط
@@ -130,7 +130,7 @@ export function SiteHeader() {
                       key={item.href}
                       href={item.href}
                       className={cn(
-                        'group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-bold transition',
+                        'group flex items-center gap-3 rounded-xl px-3 py-2 font-gov text-[15px] font-semibold transition',
                         active
                           ? 'bg-[color:var(--surface-2)] text-[color:var(--maroon)] ring-1 ring-[rgba(176,137,46,0.4)]'
                           : 'text-foreground/80 hover:bg-[color:var(--surface-2)]'
