@@ -41,7 +41,7 @@ function prefersReducedMotion(): boolean {
 
 /**
  * شريط مثبّت أسفل الصفحة يتناوب بين رؤية الوزارة ومن أقوال سمو الأمير:
- * تدخل كل رسالة من الحافّة اليمنى وتعبر حتى تخرج من اليسار، ثم تبدأ التالية
+ * تدخل كل رسالة من الحافّة اليسرى وتعبر حتى تخرج من اليمين، ثم تبدأ التالية
  * وتتبدّل معها الشارة الذهبية. يتوقّف عند المرور عليه، ولمن اختار تقليل
  * الحركة تُعرض الرسائل ثابتة وتتبدّل كل بضع ثوانٍ.
  */
@@ -66,12 +66,13 @@ export function VisionTicker() {
     }
     setAnimated(true);
 
-    // من خارج الحافّة اليمنى إلى ما بعد الحافّة اليسرى بالكامل
-    const from = view.clientWidth;
-    const to = -msg.scrollWidth;
+    // من خارج الحافّة اليسرى إلى ما بعد الحافّة اليمنى بالكامل، فيدخل أول
+    // النص العربي (طرفه الأيمن) أولًا ويُقرأ بترتيبه الطبيعي.
+    const from = -msg.scrollWidth;
+    const to = view.clientWidth;
     const anim = msg.animate(
       [{ transform: `translateX(${from}px)` }, { transform: `translateX(${to}px)` }],
-      { duration: ((from - to) / SPEED) * 1000, easing: 'linear', fill: 'both' }
+      { duration: ((to - from) / SPEED) * 1000, easing: 'linear', fill: 'both' }
     );
     if (hoverRef.current) anim.pause();
     animRef.current = anim;
