@@ -19,13 +19,14 @@ export function Icon3D({
   icon: LucideIcon;
   /** لون اللوح — تُشتقّ منه درجات الإضاءة والظلّ تلقائيًا */
   color?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   /** يرتفع قليلًا عند المرور عليه أو على البطاقة الحاوية */
   lift?: boolean;
   className?: string;
   iconClassName?: string;
 }) {
   const box = {
+    xs: 'h-7 w-7 rounded-lg',
     sm: 'h-9 w-9 rounded-xl',
     md: 'h-12 w-12 rounded-xl',
     lg: 'h-16 w-16 rounded-2xl',
@@ -33,6 +34,7 @@ export function Icon3D({
   }[size];
 
   const glyph = {
+    xs: 'h-4 w-4',
     sm: 'h-4.5 w-4.5',
     md: 'h-6 w-6',
     lg: 'h-8 w-8',
