@@ -4,27 +4,21 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Menu, X, Home, BookOpen, BarChart3, UploadCloud, Search, Flame } from 'lucide-react';
+import { Menu, X, UploadCloud } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from './theme-toggle';
-import { Icon3D } from './icon-3d';
 import { SITE_NAME } from '@/lib/site';
 
-// لكل رابط لون لوحه ثلاثي الأبعاد — من لوحة ألوان الهوية نفسها.
+// روابط التنقّل نصّية فقط — بلا أيقونات.
 const NAV = [
-  { href: '/', label: 'الرئيسية', icon: Home, color: 'var(--maroon)' },
-  { href: '/browse', label: 'المناهج', icon: BookOpen, color: 'var(--gold)' },
-  { href: '/search', label: 'بحث', icon: Search, color: 'var(--sky)' },
-  { href: '/dashboard', label: 'الإحصاءات', icon: BarChart3, color: 'var(--teal)' },
-  { href: '/heatmap', label: 'الخريطة الحرارية', icon: Flame, color: 'var(--coral)' },
+  { href: '/', label: 'الرئيسية' },
+  { href: '/browse', label: 'المناهج' },
+  { href: '/search', label: 'بحث' },
+  { href: '/dashboard', label: 'الإحصاءات' },
+  { href: '/heatmap', label: 'الخريطة الحرارية' },
 ];
 
-const UPLOAD = {
-  href: '/admin',
-  label: 'رفع نشاط',
-  icon: UploadCloud,
-  color: 'var(--maroon-700)',
-};
+const UPLOAD = { href: '/admin', label: 'رفع نشاط' };
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -82,13 +76,12 @@ export function SiteHeader() {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    'group relative flex items-center gap-2 rounded-full py-1.5 pe-4 ps-1.5 font-gov text-[14.5px] font-semibold transition-all duration-300',
+                    'group relative flex items-center rounded-full px-4 py-2 font-gov text-[14.5px] font-semibold transition-all duration-300',
                     active
                       ? 'bg-[color:var(--surface)] text-[color:var(--maroon)] shadow-[var(--shadow-sm)] ring-1 ring-[color:var(--hairline)]'
                       : 'text-foreground/65 hover:text-[color:var(--maroon)]'
                   )}
                 >
-                  <Icon3D icon={item.icon} color={item.color} size="xs" />
                   {item.label}
                   {active && (
                     <span className="absolute inset-x-4 -bottom-0.5 h-0.5 rounded-full bg-gradient-to-l from-[color:var(--maroon)] to-[color:var(--gold)]" />
@@ -130,13 +123,12 @@ export function SiteHeader() {
                       key={item.href}
                       href={item.href}
                       className={cn(
-                        'group flex items-center gap-3 rounded-xl px-3 py-2 font-gov text-[15px] font-semibold transition',
+                        'group flex items-center rounded-xl px-3 py-2.5 font-gov text-[15px] font-semibold transition',
                         active
                           ? 'bg-[color:var(--surface-2)] text-[color:var(--maroon)] ring-1 ring-[rgba(176,137,46,0.4)]'
                           : 'text-foreground/80 hover:bg-[color:var(--surface-2)]'
                       )}
                     >
-                      <Icon3D icon={item.icon} color={item.color} size="sm" />
                       {item.label}
                     </Link>
                   );
