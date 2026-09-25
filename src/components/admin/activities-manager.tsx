@@ -1,18 +1,33 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Pencil, Trash2, X, Check, Loader2, Lock, Eye, Download, Images, Search, FolderInput, Hand,
 } from 'lucide-react';
 import type { Activity, ActivityType, Subject } from '@/lib/types';
 import { ACTIVITY_META } from '@/lib/types';
-import { updateActivity, deleteActivity } from '@/lib/content';
+import {
+  updateActivity,
+  deleteActivity,
+  fetchUploadedActivities,
+  locateActivity,
+} from '@/lib/content';
 import { revalidateContent } from '@/lib/revalidate';
 import { PREVIEW_VERSION } from '@/lib/preview-html';
 import { isFirebaseConfigured } from '@/lib/firebase';
 import { ActivityTypeBadge } from '@/components/activity-type-badge';
 
 const TYPES = Object.keys(ACTIVITY_META) as ActivityType[];
+
+/** رسالة خطأ مفهومة للمالك بدل فشل صامت. */
+function errorText(err: unknown, fallback: string): string {
+  const code = (err as { code?: string } | null)?.code;
+  if (code === 'permission-denied')
+    return 'لا تملك صلاحية التعديل — تأكّد من تسجيل الدخول بحساب المالك.';
+  if (code === 'unavailable')
+    return 'تعذّر الاتصال بقاعدة البيانات، تحقّق من الإنترنت وحاول مجددًا.';
+  return err instanceof Error && err.message ? err.message : fallback;
+}
 
 export function ActivitiesManager({
   activities: initial,
@@ -27,13 +42,49 @@ export function ActivitiesManager({
   structure: Subject[];
 }) {
   const [rows, setRows] = useState<Activity[]>(initial);
+  const [uploaded, setUploaded] = useState<Set<string>>(() => new Set(uploadedIds));
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState<Partial<Activity>>({});
   const [busy, setBusy] = useState(false);
+  const [confirming, setConfirming] = useState<string | null>(null);
+  const [error, setError] = useState('');
   const [backfill, setBackfill] = useState<{ done: number; total: number } | null>(null);
   const [backfillMsg, setBackfillMsg] = useState('');
   const [q, setQ] = useState('');
-  const uploaded = new Set(uploadedIds);
+
+  /**
+   * القائمة القادمة من الخادم قد تكون قديمة (نشاط رُفع للتوّ من تبويب الرفع)
+   * أو ناقصة (في وضع العرض تُحفَظ الأنشطة داخل المتصفّح فلا يراها الخادم)،
+   * فتظهر أزرار التعديل والحذف معطّلة. نُحدّثها هنا من المصدر الحيّ.
+   */
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      let live: Activity[] = [];
+      if (isFirebaseConfigured) {
+        live = await fetchUploadedActivities();
+      } else {
+        const { listLocalActivities } = await import('@/lib/local-store');
+        live = await listLocalActivities();
+      }
+      if (!alive || !live.length) return;
+      setUploaded((prev) => new Set([...prev, ...live.map((a) => a.id)]));
+      setRows((prev) => {
+        const map = new Map(prev.map((a) => [a.id, a]));
+        for (const a of live) map.set(a.id, { ...map.get(a.id), ...a });
+        return [...map.values()];
+      });
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  function labelOf(a: Activity): string {
+    if (labels[a.id]) return labels[a.id];
+    const { subject, unit, lesson } = locateActivity(structure, a);
+    return [subject?.title, unit?.title, lesson?.title].filter(Boolean).join(' ← ');
+  }
 
   // خيارات النقل مشتقّة من الشجرة حسب ما هو محدَّد في المسوّدة
   const draftSubject = structure.find((x) => x.id === draft.subjectId);
@@ -44,30 +95,54 @@ export function ActivitiesManager({
     'w-full rounded-lg border border-[color:var(--hairline-strong)] bg-[color:var(--surface)] px-3 py-2 text-sm font-bold outline-none focus:border-[color:var(--maroon)]';
 
   async function save(id: string) {
+    if (!(draft.title ?? '').trim()) {
+      setError('العنوان مطلوب.');
+      return;
+    }
     setBusy(true);
+    setError('');
     try {
+      const patch: Partial<Activity> = { ...draft, title: draft.title!.trim() };
+      const current = rows.find((a) => a.id === id);
       if (isFirebaseConfigured) {
-        await updateActivity(id, draft);
-        const subjectId = rows.find((a) => a.id === id)?.subjectId;
-        await revalidateContent({ subjectId, activityId: id });
+        await updateActivity(id, patch);
+        await revalidateContent({ subjectId: current?.subjectId, activityId: id });
+        if (patch.subjectId && patch.subjectId !== current?.subjectId)
+          await revalidateContent({ subjectId: patch.subjectId });
+      } else {
+        const { getLocalRecord, saveLocalActivity } = await import('@/lib/local-store');
+        const rec = await getLocalRecord(id);
+        if (!rec) throw new Error('لم يُعثر على النشاط في هذا المتصفّح.');
+        const ok = await saveLocalActivity({ ...rec.activity, ...patch }, rec.html);
+        if (!ok) throw new Error('تعذّر حفظ التعديل في متصفّحك.');
       }
-      setRows((r) => r.map((a) => (a.id === id ? { ...a, ...draft } : a)));
+      setRows((r) => r.map((a) => (a.id === id ? { ...a, ...patch } : a)));
       setEditing(null);
+    } catch (err) {
+      setError(errorText(err, 'تعذّر حفظ التعديل.'));
     } finally {
       setBusy(false);
     }
   }
 
   async function remove(id: string) {
-    if (!confirm('هل تريد حذف هذا النشاط نهائيًا؟')) return;
     setBusy(true);
+    setError('');
     try {
+      const subjectId = rows.find((a) => a.id === id)?.subjectId;
       if (isFirebaseConfigured) {
-        const subjectId = rows.find((a) => a.id === id)?.subjectId;
         await deleteActivity(id);
         await revalidateContent({ subjectId, activityId: id });
+      } else {
+        const { deleteLocalActivity } = await import('@/lib/local-store');
+        await deleteLocalActivity(id);
       }
+      const { dropCachedPreview } = await import('@/lib/local-store');
+      await dropCachedPreview(id).catch(() => {});
       setRows((r) => r.filter((a) => a.id !== id));
+      setConfirming(null);
+    } catch (err) {
+      setError(errorText(err, 'تعذّر حذف النشاط.'));
     } finally {
       setBusy(false);
     }
@@ -122,7 +197,7 @@ export function ActivitiesManager({
     ? rows.filter(
         (a) =>
           a.title.toLowerCase().includes(needle) ||
-          (labels[a.id] ?? '').toLowerCase().includes(needle)
+          labelOf(a).toLowerCase().includes(needle)
       )
     : rows;
 
@@ -155,6 +230,14 @@ export function ActivitiesManager({
             )}
           </button>
         </div>
+      )}
+      {error && (
+        <p
+          role="alert"
+          className="rounded-xl bg-[color:var(--coral)]/15 px-4 py-2.5 text-sm font-bold text-[color:var(--coral)]"
+        >
+          {error}
+        </p>
       )}
       {backfillMsg && (
         <p className="rounded-xl bg-[color:var(--teal)]/15 px-4 py-2.5 text-sm font-bold text-[color:var(--teal)]">
@@ -299,12 +382,14 @@ export function ActivitiesManager({
                     )}
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {labels[a.id] ?? ''}
+                    {labelOf(a)}
                   </p>
                 </div>
                 <div className="flex shrink-0 gap-2">
                   <button
                     onClick={() => {
+                      setError('');
+                      setConfirming(null);
                       setEditing(a.id);
                       setDraft({
                         title: a.title,
@@ -323,14 +408,38 @@ export function ActivitiesManager({
                   >
                     <Pencil className="h-4 w-4" />
                   </button>
-                  <button
-                    onClick={() => remove(a.id)}
-                    disabled={!isUp}
-                    className="grid h-9 w-9 place-items-center rounded-lg bg-[color:var(--coral)]/15 text-[color:var(--coral)] transition hover:scale-105 disabled:opacity-30"
-                    title={isUp ? 'حذف' : 'المضمّن غير قابل للحذف'}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  {confirming === a.id ? (
+                    <>
+                      <button
+                        onClick={() => remove(a.id)}
+                        disabled={busy}
+                        className="flex h-9 items-center gap-1 rounded-lg bg-[color:var(--coral)] px-3 text-xs font-bold text-white transition hover:scale-105 disabled:opacity-60"
+                      >
+                        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                        تأكيد الحذف
+                      </button>
+                      <button
+                        onClick={() => setConfirming(null)}
+                        disabled={busy}
+                        className="grid h-9 w-9 place-items-center rounded-lg bg-[color:var(--surface-2)] transition hover:scale-105"
+                        title="إلغاء"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setError('');
+                        setConfirming(a.id);
+                      }}
+                      disabled={!isUp || busy}
+                      className="grid h-9 w-9 place-items-center rounded-lg bg-[color:var(--coral)]/15 text-[color:var(--coral)] transition hover:scale-105 disabled:opacity-30"
+                      title={isUp ? 'حذف' : 'المضمّن غير قابل للحذف'}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             )}

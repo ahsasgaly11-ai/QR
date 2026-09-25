@@ -62,7 +62,8 @@ export async function saveStructure(subjects: Subject[]): Promise<void> {
   });
 }
 
-async function fetchUploadedActivities(): Promise<Activity[]> {
+/** الأنشطة المرفوعة كما هي في Firestore الآن (تعمل في الخادم والمتصفّح). */
+export async function fetchUploadedActivities(): Promise<Activity[]> {
   if (!isFirebaseConfigured) return [];
   const db = getDb();
   if (!db) return [];
@@ -165,8 +166,12 @@ export async function updateActivity(
 ): Promise<void> {
   const db = getDb();
   if (!db) throw new Error('Firebase غير مُعدّ.');
+  // Firestore يرفض أي حقل قيمته undefined فيفشل الحفظ كلّه — أزِلها أولًا
+  const clean = Object.fromEntries(
+    Object.entries(patch).filter(([k, v]) => v !== undefined && k !== 'id')
+  );
   const { doc, setDoc } = await import('firebase/firestore');
-  await setDoc(doc(db, 'activities', id), patch, { merge: true });
+  await setDoc(doc(db, 'activities', id), clean, { merge: true });
 }
 
 export async function getActivity(id: string): Promise<Activity | null> {
