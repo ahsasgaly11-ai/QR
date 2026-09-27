@@ -18,7 +18,7 @@ import { ActivityTypeBadge } from './activity-type-badge';
 import { SignLanguageButton, SignLanguagePanel } from './sign-language';
 import { resolveSignLanguageSrc, isSignLanguageOn, SIGN_LANG_ATTR } from '@/lib/sign-language';
 import { formatFull, cn } from '@/lib/utils';
-import { htmlToBlobUrl } from '@/lib/local-store';
+import { htmlToBlobUrl, htmlToFrameUrl, GAME_SANDBOX } from '@/lib/local-store';
 
 function fileUrl(a: Activity) {
   return a.external ? a.file : `/games/${a.file}`;
@@ -33,17 +33,23 @@ export function ActivityPlayer({
   localHtml?: string;
 }) {
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  // نسخة التشغيل داخل الـiframe المعزول (مع بديل التخزين)؛ blobUrl يبقى
+  // للتحميل وفتح النافذة فيصل الملف للمستخدم كما رُفع تمامًا.
+  const [frameBlobUrl, setFrameBlobUrl] = useState<string | null>(null);
   const [fetchFailed, setFetchFailed] = useState(false);
   // الأنشطة المرفوعة تُخزَّن مقسّمة داخل Firestore وتُجمَّع هنا قبل التشغيل
   const remote = !localHtml && activity.stored === 'firestore';
 
   useEffect(() => {
     let revoke: string | null = null;
+    let revokeFrame: string | null = null;
     let alive = true;
 
     if (localHtml) {
       revoke = htmlToBlobUrl(localHtml);
+      revokeFrame = htmlToFrameUrl(localHtml);
       setBlobUrl(revoke);
+      setFrameBlobUrl(revokeFrame);
     } else if (remote) {
       setFetchFailed(false);
       (async () => {
@@ -52,17 +58,24 @@ export function ActivityPlayer({
         if (!alive) return;
         if (!html) return setFetchFailed(true);
         revoke = htmlToBlobUrl(html);
+        revokeFrame = htmlToFrameUrl(html);
         setBlobUrl(revoke);
+        setFrameBlobUrl(revokeFrame);
       })();
     }
 
     return () => {
       alive = false;
       if (revoke) URL.revokeObjectURL(revoke);
+      if (revokeFrame) URL.revokeObjectURL(revokeFrame);
     };
   }, [localHtml, remote, activity.id]);
 
-  const url = localHtml || remote ? blobUrl ?? '' : fileUrl(activity);
+  const uploaded = Boolean(localHtml || remote);
+  const url = uploaded ? blobUrl ?? '' : fileUrl(activity);
+  // الألعاب المرفوعة تُشغَّل معزولة؛ ملفات /games المرفقة بالموقع والروابط
+  // الخارجية تبقى كما هي.
+  const frameUrl = uploaded ? frameBlobUrl ?? '' : url;
   const frameRef = useRef<HTMLIFrameElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const [stats, setStats] = useState<ActivityStats>({ views: 0, downloads: 0 });
@@ -309,15 +322,19 @@ export function ActivityPlayer({
           )
         )}
 
-        {url ? (
+        {frameUrl ? (
           <iframe
-            key={`${key}-${url}`}
+            key={`${key}-${frameUrl}`}
             ref={frameRef}
-            src={url}
+            src={frameUrl}
             title={activity.title}
             className={cn('w-full bg-white', immersive ? 'h-full' : 'game-stage')}
             style={!immersive && fitH ? { height: fitH, minHeight: 0 } : undefined}
-            sandbox="allow-scripts allow-same-origin allow-popups allow-downloads allow-forms allow-modals"
+            sandbox={
+              uploaded
+                ? GAME_SANDBOX
+                : 'allow-scripts allow-same-origin allow-popups allow-downloads allow-forms allow-modals'
+            }
             onLoad={() => setLoading(false)}
           />
         ) : (
