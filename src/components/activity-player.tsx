@@ -92,11 +92,15 @@ export function ActivityPlayer({
   const [immersive, setImmersive] = useState(false);
 
   useEffect(() => {
-    trackView(activity.id);
+    let active = true;
     trackSchoolPlay(); // ينسب اللعب لمدرسة المستخدم المختارة (طبقة الخريطة)
-    getActivityStats(activity.id).then((s) =>
-      setStats({ views: s.views, downloads: s.downloads })
-    );
+    // نقرأ العدّاد بعد اكتمال احتساب المشاهدة، وإلا عُرض الرقم قبل زيادته.
+    trackView(activity.id)
+      .then(() => getActivityStats(activity.id))
+      .then((s) => active && setStats({ views: s.views, downloads: s.downloads }));
+    return () => {
+      active = false;
+    };
   }, [activity.id]);
 
   const onDownload = async () => {

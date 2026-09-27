@@ -9,6 +9,7 @@ import { ActivityTypeBadge } from './activity-type-badge';
 import { formatNumber, cn } from '@/lib/utils';
 import { getLocalRecord, htmlToBlobUrl, dropCachedPreview } from '@/lib/local-store';
 import { ActivityPreview } from './activity-preview';
+import { trackSchoolDownload } from '@/lib/school-store';
 
 function fileUrl(a: Activity) {
   return a.external ? a.file : `/games/${a.file}`;
@@ -94,16 +95,22 @@ export function ActivityCard({
     if (activity.local) {
       e.preventDefault();
       const rec = await getLocalRecord(activity.id);
-      if (rec?.html) saveHtml(rec.html);
+      if (!rec?.html) return; // لم يُنزَّل شيء — لا نحتسبه
+      saveHtml(rec.html);
     } else if (activity.stored === 'firestore') {
       // الملف مقسّم داخل Firestore — يُجمَّع ثم يُنزَّل
       e.preventDefault();
       const { loadGameHtml } = await import('@/lib/game-store');
-      const html = await loadGameHtml(activity.id);
-      if (html) saveHtml(html);
+      const html = await loadGameHtml(activity.id).catch(() => null);
+      if (!html) {
+        alert('تعذّر تنزيل الملف. تحقّق من اتصالك ثم أعد المحاولة.');
+        return;
+      }
+      saveHtml(html);
     }
-    await trackDownload(activity.id);
     setStats((s) => ({ ...s, downloads: s.downloads + 1 }));
+    trackSchoolDownload(); // ينسب التحميل لمدرسة المستخدم المختارة
+    await trackDownload(activity.id);
   };
 
   if (gone) return null;
