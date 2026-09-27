@@ -16,6 +16,7 @@ import { Reveal } from '@/components/reveal';
 import { SiteStatsStrip } from '@/components/site-stats-strip';
 import { ActivityCard } from '@/components/activity-card';
 import { Icon3D } from '@/components/icon-3d';
+import { DownloadsSwitch } from '@/components/downloads-switch';
 
 // المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
 // وإلا لما ظهرت الأنشطة المرفوعة بعد البناء إلا بنشر جديد.
@@ -59,8 +60,9 @@ export default async function HomePage() {
               style={{ animationDelay: '160ms' }}
             >
               تجارب عملية ومحاكاة ثلاثية الأبعاد وأسئلة تفاعلية وألعاب
-              تعليمية عبر مواد المناهج القطرية — جرّبها مباشرة من المتصفّح أو
-              حمّلها للعمل دون اتصال. صُمّمت بروح المناهج القطرية.
+              تعليمية عبر مواد المناهج القطرية — جرّبها مباشرة من المتصفّح
+              <DownloadsSwitch on=" أو حمّلها للعمل دون اتصال" off="" />. صُمّمت
+              بروح المناهج القطرية.
             </p>
 
             <div
@@ -137,6 +139,12 @@ export default async function HomePage() {
               title: 'حمّل واستخدم دون اتصال',
               desc: 'نزّل النشاط كملف HTML واحد يعمل على أي جهاز في الصف أو المنزل.',
               color: 'var(--gold)',
+              // عند إيقاف المشرف للتنزيل تُستخدم الأنشطة داخل الموقع فقط
+              whenDownloadsOff: {
+                icon: Sparkles,
+                title: 'تعلّم داخل المنصّة',
+                desc: 'استخدم الأنشطة مباشرة من الموقع في الصف أو المنزل، على أي جهاز متصل بالإنترنت.',
+              },
             },
           ].map((step, i) => (
             <Reveal key={step.title} delay={i * 120}>
@@ -147,13 +155,14 @@ export default async function HomePage() {
                 >
                   {i + 1}
                 </span>
-                <Icon3D icon={step.icon} color={step.color} size="lg" />
-                <h3 className="mt-5 font-display text-xl font-black text-[color:var(--maroon)]">
-                  {step.title}
-                </h3>
-                <p className="mt-2 text-sm leading-7 text-muted-foreground">
-                  {step.desc}
-                </p>
+                {'whenDownloadsOff' in step && step.whenDownloadsOff ? (
+                  <DownloadsSwitch
+                    on={<StepBody {...step} />}
+                    off={<StepBody {...step.whenDownloadsOff} color={step.color} />}
+                  />
+                ) : (
+                  <StepBody {...step} />
+                )}
               </div>
             </Reveal>
           ))}
@@ -295,6 +304,28 @@ export default async function HomePage() {
           </div>
         </Reveal>
       </section>
+    </>
+  );
+}
+
+function StepBody({
+  icon,
+  title,
+  desc,
+  color,
+}: {
+  icon: typeof Layers;
+  title: string;
+  desc: string;
+  color: string;
+}) {
+  return (
+    <>
+      <Icon3D icon={icon} color={color} size="lg" />
+      <h3 className="mt-5 font-display text-xl font-black text-[color:var(--maroon)]">
+        {title}
+      </h3>
+      <p className="mt-2 text-sm leading-7 text-muted-foreground">{desc}</p>
     </>
   );
 }

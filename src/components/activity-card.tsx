@@ -9,6 +9,8 @@ import { ActivityTypeBadge } from './activity-type-badge';
 import { formatNumber, cn } from '@/lib/utils';
 import { getLocalRecord, htmlToBlobUrl, dropCachedPreview } from '@/lib/local-store';
 import { ActivityPreview } from './activity-preview';
+import { trackSchoolDownload } from '@/lib/school-store';
+import { useDownloadsEnabled, downloadsAllowedNow } from '@/lib/site-settings';
 
 function fileUrl(a: Activity) {
   return a.external ? a.file : `/games/${a.file}`;
@@ -27,6 +29,8 @@ export function ActivityCard({
   onChanged?: (id: string, patch: Partial<Activity> | null) => void;
 }) {
   const [stats, setStats] = useState<ActivityStats>({ views: 0, downloads: 0 });
+  // يوقف المشرف التنزيل من لوحة التحكّم ← تُستخدم الألعاب داخل الموقع فقط
+  const canDownload = useDownloadsEnabled();
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(activity.title);
   const [busy, setBusy] = useState(false);
@@ -90,20 +94,31 @@ export function ActivityCard({
   };
 
   const onDownload = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+    // احتياط: قد يُوقف المشرف التنزيل والصفحة مفتوحة
+    if (!downloadsAllowedNow()) {
+      e.preventDefault();
+      return;
+    }
     // الأنشطة المحفوظة محليًا (وضع العرض) تُنزَّل من مخزن المتصفّح
     if (activity.local) {
       e.preventDefault();
       const rec = await getLocalRecord(activity.id);
-      if (rec?.html) saveHtml(rec.html);
+      if (!rec?.html) return; // لم يُنزَّل شيء — لا نحتسبه
+      saveHtml(rec.html);
     } else if (activity.stored === 'firestore') {
       // الملف مقسّم داخل Firestore — يُجمَّع ثم يُنزَّل
       e.preventDefault();
       const { loadGameHtml } = await import('@/lib/game-store');
-      const html = await loadGameHtml(activity.id);
-      if (html) saveHtml(html);
+      const html = await loadGameHtml(activity.id).catch(() => null);
+      if (!html) {
+        alert('تعذّر تنزيل الملف. تحقّق من اتصالك ثم أعد المحاولة.');
+        return;
+      }
+      saveHtml(html);
     }
-    await trackDownload(activity.id);
     setStats((s) => ({ ...s, downloads: s.downloads + 1 }));
+    trackSchoolDownload(); // ينسب التحميل لمدرسة المستخدم المختارة
+    await trackDownload(activity.id);
   };
 
   if (gone) return null;
@@ -229,18 +244,20 @@ export function ActivityCard({
           <Play className="h-4 w-4 fill-current transition-transform group-hover/btn:scale-110" />
           جرّب الآن
         </Link>
-        <a
-          href={fileUrl(activity)}
-          download
-          onClick={onDownload}
-          className={cn(
-            'flex items-center justify-center gap-2 rounded-xl border-2 border-[color:var(--gold)] px-4 py-2.5 text-sm font-black text-[color:var(--maroon)] transition-all hover:-translate-y-0.5 hover:bg-[color:var(--gold)]/15'
-          )}
-          title="تحميل النشاط للعمل دون اتصال"
-        >
-          <Download className="h-4 w-4" />
-          {formatNumber(stats.downloads)}
-        </a>
+        {canDownload && (
+          <a
+            href={fileUrl(activity)}
+            download
+            onClick={onDownload}
+            className={cn(
+              'flex items-center justify-center gap-2 rounded-xl border-2 border-[color:var(--gold)] px-4 py-2.5 text-sm font-black text-[color:var(--maroon)] transition-all hover:-translate-y-0.5 hover:bg-[color:var(--gold)]/15'
+            )}
+            title="تحميل النشاط للعمل دون اتصال"
+          >
+            <Download className="h-4 w-4" />
+            {formatNumber(stats.downloads)}
+          </a>
+        )}
       </div>
     </div>
   );

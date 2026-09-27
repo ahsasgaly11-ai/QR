@@ -13,6 +13,7 @@ import {
 import type { Activity, ActivityStats } from '@/lib/types';
 import { getActivityStats, trackView, trackDownload } from '@/lib/stats';
 import { trackSchoolPlay, trackSchoolDownload } from '@/lib/school-store';
+import { useDownloadsEnabled, downloadsAllowedNow } from '@/lib/site-settings';
 import { ActivityTypeBadge } from './activity-type-badge';
 import { SignLanguageButton, SignLanguagePanel } from './sign-language';
 import { resolveSignLanguageSrc, isSignLanguageOn, SIGN_LANG_ATTR } from '@/lib/sign-language';
@@ -65,6 +66,8 @@ export function ActivityPlayer({
   const frameRef = useRef<HTMLIFrameElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const [stats, setStats] = useState<ActivityStats>({ views: 0, downloads: 0 });
+  // يوقف المشرف التنزيل من لوحة التحكّم ← تُستخدم اللعبة داخل الموقع فقط
+  const canDownload = useDownloadsEnabled();
   const [loading, setLoading] = useState(true);
   const [key, setKey] = useState(0);
 
@@ -92,14 +95,23 @@ export function ActivityPlayer({
   const [immersive, setImmersive] = useState(false);
 
   useEffect(() => {
-    trackView(activity.id);
+    let active = true;
     trackSchoolPlay(); // ينسب اللعب لمدرسة المستخدم المختارة (طبقة الخريطة)
-    getActivityStats(activity.id).then((s) =>
-      setStats({ views: s.views, downloads: s.downloads })
-    );
+    // نقرأ العدّاد بعد اكتمال احتساب المشاهدة، وإلا عُرض الرقم قبل زيادته.
+    trackView(activity.id)
+      .then(() => getActivityStats(activity.id))
+      .then((s) => active && setStats({ views: s.views, downloads: s.downloads }));
+    return () => {
+      active = false;
+    };
   }, [activity.id]);
 
-  const onDownload = async () => {
+  const onDownload = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+    // احتياط: قد يُوقف المشرف التنزيل والصفحة مفتوحة
+    if (!downloadsAllowedNow()) {
+      e.preventDefault();
+      return;
+    }
     await trackDownload(activity.id);
     trackSchoolDownload(); // ينسب التحميل لمدرسة المستخدم المختارة
     setStats((s) => ({ ...s, downloads: s.downloads + 1 }));
@@ -199,9 +211,11 @@ export function ActivityPlayer({
           <span className="flex items-center gap-1.5 text-sm font-bold text-muted-foreground">
             <Eye className="h-4 w-4" /> {formatFull(stats.views)} مشاهدة
           </span>
-          <span className="flex items-center gap-1.5 text-sm font-bold text-muted-foreground">
-            <Download className="h-4 w-4" /> {formatFull(stats.downloads)} تنزيل
-          </span>
+          {canDownload && (
+            <span className="flex items-center gap-1.5 text-sm font-bold text-muted-foreground">
+              <Download className="h-4 w-4" /> {formatFull(stats.downloads)} تنزيل
+            </span>
+          )}
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           <button
@@ -215,20 +229,26 @@ export function ActivityPlayer({
             <RefreshCw className="h-4 w-4" />
           </button>
           <SignLanguageButton active={signPref} onClick={() => setSignOpen(true)} />
-          <a href={url} target="_blank" rel="noopener noreferrer" className={toolbarBtn}>
-            <ExternalLink className="h-4 w-4" /> فتح في نافذة
-          </a>
+          {/* «فتح في نافذة» يعرض ملف اللعبة خارج الموقع فيُمكن حفظه، لذا يُخفى
+              مع زرّ التحميل عند قصر الاستخدام على داخل الموقع. */}
+          {canDownload && (
+            <a href={url} target="_blank" rel="noopener noreferrer" className={toolbarBtn}>
+              <ExternalLink className="h-4 w-4" /> فتح في نافذة
+            </a>
+          )}
           <button onClick={enterImmersive} className={toolbarBtn}>
             <Maximize2 className="h-4 w-4" /> ملء الشاشة
           </button>
-          <a
-            href={url}
-            download={activity.file || 'activity.html'}
-            onClick={onDownload}
-            className="flex items-center gap-1.5 rounded-xl bg-[color:var(--maroon)] px-4 py-2 text-sm font-black text-white shadow-md transition hover:bg-[color:var(--maroon-700)]"
-          >
-            <Download className="h-4 w-4" /> تحميل
-          </a>
+          {canDownload && (
+            <a
+              href={url}
+              download={activity.file || 'activity.html'}
+              onClick={onDownload}
+              className="flex items-center gap-1.5 rounded-xl bg-[color:var(--maroon)] px-4 py-2 text-sm font-black text-white shadow-md transition hover:bg-[color:var(--maroon-700)]"
+            >
+              <Download className="h-4 w-4" /> تحميل
+            </a>
+          )}
         </div>
       </div>
 

@@ -19,9 +19,6 @@ const LS_KEY = 'qa-curriculum-stats-v1';
 interface LocalStore {
   site: { visitors: number; views: number; downloads: number };
   activities: Record<string, ActivityStats>;
-  seenVisitDay?: string;
-  /** آخر يوم احتُسبت فيه الزيارة في Firestore فعليًا. */
-  syncedVisitDay?: string;
 }
 
 function readLocal(): LocalStore {
@@ -49,25 +46,28 @@ function writeLocal(store: LocalStore) {
   }
 }
 
-// --- visitor tracking (once per browser per day) ---------------------------
-let visitInFlight = false;
+// --- visitor tracking (every entry to the site) ----------------------------
+//  يُحتسب كل دخول للموقع زيارةً جديدة — حتى لو تكرّر دخول الشخص نفسه في
+//  اليوم نفسه. «الدخول» = تحميل الموقع في تبويب (فتح الرابط، إعادة فتحه،
+//  أو تحديث الصفحة)؛ أمّا التنقّل بين الصفحات داخل الموقع فلا يُعدّ زيارة
+//  جديدة. الحارس على مستوى الوحدة يمنع الاحتساب المزدوج (مثل تشغيل
+//  useEffect مرّتين في وضع React Strict).
+let visitPromise: Promise<void> | null = null;
 
-export async function trackVisit(): Promise<void> {
-  const today = new Date().toISOString().slice(0, 10);
+export function trackVisit(): Promise<void> {
+  if (typeof window === 'undefined') return Promise.resolve();
+  visitPromise ??= recordVisit();
+  return visitPromise;
+}
+
+async function recordVisit(): Promise<void> {
   const local = readLocal();
-  if (local.seenVisitDay !== today) {
-    local.seenVisitDay = today;
-    local.site.visitors += 1;
-    writeLocal(local);
-  }
-  // الاحتساب المشترك يُعلَّم منفصلًا، فلا يُعدّ اليوم محتسبًا إلا بعد نجاح
-  // الحفظ في Firestore — وإن فشل تُعاد المحاولة في الزيارة التالية.
-  if (local.syncedVisitDay === today || visitInFlight) return;
+  local.site.visitors += 1;
+  writeLocal(local);
 
   if (!isFirebaseConfigured) return;
   const db = getDb();
   if (!db) return;
-  visitInFlight = true;
   try {
     const { doc, setDoc, increment } = await import('firebase/firestore');
     await setDoc(
@@ -75,14 +75,19 @@ export async function trackVisit(): Promise<void> {
       { visitors: increment(1) },
       { merge: true }
     );
-    const after = readLocal();
-    after.syncedVisitDay = today;
-    writeLocal(after);
     reportSyncOk();
   } catch (e) {
     reportSyncError(e, 'حفظ عدّاد الزوّار');
-  } finally {
-    visitInFlight = false;
+  }
+}
+
+/** ينتظر احتساب زيارة هذا الدخول (إن بدأت) حتى تشمل القراءةُ الزائرَ الحالي. */
+async function settleVisit(): Promise<void> {
+  if (!visitPromise) return;
+  try {
+    await visitPromise;
+  } catch {
+    /* ignore */
   }
 }
 
@@ -130,6 +135,7 @@ export async function getSiteStats(): Promise<{
   views: number;
   downloads: number;
 }> {
+  await settleVisit();
   const local = readLocal();
   if (!isFirebaseConfigured) return local.site;
   const db = getDb();

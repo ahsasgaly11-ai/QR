@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { SITE_NAME } from '@/lib/site';
+import { DownloadsSwitch } from './downloads-switch';
 
 export function SiteFooter() {
   return (
@@ -29,7 +30,8 @@ export function SiteFooter() {
           </div>
           <p className="max-w-sm text-sm leading-7 text-white/70">
             منصة تعليمية تفاعلية تجمع التجارب العملية والمحاكاة والأسئلة بصيغة
-            تفاعلية، يمكن للطلبة تجربتها مباشرة أو تحميلها لاستخدامها دون اتصال.
+            تفاعلية، يمكن للطلبة تجربتها مباشرة
+            <DownloadsSwitch on=" أو تحميلها لاستخدامها دون اتصال" off=" من الموقع" />.
           </p>
         </div>
 
