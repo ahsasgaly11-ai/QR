@@ -44,6 +44,7 @@ export function SiteFooter() {
             <li><Link href="/browse" className="hover:text-white">تصفّح المناهج</Link></li>
             <li><Link href="/dashboard" className="hover:text-white">لوحة الإحصاءات</Link></li>
             <li><Link href="/admin" className="hover:text-white">رفع نشاط جديد</Link></li>
+            <li><Link href="/privacy" className="hover:text-white">سياسة الخصوصية</Link></li>
           </ul>
         </div>
 

@@ -101,6 +101,34 @@ export function htmlToBlobUrl(html: string): string {
   return URL.createObjectURL(blob);
 }
 
+// ---------------------------------------------------------------------------
+// عزل الألعاب المرفوعة.
+//
+// رابط Blob يرث أصل (origin) الموقع نفسه، فلو شُغِّل داخل iframe بصلاحية
+// allow-same-origin لاستطاع كود اللعبة الوصول إلى جلسة دخول المشرف وبيانات
+// الموقع. لذا تُشغَّل بلا هذه الصلاحية (أصل معزول)، وهنا يرمي المتصفح خطأً
+// عند لمس localStorage/sessionStorage — فتُحقن بديلة في الذاكرة حتى لا
+// تتعطّل الألعاب التي تحفظ تقدّمها أو إعداداتها.
+// ---------------------------------------------------------------------------
+
+/** صلاحيات iframe للألعاب المرفوعة (بلا allow-same-origin عمدًا). */
+export const GAME_SANDBOX =
+  'allow-scripts allow-popups allow-downloads allow-forms allow-modals';
+
+const STORAGE_SHIM = `<script>(function(){function mk(){var d={};return{getItem:function(k){k=String(k);return Object.prototype.hasOwnProperty.call(d,k)?d[k]:null},setItem:function(k,v){d[String(k)]=String(v)},removeItem:function(k){delete d[String(k)]},clear:function(){d={}},key:function(i){var ks=Object.keys(d);return i<ks.length?ks[i]:null},get length(){return Object.keys(d).length}}}['localStorage','sessionStorage'].forEach(function(n){try{window[n].length}catch(e){try{Object.defineProperty(window,n,{value:mk(),configurable:true})}catch(_){}}})})();</script>`;
+
+/** يحقن بديل التخزين في بداية المستند قبل أي سكربت للعبة. */
+export function withStorageShim(html: string): string {
+  const m = /<head[^>]*>/i.exec(html);
+  if (m) return html.slice(0, m.index + m[0].length) + STORAGE_SHIM + html.slice(m.index + m[0].length);
+  return STORAGE_SHIM + html;
+}
+
+/** رابط Blob مُعدّ للتشغيل داخل iframe معزول (GAME_SANDBOX). */
+export function htmlToFrameUrl(html: string): string {
+  return htmlToBlobUrl(withStorageShim(html));
+}
+
 // --- بنية المناهج المحلّية (وحدات/دروس أُنشئت في وضع العرض) ----------------
 
 export function getLocalStructure(): Subject[] | null {

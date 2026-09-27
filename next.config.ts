@@ -1,12 +1,32 @@
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  typescript: {
-    ignoreBuildErrors: true,
-  },
+  // فحص الأنواع مُفعَّل وقت البناء: أي خطأ يوقف النشر بدل أن يصل للزوّار.
+  // (فحص ESLint يبقى متوقّفًا لأن ESLint غير مثبَّت في المشروع.)
   eslint: {
     ignoreDuringBuilds: true,
+  },
+  // ترويسات أمان عامة لكل الصفحات.
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          // HTTPS فقط لمدة سنتين (يشمل النطاقات الفرعية)
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains; preload',
+          },
+          // يمنع تضمين الموقع داخل مواقع أخرى (clickjacking)
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          { key: 'Content-Security-Policy', value: "frame-ancestors 'self'" },
+          // يمنع المتصفح من تخمين نوع الملف
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          // لا يُرسَل المسار الكامل للمواقع الخارجية
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+        ],
+      },
+    ];
   },
   images: {
     unoptimized: true,

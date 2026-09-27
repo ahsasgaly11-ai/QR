@@ -10,7 +10,7 @@ import {
 } from '@/lib/preview-html';
 import {
   getLocalRecord,
-  htmlToBlobUrl,
+  htmlToFrameUrl,
   getCachedPreview,
   putCachedPreview,
 } from '@/lib/local-store';
@@ -86,7 +86,7 @@ export function ActivityPreview({
           const rec = await getLocalRecord(activity.id);
           if (!alive) return;
           if (rec?.html) {
-            const u = htmlToBlobUrl(rec.html);
+            const u = htmlToFrameUrl(rec.html);
             revoke = u;
             setUrl(u);
           } else setFailed(true);
@@ -118,7 +118,7 @@ export function ActivityPreview({
           if (html) html = repairLegacyPreview(html);
 
           if (html) {
-            const u = htmlToBlobUrl(html);
+            const u = htmlToFrameUrl(html);
             revoke = u;
             setUrl(u);
           } else setFailed(true);
@@ -154,7 +154,7 @@ export function ActivityPreview({
             tabIndex={-1}
             scrolling="no"
             loading="lazy"
-            sandbox="allow-scripts allow-same-origin"
+            sandbox={url.startsWith('blob:') ? 'allow-scripts' : 'allow-scripts allow-same-origin'}
             onLoad={() => setLoaded(true)}
             onError={() => setFailed(true)}
             className="pointer-events-none absolute right-0 top-0 origin-top-right border-0"
