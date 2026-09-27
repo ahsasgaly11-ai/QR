@@ -6,6 +6,7 @@ import { SUBJECTS } from '@/data/curriculum';
 import { CurriculumExplorer } from '@/components/curriculum-explorer';
 import { OryxMascot } from '@/components/oryx-mascot';
 import { BackButton } from '@/components/back-button';
+import { DownloadsSwitch } from '@/components/downloads-switch';
 
 // المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
 // وإلا لما ظهرت الأنشطة المرفوعة بعد البناء إلا بنشر جديد.
@@ -56,8 +57,8 @@ export default async function SubjectPage({
               {subject.title}
             </h1>
             <p className="mt-2 max-w-lg text-white/85">
-              استكشف وحدات المنهج ودروسه، وشغّل الأنشطة التفاعلية مباشرة أو
-              حمّلها للعمل دون اتصال.
+              استكشف وحدات المنهج ودروسه، وشغّل الأنشطة التفاعلية مباشرة
+              <DownloadsSwitch on=" أو حمّلها للعمل دون اتصال" off="" />.
             </p>
           </div>
           <OryxMascot priority className="hidden h-40 w-auto float-mid drop-shadow-2xl md:block" />
