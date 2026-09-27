@@ -480,11 +480,58 @@ export function HeatmapExplorer({
     }
     downRef.current = null;
   };
-  const onWheel = (e: React.WheelEvent) => {
-    const wrap = wrapRef.current; if (!wrap) return;
-    const rect = wrap.getBoundingClientRect();
-    zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX - rect.left, e.clientY - rect.top);
-  };
+  // عجلة الفأرة وقرص الإصبعين على لوحة اللمس (Trackpad). يصل القرص من المتصفّح
+  // كحدث wheel مع ctrlKey، ومستمع React للعجلة «سلبي» لا يستطيع منع السلوك
+  // الافتراضي فيُكبَّر الصفحة كلها بدل الخريطة؛ لذا نستمع أصليًا بـ passive:false.
+  // وفي Safari يصل القرص كأحداث gesture* خاصة.
+  const zoomRef = useRef(zoomAt);
+  zoomRef.current = zoomAt;
+  useEffect(() => {
+    if (!mounted) return;
+    const wrap = wrapRef.current;
+    if (!wrap) return;
+    const local = (e: { clientX: number; clientY: number }) => {
+      const r = wrap.getBoundingClientRect();
+      return [e.clientX - r.left, e.clientY - r.top] as const;
+    };
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      // توحيد وحدة الإزاحة إلى بكسلات ثم تكبير متناسب معها: نقرة عجلة (~100px)
+      // ≈ 15٪، وحركة القرص الصغيرة تكبير سلس بلا قفزات.
+      const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? wrap.clientHeight : 1;
+      const dy = Math.max(-100, Math.min(100, e.deltaY * unit));
+      const [x, y] = local(e);
+      zoomRef.current(Math.exp(-dy * (e.ctrlKey ? 0.01 : 0.0015)), x, y);
+    };
+    // منع تكبير الصفحة بالقرص في أي مكان آخر ما دامت الخريطة مفتوحة
+    const blockPageZoom = (e: WheelEvent) => { if (e.ctrlKey) e.preventDefault(); };
+    type GestureEvt = Event & { scale: number; clientX: number; clientY: number };
+    let lastScale = 1;
+    const onGestureStart = (e: Event) => { e.preventDefault(); lastScale = 1; };
+    const onGestureChange = (e: Event) => {
+      e.preventDefault();
+      const g = e as GestureEvt;
+      if (!g.scale || !lastScale) return;
+      const [x, y] = local(g);
+      zoomRef.current(g.scale / lastScale, x, y);
+      lastScale = g.scale;
+    };
+    const stop = (e: Event) => e.preventDefault();
+    wrap.addEventListener('wheel', onWheel, { passive: false });
+    window.addEventListener('wheel', blockPageZoom, { passive: false });
+    wrap.addEventListener('gesturestart', onGestureStart);
+    wrap.addEventListener('gesturechange', onGestureChange);
+    window.addEventListener('gesturestart', stop);
+    window.addEventListener('gesturechange', stop);
+    return () => {
+      wrap.removeEventListener('wheel', onWheel);
+      window.removeEventListener('wheel', blockPageZoom);
+      wrap.removeEventListener('gesturestart', onGestureStart);
+      wrap.removeEventListener('gesturechange', onGestureChange);
+      window.removeEventListener('gesturestart', stop);
+      window.removeEventListener('gesturechange', stop);
+    };
+  }, [mounted]);
 
   // --- محدّثات الحالة (مرآة + مرجع + إعادة رسم) ------------------------------
   const setMetric = (m: MetricKey) => { metricRef.current = m; setMetricS(m); if (tlRef.current !== null) stopTimeline(); requestDraw(); };
@@ -682,7 +729,7 @@ export function HeatmapExplorer({
         ref={wrapRef}
         className="relative min-h-0 flex-1 touch-none overflow-hidden bg-gradient-to-b from-[color:var(--surface)] to-[color:var(--surface-2)]/60"
         onPointerDown={onPointerDown} onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onWheel={onWheel}
+        onPointerUp={onPointerUp} onPointerCancel={onPointerUp}
         style={{ cursor: 'grab' }}
       >
         <canvas ref={canvasRef} className="block h-full w-full" />

@@ -63,6 +63,31 @@ export function UserHeatmap({ className = '' }: { className?: string }) {
     return () => ro.disconnect();
   }, []);
 
+  // قرص الإصبعين على لوحة اللمس فوق الخريطة المصغّرة: يُمنع تكبير الصفحة،
+  // وتُفتح الخريطة بكامل الصفحة حيث يعمل التكبير فعليًا. (يصل القرص كحدث
+  // wheel مع ctrlKey، وفي Safari كأحداث gesture*؛ ونحتاج passive:false لمنعه.)
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey) return; // التمرير العادي يبقى تمريرًا للصفحة
+      e.preventDefault();
+      if (e.deltaY < 0) setExplore(true);
+    };
+    const onGesture = (e: Event) => {
+      e.preventDefault();
+      if (((e as Event & { scale?: number }).scale ?? 1) > 1) setExplore(true);
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    el.addEventListener('gesturestart', onGesture);
+    el.addEventListener('gesturechange', onGesture);
+    return () => {
+      el.removeEventListener('wheel', onWheel);
+      el.removeEventListener('gesturestart', onGesture);
+      el.removeEventListener('gesturechange', onGesture);
+    };
+  }, []);
+
   const valueOf = (id: string) => metricValue(metrics[id], metric);
 
   const total = useMemo(
