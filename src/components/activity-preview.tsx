@@ -3,7 +3,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Gamepad2, Loader2 } from 'lucide-react';
 import type { Activity } from '@/lib/types';
-import { PREVIEW_VERSION, repairLegacyPreview } from '@/lib/preview-html';
+import {
+  PREVIEW_VERSION,
+  makePreviewHtml,
+  repairLegacyPreview,
+} from '@/lib/preview-html';
 import {
   getLocalRecord,
   htmlToBlobUrl,
@@ -13,6 +17,9 @@ import {
 
 /** العرض المرجعي الذي نفترضه للعبة ثم نُصغّره ليملأ عرض البطاقة. */
 const REF_WIDTH = 900;
+
+/** أقصى عدد أجزاء (~800 ك.ب لكلٍّ) نقبل تحميلها لبناء معاينة محليًا. */
+const MAX_FALLBACK_CHUNKS = 12;
 
 function fileUrl(a: Activity) {
   return a.external ? a.file : `/games/${a.file}`;
@@ -95,9 +102,12 @@ export function ActivityPreview({
               '@/lib/game-store'
             );
             html = await loadPreviewHtml(activity.id);
-            // 3) أنشطة رُفعت قبل وجود المعاينة: الملف كاملًا إن كان صغيرًا فقط
-            if (!html && (activity.chunks ?? 99) <= 2) {
-              html = await loadGameHtml(activity.id);
+            // 3) لا توجد معاينة محفوظة (نشاط قديم، أو تعذّر بناؤها عند الرفع):
+            //    حمّل الملف كاملًا مرّة واحدة وخفّفه هنا، ثم يُحفَظ محليًا
+            //    فلا يتكرّر التحميل. نتجنّب فقط الملفات الضخمة جدًا.
+            if (!html && (activity.chunks ?? 99) <= MAX_FALLBACK_CHUNKS) {
+              const full = await loadGameHtml(activity.id);
+              if (full) html = makePreviewHtml(full, Infinity);
             }
             if (!alive) return;
             if (html) void putCachedPreview(activity.id, html, PREVIEW_VERSION);
