@@ -32,6 +32,18 @@ const MEDIA_RE = /data:(?:audio|video)\/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=]+/gi;
 const IMAGE_RE = /data:image\/[a-z0-9.+-]+;base64,([A-Za-z0-9+/=]+)/gi;
 
 /**
+ * بقية الحمولات المضمَّنة التي ليست صورًا ولا صوتًا: نماذج ثلاثية الأبعاد
+ * (model/gltf-binary، application/octet-stream)، ملفات JSON/ZIP، الخطوط…
+ * ألعاب 3D تُضمِّن نموذج GLB كاملًا بهذه الصيغة فيبقى الملف ميجابايتات
+ * بعد حذف الصوت والصور، فكانت المعاينة تُرفض وتبقى البطاقة بلا صورة.
+ * الخطوط مستثناة هنا وتُعالَج في خطوة لاحقة لأنها تصنع شكل النص.
+ */
+const BLOB_RE =
+  /data:(?!image\/|audio\/|video\/|font\/|application\/(?:x-)?font)[a-z0-9.+-]+\/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=]{2000,}/gi;
+const FONT_RE =
+  /data:(?:font\/|application\/(?:x-)?font)[a-z0-9.+-]*;base64,[A-Za-z0-9+/=]{2000,}/gi;
+
+/**
  * نصّ Base64 طويل داخل علامتَي اقتباس في كود JavaScript.
  *
  * كثير من الألعاب لا تضع الموسيقى في وسم HTML بل في متغيّر:
@@ -49,17 +61,27 @@ const TINY_B64 =
  * نسخة مولّد المعاينة. تُحفَظ مع كل معاينة، فإن تغيّر المولّد عرفت اللوحة
  * أي المعاينات بُنيت بنسخة قديمة وتحتاج إعادة توليد.
  */
-export const PREVIEW_VERSION = 3;
+export const PREVIEW_VERSION = 4;
 
 const bytes = (s: string) => new TextEncoder().encode(s).length;
 
 /**
  * يبني نسخة معاينة من ملف اللعبة، أو `null` إن تعذّر تصغيرها بما يكفي.
  * لا يُعدَّل الملف الأصلي إطلاقًا — هذه نسخة منفصلة للعرض فقط.
+ *
+ * `maxBytes`: الحدّ الذي تُرفض فوقه المعاينة. `Infinity` تعني «خفّف قدر
+ * الإمكان وأعد النتيجة أيًّا كان حجمها» (للضغط أو للعرض المحلي).
  */
-export function makePreviewHtml(html: string): string | null {
+export function makePreviewHtml(
+  html: string,
+  maxBytes: number = MAX_DOC_BYTES
+): string | null {
   // 1) الصوت والفيديو المكتوبان بصيغة data: كاملة
   let out = html.replace(MEDIA_RE, SILENT_AUDIO);
+  if (bytes(out) <= MAX_PREVIEW_BYTES) return out;
+
+  // 1ب) النماذج ثلاثية الأبعاد وبقية الحمولات الثنائية المضمَّنة
+  out = out.replace(BLOB_RE, `data:application/octet-stream;base64,${TINY_B64}`);
   if (bytes(out) <= MAX_PREVIEW_BYTES) return out;
 
   // 2) حمولات Base64 الطويلة داخل كود JavaScript — غالبًا هي الأثقل
@@ -76,12 +98,19 @@ export function makePreviewHtml(html: string): string | null {
   out = out.replace(IMAGE_RE, BLANK_PNG);
   if (bytes(out) <= MAX_PREVIEW_BYTES) return out;
 
-  // 5) تجاوزنا الحجم المفضَّل لكنه ما زال دون حدّ الوثيقة: معاينة أبطأ
-  //    قليلًا خير من بطاقة فارغة، فنقبلها بدل التخلّي عنها.
-  if (bytes(out) <= MAX_DOC_BYTES) return out;
+  // 5) الخطوط المضمَّنة — يعود النص إلى خط النظام، والتخطيط يبقى
+  out = out.replace(FONT_RE, `data:font/woff2;base64,${TINY_B64}`);
+  if (bytes(out) <= MAX_PREVIEW_BYTES) return out;
+
+  // 6) تجاوزنا الحجم المفضَّل: معاينة أبطأ قليلًا خير من بطاقة فارغة،
+  //    فنقبلها ما دامت دون الحدّ المطلوب.
+  if (bytes(out) <= maxBytes) return out;
 
   return null;
 }
+
+/** حدّ وثيقة المعاينة في Firestore (يُستخدَم لتقرير الضغط). */
+export const PREVIEW_DOC_BYTES = MAX_DOC_BYTES;
 
 /**
  * بصمة البكسل الأخضر الذي استُخدم بالخطأ في النسخة الأولى من المولّد.

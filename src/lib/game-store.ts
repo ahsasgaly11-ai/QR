@@ -140,15 +140,25 @@ export async function loadGameHtml(id: string): Promise<string | null> {
 export async function savePreviewHtml(id: string, html: string): Promise<boolean> {
   const db = getDb();
   if (!db) return false;
-  const { makePreviewHtml, PREVIEW_VERSION } = await import('@/lib/preview-html');
-  const light = makePreviewHtml(html);
+  const { makePreviewHtml, PREVIEW_VERSION, PREVIEW_DOC_BYTES } = await import(
+    '@/lib/preview-html'
+  );
+  // خفّف قدر الإمكان دون رفض، ثم قرّر: نصّ عادي أو مضغوط
+  const light = makePreviewHtml(html, Infinity);
   if (!light) return false;
   try {
-    const { doc, setDoc } = await import('firebase/firestore');
-    await setDoc(doc(db, 'activities', id, 'preview', 'doc'), {
-      s: light,
-      v: PREVIEW_VERSION,
-    });
+    const { doc, setDoc, Bytes } = await import('firebase/firestore');
+    const ref = doc(db, 'activities', id, 'preview', 'doc');
+    if (byteLength(light) <= PREVIEW_DOC_BYTES) {
+      await setDoc(ref, { s: light, v: PREVIEW_VERSION });
+      return true;
+    }
+    // ألعاب 3D تُضمِّن مكتبة Three.js كاملةً فيبقى حجمها فوق حدّ الوثيقة
+    // حتى بعد حذف الوسائط. الكود النصّي ينضغط إلى نحو الربع، فنحفظه
+    // مضغوطًا (gzip) بدل ترك البطاقة بلا صورة.
+    const z = await gzip(light);
+    if (!z || z.byteLength > PREVIEW_DOC_BYTES) return false;
+    await setDoc(ref, { z: Bytes.fromUint8Array(z), v: PREVIEW_VERSION });
     return true;
   } catch {
     return false;
@@ -162,10 +172,30 @@ export async function loadPreviewHtml(id: string): Promise<string | null> {
     const { doc, getDoc } = await import('firebase/firestore');
     const snap = await getDoc(doc(db, 'activities', id, 'preview', 'doc'));
     if (!snap.exists()) return null;
-    return (snap.data() as { s?: string }).s ?? null;
+    const data = snap.data() as {
+      s?: string;
+      z?: { toUint8Array(): Uint8Array };
+    };
+    if (data.s) return data.s;
+    if (data.z) return await gunzip(data.z.toUint8Array());
+    return null;
   } catch {
     return null;
   }
+}
+
+async function gzip(text: string): Promise<Uint8Array | null> {
+  if (typeof CompressionStream === 'undefined') return null;
+  const stream = new Blob([text]).stream().pipeThrough(new CompressionStream('gzip'));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+async function gunzip(data: Uint8Array): Promise<string | null> {
+  if (typeof DecompressionStream === 'undefined') return null;
+  const stream = new Blob([data as BlobPart])
+    .stream()
+    .pipeThrough(new DecompressionStream('gzip'));
+  return await new Response(stream).text();
 }
 
 /** يحذف كل أجزاء اللعبة (يُستدعى قبل حذف وثيقة النشاط). */
