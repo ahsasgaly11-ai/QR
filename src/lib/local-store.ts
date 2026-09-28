@@ -121,17 +121,45 @@ const STORAGE_SHIM = `<script>(function(){function mk(){var d={};return{getItem:
 // جسر ملء الشاشة.
 //
 // كثير من الألعاب فيها زرّ «ملء الشاشة» خاص بها، والموقع له زرّه أيضًا.
-// اجتماع الاثنين كان يُنتج ملء شاشة متداخلًا (أو محاكاة داخل اللعبة) يعلق
-// فيه الزائر بلا طريقة للخروج، خصوصًا على iPad. لذا تُستبدل واجهة Fullscreen
-// داخل اللعبة بطلبات تُرسل للموقع، فيبقى هناك وضع ملء شاشة واحد يتحكّم فيه
-// زرّ الموقع وزرّ اللعبة معًا، ويُبلَّغ اللعبة بحالته الفعلية.
+// اجتماع الاثنين كان يُنتج ملء شاشة متداخلًا يعلق فيه الزائر بلا طريقة
+// للخروج، خصوصًا على iPad. لذا لا يُترك للّعبة ملء شاشة أصلي، بل يُحاكى:
+//   • زرّ اللعبة يكبّر العنصر الذي تختاره (مثل مسرح النموذج) ليملأ إطارها،
+//     ويطلب من الموقع وضع العرض الكامل إن لم يكن مفعّلًا فيملأ الإطار الشاشة.
+//   • fullscreenElement يعكس تكبير اللعبة وحده، فلا تظنّ اللعبة أنها في ملء
+//     الشاشة لمجرّد أن الموقع فعّل وضعه (وإلا صار ضغط زرّها «خروجًا»).
+//   • الخروج من اللعبة يُعيد العنصر، ولا يُغلق وضع الموقع إلا إن كانت اللعبة
+//     هي من فتحته. وزرّ «خروج» الموقع يُنهي الاثنين معًا.
 // ---------------------------------------------------------------------------
 
 /** مفاتيح رسائل جسر ملء الشاشة بين اللعبة والموقع. */
 export const FS_REQUEST_KEY = '__qaFs';
 export const FS_STATE_KEY = '__qaFsState';
 
-const FULLSCREEN_SHIM = `<script>(function(){var P=window.parent;if(!P||P===window)return;var D=document,on=false;function send(a){try{P.postMessage({${FS_REQUEST_KEY}:a},'*')}catch(e){}}function req(){send('enter');return Promise.resolve()}function ext(){send('exit');return Promise.resolve()}function def(o,n,d){try{Object.defineProperty(o,n,d)}catch(e){}}['requestFullscreen','webkitRequestFullscreen','webkitRequestFullScreen','mozRequestFullScreen','msRequestFullscreen'].forEach(function(n){def(Element.prototype,n,{value:req,configurable:true,writable:true})});['exitFullscreen','webkitExitFullscreen','webkitCancelFullScreen','mozCancelFullScreen','msExitFullscreen'].forEach(function(n){def(Document.prototype,n,{value:ext,configurable:true,writable:true})});['fullscreenElement','webkitFullscreenElement','webkitCurrentFullScreenElement','mozFullScreenElement','msFullscreenElement'].forEach(function(n){def(Document.prototype,n,{get:function(){return on?D.documentElement:null},configurable:true})});['fullscreenEnabled','webkitFullscreenEnabled','mozFullScreenEnabled','msFullscreenEnabled'].forEach(function(n){def(Document.prototype,n,{get:function(){return true},configurable:true})});['fullscreen','webkitIsFullScreen','mozFullScreen'].forEach(function(n){def(Document.prototype,n,{get:function(){return on},configurable:true})});window.addEventListener('message',function(e){if(e.source!==P)return;var d=e.data;if(!d||typeof d.${FS_STATE_KEY}!=='boolean'||d.${FS_STATE_KEY}===on)return;on=d.${FS_STATE_KEY};['fullscreenchange','webkitfullscreenchange'].forEach(function(t){try{D.dispatchEvent(new Event(t,{bubbles:true}))}catch(_){}})});window.addEventListener('keydown',function(e){if(on&&e.key==='Escape')send('exit')},true)})();</script>`;
+const FULLSCREEN_SHIM_JS = `(function(){
+var P=window.parent;if(!P||P===window)return;
+var D=document,el=null,siteOn=false,A='data-qa-fs';
+function send(a){try{P.postMessage({${FS_REQUEST_KEY}:a},'*')}catch(e){}}
+function def(o,n,d){try{Object.defineProperty(o,n,d)}catch(e){}}
+function css(){if(D.getElementById('qa-fs-style'))return;var s=D.createElement('style');s.id='qa-fs-style';
+s.textContent='['+A+']{position:fixed!important;inset:0!important;left:0!important;top:0!important;right:0!important;bottom:0!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;margin:0!important;border-radius:0!important;transform:none!important;z-index:2147483646!important;box-sizing:border-box!important}';
+(D.head||D.documentElement).appendChild(s)}
+function changed(t){try{(t&&t.isConnected?t:D).dispatchEvent(new Event('fullscreenchange',{bubbles:true}));(t&&t.isConnected?t:D).dispatchEvent(new Event('webkitfullscreenchange',{bubbles:true}))}catch(e){}
+setTimeout(function(){try{window.dispatchEvent(new Event('resize'))}catch(e){}},60)}
+function set(t){var old=el;if(old===t)return;if(old)old.removeAttribute(A);el=t;
+if(t&&t!==D.documentElement&&t!==D.body){css();t.setAttribute(A,'')}changed(t||old)}
+function req(){var t=this instanceof Element?this:D.documentElement;set(t);send('enter');return Promise.resolve()}
+function ext(){if(!el)return Promise.resolve();set(null);send('exit');return Promise.resolve()}
+['requestFullscreen','webkitRequestFullscreen','webkitRequestFullScreen','mozRequestFullScreen','msRequestFullscreen'].forEach(function(n){def(Element.prototype,n,{value:req,configurable:true,writable:true})});
+['exitFullscreen','webkitExitFullscreen','webkitCancelFullScreen','mozCancelFullScreen','msExitFullscreen'].forEach(function(n){def(Document.prototype,n,{value:ext,configurable:true,writable:true})});
+['fullscreenElement','webkitFullscreenElement','webkitCurrentFullScreenElement','mozFullScreenElement','msFullscreenElement'].forEach(function(n){def(Document.prototype,n,{get:function(){return el},configurable:true})});
+['fullscreenEnabled','webkitFullscreenEnabled','mozFullScreenEnabled','msFullscreenEnabled'].forEach(function(n){def(Document.prototype,n,{get:function(){return true},configurable:true})});
+['fullscreen','webkitIsFullScreen','mozFullScreen'].forEach(function(n){def(Document.prototype,n,{get:function(){return !!el},configurable:true})});
+window.addEventListener('message',function(e){if(e.source!==P)return;var d=e.data;if(!d||typeof d.${FS_STATE_KEY}!=='boolean')return;
+siteOn=d.${FS_STATE_KEY};if(!siteOn&&el)set(null)});
+window.addEventListener('keydown',function(e){if(e.key!=='Escape')return;if(el)ext();else if(siteOn)send('escape')},true);
+})();`;
+
+const FULLSCREEN_SHIM = `<script>${FULLSCREEN_SHIM_JS}</script>`;
 
 /** يحقن بديل التخزين وجسر ملء الشاشة في بداية المستند قبل أي سكربت للعبة. */
 export function withStorageShim(html: string): string {
