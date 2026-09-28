@@ -186,7 +186,14 @@ export function ActivityPlayer({
     };
   }, [immersive]);
 
+  // هل فُتح وضع العرض الكامل بطلب من زرّ اللعبة نفسها؟ عندها فقط يُغلقه زرّ
+  // اللعبة؛ أمّا إن فتحه زرّ الموقع فيبقى حتى يُغلق بزرّ «خروج» الموقع.
+  const gameOwnedRef = useRef(false);
+  const immersiveRef = useRef(immersive);
+  immersiveRef.current = immersive;
+
   const exitImmersive = useCallback(() => {
+    gameOwnedRef.current = false;
     setImmersive(false);
     const d = document as Document & { webkitExitFullscreen?: () => void };
     if (document.fullscreenElement) document.exitFullscreen?.();
@@ -220,20 +227,28 @@ export function ActivityPlayer({
     }
   }, []);
 
-  // جسر ملء الشاشة: زرّ ملء الشاشة داخل اللعبة يطلب وضع الموقع نفسه بدل
-  // فتح ملء شاشة ثانٍ متداخل يعلق فيه الزائر (انظر FULLSCREEN_SHIM).
+  // جسر ملء الشاشة (انظر FULLSCREEN_SHIM): زرّ اللعبة يكبّر الجزء الذي
+  // تختاره اللعبة داخل إطارها، ويطلب من الموقع ملء الشاشة إن لم يكن مفعّلًا
+  // بدل فتح ملء شاشة ثانٍ متداخل يعلق فيه الزائر.
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
       if (!frameRef.current || e.source !== frameRef.current.contentWindow) return;
       const action = (e.data as Record<string, unknown> | null)?.[FS_REQUEST_KEY];
-      if (action === 'enter') enterImmersive();
-      else if (action === 'exit') exitImmersive();
+      if (action === 'enter') {
+        if (immersiveRef.current) return;
+        gameOwnedRef.current = true;
+        enterImmersive();
+      } else if (action === 'exit') {
+        if (gameOwnedRef.current) exitImmersive();
+      } else if (action === 'escape') {
+        exitImmersive();
+      }
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
   }, [enterImmersive, exitImmersive]);
 
-  // أبلغ اللعبة بالحالة الفعلية لتُحدِّث زرّها (دخول/خروج)
+  // أبلغ اللعبة بحالة وضع الموقع (عند الخروج منه تُعيد اللعبة الجزء المكبَّر)
   const syncFrameFullscreen = useCallback(() => {
     try {
       frameRef.current?.contentWindow?.postMessage({ [FS_STATE_KEY]: immersive }, '*');
@@ -279,7 +294,13 @@ export function ActivityPlayer({
               <ExternalLink className="h-4 w-4" /> فتح في نافذة
             </a>
           )}
-          <button onClick={enterImmersive} className={toolbarBtn}>
+          <button
+            onClick={() => {
+              gameOwnedRef.current = false;
+              enterImmersive();
+            }}
+            className={toolbarBtn}
+          >
             <Maximize2 className="h-4 w-4" /> ملء الشاشة
           </button>
           {canDownload && (
