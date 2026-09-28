@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Users, Eye, Download, Sparkles } from 'lucide-react';
-import { getSiteStats } from '@/lib/stats';
+import { getCachedSiteStats, getSiteStats } from '@/lib/stats';
 import { CountUp } from './count-up';
 import { Icon3D } from '@/components/icon-3d';
 
@@ -10,7 +10,16 @@ export function SiteStatsStrip({ activities }: { activities: number }) {
   const [s, setS] = useState({ visitors: 0, views: 0, downloads: 0 });
 
   useEffect(() => {
-    getSiteStats().then(setS);
+    let alive = true;
+    // اعرض آخر أرقام معروفة فورًا بدل الأصفار، ثم حدّثها من Firestore.
+    const cached = getCachedSiteStats();
+    if (cached) setS(cached);
+    getSiteStats()
+      .then((v) => alive && setS(v))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
   }, []);
 
   const items = [

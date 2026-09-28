@@ -13,7 +13,7 @@ import {
   Table2,
   Library,
 } from 'lucide-react';
-import { getSiteStats, getAllActivityStats } from '@/lib/stats';
+import { getSiteStats, getAllActivityStats, getCachedSiteStats } from '@/lib/stats';
 import type { ActivityStats, ActivityType } from '@/lib/types';
 import { ACTIVITY_META } from '@/lib/types';
 import { CountUp } from './count-up';
@@ -39,6 +39,8 @@ export function StatsDashboard({ activities: serverActivities }: { activities: R
   const [activeType, setActiveType] = useState<string | null>(null);
 
   useEffect(() => {
+    const cached = getCachedSiteStats();
+    if (cached) setSite(cached);
     Promise.all([getSiteStats(), getAllActivityStats()]).then(([s, m]) => {
       setSite(s);
       setMap(m);
