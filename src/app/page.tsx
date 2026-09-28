@@ -22,6 +22,10 @@ import { DownloadsSwitch } from '@/components/downloads-switch';
 // وإلا لما ظهرت الأنشطة المرفوعة بعد البناء إلا بنشر جديد.
 export const revalidate = 60;
 
+// الرابط المعياري لكل صفحة يُضبط فيها وحدها؛ لو وُضع في layout لورثته كل
+// الصفحات فعدّتها Google نسخًا من الرئيسية ولم تفهرسها.
+export const metadata = { alternates: { canonical: '/' } };
+
 export default async function HomePage() {
   const subjects = await getSubjects();
   const activities = await getAllActivities();

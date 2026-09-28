@@ -9,7 +9,10 @@ import { SITE_NAME } from '@/lib/site';
 // وإلا لما ظهرت الأنشطة المرفوعة بعد البناء إلا بنشر جديد.
 export const revalidate = 60;
 
-export const metadata = { title: `بحث | ${SITE_NAME}` };
+export const metadata = {
+  title: `بحث | ${SITE_NAME}`,
+  alternates: { canonical: '/search' },
+};
 
 export default async function SearchPage() {
   const [activities, subjects] = await Promise.all([
