@@ -18,7 +18,13 @@ import { ActivityTypeBadge } from './activity-type-badge';
 import { SignLanguageButton, SignLanguagePanel } from './sign-language';
 import { resolveSignLanguageSrc, isSignLanguageOn, SIGN_LANG_ATTR } from '@/lib/sign-language';
 import { formatFull, cn } from '@/lib/utils';
-import { htmlToBlobUrl, htmlToFrameUrl, GAME_SANDBOX } from '@/lib/local-store';
+import {
+  htmlToBlobUrl,
+  htmlToFrameUrl,
+  GAME_SANDBOX,
+  FS_REQUEST_KEY,
+  FS_STATE_KEY,
+} from '@/lib/local-store';
 
 function fileUrl(a: Activity) {
   return a.external ? a.file : `/games/${a.file}`;
@@ -199,9 +205,10 @@ export function ActivityPlayer({
     return () => window.removeEventListener('keydown', onKey);
   }, [immersive, exitImmersive]);
 
-  const enterImmersive = () => {
+  const enterImmersive = useCallback(() => {
     setImmersive(true);
     // محاولة ملء الشاشة الأصلي كميزة إضافية — وفشلها لا يؤثّر على الطبقة
+    if (document.fullscreenElement) return;
     const el = wrapRef.current as (HTMLDivElement & {
       webkitRequestFullscreen?: () => Promise<void> | void;
     }) | null;
@@ -211,7 +218,30 @@ export function ActivityPlayer({
     } catch {
       /* الطبقة الثابتة تكفي */
     }
-  };
+  }, []);
+
+  // جسر ملء الشاشة: زرّ ملء الشاشة داخل اللعبة يطلب وضع الموقع نفسه بدل
+  // فتح ملء شاشة ثانٍ متداخل يعلق فيه الزائر (انظر FULLSCREEN_SHIM).
+  useEffect(() => {
+    const onMessage = (e: MessageEvent) => {
+      if (!frameRef.current || e.source !== frameRef.current.contentWindow) return;
+      const action = (e.data as Record<string, unknown> | null)?.[FS_REQUEST_KEY];
+      if (action === 'enter') enterImmersive();
+      else if (action === 'exit') exitImmersive();
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, [enterImmersive, exitImmersive]);
+
+  // أبلغ اللعبة بالحالة الفعلية لتُحدِّث زرّها (دخول/خروج)
+  const syncFrameFullscreen = useCallback(() => {
+    try {
+      frameRef.current?.contentWindow?.postMessage({ [FS_STATE_KEY]: immersive }, '*');
+    } catch {
+      /* الإطار غير جاهز */
+    }
+  }, [immersive]);
+  useEffect(syncFrameFullscreen, [syncFrameFullscreen]);
 
   const toolbarBtn =
     'flex items-center gap-1.5 rounded-xl border border-[color:var(--gold)]/40 bg-[color:var(--surface)]/70 px-3 py-2 text-sm font-bold text-[color:var(--maroon)] transition hover:bg-[color:var(--gold)]/10';
@@ -335,7 +365,10 @@ export function ActivityPlayer({
                 ? GAME_SANDBOX
                 : 'allow-scripts allow-same-origin allow-popups allow-downloads allow-forms allow-modals'
             }
-            onLoad={() => setLoading(false)}
+            onLoad={() => {
+              setLoading(false);
+              syncFrameFullscreen();
+            }}
           />
         ) : (
           <div
