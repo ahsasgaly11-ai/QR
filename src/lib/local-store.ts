@@ -117,11 +117,28 @@ export const GAME_SANDBOX =
 
 const STORAGE_SHIM = `<script>(function(){function mk(){var d={};return{getItem:function(k){k=String(k);return Object.prototype.hasOwnProperty.call(d,k)?d[k]:null},setItem:function(k,v){d[String(k)]=String(v)},removeItem:function(k){delete d[String(k)]},clear:function(){d={}},key:function(i){var ks=Object.keys(d);return i<ks.length?ks[i]:null},get length(){return Object.keys(d).length}}}['localStorage','sessionStorage'].forEach(function(n){try{window[n].length}catch(e){try{Object.defineProperty(window,n,{value:mk(),configurable:true})}catch(_){}}})})();</script>`;
 
-/** يحقن بديل التخزين في بداية المستند قبل أي سكربت للعبة. */
+// ---------------------------------------------------------------------------
+// جسر ملء الشاشة.
+//
+// كثير من الألعاب فيها زرّ «ملء الشاشة» خاص بها، والموقع له زرّه أيضًا.
+// اجتماع الاثنين كان يُنتج ملء شاشة متداخلًا (أو محاكاة داخل اللعبة) يعلق
+// فيه الزائر بلا طريقة للخروج، خصوصًا على iPad. لذا تُستبدل واجهة Fullscreen
+// داخل اللعبة بطلبات تُرسل للموقع، فيبقى هناك وضع ملء شاشة واحد يتحكّم فيه
+// زرّ الموقع وزرّ اللعبة معًا، ويُبلَّغ اللعبة بحالته الفعلية.
+// ---------------------------------------------------------------------------
+
+/** مفاتيح رسائل جسر ملء الشاشة بين اللعبة والموقع. */
+export const FS_REQUEST_KEY = '__qaFs';
+export const FS_STATE_KEY = '__qaFsState';
+
+const FULLSCREEN_SHIM = `<script>(function(){var P=window.parent;if(!P||P===window)return;var D=document,on=false;function send(a){try{P.postMessage({${FS_REQUEST_KEY}:a},'*')}catch(e){}}function req(){send('enter');return Promise.resolve()}function ext(){send('exit');return Promise.resolve()}function def(o,n,d){try{Object.defineProperty(o,n,d)}catch(e){}}['requestFullscreen','webkitRequestFullscreen','webkitRequestFullScreen','mozRequestFullScreen','msRequestFullscreen'].forEach(function(n){def(Element.prototype,n,{value:req,configurable:true,writable:true})});['exitFullscreen','webkitExitFullscreen','webkitCancelFullScreen','mozCancelFullScreen','msExitFullscreen'].forEach(function(n){def(Document.prototype,n,{value:ext,configurable:true,writable:true})});['fullscreenElement','webkitFullscreenElement','webkitCurrentFullScreenElement','mozFullScreenElement','msFullscreenElement'].forEach(function(n){def(Document.prototype,n,{get:function(){return on?D.documentElement:null},configurable:true})});['fullscreenEnabled','webkitFullscreenEnabled','mozFullScreenEnabled','msFullscreenEnabled'].forEach(function(n){def(Document.prototype,n,{get:function(){return true},configurable:true})});['fullscreen','webkitIsFullScreen','mozFullScreen'].forEach(function(n){def(Document.prototype,n,{get:function(){return on},configurable:true})});window.addEventListener('message',function(e){if(e.source!==P)return;var d=e.data;if(!d||typeof d.${FS_STATE_KEY}!=='boolean'||d.${FS_STATE_KEY}===on)return;on=d.${FS_STATE_KEY};['fullscreenchange','webkitfullscreenchange'].forEach(function(t){try{D.dispatchEvent(new Event(t,{bubbles:true}))}catch(_){}})});window.addEventListener('keydown',function(e){if(on&&e.key==='Escape')send('exit')},true)})();</script>`;
+
+/** يحقن بديل التخزين وجسر ملء الشاشة في بداية المستند قبل أي سكربت للعبة. */
 export function withStorageShim(html: string): string {
+  const shims = STORAGE_SHIM + FULLSCREEN_SHIM;
   const m = /<head[^>]*>/i.exec(html);
-  if (m) return html.slice(0, m.index + m[0].length) + STORAGE_SHIM + html.slice(m.index + m[0].length);
-  return STORAGE_SHIM + html;
+  if (m) return html.slice(0, m.index + m[0].length) + shims + html.slice(m.index + m[0].length);
+  return shims + html;
 }
 
 /** رابط Blob مُعدّ للتشغيل داخل iframe معزول (GAME_SANDBOX). */
