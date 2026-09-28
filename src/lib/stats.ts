@@ -15,6 +15,65 @@ import { reportSyncError, reportSyncOk } from '@/lib/stats-sync';
 // ---------------------------------------------------------------------------
 
 const LS_KEY = 'qa-curriculum-stats-v1';
+/** آخر أرقام مشتركة قُرئت من Firestore — تُعرض فورًا وعند تعثّر الاتصال. */
+const SHARED_CACHE_KEY = 'qa-site-stats-shared-v1';
+
+type SiteStats = { visitors: number; views: number; downloads: number };
+
+/** أقصى انتظار لاحتساب زيارة الدخول الحالي قبل قراءة العدّادات. */
+const VISIT_SETTLE_MS = 2500;
+/** أقصى انتظار لقراءة Firestore قبل الرجوع إلى آخر أرقام معروفة. */
+const READ_TIMEOUT_MS = 8000;
+
+/**
+ * وعود Firestore قد لا تُحسم أبدًا حين يتعذّر الاتصال (شبكة المدرسة، وضع
+ * توفير البيانات، أو سفاري على iPad) — فتبقى البطاقات عالقة على «0».
+ * هذه المهلة تضمن أن تنتهي القراءة دائمًا.
+ */
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = setTimeout(
+      () => reject(Object.assign(new Error('timeout'), { code: 'deadline-exceeded' })),
+      ms
+    );
+    p.then(
+      (v) => {
+        clearTimeout(t);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(t);
+        reject(e);
+      }
+    );
+  });
+}
+
+/** آخر أرقام مشتركة معروفة في هذا المتصفّح (أو null). */
+export function getCachedSiteStats(): SiteStats | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(SHARED_CACHE_KEY);
+    if (!raw) return null;
+    const d = JSON.parse(raw) as Partial<SiteStats>;
+    return {
+      visitors: Number(d.visitors) || 0,
+      views: Number(d.views) || 0,
+      downloads: Number(d.downloads) || 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedSiteStats(s: SiteStats) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(SHARED_CACHE_KEY, JSON.stringify(s));
+  } catch {
+    /* ignore */
+  }
+}
 
 interface LocalStore {
   site: { visitors: number; views: number; downloads: number };
@@ -85,7 +144,8 @@ async function recordVisit(): Promise<void> {
 async function settleVisit(): Promise<void> {
   if (!visitPromise) return;
   try {
-    await visitPromise;
+    // لا ننتظر إلى الأبد: إن لم تصل الكتابة سريعًا نقرأ على أي حال.
+    await withTimeout(visitPromise, VISIT_SETTLE_MS);
   } catch {
     /* ignore */
   }
@@ -130,28 +190,31 @@ export function trackDownload(activityId: string): Promise<void> {
 }
 
 // --- reads -----------------------------------------------------------------
-export async function getSiteStats(): Promise<{
-  visitors: number;
-  views: number;
-  downloads: number;
-}> {
+export async function getSiteStats(): Promise<SiteStats> {
   await settleVisit();
   const local = readLocal();
   if (!isFirebaseConfigured) return local.site;
   const db = getDb();
-  if (!db) return local.site;
+  if (!db) return getCachedSiteStats() ?? local.site;
   try {
     const { doc, getDoc } = await import('firebase/firestore');
-    const snap = await getDoc(doc(db, 'stats', 'site'));
-    const d = (snap.exists() ? snap.data() : {}) as Partial<LocalStore['site']>;
-    return {
+    const snap = await withTimeout(getDoc(doc(db, 'stats', 'site')), READ_TIMEOUT_MS);
+    // قراءة من ذاكرة Firestore المحلية (دون خادم) قد تكون ناقصة — لا نعرض
+    // أصفارًا بدل الأرقام الحقيقية.
+    if (snap.metadata.fromCache && !snap.exists()) {
+      throw Object.assign(new Error('offline'), { code: 'unavailable' });
+    }
+    const d = (snap.exists() ? snap.data() : {}) as Partial<SiteStats>;
+    const out = {
       visitors: d.visitors ?? 0,
       views: d.views ?? 0,
       downloads: d.downloads ?? 0,
     };
+    if (!snap.metadata.fromCache) writeCachedSiteStats(out);
+    return out;
   } catch (e) {
     reportSyncError(e, 'قراءة إحصاءات الموقع');
-    return local.site;
+    return getCachedSiteStats() ?? local.site;
   }
 }
 
@@ -163,7 +226,10 @@ export async function getActivityStats(id: string): Promise<ActivityStats> {
   if (!db) return fallback;
   try {
     const { doc, getDoc } = await import('firebase/firestore');
-    const snap = await getDoc(doc(db, 'activityStats', id));
+    const snap = await withTimeout(
+      getDoc(doc(db, 'activityStats', id)),
+      READ_TIMEOUT_MS
+    );
     const d = (snap.exists() ? snap.data() : {}) as Partial<ActivityStats>;
     return { views: d.views ?? 0, downloads: d.downloads ?? 0 };
   } catch (e) {
@@ -181,7 +247,10 @@ export async function getAllActivityStats(): Promise<
   if (!db) return local.activities;
   try {
     const { collection, getDocs } = await import('firebase/firestore');
-    const snap = await getDocs(collection(db, 'activityStats'));
+    const snap = await withTimeout(
+      getDocs(collection(db, 'activityStats')),
+      READ_TIMEOUT_MS
+    );
     const out: Record<string, ActivityStats> = {};
     snap.docs.forEach((d) => {
       const data = d.data() as Partial<ActivityStats>;
