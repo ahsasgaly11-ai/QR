@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { LocalPlay } from '@/components/local-play';
 import { ChevronLeft, Home } from 'lucide-react';
@@ -12,6 +13,8 @@ import { ActivityPlayer } from '@/components/activity-player';
 import { ActivityCard } from '@/components/activity-card';
 import { BackButton } from '@/components/back-button';
 import { SchoolGate } from '@/components/school-gate';
+import { SITE_NAME } from '@/lib/site';
+import { ACTIVITY_META } from '@/lib/types';
 
 // المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
 // وإلا لما ظهرت الأنشطة المرفوعة بعد البناء إلا بنشر جديد.
@@ -19,6 +22,27 @@ export const revalidate = 30;
 
 export function generateStaticParams() {
   return SEED_ACTIVITIES.map((a) => ({ activityId: a.id }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ activityId: string }>;
+}): Promise<Metadata> {
+  const { activityId } = await params;
+  const activity = await getActivity(activityId);
+  // لا noindex هنا: تعذّر قراءة Firestore لحظيًا قد يُخفي نشاطًا حقيقيًا عن Google
+  if (!activity) return {};
+  const title = `${activity.title} | ${SITE_NAME}`;
+  const description =
+    activity.description?.trim() ||
+    `${ACTIVITY_META[activity.type]?.label ?? 'نشاط تفاعلي'}: ${activity.title} — جرّبه مباشرة على ${SITE_NAME}.`;
+  return {
+    title,
+    description,
+    alternates: { canonical: `/play/${activity.id}` },
+    openGraph: { title, description, url: `/play/${activity.id}` },
+  };
 }
 
 export default async function PlayPage({

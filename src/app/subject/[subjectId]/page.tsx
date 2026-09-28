@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ChevronLeft, Home } from 'lucide-react';
@@ -7,6 +8,7 @@ import { CurriculumExplorer } from '@/components/curriculum-explorer';
 import { OryxMascot } from '@/components/oryx-mascot';
 import { BackButton } from '@/components/back-button';
 import { DownloadsSwitch } from '@/components/downloads-switch';
+import { SITE_NAME } from '@/lib/site';
 
 // المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
 // وإلا لما ظهرت الأنشطة المرفوعة بعد البناء إلا بنشر جديد.
@@ -14,6 +16,24 @@ export const revalidate = 30;
 
 export function generateStaticParams() {
   return SUBJECTS.map((s) => ({ subjectId: s.id }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ subjectId: string }>;
+}): Promise<Metadata> {
+  const { subjectId } = await params;
+  const subject = await getSubject(subjectId);
+  if (!subject) return {};
+  const title = `${subject.title} | ${SITE_NAME}`;
+  const description = `${subject.title} — ${subject.tagline}`;
+  return {
+    title,
+    description,
+    alternates: { canonical: `/subject/${subject.id}` },
+    openGraph: { title, description, url: `/subject/${subject.id}` },
+  };
 }
 
 export default async function SubjectPage({

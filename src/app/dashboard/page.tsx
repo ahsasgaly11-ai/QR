@@ -11,7 +11,10 @@ import { SITE_NAME } from '@/lib/site';
 // وإلا لما ظهرت الأنشطة المرفوعة بعد البناء إلا بنشر جديد.
 export const revalidate = 60;
 
-export const metadata = { title: `لوحة الإحصاءات | ${SITE_NAME}` };
+export const metadata = {
+  title: `لوحة الإحصاءات | ${SITE_NAME}`,
+  alternates: { canonical: '/dashboard' },
+};
 
 export default async function DashboardPage() {
   const activities = await getAllActivities();

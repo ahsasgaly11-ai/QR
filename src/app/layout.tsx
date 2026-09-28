@@ -22,7 +22,6 @@ export const metadata: Metadata = {
   },
   description: DESC,
   applicationName: SITE_NAME,
-  alternates: { canonical: '/' },
   ...(GOOGLE_SITE_VERIFICATION
     ? { verification: { google: GOOGLE_SITE_VERIFICATION } }
     : {}),

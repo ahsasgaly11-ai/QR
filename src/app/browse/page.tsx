@@ -9,7 +9,10 @@ import { SITE_NAME } from '@/lib/site';
 // وإلا لما ظهرت الأنشطة المرفوعة بعد البناء إلا بنشر جديد.
 export const revalidate = 60;
 
-export const metadata = { title: `تصفّح المناهج | ${SITE_NAME}` };
+export const metadata = {
+  title: `تصفّح المناهج | ${SITE_NAME}`,
+  alternates: { canonical: '/browse' },
+};
 
 export default async function BrowsePage() {
   const subjects = await getSubjects();

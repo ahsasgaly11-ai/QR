@@ -4,6 +4,7 @@ import { SITE_NAME } from '@/lib/site';
 export const metadata = {
   title: `سياسة الخصوصية | ${SITE_NAME}`,
   description: 'ما البيانات التي تستخدمها المنصّة وكيف تُحفَظ.',
+  alternates: { canonical: '/privacy' },
 };
 
 const sections: { title: string; body: string[] }[] = [
