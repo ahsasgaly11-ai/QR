@@ -8,7 +8,7 @@ import {
 import {
   QATAR_SCHOOLS, MUNICIPALITIES, MUNICIPALITY_BY_ID, type MunicipalityId,
 } from '@/data/qatar-schools';
-import { QATAR_OUTLINE, MUNICIPALITY_SHAPES } from '@/data/qatar-geo';
+import { QATAR_OUTLINE, MUNICIPALITY_SHAPES, QATAR_BBOX as GEO } from '@/data/qatar-geo';
 import { getSchoolMetrics, getSelectedSchool } from '@/lib/school-store';
 import {
   normX, normY, buildHeatLUT, rampColor, HEAT_GRADIENT_CSS, MAP_ASPECT,
@@ -39,6 +39,8 @@ export function UserHeatmap({ className = '' }: { className?: string }) {
   const [mode, setMode] = useState<MapMode>('heat');
   const [tab, setTab] = useState<'regions' | 'schools'>('regions');
   const [selMuni, setSelMuni] = useState<MunicipalityId | null>(null);
+  // يتغيّر عند تبديل الوضع الليلي/النهاري فيُعاد رسم اللوحة بألوانه.
+  const [themeTick, setThemeTick] = useState(0);
 
   useEffect(() => {
     getSchoolMetrics().then((m) => {
@@ -47,6 +49,12 @@ export function UserHeatmap({ className = '' }: { className?: string }) {
       setLoaded(true);
     });
     setMySchoolId(getSelectedSchool()?.id ?? null);
+  }, []);
+
+  useEffect(() => {
+    const obs = new MutationObserver(() => setThemeTick((n) => n + 1));
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme'] });
+    return () => obs.disconnect();
   }, []);
 
   useEffect(() => {
@@ -239,7 +247,7 @@ export function UserHeatmap({ className = '' }: { className?: string }) {
       ctx.fillText(m.name, x, y + 0.5);
       ctx.globalAlpha = 1;
     }
-  }, [size, metrics, metric, mode, selMuni]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [size, metrics, metric, mode, selMuni, themeTick]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // نقر الخريطة → تحديد المنطقة.
   const onMapClick = (e: React.MouseEvent) => {
@@ -248,8 +256,8 @@ export function UserHeatmap({ className = '' }: { className?: string }) {
     const nx = (e.clientX - rect.left) / rect.width;
     const ny = (e.clientY - rect.top) / rect.height;
     // norm → lng/lat
-    const lng = nx * (51.68 - 50.68) + 50.68;
-    const lat = 26.22 - ny * (26.22 - 24.47);
+    const lng = GEO.lngMin + nx * (GEO.lngMax - GEO.lngMin);
+    const lat = GEO.latMax - ny * (GEO.latMax - GEO.latMin);
     const hit = MUNICIPALITY_SHAPES.find((shp) => pointInRings(lng, lat, shp.rings));
     const id = hit ? (hit.id as MunicipalityId) : null;
     setSelMuni(id);
