@@ -13,7 +13,8 @@ import {
   Table2,
   Library,
 } from 'lucide-react';
-import { getSiteStats, getAllActivityStats, getCachedSiteStats } from '@/lib/stats';
+import { subscribeSiteStats, getAllActivityStats } from '@/lib/stats';
+import { isFirebaseConfigured } from '@/lib/firebase';
 import type { ActivityStats, ActivityType } from '@/lib/types';
 import { ACTIVITY_META } from '@/lib/types';
 import { CountUp } from './count-up';
@@ -39,21 +40,27 @@ export function StatsDashboard({ activities: serverActivities }: { activities: R
   const [activeType, setActiveType] = useState<string | null>(null);
 
   useEffect(() => {
-    const cached = getCachedSiteStats();
-    if (cached) setSite(cached);
-    Promise.all([getSiteStats(), getAllActivityStats()]).then(([s, m]) => {
-      setSite(s);
+    let alive = true;
+    // بطاقات الإجمالي حيّة: يرى الجميع الأرقام نفسها فور تحديثها.
+    const unsub = subscribeSiteStats(setSite);
+    getAllActivityStats().then((m) => {
+      if (!alive) return;
       setMap(m);
       setLoaded(true);
     });
-    // ضمّ أنشطة «وضع العرض» المحفوظة في هذا المتصفّح
-    import('@/lib/local-store').then((mod) =>
+    // أنشطة «وضع العرض» محفوظة في هذا المتصفّح وحده؛ مع Firestore لا نضمّها،
+    // وإلا اختلف عدد الأنشطة من مستخدم لآخر.
+    if (!isFirebaseConfigured) import('@/lib/local-store').then((mod) =>
       mod.listLocalActivities().then((acts) =>
         setLocalRows(
           acts.map((a) => ({ id: a.id, title: a.title, type: a.type, subject: '' }))
         )
       )
     );
+    return () => {
+      alive = false;
+      unsub();
+    };
   }, []);
 
   const activities = (() => {
