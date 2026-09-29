@@ -72,7 +72,11 @@ export function usersUpToDay(
   const keys = Object.keys(m.days || {});
   const realSum = keys.reduce((s, k) => s + (m.days[k] || 0), 0);
   if (realSum > 0) {
-    let acc = 0;
+    // المستخدمون قبل بداية النافذة (أو قبل بدء التسجيل اليومي) يُحتسبون رصيدًا
+    // افتتاحيًا، فيطابق آخر يوم في الخطّ الزمني الإجمالي الفعلي للمدرسة.
+    let inWindow = 0;
+    for (const d of days) inWindow += m.days[d] || 0;
+    let acc = Math.max(0, (m.users || 0) - inWindow);
     for (let i = 0; i <= dayIdx; i++) acc += m.days[days[i]] || 0;
     return acc;
   }

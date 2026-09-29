@@ -421,7 +421,12 @@ export function HeatmapExplorer({
   };
 
   // --- أحداث المؤشّر --------------------------------------------------------
+  // عناصر التحكّم فوق الخريطة (التكبير، شارة المنطقة…) ليست نقرًا على الخريطة،
+  // وإلا ألغى زرّ التكبير تحديد المنطقة أو فتح تلميح مدرسة تحته.
+  const onControl = (e: React.PointerEvent) =>
+    (e.target as Element).closest?.('button, a, input') !== null;
   const onPointerDown = (e: React.PointerEvent) => {
+    if (onControl(e)) return;
     (e.target as Element).setPointerCapture?.(e.pointerId);
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     downRef.current = { x: e.clientX, y: e.clientY, moved: false };
@@ -461,6 +466,7 @@ export function HeatmapExplorer({
     }
   };
   const onPointerUp = (e: React.PointerEvent) => {
+    if (!pointers.current.has(e.pointerId)) return;
     const wrap = wrapRef.current;
     const tapped = downRef.current && !downRef.current.moved && pointers.current.size === 1;
     pointers.current.delete(e.pointerId);
@@ -532,6 +538,14 @@ export function HeatmapExplorer({
       window.removeEventListener('gesturechange', stop);
     };
   }, [mounted]);
+
+  // إعادة الرسم عند تبديل الوضع الليلي/النهاري (ألوان اللوحة تُقرأ وقت الرسم).
+  useEffect(() => {
+    if (!mounted) return;
+    const obs = new MutationObserver(() => requestDraw());
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme'] });
+    return () => obs.disconnect();
+  }, [mounted, requestDraw]);
 
   // --- محدّثات الحالة (مرآة + مرجع + إعادة رسم) ------------------------------
   const setMetric = (m: MetricKey) => { metricRef.current = m; setMetricS(m); if (tlRef.current !== null) stopTimeline(); requestDraw(); };
@@ -608,7 +622,11 @@ export function HeatmapExplorer({
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = 'qatar-heatmap.png';
-      a.click(); URL.revokeObjectURL(a.href);
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      // الإلغاء الفوري قد يُفشل التنزيل في بعض المتصفّحات
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
     }, 'image/png');
   };
   const exportPDF = async () => {
@@ -781,7 +799,12 @@ export function HeatmapExplorer({
         </button>
         <input
           type="range" min={0} max={days.length - 1} value={tlDay ?? days.length - 1}
-          onChange={(e) => setTlDay(Number(e.target.value))}
+          onChange={(e) => {
+            // السحب اليدوي يوقف التشغيل التلقائي حتى لا يقفز المؤشّر للخلف
+            if (tlTimerRef.current) { clearInterval(tlTimerRef.current); tlTimerRef.current = null; }
+            setPlaying(false);
+            setTlDay(Number(e.target.value));
+          }}
           className="h-1.5 flex-1 cursor-pointer accent-[color:var(--maroon)]"
         />
         <span className="shrink-0 text-xs font-bold text-muted-foreground tabular-nums">

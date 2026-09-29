@@ -8,7 +8,6 @@ import { getLocalRecord } from '@/lib/local-store';
 import { ActivityPlayer } from './activity-player';
 import { OryxMascot } from './oryx-mascot';
 import { BackButton } from './back-button';
-import { SchoolGate } from './school-gate';
 
 /**
  * يُستخدم عندما لا يجد الخادم النشاط: قد يكون نشاطًا مرفوعًا في «وضع العرض»
@@ -134,9 +133,7 @@ export function LocalPlay({ activityId }: { activityId: string }) {
         </div>
       )}
 
-      <SchoolGate>
-        <ActivityPlayer activity={activity} localHtml={html} />
-      </SchoolGate>
+      <ActivityPlayer activity={activity} localHtml={html} />
     </div>
   );
 }
