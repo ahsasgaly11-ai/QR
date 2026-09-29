@@ -11,7 +11,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import type { Activity, ActivityStats } from '@/lib/types';
-import { getActivityStats, trackView, trackDownload } from '@/lib/stats';
+import { subscribeActivityStats, trackView, trackDownload } from '@/lib/stats';
 import { trackSchoolPlay, trackSchoolDownload } from '@/lib/school-store';
 import { useDownloadsEnabled, downloadsAllowedNow } from '@/lib/site-settings';
 import { ActivityTypeBadge } from './activity-type-badge';
@@ -127,16 +127,12 @@ function PlayerInner({ activity, localHtml }: PlayerProps) {
   const [immersive, setImmersive] = useState(false);
 
   useEffect(() => {
-    let active = true;
     trackSchoolPlay(); // ينسب اللعب لمدرسة المستخدم المختارة (طبقة الخريطة)
-    // نقرأ العدّاد بعد اكتمال احتساب المشاهدة، وإلا عُرض الرقم قبل زيادته.
-    trackView(activity.id)
-      .then(() => getActivityStats(activity.id))
-      .then((s) => active && setStats({ views: s.views, downloads: s.downloads }));
-    return () => {
-      active = false;
-    };
+    void trackView(activity.id);
   }, [activity.id]);
+
+  // العدّادات حيّة: تتغيّر فور احتساب أي مشاهدة/تنزيل من أي مستخدم.
+  useEffect(() => subscribeActivityStats(activity.id, setStats), [activity.id]);
 
   const onDownload = async (e: React.MouseEvent<HTMLAnchorElement>) => {
     // احتياط: قد يُوقف المشرف التنزيل والصفحة مفتوحة
@@ -146,7 +142,6 @@ function PlayerInner({ activity, localHtml }: PlayerProps) {
     }
     await trackDownload(activity.id);
     trackSchoolDownload(); // ينسب التحميل لمدرسة المستخدم المختارة
-    setStats((s) => ({ ...s, downloads: s.downloads + 1 }));
   };
 
   // على الشاشات القصيرة نقيس المساحة المتبقية فعليًا ونملأها
