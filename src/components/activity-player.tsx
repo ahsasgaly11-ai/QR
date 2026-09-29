@@ -15,6 +15,7 @@ import { getActivityStats, trackView, trackDownload } from '@/lib/stats';
 import { trackSchoolPlay, trackSchoolDownload } from '@/lib/school-store';
 import { useDownloadsEnabled, downloadsAllowedNow } from '@/lib/site-settings';
 import { ActivityTypeBadge } from './activity-type-badge';
+import { SchoolGate } from './school-gate';
 import { SignLanguageButton, SignLanguagePanel } from './sign-language';
 import { resolveSignLanguageSrc, isSignLanguageOn, SIGN_LANG_ATTR } from '@/lib/sign-language';
 import { formatFull, cn } from '@/lib/utils';
@@ -30,14 +31,26 @@ function fileUrl(a: Activity) {
   return a.external ? a.file : `/games/${a.file}`;
 }
 
-export function ActivityPlayer({
-  activity,
-  localHtml,
-}: {
+type PlayerProps = {
   activity: Activity;
   /** محتوى الملف عند تشغيل نشاط محفوظ محليًا (وضع العرض) */
   localHtml?: string;
-}) {
+};
+
+/**
+ * مشغّل النشاط محاطًا دائمًا ببوّابة اختيار المدرسة: لا تُحمَّل اللعبة ولا
+ * تُشغَّل داخل الموقع قبل اختيار المدرسة، أيًّا كان إعداد التنزيل لدى المشرف
+ * وأيًّا كانت الصفحة التي تعرض المشغّل.
+ */
+export function ActivityPlayer(props: PlayerProps) {
+  return (
+    <SchoolGate>
+      <PlayerInner {...props} />
+    </SchoolGate>
+  );
+}
+
+function PlayerInner({ activity, localHtml }: PlayerProps) {
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   // نسخة التشغيل داخل الـiframe المعزول (مع بديل التخزين)؛ blobUrl يبقى
   // للتحميل وفتح النافذة فيصل الملف للمستخدم كما رُفع تمامًا.
