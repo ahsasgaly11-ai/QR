@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Play, Download, Eye, Pencil, Trash2, Check, X, Loader2 } from 'lucide-react';
 import type { Activity, ActivityStats } from '@/lib/types';
@@ -9,7 +10,7 @@ import { ActivityTypeBadge } from './activity-type-badge';
 import { formatNumber, cn } from '@/lib/utils';
 import { getLocalRecord, htmlToBlobUrl, dropCachedPreview } from '@/lib/local-store';
 import { ActivityPreview } from './activity-preview';
-import { trackSchoolDownload } from '@/lib/school-store';
+import { trackSchoolDownload, getSelectedSchool } from '@/lib/school-store';
 import { useDownloadsEnabled, downloadsAllowedNow } from '@/lib/site-settings';
 
 function fileUrl(a: Activity) {
@@ -28,6 +29,7 @@ export function ActivityCard({
   isOwner?: boolean;
   onChanged?: (id: string, patch: Partial<Activity> | null) => void;
 }) {
+  const router = useRouter();
   const [stats, setStats] = useState<ActivityStats>({ views: 0, downloads: 0 });
   // يوقف المشرف التنزيل من لوحة التحكّم ← تُستخدم الألعاب داخل الموقع فقط
   const canDownload = useDownloadsEnabled();
@@ -97,6 +99,12 @@ export function ActivityCard({
     // احتياط: قد يُوقف المشرف التنزيل والصفحة مفتوحة
     if (!downloadsAllowedNow()) {
       e.preventDefault();
+      return;
+    }
+    // لا تحميل قبل اختيار المدرسة: نوجّه المستخدم لصفحة النشاط حيث بوّابة الاختيار
+    if (!getSelectedSchool()) {
+      e.preventDefault();
+      router.push(`/play/${activity.id}`);
       return;
     }
     // الأنشطة المحفوظة محليًا (وضع العرض) تُنزَّل من مخزن المتصفّح
