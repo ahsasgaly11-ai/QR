@@ -75,6 +75,29 @@ function writeCachedSiteStats(s: SiteStats) {
   }
 }
 
+/** آخر إحصاءات أنشطة مشتركة قُرئت من Firestore (بديل عند تعثّر الاتصال). */
+const SHARED_ACT_CACHE_KEY = 'qa-activity-stats-shared-v1';
+
+function readSharedActivityCache(): Record<string, ActivityStats> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem(SHARED_ACT_CACHE_KEY);
+    return raw ? (JSON.parse(raw) as Record<string, ActivityStats>) : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeSharedActivityCache(patch: Record<string, ActivityStats>, replace = false) {
+  if (typeof window === 'undefined') return;
+  try {
+    const next = replace ? patch : { ...readSharedActivityCache(), ...patch };
+    localStorage.setItem(SHARED_ACT_CACHE_KEY, JSON.stringify(next));
+  } catch {
+    /* ignore */
+  }
+}
+
 interface LocalStore {
   site: { visitors: number; views: number; downloads: number };
   activities: Record<string, ActivityStats>;
@@ -166,15 +189,13 @@ async function bumpActivity(
   const db = getDb();
   if (!db) return;
   try {
-    const { doc, setDoc, increment } = await import('firebase/firestore');
-    await Promise.all([
-      setDoc(
-        doc(db, 'activityStats', activityId),
-        { [field]: increment(1) },
-        { merge: true }
-      ),
-      setDoc(doc(db, 'stats', 'site'), { [field]: increment(1) }, { merge: true }),
-    ]);
+    const { doc, writeBatch, increment } = await import('firebase/firestore');
+    // دفعة ذرّية: إمّا يُحتسب العدّادان معًا أو لا يُحتسب أيّ منهما، فلا
+    // يبتعد إجمالي الموقع عن مجموع عدّادات الأنشطة مع الوقت.
+    const batch = writeBatch(db);
+    batch.set(doc(db, 'activityStats', activityId), { [field]: increment(1) }, { merge: true });
+    batch.set(doc(db, 'stats', 'site'), { [field]: increment(1) }, { merge: true });
+    await batch.commit();
     reportSyncOk();
   } catch (e) {
     reportSyncError(e, field === 'views' ? 'حفظ عدّاد المشاهدات' : 'حفظ عدّاد التنزيلات');
@@ -190,12 +211,16 @@ export function trackDownload(activityId: string): Promise<void> {
 }
 
 // --- reads -----------------------------------------------------------------
-export async function getSiteStats(): Promise<SiteStats> {
+/**
+ * إحصاءات الموقع المشتركة. مع Firestore تُعاد الأرقام المشتركة وحدها — أو آخر
+ * نسخة مشتركة معروفة عند تعثّر الاتصال، أو null إن لم تتوفّر — ولا تُعرض أبدًا
+ * عدّادات هذا المتصفّح المحلية، وإلا رأى كل مستخدم رقمًا مختلفًا.
+ */
+export async function getSiteStats(): Promise<SiteStats | null> {
   await settleVisit();
-  const local = readLocal();
-  if (!isFirebaseConfigured) return local.site;
+  if (!isFirebaseConfigured) return readLocal().site;
   const db = getDb();
-  if (!db) return getCachedSiteStats() ?? local.site;
+  if (!db) return getCachedSiteStats();
   try {
     const { doc, getDoc } = await import('firebase/firestore');
     const snap = await withTimeout(getDoc(doc(db, 'stats', 'site')), READ_TIMEOUT_MS);
@@ -214,14 +239,61 @@ export async function getSiteStats(): Promise<SiteStats> {
     return out;
   } catch (e) {
     reportSyncError(e, 'قراءة إحصاءات الموقع');
-    return getCachedSiteStats() ?? local.site;
+    return getCachedSiteStats();
   }
 }
 
+/**
+ * اشتراك حيّ في إحصاءات الموقع: يصل كل تحديث مؤكَّد من الخادم فورًا، فيرى
+ * جميع المستخدمين الأرقام نفسها في اللحظة نفسها دون إعادة تحميل الصفحة.
+ * تُتجاهل اللقطات المحلية غير المؤكَّدة (كتابة لم يقبلها الخادم بعد).
+ */
+export function subscribeSiteStats(cb: (s: SiteStats) => void): () => void {
+  if (typeof window === 'undefined') return () => {};
+  const cached = getCachedSiteStats();
+  if (cached) cb(cached);
+  let alive = true;
+  let unsub: (() => void) | null = null;
+
+  (async () => {
+    await settleVisit();
+    if (!alive) return;
+    if (!isFirebaseConfigured) {
+      cb(readLocal().site);
+      return;
+    }
+    const db = getDb();
+    if (!db) return;
+    const { doc, onSnapshot } = await import('firebase/firestore');
+    if (!alive) return;
+    unsub = onSnapshot(
+      doc(db, 'stats', 'site'),
+      { includeMetadataChanges: true },
+      (snap) => {
+        if (snap.metadata.hasPendingWrites || snap.metadata.fromCache) return;
+        const d = (snap.exists() ? snap.data() : {}) as Partial<SiteStats>;
+        const out = {
+          visitors: d.visitors ?? 0,
+          views: d.views ?? 0,
+          downloads: d.downloads ?? 0,
+        };
+        writeCachedSiteStats(out);
+        cb(out);
+      },
+      (e) => reportSyncError(e, 'قراءة إحصاءات الموقع')
+    );
+  })().catch((e) => reportSyncError(e, 'قراءة إحصاءات الموقع'));
+
+  return () => {
+    alive = false;
+    unsub?.();
+  };
+}
+
 export async function getActivityStats(id: string): Promise<ActivityStats> {
-  const local = readLocal();
-  const fallback = local.activities[id] ?? { views: 0, downloads: 0 };
-  if (!isFirebaseConfigured) return fallback;
+  if (!isFirebaseConfigured) return readLocal().activities[id] ?? { views: 0, downloads: 0 };
+  // عند التعثّر: آخر رقم مشترك معروف، لا عدّاد هذا المتصفّح.
+  const fallback = readSharedActivityCache()[id] ?? { views: 0, downloads: 0 };
   const db = getDb();
   if (!db) return fallback;
   try {
@@ -231,7 +303,9 @@ export async function getActivityStats(id: string): Promise<ActivityStats> {
       READ_TIMEOUT_MS
     );
     const d = (snap.exists() ? snap.data() : {}) as Partial<ActivityStats>;
-    return { views: d.views ?? 0, downloads: d.downloads ?? 0 };
+    const out = { views: d.views ?? 0, downloads: d.downloads ?? 0 };
+    if (!snap.metadata.fromCache) writeSharedActivityCache({ [id]: out });
+    return out;
   } catch (e) {
     reportSyncError(e, 'قراءة إحصاءات النشاط');
     return fallback;
@@ -241,10 +315,9 @@ export async function getActivityStats(id: string): Promise<ActivityStats> {
 export async function getAllActivityStats(): Promise<
   Record<string, ActivityStats>
 > {
-  const local = readLocal();
-  if (!isFirebaseConfigured) return local.activities;
+  if (!isFirebaseConfigured) return readLocal().activities;
   const db = getDb();
-  if (!db) return local.activities;
+  if (!db) return readSharedActivityCache();
   try {
     const { collection, getDocs } = await import('firebase/firestore');
     const snap = await withTimeout(
@@ -256,9 +329,10 @@ export async function getAllActivityStats(): Promise<
       const data = d.data() as Partial<ActivityStats>;
       out[d.id] = { views: data.views ?? 0, downloads: data.downloads ?? 0 };
     });
+    if (!snap.metadata.fromCache) writeSharedActivityCache(out, true);
     return out;
   } catch (e) {
     reportSyncError(e, 'قراءة إحصاءات الأنشطة');
-    return local.activities;
+    return readSharedActivityCache();
   }
 }

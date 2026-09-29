@@ -10,7 +10,7 @@ import {
   DownloadCloud,
   Layers,
 } from 'lucide-react';
-import { getSubjects, getAllActivities, countActivities } from '@/lib/content';
+import { getSubjects, getAllActivities } from '@/lib/content';
 import { Book3D } from '@/components/book-3d';
 import { Reveal } from '@/components/reveal';
 import { SiteStatsStrip } from '@/components/site-stats-strip';
@@ -29,7 +29,8 @@ export const metadata = { alternates: { canonical: '/' } };
 export default async function HomePage() {
   const subjects = await getSubjects();
   const activities = await getAllActivities();
-  const total = countActivities(subjects);
+  // العدد نفسه الذي تعرضه لوحة الإحصاءات (كل الأنشطة المنشورة).
+  const total = activities.length;
   const featured = activities.slice(0, 4);
 
   return (
