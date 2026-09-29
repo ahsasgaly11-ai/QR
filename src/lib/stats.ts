@@ -184,6 +184,7 @@ async function bumpActivity(
   a[field] += 1;
   local.site[field] += 1;
   writeLocal(local);
+  if (!isFirebaseConfigured) notifyLocalActivityStats();
 
   if (!isFirebaseConfigured) return;
   const db = getDb();
@@ -202,7 +203,19 @@ async function bumpActivity(
   }
 }
 
+/** آخر احتساب مشاهدة لكل نشاط — يمنع عدّ الفتحة نفسها مرّتين. */
+const lastViewAt = new Map<string, number>();
+const VIEW_DEDUPE_MS = 10_000;
+
+/**
+ * مشاهدة واحدة لكل فتح للعبة: إعادة تركيب المشغّل خلال ثوانٍ (وضع React
+ * Strict، أو تغيير المدرسة ثم العودة) لا تُحتسب مشاهدة إضافية.
+ */
 export function trackView(activityId: string): Promise<void> {
+  const now = Date.now();
+  const prev = lastViewAt.get(activityId);
+  if (prev !== undefined && now - prev < VIEW_DEDUPE_MS) return Promise.resolve();
+  lastViewAt.set(activityId, now);
   return bumpActivity(activityId, 'views');
 }
 
@@ -335,4 +348,109 @@ export async function getAllActivityStats(): Promise<
     reportSyncError(e, 'قراءة إحصاءات الأنشطة');
     return readSharedActivityCache();
   }
+}
+
+// --- اشتراك حيّ في عدّادات الأنشطة -------------------------------------------
+//  مستمع واحد مشترك على مجموعة activityStats يخدم كل البطاقات والمشغّل في
+//  الصفحة، فيتغيّر رقم مشاهدات/تنزيلات كل لعبة لدى الجميع فور احتسابه دون
+//  إعادة تحميل، وبقراءة واحدة بدل قراءة لكل بطاقة.
+
+type ActivityListener = (s: ActivityStats) => void;
+const activityListeners = new Map<string, Set<ActivityListener>>();
+let activityLatest: Record<string, ActivityStats> = {};
+let activityUnsub: (() => void) | null = null;
+let activityStarting = false;
+const LOCAL_ACT_EVENT = 'qa-activity-stats-local';
+const ZERO: ActivityStats = { views: 0, downloads: 0 };
+
+function notifyLocalActivityStats() {
+  try {
+    window.dispatchEvent(new Event(LOCAL_ACT_EVENT));
+  } catch {
+    /* ignore */
+  }
+}
+
+function emitActivity(id: string) {
+  const s = activityLatest[id] ?? ZERO;
+  activityListeners.get(id)?.forEach((cb) => cb(s));
+}
+
+function emitAllActivities() {
+  for (const id of activityListeners.keys()) emitActivity(id);
+}
+
+function onLocalActivityChange() {
+  activityLatest = readLocal().activities;
+  emitAllActivities();
+}
+
+async function startActivityFeed(): Promise<void> {
+  if (activityUnsub || activityStarting) return;
+  if (!isFirebaseConfigured) {
+    activityLatest = readLocal().activities;
+    window.addEventListener(LOCAL_ACT_EVENT, onLocalActivityChange);
+    activityUnsub = () => window.removeEventListener(LOCAL_ACT_EVENT, onLocalActivityChange);
+    emitAllActivities();
+    return;
+  }
+  const db = getDb();
+  if (!db) return;
+  activityStarting = true;
+  try {
+    const { collection, onSnapshot } = await import('firebase/firestore');
+    if (activityListeners.size === 0) return; // أُلغي الاشتراك أثناء التحميل
+    activityUnsub = onSnapshot(
+      collection(db, 'activityStats'),
+      { includeMetadataChanges: true },
+      (snap) => {
+        // الأرقام المؤكَّدة من الخادم فقط — نفسها لدى جميع المستخدمين.
+        if (snap.metadata.hasPendingWrites || snap.metadata.fromCache) return;
+        const out: Record<string, ActivityStats> = {};
+        snap.docs.forEach((d) => {
+          const data = d.data() as Partial<ActivityStats>;
+          out[d.id] = { views: data.views ?? 0, downloads: data.downloads ?? 0 };
+        });
+        activityLatest = out;
+        writeSharedActivityCache(out, true);
+        emitAllActivities();
+      },
+      (e) => reportSyncError(e, 'قراءة إحصاءات الأنشطة')
+    );
+  } catch (e) {
+    reportSyncError(e, 'قراءة إحصاءات الأنشطة');
+  } finally {
+    activityStarting = false;
+  }
+}
+
+/** اشترك في عدّادات نشاط واحد (حيّة)؛ تُعيد دالة إلغاء الاشتراك. */
+export function subscribeActivityStats(
+  id: string,
+  cb: ActivityListener
+): () => void {
+  if (typeof window === 'undefined') return () => {};
+  // آخر قيمة معروفة فورًا: من المستمع إن كان يعمل، وإلا آخر نسخة مشتركة.
+  const known = activityUnsub
+    ? activityLatest[id]
+    : isFirebaseConfigured
+      ? readSharedActivityCache()[id]
+      : readLocal().activities[id];
+  cb(known ?? ZERO);
+
+  let set = activityListeners.get(id);
+  if (!set) activityListeners.set(id, (set = new Set()));
+  set.add(cb);
+  void startActivityFeed();
+
+  return () => {
+    const cur = activityListeners.get(id);
+    cur?.delete(cb);
+    if (cur && cur.size === 0) activityListeners.delete(id);
+    // لا مستمعين في الصفحة → أوقف الاتصال الحيّ.
+    if (activityListeners.size === 0 && activityUnsub) {
+      activityUnsub();
+      activityUnsub = null;
+    }
+  };
 }

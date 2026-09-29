@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Play, Download, Eye, Pencil, Trash2, Check, X, Loader2 } from 'lucide-react';
 import type { Activity, ActivityStats } from '@/lib/types';
-import { getActivityStats, trackDownload } from '@/lib/stats';
+import { subscribeActivityStats, trackDownload } from '@/lib/stats';
 import { ActivityTypeBadge } from './activity-type-badge';
 import { formatNumber, cn } from '@/lib/utils';
 import { getLocalRecord, htmlToBlobUrl, dropCachedPreview } from '@/lib/local-store';
@@ -76,13 +76,8 @@ export function ActivityCard({
     }
   }
 
-  useEffect(() => {
-    let active = true;
-    getActivityStats(activity.id).then((s) => active && setStats(s));
-    return () => {
-      active = false;
-    };
-  }, [activity.id]);
+  // مشاهدات/تنزيلات حيّة: الرقم نفسه لدى الجميع ويتحدّث دون إعادة تحميل.
+  useEffect(() => subscribeActivityStats(activity.id, setStats), [activity.id]);
 
   const saveHtml = (html: string) => {
     const url = htmlToBlobUrl(html);
@@ -124,7 +119,6 @@ export function ActivityCard({
       }
       saveHtml(html);
     }
-    setStats((s) => ({ ...s, downloads: s.downloads + 1 }));
     trackSchoolDownload(); // ينسب التحميل لمدرسة المستخدم المختارة
     await trackDownload(activity.id);
   };
