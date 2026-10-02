@@ -13,7 +13,7 @@ import {
 import type { Activity, ActivityStats } from '@/lib/types';
 import { subscribeActivityStats, trackView, trackDownload } from '@/lib/stats';
 import { trackSchoolPlay, trackSchoolDownload } from '@/lib/school-store';
-import { useDownloadsEnabled, downloadsAllowedNow } from '@/lib/site-settings';
+import { useActivityDownloadEnabled, downloadsAllowedNow } from '@/lib/site-settings';
 import { ActivityTypeBadge } from './activity-type-badge';
 import { SchoolGate } from './school-gate';
 import { SignLanguageButton, SignLanguagePanel } from './sign-language';
@@ -99,7 +99,7 @@ function PlayerInner({ activity, localHtml }: PlayerProps) {
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const [stats, setStats] = useState<ActivityStats>({ views: 0, downloads: 0 });
   // يوقف المشرف التنزيل من لوحة التحكّم ← تُستخدم اللعبة داخل الموقع فقط
-  const canDownload = useDownloadsEnabled();
+  const canDownload = useActivityDownloadEnabled(activity);
   const [loading, setLoading] = useState(true);
   const [key, setKey] = useState(0);
 
@@ -136,7 +136,7 @@ function PlayerInner({ activity, localHtml }: PlayerProps) {
 
   const onDownload = async (e: React.MouseEvent<HTMLAnchorElement>) => {
     // احتياط: قد يُوقف المشرف التنزيل والصفحة مفتوحة
-    if (!downloadsAllowedNow()) {
+    if (!downloadsAllowedNow(activity)) {
       e.preventDefault();
       return;
     }
