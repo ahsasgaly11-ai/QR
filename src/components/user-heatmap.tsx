@@ -49,20 +49,30 @@ export function UserHeatmap({ className = '' }: { className?: string }) {
   const [themeTick, setThemeTick] = useState(0);
 
   useEffect(() => {
-    Promise.all([
-      getSchoolMetrics(),
-      getSchoolActivityMetrics(),
-      getSubjects(),
-      getAllActivities(),
-    ]).then(([m, detail, curriculum, allActivities]) => {
+    let alive = true;
+    const load = async () => {
+      const [m, detail, curriculum, allActivities] = await Promise.all([
+        getSchoolMetrics(),
+        getSchoolActivityMetrics(),
+        getSubjects(),
+        getAllActivities(),
+      ]);
+      if (!alive) return;
       setMetrics(m);
       setActivityMetrics(detail);
       setSubjects(curriculum);
       setActivities(allActivities);
       setUpdatedAt(Date.now());
       setLoaded(true);
-    });
+    };
+    void load();
+    // تحديث هادئ كل دقيقة حتى تبقى مؤشرات «النشاط الآن» والخريطة حيّة.
+    const timer = window.setInterval(() => void load(), 60_000);
     setMySchoolId(getSelectedSchool()?.id ?? null);
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
+    };
   }, []);
 
   useEffect(() => {
