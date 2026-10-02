@@ -145,33 +145,22 @@ service cloud.firestore {
     //   على العدّادات الرقمية، ولا حذف إلا للمالك.
     function schoolFieldsOk() {
       return request.resource.data.diff(resource.data).affectedKeys()
-               .hasOnly([
-                 'users', 'plays', 'downloads', 'days',
-                 'playsByDay', 'downloadsByDay', 'lastActiveAt'
-               ])
+               .hasOnly(['users', 'plays', 'downloads', 'days'])
         && request.resource.data.get('users', 0) >= resource.data.get('users', 0)
         && request.resource.data.get('users', 0) <= resource.data.get('users', 0) + 1
         && request.resource.data.get('plays', 0) >= resource.data.get('plays', 0)
         && request.resource.data.get('plays', 0) <= resource.data.get('plays', 0) + 1
         && request.resource.data.get('downloads', 0) >= resource.data.get('downloads', 0)
-        && request.resource.data.get('downloads', 0) <= resource.data.get('downloads', 0) + 1
-        && request.resource.data.get('lastActiveAt', 0) >= resource.data.get('lastActiveAt', 0);
+        && request.resource.data.get('downloads', 0) <= resource.data.get('downloads', 0) + 1;
     }
 
     match /schoolStats/{schoolId} {
       allow read: if true;
       allow create: if request.resource.data.keys()
-                      .hasOnly([
-                        'users', 'plays', 'downloads', 'days',
-                        'playsByDay', 'downloadsByDay', 'lastActiveAt'
-                      ])
-                    && request.resource.data.get('users', 0) >= 0
+                      .hasOnly(['users', 'plays', 'downloads', 'days'])
                     && request.resource.data.get('users', 0) <= 1
-                    && request.resource.data.get('plays', 0) >= 0
                     && request.resource.data.get('plays', 0) <= 1
-                    && request.resource.data.get('downloads', 0) >= 0
-                    && request.resource.data.get('downloads', 0) <= 1
-                    && request.resource.data.get('lastActiveAt', 0) >= 0;
+                    && request.resource.data.get('downloads', 0) <= 1;
       allow update: if isOwner() || schoolFieldsOk();
       allow delete: if isOwner();
     }
