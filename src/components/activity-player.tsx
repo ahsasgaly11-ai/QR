@@ -127,7 +127,7 @@ function PlayerInner({ activity, localHtml }: PlayerProps) {
   const [immersive, setImmersive] = useState(false);
 
   useEffect(() => {
-    trackSchoolPlay(); // ينسب اللعب لمدرسة المستخدم المختارة (طبقة الخريطة)
+    trackSchoolPlay(activity); // ينسب اللعب للمدرسة + النشاط/الوحدة
     void trackView(activity.id);
   }, [activity.id]);
 
@@ -141,7 +141,7 @@ function PlayerInner({ activity, localHtml }: PlayerProps) {
       return;
     }
     await trackDownload(activity.id);
-    trackSchoolDownload(); // ينسب التحميل لمدرسة المستخدم المختارة
+    trackSchoolDownload(activity); // ينسب التحميل لمدرسة المستخدم المختارة
   };
 
   // على الشاشات القصيرة نقيس المساحة المتبقية فعليًا ونملأها

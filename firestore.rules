@@ -164,5 +164,45 @@ service cloud.firestore {
       allow update: if isOwner() || schoolFieldsOk();
       allow delete: if isOwner();
     }
+
+    // تفصيل استخدام النشاط حسب المدرسة — لتصفية الخريطة بحسب المادة/الوحدة.
+    function schoolActivityFieldsOk() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly([
+                 'schoolId', 'activityId', 'subjectId', 'gradeId', 'unitId',
+                 'plays', 'downloads', 'playsByDay', 'downloadsByDay', 'lastActiveAt'
+               ])
+        && request.resource.data.schoolId == resource.data.schoolId
+        && request.resource.data.activityId == resource.data.activityId
+        && request.resource.data.subjectId == resource.data.subjectId
+        && request.resource.data.gradeId == resource.data.gradeId
+        && request.resource.data.unitId == resource.data.unitId
+        && request.resource.data.get('plays', 0) >= resource.data.get('plays', 0)
+        && request.resource.data.get('plays', 0) <= resource.data.get('plays', 0) + 1
+        && request.resource.data.get('downloads', 0) >= resource.data.get('downloads', 0)
+        && request.resource.data.get('downloads', 0) <= resource.data.get('downloads', 0) + 1
+        && request.resource.data.get('lastActiveAt', 0) >= resource.data.get('lastActiveAt', 0);
+    }
+
+    match /schoolActivityStats/{docId} {
+      allow read: if true;
+      allow create: if request.resource.data.keys()
+                      .hasOnly([
+                        'schoolId', 'activityId', 'subjectId', 'gradeId', 'unitId',
+                        'plays', 'downloads', 'playsByDay', 'downloadsByDay', 'lastActiveAt'
+                      ])
+                    && request.resource.data.schoolId is string
+                    && request.resource.data.activityId is string
+                    && request.resource.data.subjectId is string
+                    && request.resource.data.gradeId is string
+                    && request.resource.data.unitId is string
+                    && request.resource.data.get('plays', 0) >= 0
+                    && request.resource.data.get('plays', 0) <= 1
+                    && request.resource.data.get('downloads', 0) >= 0
+                    && request.resource.data.get('downloads', 0) <= 1
+                    && request.resource.data.get('lastActiveAt', 0) >= 0;
+      allow update: if isOwner() || schoolActivityFieldsOk();
+      allow delete: if isOwner();
+    }
   }
 }
