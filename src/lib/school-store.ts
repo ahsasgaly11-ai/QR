@@ -266,8 +266,6 @@ async function bumpSchoolMetric(
 
   bumpLocal(schoolId, (m) => {
     m[field] += 1;
-    m[dayField][day] = (m[dayField][day] || 0) + 1;
-    m.lastActiveAt = Math.max(m.lastActiveAt || 0, at);
   });
   if (activity) bumpLocalActivity(schoolId, activity, field, day, at);
 
@@ -275,44 +273,45 @@ async function bumpSchoolMetric(
   const db = getDb();
   if (!db) return;
 
+  // اكتب العداد القديم أولًا وبشكل مستقل. هكذا لا تتوقف العدادات الحالية
+  // إن تأخر نشر قواعد مجموعة التحليلات التفصيلية الجديدة.
   try {
-    const { doc, writeBatch, increment } = await import('firebase/firestore');
-    const batch = writeBatch(db);
-
-    batch.set(
+    const { doc, setDoc, increment } = await import('firebase/firestore');
+    await setDoc(
       doc(db, 'schoolStats', schoolId),
-      {
-        [field]: increment(1),
-        [dayField]: { [day]: increment(1) },
-        lastActiveAt: at,
-      },
+      { [field]: increment(1) },
       { merge: true }
     );
-
-    if (activity) {
-      batch.set(
-        doc(db, 'schoolActivityStats', firestoreActivityMetricId(schoolId, activity.id)),
-        {
-          schoolId,
-          activityId: activity.id,
-          subjectId: activity.subjectId,
-          gradeId: activity.gradeId,
-          unitId: activity.unitId,
-          [field]: increment(1),
-          [dayField]: { [day]: increment(1) },
-          lastActiveAt: at,
-        },
-        { merge: true }
-      );
-    }
-
-    await batch.commit();
     reportSyncOk();
   } catch (e) {
     reportSyncError(
       e,
       field === 'plays' ? 'حفظ مرّات اللعب للمدرسة' : 'حفظ تنزيلات المدرسة'
     );
+    return;
+  }
+
+  if (!activity) return;
+  try {
+    const { doc, setDoc, increment } = await import('firebase/firestore');
+    await setDoc(
+      doc(db, 'schoolActivityStats', firestoreActivityMetricId(schoolId, activity.id)),
+      {
+        schoolId,
+        activityId: activity.id,
+        subjectId: activity.subjectId,
+        gradeId: activity.gradeId,
+        unitId: activity.unitId,
+        [field]: increment(1),
+        [dayField]: { [day]: increment(1) },
+        lastActiveAt: at,
+      },
+      { merge: true }
+    );
+  } catch (e) {
+    // لا نعتبر فشل الطبقة التفصيلية فشلًا للعدادات الأساسية؛ قد تكون القواعد
+    // الجديدة لم تُنشر بعد، بينما عدادات المدرسة القديمة نجحت أعلاه.
+    console.warn('[heatmap-analytics] detailed write failed', e);
   }
 }
 
@@ -351,9 +350,6 @@ export async function getSchoolMetrics(): Promise<MetricMap> {
         plays: data.plays ?? 0,
         downloads: data.downloads ?? 0,
         days: (data.days as Record<string, number>) ?? {},
-        playsByDay: (data.playsByDay as Record<string, number>) ?? {},
-        downloadsByDay: (data.downloadsByDay as Record<string, number>) ?? {},
-        lastActiveAt: Number(data.lastActiveAt) || 0,
       };
     });
     return out;
