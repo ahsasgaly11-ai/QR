@@ -73,11 +73,12 @@ export function DownloadsManager({ structure }: { structure: Subject[] }) {
       });
   }, []);
 
-  const dirty =
+  const dirty = Boolean(
     settings &&
-    draft &&
-    (settings.downloadMode !== draft.downloadMode ||
-      settings.downloadUnitKeys.join('|') !== draft.downloadUnitKeys.join('|'));
+      draft &&
+      (settings.downloadMode !== draft.downloadMode ||
+        settings.downloadUnitKeys.join('|') !== draft.downloadUnitKeys.join('|'))
+  );
 
   function setMode(mode: DownloadMode) {
     if (!draft) return;
