@@ -78,7 +78,7 @@ export function AdminShell({
       )}
       {tab === 'content' && <ContentManager initial={structure} />}
       {tab === 'ticker' && <TickerManager />}
-      {tab === 'downloads' && <DownloadsManager />}
+      {tab === 'downloads' && <DownloadsManager structure={structure} />}
     </AuthGate>
   );
 }
