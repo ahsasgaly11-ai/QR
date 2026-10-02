@@ -9,7 +9,10 @@ import {
   QATAR_SCHOOLS, MUNICIPALITIES, MUNICIPALITY_BY_ID, type MunicipalityId,
 } from '@/data/qatar-schools';
 import { QATAR_OUTLINE, MUNICIPALITY_SHAPES, QATAR_BBOX as GEO } from '@/data/qatar-geo';
-import { getSchoolMetrics, getSelectedSchool } from '@/lib/school-store';
+import { getSchoolActivityMetrics, getSchoolMetrics, getSelectedSchool } from '@/lib/school-store';
+import { getAllActivities, getSubjects } from '@/lib/content';
+import type { Activity, Subject } from '@/lib/types';
+import type { SchoolActivityMetric } from '@/lib/heatmap-analytics';
 import {
   normX, normY, buildHeatLUT, rampColor, HEAT_GRADIENT_CSS, MAP_ASPECT,
   pointInRings, isDarkTheme, metricValue, METRIC_LABEL, METRIC_UNIT,
@@ -30,6 +33,9 @@ export function UserHeatmap({ className = '' }: { className?: string }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const lutRef = useRef<Uint8ClampedArray | null>(null);
   const [metrics, setMetrics] = useState<Record<string, SchoolMetric>>({});
+  const [activityMetrics, setActivityMetrics] = useState<SchoolActivityMetric[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [activities, setActivities] = useState<Activity[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [updatedAt, setUpdatedAt] = useState<number | null>(null);
   const [size, setSize] = useState({ w: 300, h: 300 * MAP_ASPECT });
@@ -43,8 +49,16 @@ export function UserHeatmap({ className = '' }: { className?: string }) {
   const [themeTick, setThemeTick] = useState(0);
 
   useEffect(() => {
-    getSchoolMetrics().then((m) => {
+    Promise.all([
+      getSchoolMetrics(),
+      getSchoolActivityMetrics(),
+      getSubjects(),
+      getAllActivities(),
+    ]).then(([m, detail, curriculum, allActivities]) => {
       setMetrics(m);
+      setActivityMetrics(detail);
+      setSubjects(curriculum);
+      setActivities(allActivities);
       setUpdatedAt(Date.now());
       setLoaded(true);
     });
@@ -442,7 +456,14 @@ export function UserHeatmap({ className = '' }: { className?: string }) {
       </div>
 
       {explore && (
-        <HeatmapExplorer metrics={metrics} mySchoolId={mySchoolId} onClose={() => setExplore(false)} />
+        <HeatmapExplorer
+          metrics={metrics}
+          activityMetrics={activityMetrics}
+          subjects={subjects}
+          activities={activities}
+          mySchoolId={mySchoolId}
+          onClose={() => setExplore(false)}
+        />
       )}
     </figure>
   );
