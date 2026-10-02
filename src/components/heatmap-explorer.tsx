@@ -1439,7 +1439,7 @@ export function HeatmapExplorer({
             value={String(activeHour)}
           />
           <SummaryMini
-            icon={change !== null && change < 0 ? TrendingDown : TrendingUp}
+            icon={typeof change === 'number' && change < 0 ? TrendingDown : TrendingUp}
             label="مقارنة بالفترة السابقة"
             value={
               change === undefined
