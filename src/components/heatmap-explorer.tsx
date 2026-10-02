@@ -1,825 +1,140 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  X, Plus, Minus, Locate, GraduationCap, Search, Play, Pause,
-  Flame, LayoutGrid, Download, FileText, MapPin,
+  Activity as ActivityIcon,
+  BarChart3,
+  Building2,
+  CalendarDays,
+  Download,
+  FileText,
+  Filter,
+  Flame,
+  GraduationCap,
+  Layers3,
+  LayoutGrid,
+  Locate,
+  MapPin,
+  Minus,
+  Pause,
+  Play,
+  Plus,
+  RefreshCw,
+  Search,
+  School,
+  Sparkles,
+  TrendingDown,
+  TrendingUp,
+  Users,
+  X,
+  Zap,
 } from 'lucide-react';
+import type { Activity, Subject } from '@/lib/types';
 import {
-  QATAR_SCHOOLS,
+  GENDER_LABEL,
   MUNICIPALITIES,
-  SCHOOL_BY_ID,
   MUNICIPALITY_BY_ID,
+  QATAR_SCHOOLS,
+  SCHOOL_BY_ID,
+  STAGE_LABEL,
   searchSchools,
   type MunicipalityId,
+  type SchoolGender,
+  type SchoolStage,
 } from '@/data/qatar-schools';
 import {
-  QATAR_OUTLINE,
-  QATAR_BBOX as GEO,
   MUNICIPALITY_SHAPES,
+  QATAR_BBOX as GEO,
+  QATAR_OUTLINE,
 } from '@/data/qatar-geo';
 import {
-  normX, normY, buildHeatLUT, rampColor, HEAT_GRADIENT_CSS,
-  pointInRings, isDarkTheme, lastNDays, usersUpToDay, metricValue,
-  METRIC_LABEL, METRIC_UNIT, type MetricKey, type MapMode, type SchoolMetric,
+  buildHeatLUT,
+  HEAT_GRADIENT_CSS,
+  isDarkTheme,
+  METRIC_LABEL,
+  METRIC_UNIT,
+  normX,
+  normY,
+  pointInRings,
+  rampColor,
+  type MapMode,
+  type MetricKey,
+  type SchoolMetric,
 } from '@/lib/heatmap-shared';
-import { formatFull } from '@/lib/utils';
+import {
+  activityMatches,
+  activityTitle,
+  aggregateActivities,
+  aggregateUnits,
+  buildDailyValues,
+  buildSchoolValues,
+  getPeriodWindow,
+  hasContentFilter,
+  percentChange,
+  schoolMatches,
+  type HeatmapFilters,
+  type NormalizationMode,
+  type PeriodKey,
+  type SchoolActivityMetric,
+} from '@/lib/heatmap-analytics';
+import { formatFull, formatPercent } from '@/lib/utils';
 
-interface Transform { scale: number; panX: number; panY: number; baseW: number; baseH: number; }
-type Rect = { x: number; y: number; w: number; h: number };
-function overlaps(a: Rect, b: Rect) {
-  return !(a.x + a.w < b.x || b.x + b.w < a.x || a.y + a.h < b.y || b.y + b.h < a.y);
+interface Transform {
+  scale: number;
+  panX: number;
+  panY: number;
+  baseW: number;
+  baseH: number;
 }
-/** أقصى تكبير — مرتفع بما يكفي لتنفصل تسميات المدارس المتجاورة (بعضها على بُعد عشرات الأمتار). */
-const MAX_SCALE = 40;
+
+interface ClusterHit {
+  x: number;
+  y: number;
+  r: number;
+  ids: string[];
+}
+
+type RecentWindow = 'all' | 'hour' | 'today' | 'week';
+
+const MAX_SCALE = 36;
 const SHAPE_BY_ID = Object.fromEntries(MUNICIPALITY_SHAPES.map((s) => [s.id, s]));
 
-export function HeatmapExplorer({
-  metrics,
-  mySchoolId,
-  onClose,
-}: {
-  metrics: Record<string, SchoolMetric>;
-  mySchoolId: string | null;
-  onClose: () => void;
-}) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const wrapRef = useRef<HTMLDivElement | null>(null);
-  const tRef = useRef<Transform>({ scale: 1, panX: 0, panY: 0, baseW: 1, baseH: 1 });
-  const lutRef = useRef<Uint8ClampedArray | null>(null);
-  const rafRef = useRef<number | null>(null);
-  const dirtyRef = useRef(false);
-  const pointers = useRef<Map<number, { x: number; y: number }>>(new Map());
-  const pinchRef = useRef<{ dist: number } | null>(null);
-  const downRef = useRef<{ x: number; y: number; moved: boolean } | null>(null);
-  const interactingRef = useRef(false);
-  const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const revealRef = useRef(0);
-  const tlTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+const PERIOD_LABEL: Record<PeriodKey, string> = {
+  today: 'اليوم',
+  '7d': '7 أيام',
+  '30d': '30 يومًا',
+  term: 'الفصل الحالي',
+  all: 'الكل',
+};
 
-  // حالة الواجهة (مرآة) + مراجع يقرؤها الرسم (لتفادي إعادة الضبط عند كل تغيير).
-  const [metric, setMetricS] = useState<MetricKey>('users');
-  const [mode, setModeS] = useState<MapMode>('heat');
-  const [selMuni, setSelMuniS] = useState<MunicipalityId | null>(null);
-  const [tlDay, setTlDayS] = useState<number | null>(null);
-  const [playing, setPlaying] = useState(false);
-  const [highlightId, setHighlightS] = useState<string | null>(null);
-  const [tooltip, setTooltip] = useState<{ name: string; value: number; unit: string; x: number; y: number } | null>(null);
-  const [scalePct, setScalePct] = useState(100);
-  const [hint, setHint] = useState(true);
-  const [mounted, setMounted] = useState(false);
-  const [searchQ, setSearchQ] = useState('');
-  const [searchOpen, setSearchOpen] = useState(false);
+const RECENT_LABEL: Record<RecentWindow, string> = {
+  all: 'كل النشاط',
+  hour: 'آخر ساعة',
+  today: 'اليوم',
+  week: 'آخر أسبوع',
+};
 
-  const metricRef = useRef(metric);
-  const modeRef = useRef(mode);
-  const muniRef = useRef(selMuni);
-  const tlRef = useRef(tlDay);
-  const highlightRef = useRef(highlightId);
-  const metricsRef = useRef(metrics);
-  const myRef = useRef(mySchoolId);
-  useEffect(() => { metricsRef.current = metrics; }, [metrics]);
-  useEffect(() => { myRef.current = mySchoolId; }, [mySchoolId]);
-  useEffect(() => setMounted(true), []);
-
-  const days = useMemo(() => lastNDays(30), []);
-
-  // قيمة المدرسة حسب المقياس/الخطّ الزمني الحاليَّين.
-  const valueOf = useCallback(
-    (schoolId: string): number => {
-      const m = metricsRef.current[schoolId];
-      if (tlRef.current !== null) return usersUpToDay(m, days, tlRef.current);
-      return metricValue(m, metricRef.current);
-    },
-    [days]
-  );
-
-  // --- الرسم ----------------------------------------------------------------
-  const draw = useCallback(() => {
-    const canvas = canvasRef.current;
-    const wrap = wrapRef.current;
-    if (!canvas || !wrap) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    const W = wrap.clientWidth;
-    const H = wrap.clientHeight;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    if (canvas.width !== Math.round(W * dpr) || canvas.height !== Math.round(H * dpr)) {
-      canvas.width = Math.round(W * dpr);
-      canvas.height = Math.round(H * dpr);
-    }
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, W, H);
-
-    const dark = isDarkTheme();
-    const reveal = revealRef.current;
-    const t = tRef.current;
-    const SX = (lng: number) => normX(lng) * t.baseW * t.scale + t.panX;
-    const SY = (lat: number) => normY(lat) * t.baseH * t.scale + t.panY;
-    const mode = modeRef.current;
-    const selMuni = muniRef.current;
-
-    const pathOf = (rings: [number, number][][]) => {
-      const p = new Path2D();
-      for (const ring of rings) {
-        ring.forEach(([lng, lat], i) => {
-          const x = SX(lng), y = SY(lat);
-          if (i === 0) p.moveTo(x, y); else p.lineTo(x, y);
-        });
-        p.closePath();
-      }
-      return p;
-    };
-
-    // قِيَم البلديات (تجميع مدارسها).
-    const muniVal = new Map<MunicipalityId, number>();
-    for (const s of QATAR_SCHOOLS) {
-      const v = valueOf(s.id);
-      if (v > 0) muniVal.set(s.municipalityId, (muniVal.get(s.municipalityId) ?? 0) + v);
-    }
-    const maxMuni = Math.max(1, ...muniVal.values());
-
-    // خلفية اليابسة (المخطّط العام) — تُعطي إطارًا في وضع الحرارة.
-    const land = pathOf([QATAR_OUTLINE]);
-    ctx.save();
-    ctx.shadowColor = dark ? 'rgba(0,0,0,0.5)' : 'rgba(106,15,46,0.28)';
-    ctx.shadowBlur = 24; ctx.shadowOffsetY = 7;
-    ctx.fillStyle = dark ? 'rgba(40,26,28,0.96)' : 'rgba(255,255,255,0.96)';
-    ctx.fill(land);
-    ctx.restore();
-
-    if (mode === 'regions') {
-      // --- تلوين المناطق (choropleth) ---
-      for (const shp of MUNICIPALITY_SHAPES) {
-        const val = muniVal.get(shp.id as MunicipalityId) ?? 0;
-        const tNorm = val / maxMuni;
-        const p = pathOf(shp.rings);
-        const dim = selMuni && selMuni !== shp.id ? 0.35 : 1;
-        ctx.fillStyle = val > 0
-          ? rampColor(0.15 + tNorm * 0.85, (dark ? 0.9 : 0.92) * reveal * dim)
-          : (dark ? 'rgba(255,255,255,0.04)' : 'rgba(120,96,48,0.06)');
-        ctx.fill(p);
-        ctx.lineJoin = 'round';
-        ctx.lineWidth = selMuni === shp.id ? 2.6 : 1.1;
-        ctx.strokeStyle = selMuni === shp.id
-          ? (dark ? '#e3c26b' : '#6a0f2e')
-          : (dark ? 'rgba(245,236,228,0.25)' : 'rgba(106,15,46,0.35)');
-        ctx.stroke(p);
-      }
-    } else {
-      // --- الحرارة ---
-      const gfill = ctx.createLinearGradient(0, 0, 0, H);
-      gfill.addColorStop(0, dark ? 'rgba(120,96,48,0.14)' : 'rgba(168,140,74,0.14)');
-      gfill.addColorStop(1, dark ? 'rgba(80,64,32,0.10)' : 'rgba(120,96,48,0.09)');
-      ctx.fillStyle = gfill;
-      ctx.fill(land);
-
-      const pts = QATAR_SCHOOLS.map((s) => ({ x: SX(s.lng), y: SY(s.lat), w: valueOf(s.id) }))
-        .filter((p) => p.w > 0 && p.x > -220 && p.x < W + 220 && p.y > -220 && p.y < H + 220);
-      if (pts.length > 0) {
-        const RES = interactingRef.current ? 0.4 : 0.6;
-        const gw = Math.max(2, Math.round(W * RES));
-        const gh = Math.max(2, Math.round(H * RES));
-        const grid = new Float32Array(gw * gh);
-        const R = Math.min(170, Math.max(22, t.baseW * 0.16 * t.scale)) * RES;
-        const R2 = R * R;
-        let gmax = 0;
-        for (const p of pts) {
-          const cx = p.x * RES, cy = p.y * RES;
-          const x0 = Math.max(0, Math.floor(cx - R)), x1 = Math.min(gw - 1, Math.ceil(cx + R));
-          const y0 = Math.max(0, Math.floor(cy - R)), y1 = Math.min(gh - 1, Math.ceil(cy + R));
-          for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
-            const dx = x - cx, dy = y - cy, d2 = dx * dx + dy * dy;
-            if (d2 > R2) continue;
-            const fall = 1 - d2 / R2;
-            const idx = y * gw + x;
-            grid[idx] += p.w * fall * fall;
-            if (grid[idx] > gmax) gmax = grid[idx];
-          }
-        }
-        if (gmax > 0) {
-          const lut = (lutRef.current ??= buildHeatLUT());
-          const img = ctx.createImageData(gw, gh);
-          const data = img.data;
-          for (let i = 0; i < grid.length; i++) {
-            const v = grid[i] / gmax;
-            if (v <= 0) continue;
-            const tt = Math.min(255, Math.round(Math.sqrt(v) * 255));
-            const o = i * 4, l = tt * 4;
-            data[o] = lut[l]; data[o + 1] = lut[l + 1]; data[o + 2] = lut[l + 2];
-            data[o + 3] = lut[l + 3] * reveal;
-          }
-          const heat = document.createElement('canvas');
-          heat.width = gw; heat.height = gh;
-          heat.getContext('2d')!.putImageData(img, 0, 0);
-          ctx.save(); ctx.clip(land);
-          ctx.imageSmoothingEnabled = true;
-          if (!interactingRef.current) ctx.filter = 'blur(4px)';
-          ctx.drawImage(heat, 0, 0, W, H);
-          ctx.filter = 'none'; ctx.restore();
-        }
-      }
-    }
-
-    // ساحل قطر (حدّ مزدوج) في وضع الحرارة.
-    if (mode === 'heat') {
-      ctx.lineJoin = 'round';
-      ctx.lineWidth = 3; ctx.strokeStyle = dark ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.7)';
-      ctx.stroke(land);
-      ctx.lineWidth = 1.3; ctx.strokeStyle = dark ? 'rgba(227,194,107,0.5)' : 'rgba(106,15,46,0.6)';
-      ctx.stroke(land);
-    }
-
-    // نقاط المدارس (حجمها حسب القيمة) + الإبراز.
-    // بلا قصّ على حدود اليابسة: المخطّط الساحلي مبسّط، فبعض المدارس الساحلية
-    // (الثمامة، الدفنة…) تقع خارجه وكانت تختفي من الخريطة.
-    const maxSchool = Math.max(1, ...QATAR_SCHOOLS.map((s) => valueOf(s.id)));
-    for (const s of QATAR_SCHOOLS) {
-      const v = valueOf(s.id);
-      const x = SX(s.lng), y = SY(s.lat);
-      const r = v > 0 ? 2 + Math.sqrt(v / maxSchool) * 3.5 : 1.4;
-      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fillStyle = v > 0
-        ? (dark ? 'rgba(227,194,107,0.85)' : 'rgba(106,15,46,0.85)')
-        : (dark ? 'rgba(245,236,228,0.22)' : 'rgba(106,15,46,0.25)');
-      ctx.fill();
-    }
-
-    // --- التسميات (تصادم بسيط) ---
-    const occupied: Rect[] = [];
-    ctx.textBaseline = 'middle';
-    (ctx as CanvasRenderingContext2D & { direction?: string }).direction = 'rtl';
-    ctx.textAlign = 'center';
-    for (const m of MUNICIPALITIES) {
-      const shp = SHAPE_BY_ID[m.id];
-      const cx = shp ? shp.centroid[0] : m.lng;
-      const cy = shp ? shp.centroid[1] : m.lat;
-      const x = SX(cx), y = SY(cy);
-      if (x < 0 || x > W || y < 0 || y > H) continue;
-      const val = muniVal.get(m.id) ?? 0;
-      const label = val > 0 ? `${m.name} · ${formatFull(val)}` : m.name;
-      ctx.font = '800 15px Tajawal, sans-serif';
-      const tw = ctx.measureText(label).width;
-      const box: Rect = { x: x - tw / 2 - 8, y: y - 10, w: tw + 16, h: 20 };
-      ctx.fillStyle = val > 0 ? 'rgba(138,21,56,0.95)' : 'rgba(90,72,40,0.82)';
-      roundRect(ctx, box.x, box.y, box.w, box.h, 9); ctx.fill();
-      ctx.fillStyle = '#fff';
-      ctx.fillText(label, x, box.y + box.h / 2);
-      occupied.push(box);
-    }
-
-    // موقع «مدرستك» + مدرسة مبحوث عنها.
-    const markSchool = (id: string, color: string, label: string) => {
-      const s = SCHOOL_BY_ID[id];
-      if (!s) return;
-      const x = SX(s.lng), y = SY(s.lat);
-      ctx.beginPath(); ctx.arc(x, y, 6, 0, Math.PI * 2);
-      ctx.fillStyle = color; ctx.fill();
-      ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
-      ctx.font = '800 13px Tajawal, sans-serif';
-      const full = `${label}: ${s.name}`;
-      const tw = ctx.measureText(full).width;
-      // فوق النقطة: أسفلها غالبًا مدارس المجمّع نفسه فلا تُغطّى نقاطها.
-      const box: Rect = { x: x - tw / 2 - 7, y: y - 27, w: tw + 14, h: 18 };
-      ctx.fillStyle = color; roundRect(ctx, box.x, box.y, box.w, box.h, 8); ctx.fill();
-      ctx.fillStyle = '#fff'; ctx.fillText(full, x, box.y + box.h / 2);
-      occupied.push(box);
-    };
-    if (highlightRef.current) markSchool(highlightRef.current, '#8a173e', 'المدرسة');
-    if (myRef.current && myRef.current !== highlightRef.current) {
-      const s = SCHOOL_BY_ID[myRef.current];
-      if (s) markSchool(myRef.current, 'rgba(224,170,52,0.97)', 'مدرستك');
-    }
-
-    // أسماء المدارس عند التكبير (≥ 200%).
-    if (t.scale >= 2) {
-      ctx.font = '700 12px Tajawal, sans-serif';
-      const ordered = [...QATAR_SCHOOLS].sort((a, b) => valueOf(b.id) - valueOf(a.id));
-      for (const s of ordered) {
-        // المدرسة المبرَزة/مدرستك لها تسميتها الخاصة أعلاه.
-        if (s.id === highlightRef.current || s.id === myRef.current) continue;
-        const x = SX(s.lng), y = SY(s.lat);
-        if (x < 4 || x > W - 4 || y < 4 || y > H - 4) continue;
-        const tw = Math.min(180, ctx.measureText(s.name).width);
-        const bw = tw + 10, bh = 16;
-        // مواضع بديلة (أسفل/أعلى/يسار/يمين النقطة) حتى لا يُحذف اسم لمجرّد تجاوره
-        // مع مدرسة قريبة؛ ويظهر كل اسم متى كبّرت الخريطة بما يكفي.
-        const box = ([
-          { x: x - bw / 2, y: y + 6 },
-          { x: x - bw / 2, y: y - 6 - bh },
-          { x: x - bw - 7, y: y - bh / 2 },
-          { x: x + 7, y: y - bh / 2 },
-        ] as const)
-          .map((p): Rect => ({ x: p.x, y: p.y, w: bw, h: bh }))
-          .find((b) => !occupied.some((o) => overlaps(o, b)));
-        if (!box) continue;
-        ctx.fillStyle = dark ? 'rgba(28,19,21,0.9)' : 'rgba(255,255,255,0.9)';
-        roundRect(ctx, box.x, box.y, box.w, box.h, 7); ctx.fill();
-        ctx.fillStyle = dark ? '#e3c26b' : '#5a1029';
-        ctx.fillText(s.name, box.x + bw / 2, box.y + bh / 2, 176);
-        occupied.push(box);
-      }
-    }
-  }, [valueOf]);
-
-  const requestDraw = useCallback(() => {
-    dirtyRef.current = true;
-    if (rafRef.current != null) return;
-    rafRef.current = requestAnimationFrame(() => {
-      rafRef.current = null;
-      if (dirtyRef.current) { dirtyRef.current = false; draw(); }
-    });
-  }, [draw]);
-
-  const markInteracting = useCallback(() => {
-    interactingRef.current = true;
-    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
-    idleTimerRef.current = setTimeout(() => {
-      interactingRef.current = false;
-      requestDraw();
-    }, 180);
-  }, [requestDraw]);
-
-  const fit = useCallback(() => {
-    const wrap = wrapRef.current;
-    if (!wrap) return;
-    const W = wrap.clientWidth, H = wrap.clientHeight;
-    const pad = 48;
-    let baseW = Math.min(W - pad, (H - pad) / (((GEO.latMax - GEO.latMin) / ((GEO.lngMax - GEO.lngMin) * Math.cos((((GEO.latMin + GEO.latMax) / 2) * Math.PI) / 180)))));
-    baseW = Math.max(120, baseW);
-    const baseH = baseW * ((GEO.latMax - GEO.latMin) / ((GEO.lngMax - GEO.lngMin) * Math.cos((((GEO.latMin + GEO.latMax) / 2) * Math.PI) / 180)));
-    tRef.current = { scale: 1, baseW, baseH, panX: (W - baseW) / 2, panY: (H - baseH) / 2 };
-    setScalePct(100);
-    requestDraw();
-  }, [requestDraw]);
-
-  // فتح: ضبط + حركة ظهور + مستمعات.
-  useEffect(() => {
-    if (!mounted) return;
-    const raf = requestAnimationFrame(() => {
-      fit();
-      // حركة ظهور تدريجية.
-      revealRef.current = 0;
-      const start = performance.now();
-      const step = (now: number) => {
-        const p = Math.min(1, (now - start) / 650);
-        revealRef.current = p * p * (3 - 2 * p);
-        requestDraw();
-        if (p < 1) requestAnimationFrame(step);
-      };
-      requestAnimationFrame(step);
-    });
-    const onResize = () => fit();
-    window.addEventListener('resize', onResize);
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener('resize', onResize);
-      window.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prev;
-      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
-      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
-      if (tlTimerRef.current) clearInterval(tlTimerRef.current);
-    };
-  }, [mounted, fit, onClose, requestDraw]);
-
-  const zoomAt = useCallback((factor: number, px: number, py: number) => {
-    const t = tRef.current;
-    const next = Math.min(MAX_SCALE, Math.max(1, t.scale * factor));
-    const k = next / t.scale;
-    t.panX = px - (px - t.panX) * k;
-    t.panY = py - (py - t.panY) * k;
-    t.scale = next;
-    markInteracting();
-    if (next === 1) fit(); else { setScalePct(Math.round(next * 100)); requestDraw(); }
-  }, [fit, requestDraw, markInteracting]);
-
-  // إسقاط عكسي (شاشة → خط الطول/العرض).
-  const toGeo = (sx: number, sy: number) => {
-    const t = tRef.current;
-    const nx = (sx - t.panX) / (t.baseW * t.scale);
-    const ny = (sy - t.panY) / (t.baseH * t.scale);
-    return {
-      lng: GEO.lngMin + nx * (GEO.lngMax - GEO.lngMin),
-      lat: GEO.latMax - ny * (GEO.latMax - GEO.latMin),
-    };
-  };
-  const schoolAt = (sx: number, sy: number) => {
-    const t = tRef.current;
-    let best: string | null = null, bestD = 15 * 15;
-    for (const s of QATAR_SCHOOLS) {
-      const x = normX(s.lng) * t.baseW * t.scale + t.panX;
-      const y = normY(s.lat) * t.baseH * t.scale + t.panY;
-      const d = (x - sx) * (x - sx) + (y - sy) * (y - sy);
-      if (d < bestD) { bestD = d; best = s.id; }
-    }
-    return best;
-  };
-
-  // --- أحداث المؤشّر --------------------------------------------------------
-  // عناصر التحكّم فوق الخريطة (التكبير، شارة المنطقة…) ليست نقرًا على الخريطة،
-  // وإلا ألغى زرّ التكبير تحديد المنطقة أو فتح تلميح مدرسة تحته.
-  const onControl = (e: React.PointerEvent) =>
-    (e.target as Element).closest?.('button, a, input') !== null;
-  const onPointerDown = (e: React.PointerEvent) => {
-    if (onControl(e)) return;
-    (e.target as Element).setPointerCapture?.(e.pointerId);
-    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    downRef.current = { x: e.clientX, y: e.clientY, moved: false };
-    setHint(false); setTooltip(null);
-    if (pointers.current.size === 2) {
-      const [a, b] = [...pointers.current.values()];
-      pinchRef.current = { dist: Math.hypot(a.x - b.x, a.y - b.y) };
-    }
-  };
-  const onPointerMove = (e: React.PointerEvent) => {
-    const wrap = wrapRef.current; if (!wrap) return;
-    const rect = wrap.getBoundingClientRect();
-    if (pointers.current.size === 0) {
-      // تحويم (فأرة): تلميح المدرسة الأقرب.
-      const id = schoolAt(e.clientX - rect.left, e.clientY - rect.top);
-      if (id) {
-        const s = SCHOOL_BY_ID[id];
-        setTooltip({ name: s.name, value: valueOf(id), unit: METRIC_UNIT[tlRef.current !== null ? 'users' : metricRef.current], x: e.clientX - rect.left, y: e.clientY - rect.top });
-      } else setTooltip(null);
-      return;
-    }
-    const prev = pointers.current.get(e.pointerId);
-    if (!prev) return;
-    const cur = { x: e.clientX, y: e.clientY };
-    pointers.current.set(e.pointerId, cur);
-    if (downRef.current && Math.hypot(cur.x - downRef.current.x, cur.y - downRef.current.y) > 6) downRef.current.moved = true;
-    if (pointers.current.size >= 2 && pinchRef.current) {
-      const [a, b] = [...pointers.current.values()];
-      const dist = Math.hypot(a.x - b.x, a.y - b.y);
-      const cx = (a.x + b.x) / 2 - rect.left, cy = (a.y + b.y) / 2 - rect.top;
-      zoomAt(dist / (pinchRef.current.dist || dist), cx, cy);
-      pinchRef.current.dist = dist;
-    } else if (pointers.current.size === 1) {
-      const t = tRef.current;
-      t.panX += cur.x - prev.x; t.panY += cur.y - prev.y;
-      markInteracting(); requestDraw();
-    }
-  };
-  const onPointerUp = (e: React.PointerEvent) => {
-    if (!pointers.current.has(e.pointerId)) return;
-    const wrap = wrapRef.current;
-    const tapped = downRef.current && !downRef.current.moved && pointers.current.size === 1;
-    pointers.current.delete(e.pointerId);
-    if (pointers.current.size < 2) pinchRef.current = null;
-    if (tapped && wrap) {
-      const rect = wrap.getBoundingClientRect();
-      const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
-      const id = schoolAt(sx, sy);
-      if (id) {
-        const s = SCHOOL_BY_ID[id];
-        setTooltip({ name: s.name, value: valueOf(id), unit: METRIC_UNIT[tlRef.current !== null ? 'users' : metricRef.current], x: sx, y: sy });
-      } else {
-        const g = toGeo(sx, sy);
-        const hit = MUNICIPALITY_SHAPES.find((shp) => pointInRings(g.lng, g.lat, shp.rings));
-        setSelMuni(hit ? (hit.id as MunicipalityId) : null);
-      }
-    }
-    downRef.current = null;
-  };
-  // عجلة الفأرة وقرص الإصبعين على لوحة اللمس (Trackpad). يصل القرص من المتصفّح
-  // كحدث wheel مع ctrlKey، ومستمع React للعجلة «سلبي» لا يستطيع منع السلوك
-  // الافتراضي فيُكبَّر الصفحة كلها بدل الخريطة؛ لذا نستمع أصليًا بـ passive:false.
-  // وفي Safari يصل القرص كأحداث gesture* خاصة.
-  const zoomRef = useRef(zoomAt);
-  zoomRef.current = zoomAt;
-  useEffect(() => {
-    if (!mounted) return;
-    const wrap = wrapRef.current;
-    if (!wrap) return;
-    const local = (e: { clientX: number; clientY: number }) => {
-      const r = wrap.getBoundingClientRect();
-      return [e.clientX - r.left, e.clientY - r.top] as const;
-    };
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      // توحيد وحدة الإزاحة إلى بكسلات ثم تكبير متناسب معها: نقرة عجلة (~100px)
-      // ≈ 15٪، وحركة القرص الصغيرة تكبير سلس بلا قفزات.
-      const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? wrap.clientHeight : 1;
-      const dy = Math.max(-100, Math.min(100, e.deltaY * unit));
-      const [x, y] = local(e);
-      zoomRef.current(Math.exp(-dy * (e.ctrlKey ? 0.01 : 0.0015)), x, y);
-    };
-    // منع تكبير الصفحة بالقرص في أي مكان آخر ما دامت الخريطة مفتوحة
-    const blockPageZoom = (e: WheelEvent) => { if (e.ctrlKey) e.preventDefault(); };
-    type GestureEvt = Event & { scale: number; clientX: number; clientY: number };
-    let lastScale = 1;
-    const onGestureStart = (e: Event) => { e.preventDefault(); lastScale = 1; };
-    const onGestureChange = (e: Event) => {
-      e.preventDefault();
-      const g = e as GestureEvt;
-      if (!g.scale || !lastScale) return;
-      const [x, y] = local(g);
-      zoomRef.current(g.scale / lastScale, x, y);
-      lastScale = g.scale;
-    };
-    const stop = (e: Event) => e.preventDefault();
-    wrap.addEventListener('wheel', onWheel, { passive: false });
-    window.addEventListener('wheel', blockPageZoom, { passive: false });
-    wrap.addEventListener('gesturestart', onGestureStart);
-    wrap.addEventListener('gesturechange', onGestureChange);
-    window.addEventListener('gesturestart', stop);
-    window.addEventListener('gesturechange', stop);
-    return () => {
-      wrap.removeEventListener('wheel', onWheel);
-      window.removeEventListener('wheel', blockPageZoom);
-      wrap.removeEventListener('gesturestart', onGestureStart);
-      wrap.removeEventListener('gesturechange', onGestureChange);
-      window.removeEventListener('gesturestart', stop);
-      window.removeEventListener('gesturechange', stop);
-    };
-  }, [mounted]);
-
-  // إعادة الرسم عند تبديل الوضع الليلي/النهاري (ألوان اللوحة تُقرأ وقت الرسم).
-  useEffect(() => {
-    if (!mounted) return;
-    const obs = new MutationObserver(() => requestDraw());
-    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme'] });
-    return () => obs.disconnect();
-  }, [mounted, requestDraw]);
-
-  // --- محدّثات الحالة (مرآة + مرجع + إعادة رسم) ------------------------------
-  const setMetric = (m: MetricKey) => { metricRef.current = m; setMetricS(m); if (tlRef.current !== null) stopTimeline(); requestDraw(); };
-  const setMode = (m: MapMode) => { modeRef.current = m; setModeS(m); requestDraw(); };
-  const setSelMuni = (m: MunicipalityId | null) => { muniRef.current = m; setSelMuniS(m); requestDraw(); };
-  const setHighlight = (id: string | null) => { highlightRef.current = id; setHighlightS(id); requestDraw(); };
-
-  // --- الخطّ الزمني ---------------------------------------------------------
-  const setTlDay = (d: number | null) => { tlRef.current = d; setTlDayS(d); requestDraw(); };
-  const stopTimeline = () => {
-    if (tlTimerRef.current) { clearInterval(tlTimerRef.current); tlTimerRef.current = null; }
-    setPlaying(false);
-    setTlDay(null);
-  };
-  const playTimeline = () => {
-    if (playing) { // إيقاف مؤقّت
-      if (tlTimerRef.current) { clearInterval(tlTimerRef.current); tlTimerRef.current = null; }
-      setPlaying(false);
-      return;
-    }
-    setPlaying(true);
-    let d = tlRef.current === null ? 0 : tlRef.current;
-    setTlDay(d);
-    tlTimerRef.current = setInterval(() => {
-      d += 1;
-      if (d >= days.length) {
-        if (tlTimerRef.current) { clearInterval(tlTimerRef.current); tlTimerRef.current = null; }
-        setPlaying(false);
-        return;
-      }
-      setTlDay(d);
-    }, 550);
-  };
-
-  // --- التصدير --------------------------------------------------------------
-  const buildExport = useCallback((): HTMLCanvasElement | null => {
-    const src = canvasRef.current; const wrap = wrapRef.current;
-    if (!src || !wrap) return null;
-    const S = 2;
-    const W = wrap.clientWidth, H = wrap.clientHeight;
-    const headH = 74, footH = 44;
-    const ec = document.createElement('canvas');
-    ec.width = W * S; ec.height = (H + headH + footH) * S;
-    const c = ec.getContext('2d'); if (!c) return null;
-    c.scale(S, S);
-    c.fillStyle = '#fffdfa'; c.fillRect(0, 0, W, H + headH + footH);
-    // ترويسة
-    c.fillStyle = '#8a173e'; c.fillRect(0, 0, W, 4);
-    (c as CanvasRenderingContext2D & { direction?: string }).direction = 'rtl';
-    c.textAlign = 'right'; c.textBaseline = 'middle';
-    c.fillStyle = '#6a0f2e'; c.font = '800 22px Tajawal, sans-serif';
-    c.fillText('الخريطة الحرارية لمستخدمي الألعاب التعليمية — دولة قطر', W - 20, 30);
-    c.fillStyle = '#8a6a2e'; c.font = '600 14px Tajawal, sans-serif';
-    const total = QATAR_SCHOOLS.reduce((n, s) => n + valueOf(s.id), 0);
-    const metricName = tlRef.current !== null ? 'المستخدمون (خطّ زمني)' : METRIC_LABEL[metricRef.current];
-    c.fillText(`${metricName} · الإجمالي ${formatFull(total)} · ${new Date().toLocaleDateString('en-GB')}`, W - 20, 56);
-    // الخريطة
-    c.drawImage(src, 0, headH, W, H);
-    // مفتاح
-    const ly = H + headH + 22;
-    const grad = c.createLinearGradient(20, 0, 220, 0);
-    grad.addColorStop(0, 'rgba(244,214,138,0.6)'); grad.addColorStop(0.5, '#d9a72e');
-    grad.addColorStop(0.8, '#b02a54'); grad.addColorStop(1, '#6a0f2e');
-    c.fillStyle = grad; c.fillRect(20, ly - 6, 200, 10);
-    c.fillStyle = '#8a6a2e'; c.font = '600 12px Tajawal, sans-serif';
-    c.textAlign = 'right'; c.fillText('منصة مناهج قطر التفاعلية', W - 20, ly);
-    return ec;
-  }, [valueOf]);
-
-  const exportPNG = () => {
-    const ec = buildExport(); if (!ec) return;
-    ec.toBlob((blob) => {
-      if (!blob) return;
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'qatar-heatmap.png';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      // الإلغاء الفوري قد يُفشل التنزيل في بعض المتصفّحات
-      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-    }, 'image/png');
-  };
-  const exportPDF = async () => {
-    const ec = buildExport(); if (!ec) return;
-    try {
-      const { jsPDF } = await import('jspdf');
-      const img = ec.toDataURL('image/png');
-      const wmm = 297, hmm = (ec.height / ec.width) * wmm;
-      const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [wmm, hmm] });
-      pdf.addImage(img, 'PNG', 0, 0, wmm, hmm);
-      pdf.save('qatar-heatmap.pdf');
-    } catch { /* ignore */ }
-  };
-
-  // --- البحث ----------------------------------------------------------------
-  const searchResults = useMemo(() => (searchQ ? searchSchools(searchQ, QATAR_SCHOOLS.length) : []), [searchQ]);
-  const locateSchool = (id: string) => {
-    const s = SCHOOL_BY_ID[id]; if (!s) return;
-    setHighlight(id);
-    setSearchQ(s.name); setSearchOpen(false);
-    const wrap = wrapRef.current; if (!wrap) return;
-    const W = wrap.clientWidth, H = wrap.clientHeight;
-    const t = tRef.current;
-    // تكبير يكفي لفصل أقرب مدرسة مجاورة (≈ 45px) حتى لا يغطّي إبرازُها أسماءَ
-    // جاراتها في المجمّع نفسه (مثل مدارس سميسمة الثلاث).
-    let nearest = Infinity;
-    for (const o of QATAR_SCHOOLS) {
-      if (o.id === id) continue;
-      const d = Math.hypot((o.lng - s.lng) * t.baseW / (GEO.lngMax - GEO.lngMin), (o.lat - s.lat) * t.baseH / (GEO.latMax - GEO.latMin));
-      if (d > 0 && d < nearest) nearest = d;
-    }
-    const target = Math.min(MAX_SCALE, Math.max(3.4, 45 / nearest));
-    t.scale = target;
-    t.panX = W / 2 - normX(s.lng) * t.baseW * target;
-    t.panY = H / 2 - normY(s.lat) * t.baseH * target;
-    setScalePct(Math.round(target * 100));
-    requestDraw();
-  };
-
-  if (!mounted) return null;
-
-  const seg = (active: boolean) =>
-    'rounded-lg px-3 py-1.5 text-xs font-black transition ' +
-    (active ? 'bg-[color:var(--maroon)] text-white shadow-sm' : 'text-[color:var(--maroon)] hover:bg-[color:var(--surface-2)]');
-  const iconBtn =
-    'grid h-11 w-11 place-items-center rounded-xl bg-[color:var(--surface)] text-[color:var(--maroon)] shadow-md ring-1 ring-[color:var(--hairline)] transition hover:bg-[color:var(--surface-2)]';
-
-  const selName = selMuni ? MUNICIPALITY_BY_ID[selMuni].name : null;
-
-  return createPortal(
-    <div className="fixed inset-0 z-[200] flex flex-col bg-[color:var(--surface)]">
-      {/* شريط علوي */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[color:var(--hairline)] bg-[color:var(--surface)]/95 px-3 py-2 backdrop-blur">
-        <h2 className="flex min-w-0 items-center gap-2 font-display text-sm font-bold text-[color:var(--maroon)] sm:text-base">
-          <GraduationCap className="h-5 w-5 shrink-0 text-[color:var(--gold)]" />
-          <span className="truncate">الخريطة الحرارية — عرض كامل</span>
-        </h2>
-        <div className="flex flex-wrap items-center gap-2">
-          {/* المقياس */}
-          <div className="flex items-center gap-0.5 rounded-xl bg-[color:var(--surface-2)]/70 p-0.5 ring-1 ring-[color:var(--hairline)]">
-            {(['users', 'plays', 'downloads'] as MetricKey[]).map((k) => (
-              <button key={k} onClick={() => setMetric(k)} className={seg(metric === k && tlDay === null)}>
-                {METRIC_LABEL[k]}
-              </button>
-            ))}
-          </div>
-          {/* الوضع */}
-          <div className="flex items-center gap-0.5 rounded-xl bg-[color:var(--surface-2)]/70 p-0.5 ring-1 ring-[color:var(--hairline)]">
-            <button onClick={() => setMode('heat')} className={seg(mode === 'heat')}>
-              <span className="flex items-center gap-1"><Flame className="h-3.5 w-3.5" /> حرارة</span>
-            </button>
-            <button onClick={() => setMode('regions')} className={seg(mode === 'regions')}>
-              <span className="flex items-center gap-1"><LayoutGrid className="h-3.5 w-3.5" /> مناطق</span>
-            </button>
-          </div>
-          {/* تصدير */}
-          <button onClick={exportPNG} className="flex items-center gap-1 rounded-xl border border-[color:var(--hairline)] bg-[color:var(--surface)] px-2.5 py-1.5 text-xs font-bold text-[color:var(--maroon)] hover:bg-[color:var(--surface-2)]" title="تصدير صورة">
-            <Download className="h-3.5 w-3.5" /> PNG
-          </button>
-          <button onClick={exportPDF} className="flex items-center gap-1 rounded-xl border border-[color:var(--hairline)] bg-[color:var(--surface)] px-2.5 py-1.5 text-xs font-bold text-[color:var(--maroon)] hover:bg-[color:var(--surface-2)]" title="تصدير PDF">
-            <FileText className="h-3.5 w-3.5" /> PDF
-          </button>
-          <button onClick={onClose} className="flex items-center gap-1.5 rounded-xl bg-[color:var(--maroon)] px-3 py-2 text-sm font-black text-white transition hover:bg-[color:var(--maroon-700)]">
-            <X className="h-4 w-4" /> إغلاق
-          </button>
-        </div>
-      </div>
-
-      {/* شريط بحث المدرسة */}
-      <div className="relative z-10 border-b border-[color:var(--hairline)] bg-[color:var(--surface)]/95 px-3 py-2">
-        <div className="relative mx-auto max-w-md">
-          <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            value={searchQ}
-            onChange={(e) => { setSearchQ(e.target.value); setSearchOpen(true); }}
-            onFocus={() => setSearchOpen(true)}
-            placeholder="حدّد مدرسة على الخريطة…"
-            className="w-full rounded-xl border border-[color:var(--hairline-strong)] bg-[color:var(--surface)] py-2 pr-9 pl-3 text-sm font-bold text-foreground outline-none focus:border-[color:var(--maroon)]"
-          />
-          {searchOpen && searchResults.length > 0 && (
-            <ul className="absolute inset-x-0 top-full z-20 mt-1 max-h-64 overflow-y-auto rounded-xl border border-[color:var(--hairline)] bg-[color:var(--surface)] shadow-xl">
-              {searchResults.map((s) => (
-                <li key={s.id}>
-                  <button onClick={() => locateSchool(s.id)} className="flex w-full items-center gap-2 px-3 py-2 text-right text-sm hover:bg-[color:var(--surface-2)]">
-                    <MapPin className="h-3.5 w-3.5 shrink-0 text-[color:var(--gold)]" />
-                    <span className="truncate font-bold text-foreground">{s.name}</span>
-                    <span className="mr-auto shrink-0 text-xs text-muted-foreground">{MUNICIPALITY_BY_ID[s.municipalityId].name}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </div>
-
-      {/* لوحة الخريطة */}
-      <div
-        ref={wrapRef}
-        className="relative min-h-0 flex-1 touch-none overflow-hidden bg-gradient-to-b from-[color:var(--surface)] to-[color:var(--surface-2)]/60"
-        onPointerDown={onPointerDown} onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp} onPointerCancel={onPointerUp}
-        style={{ cursor: 'grab' }}
-      >
-        <canvas ref={canvasRef} className="block h-full w-full" />
-
-        {/* تلميح المدرسة */}
-        {tooltip && (
-          <div
-            className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-[130%] whitespace-nowrap rounded-lg bg-[color:var(--maroon)] px-2.5 py-1.5 text-xs font-bold text-white shadow-lg"
-            style={{ left: tooltip.x, top: tooltip.y }}
-          >
-            {tooltip.name}
-            <span className="mr-1.5 text-[color:var(--gold-200)]">· {formatFull(tooltip.value)} {tooltip.unit}</span>
-          </div>
-        )}
-
-        {hint && (
-          <div className="pointer-events-none absolute bottom-24 left-1/2 max-w-[92vw] -translate-x-1/2 rounded-full bg-[color:var(--maroon)]/90 px-4 py-1.5 text-center text-[11px] font-bold text-white shadow-lg sm:text-xs">
-            اسحب للتحريك · قرّب بإصبعين/العجلة · انقر منطقة للتنقّل · المس مدرسة لتفاصيلها
-          </div>
-        )}
-
-        {/* شارة المنطقة المحدّدة */}
-        {selName && (
-          <div className="absolute left-4 top-16 flex items-center gap-2 rounded-xl bg-[color:var(--maroon)] px-3 py-1.5 text-xs font-black text-white shadow-lg">
-            <MapPin className="h-3.5 w-3.5 text-[color:var(--gold-200)]" /> {selName}
-            <button onClick={() => setSelMuni(null)} className="mr-1 rounded-full bg-white/20 p-0.5"><X className="h-3 w-3" /></button>
-          </div>
-        )}
-
-        {/* أزرار التكبير */}
-        <div className="absolute bottom-24 left-4 flex flex-col gap-2 sm:bottom-5">
-          <button className={iconBtn} aria-label="تكبير" onClick={() => { const w = wrapRef.current; if (w) zoomAt(1.4, w.clientWidth / 2, w.clientHeight / 2); }}><Plus className="h-5 w-5" /></button>
-          <button className={iconBtn} aria-label="تصغير" onClick={() => { const w = wrapRef.current; if (w) zoomAt(1 / 1.4, w.clientWidth / 2, w.clientHeight / 2); }}><Minus className="h-5 w-5" /></button>
-          <button className={iconBtn} aria-label="إعادة الضبط" onClick={fit}><Locate className="h-5 w-5" /></button>
-        </div>
-        <div className="absolute bottom-24 right-4 rounded-full bg-[color:var(--surface)]/90 px-3 py-1.5 text-xs font-black tabular-nums text-[color:var(--maroon)] shadow ring-1 ring-[color:var(--hairline)] sm:bottom-5">{scalePct}%</div>
-
-        {/* مفتاح */}
-        <div className="absolute right-4 top-16 w-40 rounded-xl bg-[color:var(--surface)]/90 p-2.5 shadow ring-1 ring-[color:var(--hairline)]">
-          <div className="h-2 w-full rounded-full" style={{ background: HEAT_GRADIENT_CSS }} />
-          <div className="mt-1 flex justify-between text-[10px] font-bold text-muted-foreground"><span>أقلّ</span><span>أعلى تركيزًا</span></div>
-        </div>
-      </div>
-
-      {/* الخطّ الزمني */}
-      <div className="flex items-center gap-3 border-t border-[color:var(--hairline)] bg-[color:var(--surface)]/95 px-4 py-2.5">
-        <button onClick={playTimeline} className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[color:var(--maroon)] text-white shadow transition hover:bg-[color:var(--maroon-700)]" aria-label={playing ? 'إيقاف' : 'تشغيل الخطّ الزمني'}>
-          {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 fill-current" />}
-        </button>
-        <input
-          type="range" min={0} max={days.length - 1} value={tlDay ?? days.length - 1}
-          onChange={(e) => {
-            // السحب اليدوي يوقف التشغيل التلقائي حتى لا يقفز المؤشّر للخلف
-            if (tlTimerRef.current) { clearInterval(tlTimerRef.current); tlTimerRef.current = null; }
-            setPlaying(false);
-            setTlDay(Number(e.target.value));
-          }}
-          className="h-1.5 flex-1 cursor-pointer accent-[color:var(--maroon)]"
-        />
-        <span className="shrink-0 text-xs font-bold text-muted-foreground tabular-nums">
-          {tlDay === null ? 'الإجمالي' : new Date(days[tlDay]).toLocaleDateString('en-GB')}
-        </span>
-        {tlDay !== null && (
-          <button onClick={stopTimeline} className="shrink-0 rounded-lg px-2 py-1 text-xs font-bold text-[color:var(--maroon)] hover:bg-[color:var(--surface-2)]">إلغاء</button>
-        )}
-      </div>
-    </div>,
-    document.body
-  );
+function recentCutoff(key: RecentWindow): number {
+  const now = new Date();
+  if (key === 'all') return 0;
+  if (key === 'hour') return Date.now() - 60 * 60 * 1000;
+  if (key === 'today') return new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  return Date.now() - 7 * 24 * 60 * 60 * 1000;
 }
 
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+function sumValues(values: Record<string, number>): number {
+  return Object.values(values).reduce((n, v) => n + (Number(v) || 0), 0);
+}
+
+function roundRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number
+) {
   const rr = Math.min(r, w / 2, h / 2);
   ctx.beginPath();
   ctx.moveTo(x + rr, y);
@@ -828,4 +143,1767 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.arcTo(x, y + h, x, y, rr);
   ctx.arcTo(x, y, x + w, y, rr);
   ctx.closePath();
+}
+
+export function HeatmapExplorer({
+  metrics,
+  activityMetrics,
+  subjects,
+  activities,
+  mySchoolId,
+  onClose,
+}: {
+  metrics: Record<string, SchoolMetric>;
+  activityMetrics: SchoolActivityMetric[];
+  subjects: Subject[];
+  activities: Activity[];
+  mySchoolId: string | null;
+  onClose: () => void;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const mapRef = useRef<HTMLDivElement | null>(null);
+  const transformRef = useRef<Transform>({
+    scale: 1,
+    panX: 0,
+    panY: 0,
+    baseW: 1,
+    baseH: 1,
+  });
+  const clusterHitsRef = useRef<ClusterHit[]>([]);
+  const pointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+  const pinchRef = useRef<{ dist: number } | null>(null);
+  const downRef = useRef<{ x: number; y: number; moved: boolean } | null>(null);
+  const lutRef = useRef<Uint8ClampedArray | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const [mounted, setMounted] = useState(false);
+  const [metric, setMetric] = useState<MetricKey>('users');
+  const [mode, setMode] = useState<MapMode>('heat');
+  const [normalization, setNormalization] = useState<NormalizationMode>('total');
+  const [recent, setRecent] = useState<RecentWindow>('all');
+  const [filters, setFilters] = useState<HeatmapFilters>({
+    period: '30d',
+    subjectId: 'all',
+    gradeId: 'all',
+    unitId: 'all',
+    gender: 'all',
+    stage: 'all',
+  });
+  const [selectedMuni, setSelectedMuni] = useState<MunicipalityId | null>(null);
+  const [selectedSchool, setSelectedSchool] = useState<string | null>(null);
+  const [compareA, setCompareA] = useState<MunicipalityId>('doha');
+  const [compareB, setCompareB] = useState<MunicipalityId>('rayyan');
+  const [searchQ, setSearchQ] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [timelineIndex, setTimelineIndex] = useState<number | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const [scalePct, setScalePct] = useState(100);
+  const [tooltip, setTooltip] = useState<{
+    x: number;
+    y: number;
+    text: string;
+  } | null>(null);
+  const [themeTick, setThemeTick] = useState(0);
+
+  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    const obs = new MutationObserver(() => setThemeTick((n) => n + 1));
+    obs.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class', 'data-theme'],
+    });
+    return () => obs.disconnect();
+  }, []);
+
+  const periodWindow = useMemo(
+    () => getPeriodWindow(filters.period),
+    [filters.period]
+  );
+
+  const gradeOptions = useMemo(() => {
+    if (filters.subjectId === 'all') return [];
+    return subjects.find((s) => s.id === filters.subjectId)?.grades ?? [];
+  }, [subjects, filters.subjectId]);
+
+  const unitOptions = useMemo(() => {
+    if (filters.subjectId === 'all' || filters.gradeId === 'all') return [];
+    const subject = subjects.find((s) => s.id === filters.subjectId);
+    return subject?.grades.find((g) => g.id === filters.gradeId)?.units ?? [];
+  }, [subjects, filters.subjectId, filters.gradeId]);
+
+  const lastActiveBySchool = useMemo(() => {
+    const out: Record<string, number> = {};
+    const contentFiltered = hasContentFilter(filters);
+    if (!contentFiltered) {
+      for (const s of QATAR_SCHOOLS) {
+        out[s.id] = metrics[s.id]?.lastActiveAt || 0;
+      }
+      return out;
+    }
+    for (const row of activityMetrics) {
+      if (!activityMatches(row, filters)) continue;
+      out[row.schoolId] = Math.max(out[row.schoolId] || 0, row.lastActiveAt || 0);
+    }
+    return out;
+  }, [metrics, activityMetrics, filters]);
+
+  const currentValuesBase = useMemo(
+    () =>
+      buildSchoolValues({
+        baseMetrics: metrics,
+        activityMetrics,
+        schools: QATAR_SCHOOLS,
+        filters,
+        metric,
+        days: periodWindow.current,
+      }),
+    [metrics, activityMetrics, filters, metric, periodWindow.current]
+  );
+
+  const previousValuesBase = useMemo(
+    () =>
+      buildSchoolValues({
+        baseMetrics: metrics,
+        activityMetrics,
+        schools: QATAR_SCHOOLS,
+        filters,
+        metric,
+        days: periodWindow.previous,
+      }),
+    [metrics, activityMetrics, filters, metric, periodWindow.previous]
+  );
+
+  const dailyValues = useMemo(
+    () =>
+      buildDailyValues({
+        baseMetrics: metrics,
+        activityMetrics,
+        schools: QATAR_SCHOOLS,
+        filters,
+        metric,
+        days: periodWindow.playback,
+      }),
+    [metrics, activityMetrics, filters, metric, periodWindow.playback]
+  );
+
+  const applyRecent = useCallback(
+    (values: Record<string, number>) => {
+      if (recent === 'all') return values;
+      const cutoff = recentCutoff(recent);
+      return Object.fromEntries(
+        Object.entries(values).map(([id, v]) => [
+          id,
+          (lastActiveBySchool[id] || 0) >= cutoff ? v : 0,
+        ])
+      );
+    },
+    [recent, lastActiveBySchool]
+  );
+
+  const currentValues = useMemo(
+    () => applyRecent(currentValuesBase),
+    [applyRecent, currentValuesBase]
+  );
+  const previousValues = useMemo(
+    () => applyRecent(previousValuesBase),
+    [applyRecent, previousValuesBase]
+  );
+
+  const eligibleSchools = useMemo(
+    () =>
+      QATAR_SCHOOLS.filter((s) =>
+        schoolMatches(s, { gender: filters.gender, stage: filters.stage })
+      ),
+    [filters.gender, filters.stage]
+  );
+
+  const activeSchoolIds = useMemo(
+    () =>
+      new Set(
+        Object.entries(currentValues)
+          .filter(([, v]) => v > 0)
+          .map(([id]) => id)
+      ),
+    [currentValues]
+  );
+
+  const total = useMemo(() => sumValues(currentValues), [currentValues]);
+  const previousTotal = useMemo(
+    () => sumValues(previousValues),
+    [previousValues]
+  );
+  const change = useMemo(
+    () => percentChange(total, previousTotal),
+    [total, previousTotal]
+  );
+  const spread = eligibleSchools.length
+    ? (activeSchoolIds.size / eligibleSchools.length) * 100
+    : 0;
+
+  const activeHour = useMemo(
+    () =>
+      eligibleSchools.filter(
+        (s) => (lastActiveBySchool[s.id] || 0) >= recentCutoff('hour')
+      ).length,
+    [eligibleSchools, lastActiveBySchool]
+  );
+
+  const timelineValues = useMemo(() => {
+    if (timelineIndex === null) return currentValues;
+    const days = periodWindow.playback.slice(0, timelineIndex + 1);
+    const fullDays = periodWindow.playback;
+    const out: Record<string, number> = {};
+    const useOpeningBalance = filters.period === 'all';
+
+    for (const school of eligibleSchools) {
+      const id = school.id;
+      const daily = dailyValues[id] || {};
+      const shown = days.reduce((n, d) => n + (daily[d] || 0), 0);
+      const inPlayback = fullDays.reduce((n, d) => n + (daily[d] || 0), 0);
+      const opening = useOpeningBalance
+        ? Math.max(0, (currentValuesBase[id] || 0) - inPlayback)
+        : 0;
+      out[id] = opening + shown;
+    }
+    return applyRecent(out);
+  }, [
+    timelineIndex,
+    currentValues,
+    currentValuesBase,
+    dailyValues,
+    eligibleSchools,
+    periodWindow.playback,
+    filters.period,
+    applyRecent,
+  ]);
+
+  const displayValues = timelineIndex === null ? currentValues : timelineValues;
+
+  const municipalityRows = useMemo(() => {
+    return MUNICIPALITIES.map((m) => {
+      const schools = eligibleSchools.filter((s) => s.municipalityId === m.id);
+      const value = schools.reduce((n, s) => n + (displayValues[s.id] || 0), 0);
+      const active = schools.filter((s) => (displayValues[s.id] || 0) > 0).length;
+      return {
+        ...m,
+        value:
+          normalization === 'per-school' && schools.length
+            ? value / schools.length
+            : value,
+        rawValue: value,
+        schools: schools.length,
+        active,
+      };
+    });
+  }, [eligibleSchools, displayValues, normalization]);
+
+  const maxMuni = Math.max(1, ...municipalityRows.map((m) => m.value));
+
+  const analysisMetric: 'plays' | 'downloads' =
+    metric === 'downloads' ? 'downloads' : 'plays';
+
+  const insightSchoolIds = useMemo(() => {
+    if (!selectedMuni) return activeSchoolIds;
+    return new Set(
+      QATAR_SCHOOLS.filter((s) => s.municipalityId === selectedMuni)
+        .filter((s) => activeSchoolIds.has(s.id))
+        .map((s) => s.id)
+    );
+  }, [selectedMuni, activeSchoolIds]);
+
+  const topActivities = useMemo(
+    () =>
+      aggregateActivities({
+        rows: activityMetrics,
+        filters,
+        metric: analysisMetric,
+        days: periodWindow.current,
+        schoolIds: insightSchoolIds,
+      }).slice(0, 3),
+    [
+      activityMetrics,
+      filters,
+      analysisMetric,
+      periodWindow.current,
+      insightSchoolIds,
+    ]
+  );
+
+  const topUnits = useMemo(
+    () =>
+      aggregateUnits({
+        rows: activityMetrics,
+        filters,
+        metric: analysisMetric,
+        days: periodWindow.current,
+        subjects,
+        schoolIds: insightSchoolIds,
+      }).slice(0, 3),
+    [
+      activityMetrics,
+      filters,
+      analysisMetric,
+      periodWindow.current,
+      subjects,
+      insightSchoolIds,
+    ]
+  );
+
+  const searchResults = useMemo(
+    () => (searchQ ? searchSchools(searchQ, 30) : []),
+    [searchQ]
+  );
+
+  const compareStats = useCallback(
+    (id: MunicipalityId) => {
+      const municipality = MUNICIPALITY_BY_ID[id];
+      const schools = eligibleSchools.filter((s) => s.municipalityId === id);
+      const schoolIds = new Set(schools.map((s) => s.id));
+      const raw = schools.reduce((n, s) => n + (currentValues[s.id] || 0), 0);
+      const value =
+        normalization === 'per-school' && schools.length ? raw / schools.length : raw;
+      const active = schools.filter((s) => (currentValues[s.id] || 0) > 0).length;
+      const unit = aggregateUnits({
+        rows: activityMetrics,
+        filters,
+        metric: analysisMetric,
+        days: periodWindow.current,
+        subjects,
+        schoolIds,
+      })[0];
+      const activity = aggregateActivities({
+        rows: activityMetrics,
+        filters,
+        metric: analysisMetric,
+        days: periodWindow.current,
+        schoolIds,
+      })[0];
+      return { municipality, value, raw, active, schools: schools.length, unit, activity };
+    },
+    [
+      eligibleSchools,
+      currentValues,
+      normalization,
+      activityMetrics,
+      filters,
+      analysisMetric,
+      periodWindow.current,
+      subjects,
+    ]
+  );
+
+  const selectedSchoolInfo = useMemo(() => {
+    if (!selectedSchool) return null;
+    const school = SCHOOL_BY_ID[selectedSchool];
+    if (!school) return null;
+    const schoolIds = new Set([school.id]);
+    const unit = aggregateUnits({
+      rows: activityMetrics,
+      filters,
+      metric: analysisMetric,
+      days: periodWindow.current,
+      subjects,
+      schoolIds,
+    })[0];
+    const activity = aggregateActivities({
+      rows: activityMetrics,
+      filters,
+      metric: analysisMetric,
+      days: periodWindow.current,
+      schoolIds,
+    })[0];
+    const last7 = getPeriodWindow('7d').playback;
+    const bars = buildDailyValues({
+      baseMetrics: metrics,
+      activityMetrics,
+      schools: [school],
+      filters,
+      metric,
+      days: last7,
+    })[school.id] || {};
+    return {
+      school,
+      value: currentValues[school.id] || 0,
+      lastActiveAt: lastActiveBySchool[school.id] || 0,
+      unit,
+      activity,
+      bars: last7.map((d) => ({ day: d, value: bars[d] || 0 })),
+    };
+  }, [
+    selectedSchool,
+    activityMetrics,
+    filters,
+    analysisMetric,
+    periodWindow.current,
+    subjects,
+    metrics,
+    metric,
+    currentValues,
+    lastActiveBySchool,
+  ]);
+
+  const metricLabel =
+    metric === 'users' && hasContentFilter(filters)
+      ? 'المدارس النشطة'
+      : METRIC_LABEL[metric];
+  const metricUnit =
+    metric === 'users' && hasContentFilter(filters) ? 'مدرسة' : METRIC_UNIT[metric];
+
+  const fit = useCallback(() => {
+    const wrap = mapRef.current;
+    if (!wrap) return;
+    const W = wrap.clientWidth;
+    const H = wrap.clientHeight;
+    const pad = 56;
+    const latRatio =
+      (GEO.latMax - GEO.latMin) /
+      ((GEO.lngMax - GEO.lngMin) *
+        Math.cos((((GEO.latMin + GEO.latMax) / 2) * Math.PI) / 180));
+    let baseW = Math.min(W - pad, (H - pad) / latRatio);
+    baseW = Math.max(130, baseW);
+    const baseH = baseW * latRatio;
+    transformRef.current = {
+      scale: 1,
+      baseW,
+      baseH,
+      panX: (W - baseW) / 2,
+      panY: (H - baseH) / 2,
+    };
+    setScalePct(100);
+  }, []);
+
+  const requestDraw = useCallback(() => {
+    if (rafRef.current !== null) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      drawMap();
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    displayValues,
+    municipalityRows,
+    selectedMuni,
+    selectedSchool,
+    mode,
+    themeTick,
+    lastActiveBySchool,
+    metricLabel,
+    normalization,
+  ]);
+
+  const zoomAt = useCallback(
+    (factor: number, px: number, py: number) => {
+      const t = transformRef.current;
+      const next = Math.min(MAX_SCALE, Math.max(1, t.scale * factor));
+      const k = next / t.scale;
+      t.panX = px - (px - t.panX) * k;
+      t.panY = py - (py - t.panY) * k;
+      t.scale = next;
+      if (next === 1) fit();
+      setScalePct(Math.round(next * 100));
+      requestDraw();
+    },
+    [fit, requestDraw]
+  );
+
+  const focusSchool = useCallback(
+    (id: string) => {
+      const school = SCHOOL_BY_ID[id];
+      const wrap = mapRef.current;
+      if (!school || !wrap) return;
+      setSelectedSchool(id);
+      setSelectedMuni(school.municipalityId);
+      setSearchQ(school.name);
+      setSearchOpen(false);
+      const t = transformRef.current;
+      const target = Math.max(4, Math.min(MAX_SCALE, 7));
+      t.scale = target;
+      t.panX =
+        wrap.clientWidth / 2 - normX(school.lng) * t.baseW * target;
+      t.panY =
+        wrap.clientHeight / 2 - normY(school.lat) * t.baseH * target;
+      setScalePct(Math.round(target * 100));
+      requestDraw();
+    },
+    [requestDraw]
+  );
+
+  const drawMap = useCallback(() => {
+    const canvas = canvasRef.current;
+    const wrap = mapRef.current;
+    if (!canvas || !wrap) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const W = wrap.clientWidth;
+    const H = wrap.clientHeight;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    if (
+      canvas.width !== Math.round(W * dpr) ||
+      canvas.height !== Math.round(H * dpr)
+    ) {
+      canvas.width = Math.round(W * dpr);
+      canvas.height = Math.round(H * dpr);
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+
+    const dark = isDarkTheme();
+    const t = transformRef.current;
+    const SX = (lng: number) => normX(lng) * t.baseW * t.scale + t.panX;
+    const SY = (lat: number) => normY(lat) * t.baseH * t.scale + t.panY;
+    const pathOf = (rings: [number, number][][]) => {
+      const p = new Path2D();
+      for (const ring of rings) {
+        ring.forEach(([lng, lat], i) => {
+          const x = SX(lng);
+          const y = SY(lat);
+          if (i === 0) p.moveTo(x, y);
+          else p.lineTo(x, y);
+        });
+        p.closePath();
+      }
+      return p;
+    };
+
+    const land = pathOf([QATAR_OUTLINE]);
+    ctx.save();
+    ctx.shadowColor = dark ? 'rgba(0,0,0,.52)' : 'rgba(106,15,46,.22)';
+    ctx.shadowBlur = 24;
+    ctx.shadowOffsetY = 6;
+    ctx.fillStyle = dark ? 'rgba(39,27,29,.98)' : 'rgba(255,255,255,.97)';
+    ctx.fill(land);
+    ctx.restore();
+
+    if (mode === 'regions') {
+      for (const shp of MUNICIPALITY_SHAPES) {
+        const row = municipalityRows.find((m) => m.id === shp.id);
+        const value = row?.value || 0;
+        const p = pathOf(shp.rings);
+        const dim = selectedMuni && selectedMuni !== shp.id ? 0.3 : 1;
+        ctx.fillStyle =
+          value > 0
+            ? rampColor(0.12 + (value / maxMuni) * 0.88, 0.92 * dim)
+            : dark
+              ? 'rgba(255,255,255,.04)'
+              : 'rgba(120,96,48,.06)';
+        ctx.fill(p);
+        ctx.lineWidth = selectedMuni === shp.id ? 2.5 : 1;
+        ctx.strokeStyle =
+          selectedMuni === shp.id
+            ? dark
+              ? '#e3c26b'
+              : '#6a0f2e'
+            : dark
+              ? 'rgba(245,236,228,.22)'
+              : 'rgba(106,15,46,.3)';
+        ctx.stroke(p);
+      }
+    } else {
+      const fill = ctx.createLinearGradient(0, 0, 0, H);
+      fill.addColorStop(0, dark ? 'rgba(120,96,48,.13)' : 'rgba(168,140,74,.13)');
+      fill.addColorStop(1, dark ? 'rgba(80,64,32,.08)' : 'rgba(120,96,48,.08)');
+      ctx.fillStyle = fill;
+      ctx.fill(land);
+
+      const pts = QATAR_SCHOOLS.map((s) => ({
+        x: SX(s.lng),
+        y: SY(s.lat),
+        w: displayValues[s.id] || 0,
+      })).filter((p) => p.w > 0 && p.x > -200 && p.x < W + 200 && p.y > -200 && p.y < H + 200);
+
+      if (pts.length) {
+        const RES = t.scale > 3 ? 0.45 : 0.58;
+        const gw = Math.max(2, Math.round(W * RES));
+        const gh = Math.max(2, Math.round(H * RES));
+        const grid = new Float32Array(gw * gh);
+        const R = Math.min(165, Math.max(24, t.baseW * 0.16 * t.scale)) * RES;
+        const R2 = R * R;
+        let gmax = 0;
+        for (const p of pts) {
+          const cx = p.x * RES;
+          const cy = p.y * RES;
+          const x0 = Math.max(0, Math.floor(cx - R));
+          const x1 = Math.min(gw - 1, Math.ceil(cx + R));
+          const y0 = Math.max(0, Math.floor(cy - R));
+          const y1 = Math.min(gh - 1, Math.ceil(cy + R));
+          for (let y = y0; y <= y1; y++) {
+            for (let x = x0; x <= x1; x++) {
+              const dx = x - cx;
+              const dy = y - cy;
+              const d2 = dx * dx + dy * dy;
+              if (d2 > R2) continue;
+              const fall = 1 - d2 / R2;
+              const idx = y * gw + x;
+              grid[idx] += p.w * fall * fall;
+              if (grid[idx] > gmax) gmax = grid[idx];
+            }
+          }
+        }
+        if (gmax > 0) {
+          const lut = (lutRef.current ??= buildHeatLUT());
+          const img = ctx.createImageData(gw, gh);
+          for (let i = 0; i < grid.length; i++) {
+            const v = grid[i] / gmax;
+            if (v <= 0) continue;
+            const tt = Math.min(255, Math.round(Math.sqrt(v) * 255));
+            const o = i * 4;
+            const l = tt * 4;
+            img.data[o] = lut[l];
+            img.data[o + 1] = lut[l + 1];
+            img.data[o + 2] = lut[l + 2];
+            img.data[o + 3] = lut[l + 3];
+          }
+          const heat = document.createElement('canvas');
+          heat.width = gw;
+          heat.height = gh;
+          heat.getContext('2d')?.putImageData(img, 0, 0);
+          ctx.save();
+          ctx.clip(land);
+          ctx.filter = 'blur(4px)';
+          ctx.drawImage(heat, 0, 0, W, H);
+          ctx.filter = 'none';
+          ctx.restore();
+        }
+      }
+
+      ctx.lineWidth = 1.4;
+      ctx.strokeStyle = dark ? 'rgba(227,194,107,.5)' : 'rgba(106,15,46,.55)';
+      ctx.stroke(land);
+    }
+
+    clusterHitsRef.current = [];
+    const visibleSchools = eligibleSchools.filter((s) => {
+      const x = SX(s.lng);
+      const y = SY(s.lat);
+      return x > -30 && x < W + 30 && y > -30 && y < H + 30;
+    });
+
+    if (t.scale < 2.25) {
+      const CELL = 48;
+      const groups = new Map<
+        string,
+        { ids: string[]; sx: number; sy: number; value: number; recent: boolean }
+      >();
+      for (const school of visibleSchools) {
+        const x = SX(school.lng);
+        const y = SY(school.lat);
+        const key = String(Math.floor(x / CELL)) + ':' + String(Math.floor(y / CELL));
+        const g = groups.get(key) || {
+          ids: [],
+          sx: 0,
+          sy: 0,
+          value: 0,
+          recent: false,
+        };
+        g.ids.push(school.id);
+        g.sx += x;
+        g.sy += y;
+        g.value += displayValues[school.id] || 0;
+        if ((lastActiveBySchool[school.id] || 0) >= recentCutoff('hour')) g.recent = true;
+        groups.set(key, g);
+      }
+
+      for (const g of groups.values()) {
+        const x = g.sx / g.ids.length;
+        const y = g.sy / g.ids.length;
+        const active = g.value > 0;
+        const r = g.ids.length > 1 ? Math.min(18, 7 + Math.sqrt(g.ids.length) * 2.2) : 4.2;
+        if (g.recent) {
+          ctx.beginPath();
+          ctx.arc(x, y, r + 5, 0, Math.PI * 2);
+          ctx.strokeStyle = dark ? 'rgba(227,194,107,.7)' : 'rgba(224,170,52,.72)';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fillStyle = active
+          ? dark
+            ? 'rgba(227,194,107,.94)'
+            : 'rgba(106,15,46,.9)'
+          : dark
+            ? 'rgba(245,236,228,.22)'
+            : 'rgba(106,15,46,.2)';
+        ctx.fill();
+        if (g.ids.length > 1) {
+          ctx.fillStyle = active && !dark ? '#fff' : dark ? '#1e1215' : '#fff';
+          ctx.font = '800 10px Tajawal, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(String(g.ids.length), x, y + 0.5);
+        }
+        clusterHitsRef.current.push({ x, y, r: r + 8, ids: g.ids });
+      }
+    } else {
+      const maxSchool = Math.max(
+        1,
+        ...visibleSchools.map((s) => displayValues[s.id] || 0)
+      );
+      const occupied: { x: number; y: number; w: number; h: number }[] = [];
+      for (const school of visibleSchools) {
+        const value = displayValues[school.id] || 0;
+        const x = SX(school.lng);
+        const y = SY(school.lat);
+        const r = value > 0 ? 3 + Math.sqrt(value / maxSchool) * 4 : 2;
+        const recentNow = (lastActiveBySchool[school.id] || 0) >= recentCutoff('hour');
+        if (recentNow) {
+          ctx.beginPath();
+          ctx.arc(x, y, r + 5, 0, Math.PI * 2);
+          ctx.strokeStyle = 'rgba(224,170,52,.82)';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fillStyle =
+          school.id === selectedSchool
+            ? '#e0aa34'
+            : value > 0
+              ? dark
+                ? 'rgba(227,194,107,.92)'
+                : 'rgba(106,15,46,.9)'
+              : dark
+                ? 'rgba(245,236,228,.2)'
+                : 'rgba(106,15,46,.2)';
+        ctx.fill();
+        clusterHitsRef.current.push({ x, y, r: 13, ids: [school.id] });
+
+        if (t.scale >= 4 && (value > 0 || school.id === selectedSchool)) {
+          ctx.font = '700 11px Tajawal, sans-serif';
+          const tw = Math.min(170, ctx.measureText(school.name).width);
+          const box = { x: x - tw / 2 - 5, y: y + 8, w: tw + 10, h: 16 };
+          const collides = occupied.some(
+            (o) =>
+              !(box.x + box.w < o.x ||
+                o.x + o.w < box.x ||
+                box.y + box.h < o.y ||
+                o.y + o.h < box.y)
+          );
+          if (!collides || school.id === selectedSchool) {
+            ctx.fillStyle = dark ? 'rgba(24,15,18,.9)' : 'rgba(255,255,255,.92)';
+            roundRect(ctx, box.x, box.y, box.w, box.h, 7);
+            ctx.fill();
+            ctx.fillStyle = dark ? '#e3c26b' : '#5a1029';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(school.name, x, box.y + box.h / 2, 166);
+            occupied.push(box);
+          }
+        }
+      }
+    }
+
+    ctx.direction = 'rtl';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '800 13px Tajawal, sans-serif';
+    for (const m of municipalityRows) {
+      const shape = SHAPE_BY_ID[m.id];
+      const cx = shape ? shape.centroid[0] : m.lng;
+      const cy = shape ? shape.centroid[1] : m.lat;
+      const x = SX(cx);
+      const y = SY(cy);
+      if (x < -40 || x > W + 40 || y < -20 || y > H + 20) continue;
+      const label =
+        m.value > 0
+          ? m.name + ' · ' + formatFull(m.value)
+          : m.name;
+      const tw = ctx.measureText(label).width;
+      ctx.fillStyle =
+        selectedMuni === m.id
+          ? 'rgba(224,170,52,.96)'
+          : 'rgba(106,15,46,.92)';
+      roundRect(ctx, x - tw / 2 - 7, y - 9, tw + 14, 18, 8);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.fillText(label, x, y);
+    }
+
+    if (mySchoolId && SCHOOL_BY_ID[mySchoolId]) {
+      const school = SCHOOL_BY_ID[mySchoolId];
+      const x = SX(school.lng);
+      const y = SY(school.lat);
+      ctx.beginPath();
+      ctx.arc(x, y, 7, 0, Math.PI * 2);
+      ctx.strokeStyle = '#e0aa34';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+  }, [
+    displayValues,
+    eligibleSchools,
+    mode,
+    municipalityRows,
+    maxMuni,
+    selectedMuni,
+    selectedSchool,
+    lastActiveBySchool,
+    mySchoolId,
+  ]);
+
+  useEffect(() => {
+    if (!mounted) return;
+    fit();
+    requestDraw();
+    const onResize = () => {
+      fit();
+      requestDraw();
+    };
+    window.addEventListener('resize', onResize);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('resize', onResize);
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [mounted, fit, requestDraw, onClose]);
+
+  useEffect(() => {
+    requestDraw();
+  }, [requestDraw, displayValues, mode, selectedMuni, selectedSchool, themeTick]);
+
+  useEffect(() => {
+    if (!mounted) return;
+    const wrap = mapRef.current;
+    if (!wrap) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const rect = wrap.getBoundingClientRect();
+      const dy = Math.max(-100, Math.min(100, e.deltaY));
+      zoomAt(
+        Math.exp(-dy * (e.ctrlKey ? 0.01 : 0.0015)),
+        e.clientX - rect.left,
+        e.clientY - rect.top
+      );
+    };
+    wrap.addEventListener('wheel', onWheel, { passive: false });
+    return () => wrap.removeEventListener('wheel', onWheel);
+  }, [mounted, zoomAt]);
+
+  const hitAt = (x: number, y: number) => {
+    let best: ClusterHit | null = null;
+    let bestD = Infinity;
+    for (const hit of clusterHitsRef.current) {
+      const d = Math.hypot(hit.x - x, hit.y - y);
+      if (d <= hit.r && d < bestD) {
+        best = hit;
+        bestD = d;
+      }
+    }
+    return best;
+  };
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    if ((e.target as HTMLElement).closest('button,input,select,a')) return;
+    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    downRef.current = { x: e.clientX, y: e.clientY, moved: false };
+    if (pointersRef.current.size === 2) {
+      const [a, b] = [...pointersRef.current.values()];
+      pinchRef.current = { dist: Math.hypot(a.x - b.x, a.y - b.y) };
+    }
+  };
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    const wrap = mapRef.current;
+    if (!wrap) return;
+    const rect = wrap.getBoundingClientRect();
+
+    if (pointersRef.current.size === 0) {
+      const hit = hitAt(e.clientX - rect.left, e.clientY - rect.top);
+      if (hit) {
+        if (hit.ids.length > 1) {
+          setTooltip({
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top,
+            text: String(hit.ids.length) + ' مدارس متقاربة',
+          });
+        } else {
+          const school = SCHOOL_BY_ID[hit.ids[0]];
+          setTooltip({
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top,
+            text:
+              school.name +
+              ' · ' +
+              formatFull(displayValues[school.id] || 0) +
+              ' ' +
+              metricUnit,
+          });
+        }
+      } else setTooltip(null);
+      return;
+    }
+
+    const prev = pointersRef.current.get(e.pointerId);
+    if (!prev) return;
+    const cur = { x: e.clientX, y: e.clientY };
+    pointersRef.current.set(e.pointerId, cur);
+    if (
+      downRef.current &&
+      Math.hypot(cur.x - downRef.current.x, cur.y - downRef.current.y) > 6
+    ) {
+      downRef.current.moved = true;
+    }
+
+    if (pointersRef.current.size >= 2 && pinchRef.current) {
+      const [a, b] = [...pointersRef.current.values()];
+      const dist = Math.hypot(a.x - b.x, a.y - b.y);
+      zoomAt(
+        dist / (pinchRef.current.dist || dist),
+        (a.x + b.x) / 2 - rect.left,
+        (a.y + b.y) / 2 - rect.top
+      );
+      pinchRef.current.dist = dist;
+    } else if (pointersRef.current.size === 1) {
+      const t = transformRef.current;
+      t.panX += cur.x - prev.x;
+      t.panY += cur.y - prev.y;
+      requestDraw();
+    }
+  };
+
+  const onPointerUp = (e: React.PointerEvent) => {
+    const wrap = mapRef.current;
+    if (!pointersRef.current.has(e.pointerId)) return;
+    const tapped =
+      Boolean(downRef.current && !downRef.current.moved) &&
+      pointersRef.current.size === 1;
+    pointersRef.current.delete(e.pointerId);
+    if (pointersRef.current.size < 2) pinchRef.current = null;
+
+    if (tapped && wrap) {
+      const rect = wrap.getBoundingClientRect();
+      const sx = e.clientX - rect.left;
+      const sy = e.clientY - rect.top;
+      const hit = hitAt(sx, sy);
+      if (hit) {
+        if (hit.ids.length === 1) {
+          focusSchool(hit.ids[0]);
+        } else {
+          const t = transformRef.current;
+          const factor = Math.min(3, Math.max(1.7, 8 / t.scale));
+          zoomAt(factor, hit.x, hit.y);
+        }
+      } else {
+        const t = transformRef.current;
+        const nx = (sx - t.panX) / (t.baseW * t.scale);
+        const ny = (sy - t.panY) / (t.baseH * t.scale);
+        const lng = GEO.lngMin + nx * (GEO.lngMax - GEO.lngMin);
+        const lat = GEO.latMax - ny * (GEO.latMax - GEO.latMin);
+        const region = MUNICIPALITY_SHAPES.find((shape) =>
+          pointInRings(lng, lat, shape.rings)
+        );
+        setSelectedMuni(region ? (region.id as MunicipalityId) : null);
+        setSelectedSchool(null);
+      }
+    }
+    downRef.current = null;
+  };
+
+  const playTimeline = () => {
+    if (playing) {
+      if (timerRef.current) clearInterval(timerRef.current);
+      timerRef.current = null;
+      setPlaying(false);
+      return;
+    }
+    const days = periodWindow.playback;
+    if (!days.length) return;
+    setPlaying(true);
+    let i = timelineIndex === null ? 0 : timelineIndex;
+    setTimelineIndex(i);
+    timerRef.current = setInterval(() => {
+      i += 1;
+      if (i >= days.length) {
+        if (timerRef.current) clearInterval(timerRef.current);
+        timerRef.current = null;
+        setPlaying(false);
+        return;
+      }
+      setTimelineIndex(i);
+    }, 650);
+  };
+
+  const resetFilters = () => {
+    setFilters({
+      period: '30d',
+      subjectId: 'all',
+      gradeId: 'all',
+      unitId: 'all',
+      gender: 'all',
+      stage: 'all',
+    });
+    setRecent('all');
+    setTimelineIndex(null);
+    setSelectedMuni(null);
+    setSelectedSchool(null);
+  };
+
+  const buildExport = () => {
+    const src = canvasRef.current;
+    const wrap = mapRef.current;
+    if (!src || !wrap) return null;
+    const scale = 2;
+    const W = wrap.clientWidth;
+    const H = wrap.clientHeight;
+    const head = 90;
+    const foot = 50;
+    const out = document.createElement('canvas');
+    out.width = W * scale;
+    out.height = (H + head + foot) * scale;
+    const c = out.getContext('2d');
+    if (!c) return null;
+    c.scale(scale, scale);
+    c.fillStyle = '#fffdfa';
+    c.fillRect(0, 0, W, H + head + foot);
+    c.fillStyle = '#8a173e';
+    c.fillRect(0, 0, W, 5);
+    c.direction = 'rtl';
+    c.textAlign = 'right';
+    c.textBaseline = 'middle';
+    c.fillStyle = '#6a0f2e';
+    c.font = '800 21px Tajawal, sans-serif';
+    c.fillText('تحليلات الخريطة التعليمية — دولة قطر', W - 20, 30);
+    c.fillStyle = '#80652d';
+    c.font = '600 13px Tajawal, sans-serif';
+    c.fillText(
+      metricLabel +
+        ' · ' +
+        periodWindow.label +
+        ' · ' +
+        (normalization === 'per-school' ? 'لكل مدرسة' : 'الإجمالي'),
+      W - 20,
+      57
+    );
+    c.fillText('المدارس النشطة: ' + activeSchoolIds.size + ' من ' + eligibleSchools.length, W - 20, 76);
+    c.drawImage(src, 0, head, W, H);
+    const grad = c.createLinearGradient(20, 0, 220, 0);
+    grad.addColorStop(0, 'rgba(244,214,138,.6)');
+    grad.addColorStop(0.5, '#e0aa34');
+    grad.addColorStop(0.8, '#b02a54');
+    grad.addColorStop(1, '#6a0f2e');
+    c.fillStyle = grad;
+    c.fillRect(20, H + head + 20, 200, 10);
+    c.fillStyle = '#80652d';
+    c.textAlign = 'right';
+    c.fillText('منصة مناهج قطر التفاعلية', W - 20, H + head + 27);
+    return out;
+  };
+
+  const exportPNG = () => {
+    const out = buildExport();
+    if (!out) return;
+    out.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'qatar-learning-heatmap.png';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    }, 'image/png');
+  };
+
+  const exportPDF = async () => {
+    const out = buildExport();
+    if (!out) return;
+    try {
+      const { jsPDF } = await import('jspdf');
+      const img = out.toDataURL('image/png');
+      const wmm = 297;
+      const hmm = (out.height / out.width) * wmm;
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: [wmm, hmm],
+      });
+      pdf.addImage(img, 'PNG', 0, 0, wmm, hmm);
+      pdf.save('qatar-learning-heatmap.pdf');
+    } catch {
+      /* ignore */
+    }
+  };
+
+  if (!mounted) return null;
+
+  const compareLeft = compareStats(compareA);
+  const compareRight = compareStats(compareB);
+  const maxBar =
+    selectedSchoolInfo?.bars.reduce((m, x) => Math.max(m, x.value), 1) || 1;
+
+  const selectClass =
+    'rounded-xl border border-[color:var(--hairline-strong)] bg-[color:var(--surface)] px-3 py-2 text-xs font-bold text-foreground outline-none focus:border-[color:var(--maroon)]';
+  const chip = (active: boolean) =>
+    'rounded-lg px-2.5 py-1.5 text-xs font-black transition ' +
+    (active
+      ? 'bg-[color:var(--maroon)] text-white shadow-sm'
+      : 'text-[color:var(--maroon)] hover:bg-[color:var(--surface-2)]');
+
+  return createPortal(
+    <div className="fixed inset-0 z-[220] flex flex-col bg-[color:var(--surface)]" dir="rtl">
+      <header className="border-b border-[color:var(--hairline)] bg-[color:var(--surface)]/95 px-3 py-2 backdrop-blur">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-2">
+            <GraduationCap className="h-5 w-5 shrink-0 text-[color:var(--gold)]" />
+            <div className="min-w-0">
+              <h2 className="truncate font-display text-sm font-black text-[color:var(--maroon)] sm:text-base">
+                مركز تحليل الخريطة التعليمية
+              </h2>
+              <p className="hidden text-[11px] font-bold text-muted-foreground sm:block">
+                قطر ← البلدية ← المدرسة ← الوحدة ← النشاط
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button onClick={exportPNG} className="btn-ghost btn-sm px-2.5 py-1.5 text-xs">
+              <Download className="h-3.5 w-3.5" /> PNG
+            </button>
+            <button onClick={exportPDF} className="btn-ghost btn-sm px-2.5 py-1.5 text-xs">
+              <FileText className="h-3.5 w-3.5" /> PDF
+            </button>
+            <button onClick={resetFilters} className="btn-ghost btn-sm px-2.5 py-1.5 text-xs">
+              <RefreshCw className="h-3.5 w-3.5" /> إعادة
+            </button>
+            <button
+              onClick={onClose}
+              className="flex items-center gap-1.5 rounded-xl bg-[color:var(--maroon)] px-3 py-2 text-sm font-black text-white"
+            >
+              <X className="h-4 w-4" /> إغلاق
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-0.5 rounded-xl bg-[color:var(--surface-2)]/70 p-0.5 ring-1 ring-[color:var(--hairline)]">
+            {(['users', 'plays', 'downloads'] as MetricKey[]).map((k) => (
+              <button
+                key={k}
+                onClick={() => {
+                  setMetric(k);
+                  setTimelineIndex(null);
+                }}
+                className={chip(metric === k)}
+              >
+                {METRIC_LABEL[k]}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-0.5 rounded-xl bg-[color:var(--surface-2)]/70 p-0.5 ring-1 ring-[color:var(--hairline)]">
+            <button onClick={() => setMode('heat')} className={chip(mode === 'heat')}>
+              <span className="flex items-center gap-1"><Flame className="h-3.5 w-3.5" /> حرارة</span>
+            </button>
+            <button onClick={() => setMode('regions')} className={chip(mode === 'regions')}>
+              <span className="flex items-center gap-1"><LayoutGrid className="h-3.5 w-3.5" /> مناطق</span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-0.5 rounded-xl bg-[color:var(--surface-2)]/70 p-0.5 ring-1 ring-[color:var(--hairline)]">
+            <button onClick={() => setNormalization('total')} className={chip(normalization === 'total')}>
+              الإجمالي
+            </button>
+            <button onClick={() => setNormalization('per-school')} className={chip(normalization === 'per-school')}>
+              لكل مدرسة
+            </button>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-0.5 rounded-xl bg-[color:var(--surface-2)]/70 p-0.5 ring-1 ring-[color:var(--hairline)]">
+            {(Object.keys(PERIOD_LABEL) as PeriodKey[]).map((p) => (
+              <button
+                key={p}
+                onClick={() => {
+                  setFilters((x) => ({ ...x, period: p }));
+                  setTimelineIndex(null);
+                }}
+                className={chip(filters.period === p)}
+              >
+                {PERIOD_LABEL[p]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <span className="flex items-center gap-1 text-xs font-black text-[color:var(--maroon)]">
+            <Filter className="h-3.5 w-3.5" /> الفلاتر
+          </span>
+          <select
+            className={selectClass}
+            value={filters.subjectId}
+            onChange={(e) =>
+              setFilters((x) => ({
+                ...x,
+                subjectId: e.target.value,
+                gradeId: 'all',
+                unitId: 'all',
+              }))
+            }
+          >
+            <option value="all">كل المواد</option>
+            {subjects.map((s) => (
+              <option key={s.id} value={s.id}>{s.title}</option>
+            ))}
+          </select>
+          <select
+            className={selectClass}
+            value={filters.gradeId}
+            disabled={filters.subjectId === 'all'}
+            onChange={(e) =>
+              setFilters((x) => ({ ...x, gradeId: e.target.value, unitId: 'all' }))
+            }
+          >
+            <option value="all">كل المستويات</option>
+            {gradeOptions.map((g) => (
+              <option key={g.id} value={g.id}>{g.title}</option>
+            ))}
+          </select>
+          <select
+            className={selectClass}
+            value={filters.unitId}
+            disabled={filters.gradeId === 'all'}
+            onChange={(e) => setFilters((x) => ({ ...x, unitId: e.target.value }))}
+          >
+            <option value="all">كل الوحدات</option>
+            {unitOptions.map((u) => (
+              <option key={u.id} value={u.id}>{u.title}</option>
+            ))}
+          </select>
+          <select
+            className={selectClass}
+            value={filters.gender}
+            onChange={(e) =>
+              setFilters((x) => ({
+                ...x,
+                gender: e.target.value as HeatmapFilters['gender'],
+              }))
+            }
+          >
+            <option value="all">بنين وبنات</option>
+            {(Object.keys(GENDER_LABEL) as SchoolGender[]).map((g) => (
+              <option key={g} value={g}>{GENDER_LABEL[g]}</option>
+            ))}
+          </select>
+          <select
+            className={selectClass}
+            value={filters.stage}
+            onChange={(e) =>
+              setFilters((x) => ({
+                ...x,
+                stage: e.target.value as HeatmapFilters['stage'],
+              }))
+            }
+          >
+            <option value="all">كل المراحل</option>
+            {(Object.keys(STAGE_LABEL) as SchoolStage[]).map((s) => (
+              <option key={s} value={s}>{STAGE_LABEL[s]}</option>
+            ))}
+          </select>
+          <select
+            className={selectClass}
+            value={recent}
+            onChange={(e) => setRecent(e.target.value as RecentWindow)}
+          >
+            {(Object.keys(RECENT_LABEL) as RecentWindow[]).map((r) => (
+              <option key={r} value={r}>{RECENT_LABEL[r]}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <SummaryMini
+            icon={ActivityIcon}
+            label={metricLabel}
+            value={formatFull(total)}
+          />
+          <SummaryMini
+            icon={School}
+            label="انتشار المدارس"
+            value={activeSchoolIds.size + '/' + eligibleSchools.length + ' · ' + formatPercent(activeSchoolIds.size, eligibleSchools.length || 1)}
+          />
+          <SummaryMini
+            icon={Zap}
+            label="نشطة آخر ساعة"
+            value={String(activeHour)}
+          />
+          <SummaryMini
+            icon={change !== null && change < 0 ? TrendingDown : TrendingUp}
+            label="مقارنة بالفترة السابقة"
+            value={
+              change === null
+                ? 'بيانات جديدة'
+                : (change > 0 ? '+' : '') + change.toFixed(1) + '%'
+            }
+          />
+        </div>
+      </header>
+
+      <main className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1fr)_350px]">
+        <section
+          ref={mapRef}
+          className="relative min-h-[320px] touch-none overflow-hidden bg-gradient-to-b from-[color:var(--surface)] to-[color:var(--surface-2)]/60"
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}
+        >
+          <canvas ref={canvasRef} className="block h-full w-full" />
+
+          <div className="absolute right-3 top-3 z-10 w-[min(92%,440px)]">
+            <div className="relative">
+              <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                value={searchQ}
+                onChange={(e) => {
+                  setSearchQ(e.target.value);
+                  setSearchOpen(true);
+                }}
+                onFocus={() => setSearchOpen(true)}
+                placeholder="ابحث عن مدرسة…"
+                className="w-full rounded-xl border border-[color:var(--hairline-strong)] bg-[color:var(--surface)]/95 py-2.5 pr-9 pl-3 text-sm font-bold shadow-lg outline-none focus:border-[color:var(--maroon)]"
+              />
+              {searchOpen && searchResults.length > 0 && (
+                <ul className="absolute inset-x-0 top-full mt-1 max-h-64 overflow-y-auto rounded-xl border border-[color:var(--hairline)] bg-[color:var(--surface)] shadow-xl">
+                  {searchResults.map((s) => (
+                    <li key={s.id}>
+                      <button
+                        onClick={() => focusSchool(s.id)}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-right text-sm hover:bg-[color:var(--surface-2)]"
+                      >
+                        <MapPin className="h-3.5 w-3.5 text-[color:var(--gold)]" />
+                        <span className="truncate font-bold">{s.name}</span>
+                        <span className="mr-auto shrink-0 text-xs text-muted-foreground">
+                          {MUNICIPALITY_BY_ID[s.municipalityId].name}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+
+          {tooltip && (
+            <div
+              className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-[125%] rounded-lg bg-[color:var(--maroon)] px-2.5 py-1.5 text-xs font-bold text-white shadow-lg"
+              style={{ left: tooltip.x, top: tooltip.y }}
+            >
+              {tooltip.text}
+            </div>
+          )}
+
+          <div className="absolute bottom-20 left-3 flex flex-col gap-2 sm:bottom-4">
+            <button
+              className="icon-3d h-10 w-10 rounded-xl"
+              aria-label="تكبير"
+              onClick={() => {
+                const w = mapRef.current;
+                if (w) zoomAt(1.45, w.clientWidth / 2, w.clientHeight / 2);
+              }}
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+            <button
+              className="icon-3d h-10 w-10 rounded-xl"
+              aria-label="تصغير"
+              onClick={() => {
+                const w = mapRef.current;
+                if (w) zoomAt(1 / 1.45, w.clientWidth / 2, w.clientHeight / 2);
+              }}
+            >
+              <Minus className="h-4 w-4" />
+            </button>
+            <button className="icon-3d h-10 w-10 rounded-xl" aria-label="إعادة الضبط" onClick={() => { fit(); requestDraw(); }}>
+              <Locate className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="absolute bottom-20 right-3 rounded-full bg-[color:var(--surface)]/92 px-3 py-1.5 text-xs font-black text-[color:var(--maroon)] shadow sm:bottom-4">
+            {scalePct}%
+          </div>
+
+          <div className="absolute left-3 top-3 rounded-xl bg-[color:var(--surface)]/92 p-2.5 shadow ring-1 ring-[color:var(--hairline)]">
+            <div className="h-2 w-32 rounded-full" style={{ background: HEAT_GRADIENT_CSS }} />
+            <div className="mt-1 flex justify-between text-[10px] font-bold text-muted-foreground">
+              <span>أقل</span><span>أعلى تركيزًا</span>
+            </div>
+            <p className="mt-1 text-[10px] font-bold text-[color:var(--gold)]">
+              الحلقة الذهبية = نشاط خلال آخر ساعة
+            </p>
+          </div>
+
+          {selectedMuni && (
+            <button
+              onClick={() => setSelectedMuni(null)}
+              className="absolute left-3 top-24 flex items-center gap-1 rounded-xl bg-[color:var(--maroon)] px-3 py-1.5 text-xs font-black text-white shadow"
+            >
+              <MapPin className="h-3.5 w-3.5" />
+              {MUNICIPALITY_BY_ID[selectedMuni].name}
+              <X className="h-3 w-3" />
+            </button>
+          )}
+        </section>
+
+        <aside className="min-h-0 overflow-y-auto border-t border-[color:var(--hairline)] bg-[color:var(--surface)] p-4 lg:border-r lg:border-t-0">
+          {selectedSchoolInfo ? (
+            <SchoolDetail
+              info={selectedSchoolInfo}
+              metricLabel={metricLabel}
+              metricUnit={metricUnit}
+              maxBar={maxBar}
+              activities={activities}
+              onClose={() => setSelectedSchool(null)}
+            />
+          ) : (
+            <>
+              <section>
+                <div className="mb-3 flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4 text-[color:var(--gold)]" />
+                  <h3 className="font-black text-[color:var(--maroon)]">
+                    {selectedMuni
+                      ? 'تحليل ' + MUNICIPALITY_BY_ID[selectedMuni].name
+                      : 'ملخص الانتشار'}
+                  </h3>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <MiniCard label="مدارس نشطة" value={String(insightSchoolIds.size)} />
+                  <MiniCard label="نسبة الانتشار" value={spread.toFixed(1) + '%'} />
+                </div>
+
+                <InsightList
+                  title="الوحدات الأكثر استخدامًا"
+                  icon={Layers3}
+                  rows={topUnits.map((u) => ({
+                    key: u.key,
+                    title: u.title,
+                    sub: u.activeSchools + ' مدارس نشطة',
+                    value: formatFull(u.value),
+                  }))}
+                  empty="ستظهر الوحدات هنا مع بدء تسجيل التحليلات التفصيلية."
+                />
+
+                <InsightList
+                  title="الأنشطة الأكثر استخدامًا"
+                  icon={Sparkles}
+                  rows={topActivities.map((a) => ({
+                    key: a.activityId,
+                    title: activityTitle(a.activityId, activities),
+                    sub: 'تشغيل ' + formatFull(a.plays) + ' · تنزيل ' + formatFull(a.downloads),
+                    value: formatFull(a.value),
+                  }))}
+                  empty="لا توجد بيانات نشاط تفصيلية لهذه الفلاتر بعد."
+                />
+              </section>
+
+              <section className="mt-6 border-t border-[color:var(--hairline)] pt-5">
+                <div className="mb-3 flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-[color:var(--gold)]" />
+                  <h3 className="font-black text-[color:var(--maroon)]">مقارنة منطقتين</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <select
+                    className={selectClass}
+                    value={compareA}
+                    onChange={(e) => setCompareA(e.target.value as MunicipalityId)}
+                  >
+                    {MUNICIPALITIES.map((m) => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
+                  </select>
+                  <select
+                    className={selectClass}
+                    value={compareB}
+                    onChange={(e) => setCompareB(e.target.value as MunicipalityId)}
+                  >
+                    {MUNICIPALITIES.map((m) => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  {[compareLeft, compareRight].map((x) => (
+                    <div key={x.municipality.id} className="rounded-2xl border border-[color:var(--hairline)] bg-[color:var(--surface-2)]/55 p-3">
+                      <p className="font-black text-[color:var(--maroon)]">{x.municipality.name}</p>
+                      <p className="mt-2 font-display text-xl font-black tabular-nums">
+                        {formatFull(x.value)}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {metricUnit} · {x.active}/{x.schools} مدارس نشطة
+                      </p>
+                      <p className="mt-2 line-clamp-2 text-[11px] font-bold text-muted-foreground">
+                        {x.unit ? 'وحدة بارزة: ' + x.unit.title : 'لا توجد وحدة بارزة بعد'}
+                      </p>
+                      <p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground">
+                        {x.activity
+                          ? 'نشاط بارز: ' + activityTitle(x.activity.activityId, activities)
+                          : 'لا توجد بيانات نشاط تفصيلية'}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section className="mt-6 border-t border-[color:var(--hairline)] pt-5">
+                <h3 className="mb-2 flex items-center gap-2 font-black text-[color:var(--maroon)]">
+                  <School className="h-4 w-4 text-[color:var(--gold)]" />
+                  مدارس ذات نشاط ملحوظ
+                </h3>
+                <div className="space-y-2">
+                  {eligibleSchools
+                    .filter((s) => (currentValues[s.id] || 0) > 0)
+                    .sort(
+                      (a, b) =>
+                        (currentValues[b.id] || 0) - (currentValues[a.id] || 0)
+                    )
+                    .slice(0, 8)
+                    .map((s) => (
+                      <button
+                        key={s.id}
+                        onClick={() => focusSchool(s.id)}
+                        className="flex w-full items-center gap-2 rounded-xl border border-[color:var(--hairline)] p-2.5 text-right hover:bg-[color:var(--surface-2)]"
+                      >
+                        <MapPin className="h-4 w-4 shrink-0 text-[color:var(--gold)]" />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-xs font-black">{s.name}</span>
+                          <span className="block text-[10px] text-muted-foreground">
+                            {MUNICIPALITY_BY_ID[s.municipalityId].name}
+                          </span>
+                        </span>
+                        <span className="text-xs font-black tabular-nums text-[color:var(--maroon)]">
+                          {formatFull(currentValues[s.id] || 0)}
+                        </span>
+                      </button>
+                    ))}
+                </div>
+              </section>
+
+              <p className="mt-5 rounded-xl bg-[color:var(--gold)]/10 px-3 py-2 text-[11px] font-bold leading-5 text-[color:var(--gold)]">
+                ملاحظة: التحليل التفصيلي حسب الوحدة والتاريخ يبدأ من تاريخ نشر هذه النسخة؛
+                الأرقام التراكمية القديمة تبقى محفوظة في عرض «الكل».
+              </p>
+            </>
+          )}
+        </aside>
+      </main>
+
+      <footer className="border-t border-[color:var(--hairline)] bg-[color:var(--surface)] px-3 py-2">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={playTimeline}
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[color:var(--maroon)] text-white shadow"
+            aria-label={playing ? 'إيقاف الحركة الزمنية' : 'تشغيل الحركة الزمنية'}
+          >
+            {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 fill-current" />}
+          </button>
+          <CalendarDays className="hidden h-4 w-4 text-[color:var(--gold)] sm:block" />
+          <input
+            type="range"
+            min={0}
+            max={Math.max(0, periodWindow.playback.length - 1)}
+            value={
+              timelineIndex === null
+                ? Math.max(0, periodWindow.playback.length - 1)
+                : timelineIndex
+            }
+            onChange={(e) => {
+              if (timerRef.current) clearInterval(timerRef.current);
+              timerRef.current = null;
+              setPlaying(false);
+              setTimelineIndex(Number(e.target.value));
+            }}
+            className="h-1.5 min-w-0 flex-1 cursor-pointer accent-[color:var(--maroon)]"
+          />
+          <span className="shrink-0 text-xs font-bold tabular-nums text-muted-foreground">
+            {timelineIndex === null
+              ? periodWindow.label
+              : new Date(periodWindow.playback[timelineIndex] + 'T12:00:00').toLocaleDateString('ar-QA', {
+                  day: 'numeric',
+                  month: 'short',
+                })}
+          </span>
+          {timelineIndex !== null && (
+            <button
+              onClick={() => setTimelineIndex(null)}
+              className="rounded-lg px-2 py-1 text-xs font-black text-[color:var(--maroon)] hover:bg-[color:var(--surface-2)]"
+            >
+              الإجمالي
+            </button>
+          )}
+        </div>
+      </footer>
+    </div>,
+    document.body
+  );
+}
+
+function SummaryMini({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof Users;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex min-w-0 items-center gap-2 rounded-xl border border-[color:var(--hairline)] bg-[color:var(--surface-2)]/55 px-3 py-2">
+      <Icon className="h-4 w-4 shrink-0 text-[color:var(--gold)]" />
+      <span className="min-w-0">
+        <span className="block truncate text-[10px] font-bold text-muted-foreground">{label}</span>
+        <span className="block truncate text-sm font-black tabular-nums text-foreground">{value}</span>
+      </span>
+    </div>
+  );
+}
+
+function MiniCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-[color:var(--hairline)] bg-[color:var(--surface-2)]/55 p-3">
+      <p className="text-[10px] font-bold text-muted-foreground">{label}</p>
+      <p className="mt-1 font-display text-xl font-black tabular-nums text-[color:var(--maroon)]">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function InsightList({
+  title,
+  icon: Icon,
+  rows,
+  empty,
+}: {
+  title: string;
+  icon: typeof Layers3;
+  rows: { key: string; title: string; sub: string; value: string }[];
+  empty: string;
+}) {
+  return (
+    <div className="mt-5">
+      <h4 className="mb-2 flex items-center gap-2 text-xs font-black text-foreground">
+        <Icon className="h-3.5 w-3.5 text-[color:var(--gold)]" /> {title}
+      </h4>
+      {rows.length ? (
+        <div className="space-y-2">
+          {rows.map((row) => (
+            <div
+              key={row.key}
+              className="flex items-start gap-2 rounded-xl border border-[color:var(--hairline)] bg-[color:var(--surface-2)]/45 p-2.5"
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block line-clamp-2 text-xs font-black">{row.title}</span>
+                <span className="mt-0.5 block text-[10px] text-muted-foreground">{row.sub}</span>
+              </span>
+              <span className="shrink-0 text-xs font-black tabular-nums text-[color:var(--maroon)]">
+                {row.value}
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="rounded-xl border border-dashed border-[color:var(--hairline-strong)] p-3 text-[11px] leading-5 text-muted-foreground">
+          {empty}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function SchoolDetail({
+  info,
+  metricLabel,
+  metricUnit,
+  maxBar,
+  activities,
+  onClose,
+}: {
+  info: {
+    school: (typeof QATAR_SCHOOLS)[number];
+    value: number;
+    lastActiveAt: number;
+    unit?: { title: string } | null;
+    activity?: { activityId: string } | null;
+    bars: { day: string; value: number }[];
+  };
+  metricLabel: string;
+  metricUnit: string;
+  maxBar: number;
+  activities: Activity[];
+  onClose: () => void;
+}) {
+  return (
+    <section>
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p className="text-[10px] font-black text-[color:var(--gold)]">تحليل المدرسة</p>
+          <h3 className="mt-1 font-display text-lg font-black text-[color:var(--maroon)]">
+            {info.school.name}
+          </h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {MUNICIPALITY_BY_ID[info.school.municipalityId].name} · {STAGE_LABEL[info.school.stage]} · {GENDER_LABEL[info.school.gender]}
+          </p>
+        </div>
+        <button onClick={onClose} className="rounded-lg p-1.5 text-muted-foreground hover:bg-[color:var(--surface-2)]">
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <MiniCard label={metricLabel} value={formatFull(info.value) + ' ' + metricUnit} />
+        <MiniCard
+          label="آخر نشاط"
+          value={
+            info.lastActiveAt
+              ? new Date(info.lastActiveAt).toLocaleDateString('ar-QA', {
+                  day: 'numeric',
+                  month: 'short',
+                })
+              : '—'
+          }
+        />
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-[color:var(--hairline)] bg-[color:var(--surface-2)]/45 p-3">
+        <p className="text-xs font-black text-foreground">آخر 7 أيام</p>
+        <div className="mt-3 flex h-24 items-end gap-1.5">
+          {info.bars.map((b) => (
+            <div key={b.day} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-1">
+              <div
+                className="w-full rounded-t-md bg-[color:var(--maroon)]/80"
+                style={{ height: Math.max(3, (b.value / maxBar) * 72) }}
+                title={formatFull(b.value)}
+              />
+              <span className="text-[8px] font-bold text-muted-foreground">
+                {new Date(b.day + 'T12:00:00').toLocaleDateString('ar-QA', { day: 'numeric' })}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-4 space-y-2">
+        <p className="text-xs font-black text-foreground">أبرز الاستخدام</p>
+        <p className="rounded-xl border border-[color:var(--hairline)] p-3 text-xs leading-5">
+          <b className="text-[color:var(--maroon)]">الوحدة:</b>{' '}
+          {info.unit?.title || 'لا توجد بيانات تفصيلية بعد'}
+        </p>
+        <p className="rounded-xl border border-[color:var(--hairline)] p-3 text-xs leading-5">
+          <b className="text-[color:var(--maroon)]">النشاط:</b>{' '}
+          {info.activity
+            ? activityTitle(info.activity.activityId, activities)
+            : 'لا توجد بيانات تفصيلية بعد'}
+        </p>
+      </div>
+    </section>
+  );
 }
