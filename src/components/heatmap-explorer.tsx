@@ -232,16 +232,54 @@ export function HeatmapExplorer({
     return subject?.grades.find((g) => g.id === filters.gradeId)?.units ?? [];
   }, [subjects, filters.subjectId, filters.gradeId]);
 
+  // الأنشطة الظاهرة فعليًا في بنية المنهج الحالية. نستخدمها لمعرفة هل
+  // الفلتر يضيّق المحتوى فعلًا أم أنه مجرد اختيار للمادة الوحيدة بالموقع.
+  const curriculumActivities = useMemo(
+    () =>
+      subjects.flatMap((subject) =>
+        subject.grades.flatMap((grade) =>
+          grade.units.flatMap((unit) =>
+            unit.lessons.flatMap((lesson) => lesson.activities)
+          )
+        )
+      ),
+    [subjects]
+  );
+
+  const effectiveFilters = useMemo<HeatmapFilters>(() => {
+    if (!hasContentFilter(filters) || curriculumActivities.length === 0) {
+      return filters;
+    }
+
+    const matchingCount = curriculumActivities.filter((activity) =>
+      activityMatches(activity, filters)
+    ).length;
+
+    // إذا كان الفلتر المختار يشمل كل الأنشطة الظاهرة أصلًا (مثال: العلوم
+    // هي المادة الوحيدة)، فهو لا يغيّر نطاق البيانات، لذا نحتفظ بالإجماليات
+    // التاريخية بدل الانتقال إلى طبقة التحليلات التفصيلية الحديثة فقط.
+    if (matchingCount === curriculumActivities.length) {
+      return {
+        ...filters,
+        subjectId: 'all',
+        gradeId: 'all',
+        unitId: 'all',
+      };
+    }
+
+    return filters;
+  }, [filters, curriculumActivities]);
+
   const lastActiveBySchool = useMemo(() => {
     const out: Record<string, number> = {};
     // آخر نشاط مشتق من طبقة مدرسة × نشاط الجديدة. عند استخدام فلتر وحدة
     // نحصره في الوحدة، وإلا نأخذ آخر نشاط معروف للمدرسة على مستوى المنصة.
     for (const row of activityMetrics) {
-      if (hasContentFilter(filters) && !activityMatches(row, filters)) continue;
+      if (hasContentFilter(effectiveFilters) && !activityMatches(row, effectiveFilters)) continue;
       out[row.schoolId] = Math.max(out[row.schoolId] || 0, row.lastActiveAt || 0);
     }
     return out;
-  }, [activityMetrics, filters]);
+  }, [activityMetrics, effectiveFilters]);
 
   const currentValuesBase = useMemo(
     () =>
@@ -249,11 +287,11 @@ export function HeatmapExplorer({
         baseMetrics: metrics,
         activityMetrics,
         schools: QATAR_SCHOOLS,
-        filters,
+        filters: effectiveFilters,
         metric,
         days: periodWindow.current,
       }),
-    [metrics, activityMetrics, filters, metric, periodWindow.current]
+    [metrics, activityMetrics, effectiveFilters, metric, periodWindow.current]
   );
 
   const previousValuesBase = useMemo(
@@ -262,11 +300,11 @@ export function HeatmapExplorer({
         baseMetrics: metrics,
         activityMetrics,
         schools: QATAR_SCHOOLS,
-        filters,
+        filters: effectiveFilters,
         metric,
         days: periodWindow.previous,
       }),
-    [metrics, activityMetrics, filters, metric, periodWindow.previous]
+    [metrics, activityMetrics, effectiveFilters, metric, periodWindow.previous]
   );
 
   const dailyValues = useMemo(
@@ -275,11 +313,11 @@ export function HeatmapExplorer({
         baseMetrics: metrics,
         activityMetrics,
         schools: QATAR_SCHOOLS,
-        filters,
+        filters: effectiveFilters,
         metric,
         days: periodWindow.playback,
       }),
-    [metrics, activityMetrics, filters, metric, periodWindow.playback]
+    [metrics, activityMetrics, effectiveFilters, metric, periodWindow.playback]
   );
 
   const applyRecent = useCallback(
@@ -420,14 +458,14 @@ export function HeatmapExplorer({
     () =>
       aggregateActivities({
         rows: activityMetrics,
-        filters,
+        filters: effectiveFilters,
         metric: analysisMetric,
         days: periodWindow.current,
         schoolIds: insightSchoolIds,
       }).slice(0, 3),
     [
       activityMetrics,
-      filters,
+      effectiveFilters,
       analysisMetric,
       periodWindow.current,
       insightSchoolIds,
@@ -438,7 +476,7 @@ export function HeatmapExplorer({
     () =>
       aggregateUnits({
         rows: activityMetrics,
-        filters,
+        filters: effectiveFilters,
         metric: analysisMetric,
         days: periodWindow.current,
         subjects,
@@ -446,7 +484,7 @@ export function HeatmapExplorer({
       }).slice(0, 3),
     [
       activityMetrics,
-      filters,
+      effectiveFilters,
       analysisMetric,
       periodWindow.current,
       subjects,
@@ -470,7 +508,7 @@ export function HeatmapExplorer({
       const active = schools.filter((s) => (currentValues[s.id] || 0) > 0).length;
       const unit = aggregateUnits({
         rows: activityMetrics,
-        filters,
+        filters: effectiveFilters,
         metric: analysisMetric,
         days: periodWindow.current,
         subjects,
@@ -478,7 +516,7 @@ export function HeatmapExplorer({
       })[0];
       const activity = aggregateActivities({
         rows: activityMetrics,
-        filters,
+        filters: effectiveFilters,
         metric: analysisMetric,
         days: periodWindow.current,
         schoolIds,
@@ -490,7 +528,7 @@ export function HeatmapExplorer({
       currentValues,
       normalization,
       activityMetrics,
-      filters,
+      effectiveFilters,
       analysisMetric,
       periodWindow.current,
       subjects,
@@ -504,7 +542,7 @@ export function HeatmapExplorer({
     const schoolIds = new Set([school.id]);
     const unit = aggregateUnits({
       rows: activityMetrics,
-      filters,
+      filters: effectiveFilters,
       metric: analysisMetric,
       days: periodWindow.current,
       subjects,
@@ -512,7 +550,7 @@ export function HeatmapExplorer({
     })[0];
     const activity = aggregateActivities({
       rows: activityMetrics,
-      filters,
+      filters: effectiveFilters,
       metric: analysisMetric,
       days: periodWindow.current,
       schoolIds,
@@ -522,7 +560,7 @@ export function HeatmapExplorer({
       baseMetrics: metrics,
       activityMetrics,
       schools: [school],
-      filters,
+      filters: effectiveFilters,
       metric,
       days: last7,
     })[school.id] || {};
@@ -537,7 +575,7 @@ export function HeatmapExplorer({
   }, [
     selectedSchool,
     activityMetrics,
-    filters,
+    effectiveFilters,
     analysisMetric,
     periodWindow.current,
     subjects,
@@ -548,11 +586,11 @@ export function HeatmapExplorer({
   ]);
 
   const metricLabel =
-    metric === 'users' && hasContentFilter(filters)
+    metric === 'users' && hasContentFilter(effectiveFilters)
       ? 'المدارس النشطة'
       : METRIC_LABEL[metric];
   const metricUnit =
-    metric === 'users' && hasContentFilter(filters) ? 'مدرسة' : METRIC_UNIT[metric];
+    metric === 'users' && hasContentFilter(effectiveFilters) ? 'مدرسة' : METRIC_UNIT[metric];
 
   const fit = useCallback(() => {
     const wrap = mapRef.current;
