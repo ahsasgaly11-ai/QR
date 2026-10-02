@@ -11,7 +11,7 @@ import { formatNumber, cn } from '@/lib/utils';
 import { getLocalRecord, htmlToBlobUrl, dropCachedPreview } from '@/lib/local-store';
 import { ActivityPreview } from './activity-preview';
 import { trackSchoolDownload, getSelectedSchool } from '@/lib/school-store';
-import { useDownloadsEnabled, downloadsAllowedNow } from '@/lib/site-settings';
+import { useActivityDownloadEnabled, downloadsAllowedNow } from '@/lib/site-settings';
 
 function fileUrl(a: Activity) {
   return a.external ? a.file : `/games/${a.file}`;
@@ -32,7 +32,7 @@ export function ActivityCard({
   const router = useRouter();
   const [stats, setStats] = useState<ActivityStats>({ views: 0, downloads: 0 });
   // يوقف المشرف التنزيل من لوحة التحكّم ← تُستخدم الألعاب داخل الموقع فقط
-  const canDownload = useDownloadsEnabled();
+  const canDownload = useActivityDownloadEnabled(activity);
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(activity.title);
   const [busy, setBusy] = useState(false);
@@ -92,7 +92,7 @@ export function ActivityCard({
 
   const onDownload = async (e: React.MouseEvent<HTMLAnchorElement>) => {
     // احتياط: قد يُوقف المشرف التنزيل والصفحة مفتوحة
-    if (!downloadsAllowedNow()) {
+    if (!downloadsAllowedNow(activity)) {
       e.preventDefault();
       return;
     }
