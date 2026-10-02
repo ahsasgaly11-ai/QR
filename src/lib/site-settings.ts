@@ -1,38 +1,80 @@
 // ---------------------------------------------------------------------------
 //  إعدادات الموقع العامة التي يتحكّم بها المشرف من لوحة التحكّم.
 //
-//  حاليًا: السماح بتنزيل الألعاب أو قصر استخدامها على داخل الموقع.
+//  التنزيل يدعم ثلاثة أوضاع:
+//   • all            كل الأنشطة قابلة للتنزيل.
+//   • none           لا تنزيل؛ الاستخدام داخل الموقع فقط.
+//   • selected-units التنزيل متاح فقط للوحدات التي يحددها المشرف.
 //
-//  تُحفظ في وثيقة Firestore واحدة: curriculum/settings
-//  (مجموعة curriculum قواعدها منشورة أصلًا: قراءة عامة، وكتابة للمالك وحده،
-//  فلا يلزم تعديل قواعد الأمان.)
-//
-//  يستمع الموقع للوثيقة مباشرة (onSnapshot)، فيصل تغيير المشرف إلى كل
-//  الزوّار فورًا — حتى من كانت الصفحة مفتوحة لديه — دون إعادة نشر الموقع.
-//  وبلا Firebase (وضع العرض) تُحفظ في هذا المتصفّح فقط.
+//  تُحفظ الإعدادات في curriculum/settings. القراءة عامة، والكتابة للمالك فقط
+//  وفق قواعد Firestore الحالية.
 // ---------------------------------------------------------------------------
 
 import { useEffect, useState } from 'react';
+import type { Activity } from '@/lib/types';
 import { getDb, isFirebaseConfigured } from '@/lib/firebase';
 
+export type DownloadMode = 'all' | 'none' | 'selected-units';
+
 export interface SiteSettings {
-  /** يستطيع الزوّار تنزيل الألعاب؛ وإلا تُستخدم داخل الموقع فقط. */
+  /**
+   * حقل توافق مع النسخ السابقة.
+   * true فقط في وضع all؛ وفي selected-units يبقى false حتى لا تسمح نسخة قديمة
+   * بالتنزيل لكل الألعاب بدل الوحدات المحددة.
+   */
   downloadsEnabled: boolean;
+  downloadMode: DownloadMode;
+  /** مفاتيح الوحدات المسموح تنزيل ألعابها عند استخدام selected-units. */
+  downloadUnitKeys: string[];
 }
 
-export const DEFAULT_SETTINGS: SiteSettings = { downloadsEnabled: true };
+export const DEFAULT_SETTINGS: SiteSettings = {
+  downloadsEnabled: true,
+  downloadMode: 'all',
+  downloadUnitKeys: [],
+};
 
-const CACHE_KEY = 'qa-site-settings-v1';
+const CACHE_KEY = 'qa-site-settings-v2';
+const LEGACY_CACHE_KEY = 'qa-site-settings-v1';
 const LOCAL_EVENT = 'qa-site-settings-change';
 
+type DownloadTarget = Pick<Activity, 'subjectId' | 'gradeId' | 'unitId'>;
+
+export function downloadUnitKey(target: DownloadTarget): string {
+  return [target.subjectId, target.gradeId, target.unitId].join('::');
+}
+
 function normalize(raw: unknown): SiteSettings {
-  const r = (raw && typeof raw === 'object' ? raw : {}) as { downloadsEnabled?: unknown };
-  return { downloadsEnabled: r.downloadsEnabled !== false };
+  const r = (raw && typeof raw === 'object' ? raw : {}) as {
+    downloadsEnabled?: unknown;
+    downloadMode?: unknown;
+    downloadUnitKeys?: unknown;
+  };
+
+  const mode: DownloadMode =
+    r.downloadMode === 'all' ||
+    r.downloadMode === 'none' ||
+    r.downloadMode === 'selected-units'
+      ? r.downloadMode
+      : r.downloadsEnabled === false
+        ? 'none'
+        : 'all';
+
+  const unitKeys = Array.isArray(r.downloadUnitKeys)
+    ? [...new Set(r.downloadUnitKeys.filter((v): v is string => typeof v === 'string' && v.length > 0))]
+    : [];
+
+  return {
+    // مهم للتوافق مع الواجهات القديمة أثناء الانتقال.
+    downloadsEnabled: mode === 'all',
+    downloadMode: mode,
+    downloadUnitKeys: unitKeys,
+  };
 }
 
 function readCache(): SiteSettings | null {
   try {
-    const raw = localStorage.getItem(CACHE_KEY);
+    const raw = localStorage.getItem(CACHE_KEY) ?? localStorage.getItem(LEGACY_CACHE_KEY);
     return raw ? normalize(JSON.parse(raw)) : null;
   } catch {
     return null;
@@ -42,6 +84,7 @@ function readCache(): SiteSettings | null {
 function writeCache(s: SiteSettings) {
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify(s));
+    localStorage.removeItem(LEGACY_CACHE_KEY);
   } catch {
     /* ignore */
   }
@@ -50,16 +93,27 @@ function writeCache(s: SiteSettings) {
 // آخر نسخة معروفة — تُفحص لحظة الضغط على «تحميل» احتياطًا.
 let current: SiteSettings | null = null;
 
-/** هل التنزيل مسموح الآن؟ (آخر قيمة معروفة في هذه الصفحة) */
-export function downloadsAllowedNow(): boolean {
-  if (current) return current.downloadsEnabled;
-  if (typeof window === 'undefined') return DEFAULT_SETTINGS.downloadsEnabled;
-  return (readCache() ?? DEFAULT_SETTINGS).downloadsEnabled;
+export function isDownloadAllowed(
+  settings: SiteSettings,
+  target?: DownloadTarget
+): boolean {
+  if (settings.downloadMode === 'all') return true;
+  if (settings.downloadMode === 'none') return false;
+  if (!target) return false;
+  return settings.downloadUnitKeys.includes(downloadUnitKey(target));
+}
+
+/** هل التنزيل مسموح لهذا النشاط الآن؟ */
+export function downloadsAllowedNow(target?: DownloadTarget): boolean {
+  const settings =
+    current ??
+    (typeof window === 'undefined' ? DEFAULT_SETTINGS : readCache() ?? DEFAULT_SETTINGS);
+  return isDownloadAllowed(settings, target);
 }
 
 /**
- * يشترك في الإعدادات. يستدعي cb فورًا بالنسخة المحفوظة في المتصفّح (إن
- * وُجدت)، ثم بكل نسخة جديدة ينشرها المشرف. يُعيد دالة إلغاء الاشتراك.
+ * يشترك في الإعدادات. يستدعي cb فورًا بالنسخة المحفوظة في المتصفح (إن وُجدت)،
+ * ثم بكل نسخة جديدة ينشرها المشرف.
  */
 export function subscribeSettings(cb: (s: SiteSettings) => void): () => void {
   if (typeof window === 'undefined') return () => {};
@@ -73,7 +127,7 @@ export function subscribeSettings(cb: (s: SiteSettings) => void): () => void {
   if (!isFirebaseConfigured) {
     const onLocal = () => emit(readCache() ?? DEFAULT_SETTINGS);
     const onStorage = (e: StorageEvent) => {
-      if (e.key === CACHE_KEY) onLocal();
+      if (e.key === CACHE_KEY || e.key === LEGACY_CACHE_KEY) onLocal();
     };
     window.addEventListener(LOCAL_EVENT, onLocal);
     window.addEventListener('storage', onStorage);
@@ -126,6 +180,7 @@ export async function saveSettings(settings: SiteSettings): Promise<void> {
   const clean = normalize(settings);
   if (!isFirebaseConfigured) {
     writeCache(clean);
+    current = clean;
     window.dispatchEvent(new Event(LOCAL_EVENT));
     return;
   }
@@ -133,11 +188,32 @@ export async function saveSettings(settings: SiteSettings): Promise<void> {
   if (!db) throw new Error('Firebase غير مُعدّ.');
   const { doc, setDoc } = await import('firebase/firestore');
   await setDoc(doc(db, 'curriculum', 'settings'), { ...clean, updatedAt: Date.now() });
+  current = clean;
 }
 
-/** هل يُسمح للزوّار بتنزيل الألعاب؟ يتحدّث فورًا عند تغيير المشرف للإعداد. */
+/**
+ * توافق خلفي: true فقط عندما يكون تنزيل جميع الأنشطة مسموحًا.
+ * المكوّنات التي تعرف النشاط ينبغي أن تستخدم useActivityDownloadEnabled.
+ */
 export function useDownloadsEnabled(): boolean {
-  const [enabled, setEnabled] = useState(DEFAULT_SETTINGS.downloadsEnabled);
-  useEffect(() => subscribeSettings((s) => setEnabled(s.downloadsEnabled)), []);
+  const [enabled, setEnabled] = useState(DEFAULT_SETTINGS.downloadMode === 'all');
+  useEffect(
+    () => subscribeSettings((s) => setEnabled(s.downloadMode === 'all')),
+    []
+  );
+  return enabled;
+}
+
+/** هل التنزيل مسموح للنشاط المحدد؟ يتحدّث فورًا مع تغيير إعداد المشرف. */
+export function useActivityDownloadEnabled(target: DownloadTarget): boolean {
+  const [enabled, setEnabled] = useState(() =>
+    isDownloadAllowed(DEFAULT_SETTINGS, target)
+  );
+
+  useEffect(
+    () => subscribeSettings((s) => setEnabled(isDownloadAllowed(s, target))),
+    [target.subjectId, target.gradeId, target.unitId]
+  );
+
   return enabled;
 }
