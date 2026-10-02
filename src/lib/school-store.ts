@@ -12,12 +12,15 @@
 
 import { getDb, isFirebaseConfigured } from '@/lib/firebase';
 import { type QatarSchool } from '@/data/qatar-schools';
+import type { Activity } from '@/lib/types';
 import { emptyMetric, type SchoolMetric } from '@/lib/heatmap-shared';
+import { localDateKey, type SchoolActivityMetric } from '@/lib/heatmap-analytics';
 import { reportSyncError, reportSyncOk } from '@/lib/stats-sync';
 
 const SEL_KEY = 'qa-school-v1';
 const COUNTED_KEY = 'qa-school-counted-v1';
 const LOCAL_STATS_KEY = 'qa-school-stats-v1';
+const LOCAL_ACTIVITY_STATS_KEY = 'qa-school-activity-stats-v1';
 /** حدث داخلي يُطلق عند تغيّر المدرسة المختارة (لتحديث الواجهة فورًا). */
 export const SCHOOL_EVENT = 'qa-school-change';
 
@@ -91,7 +94,7 @@ export function onSchoolChange(cb: () => void): () => void {
 
 // --- مقاييس كل مدرسة (مستخدمون/لعب/تنزيل + توزيع يومي) ----------------------
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  return localDateKey();
 }
 
 type MetricMap = Record<string, SchoolMetric>;
@@ -128,6 +131,64 @@ function bumpLocal(schoolId: string, apply: (m: SchoolMetric) => void) {
   const m = (local[schoolId] ??= emptyMetric());
   apply(m);
   writeLocalStats(local);
+}
+
+type ActivityMetricMap = Record<string, SchoolActivityMetric>;
+
+function activityMetricKey(schoolId: string, activityId: string): string {
+  return `${schoolId}::${activityId}`;
+}
+
+function firestoreActivityMetricId(schoolId: string, activityId: string): string {
+  return `${encodeURIComponent(schoolId)}__${encodeURIComponent(activityId)}`;
+}
+
+function readLocalActivityStats(): ActivityMetricMap {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem(LOCAL_ACTIVITY_STATS_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw) as ActivityMetricMap;
+  } catch {
+    return {};
+  }
+}
+
+function writeLocalActivityStats(stats: ActivityMetricMap) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(LOCAL_ACTIVITY_STATS_KEY, JSON.stringify(stats));
+  } catch {
+    /* ignore */
+  }
+}
+
+function bumpLocalActivity(
+  schoolId: string,
+  activity: Activity,
+  field: 'plays' | 'downloads',
+  day: string,
+  at: number
+) {
+  const all = readLocalActivityStats();
+  const key = activityMetricKey(schoolId, activity.id);
+  const row = (all[key] ??= {
+    schoolId,
+    activityId: activity.id,
+    subjectId: activity.subjectId,
+    gradeId: activity.gradeId,
+    unitId: activity.unitId,
+    plays: 0,
+    downloads: 0,
+    playsByDay: {},
+    downloadsByDay: {},
+    lastActiveAt: 0,
+  });
+  row[field] += 1;
+  const daily = field === 'plays' ? row.playsByDay : row.downloadsByDay;
+  daily[day] = (daily[day] || 0) + 1;
+  row.lastActiveAt = Math.max(row.lastActiveAt || 0, at);
+  writeLocalActivityStats(all);
 }
 
 function readCounted(): string[] {
@@ -193,24 +254,59 @@ async function countSchoolUser(schoolId: string): Promise<void> {
   }
 }
 
-/** يسجّل تشغيل/تحميل لعبة على مدرسة المستخدم المختارة (يفصل الطبقات). */
+/** يسجّل تشغيل/تحميل لعبة على المدرسة، مع تفصيل يومي وعلى مستوى النشاط. */
 async function bumpSchoolMetric(
   schoolId: string,
-  field: 'plays' | 'downloads'
+  field: 'plays' | 'downloads',
+  activity?: Activity
 ): Promise<void> {
+  const day = today();
+  const at = Date.now();
+  const dayField = field === 'plays' ? 'playsByDay' : 'downloadsByDay';
+
   bumpLocal(schoolId, (m) => {
     m[field] += 1;
+    m[dayField][day] = (m[dayField][day] || 0) + 1;
+    m.lastActiveAt = Math.max(m.lastActiveAt || 0, at);
   });
+  if (activity) bumpLocalActivity(schoolId, activity, field, day, at);
+
   if (!isFirebaseConfigured) return;
   const db = getDb();
   if (!db) return;
+
   try {
-    const { doc, setDoc, increment } = await import('firebase/firestore');
-    await setDoc(
+    const { doc, writeBatch, increment } = await import('firebase/firestore');
+    const batch = writeBatch(db);
+
+    batch.set(
       doc(db, 'schoolStats', schoolId),
-      { [field]: increment(1) },
+      {
+        [field]: increment(1),
+        [dayField]: { [day]: increment(1) },
+        lastActiveAt: at,
+      },
       { merge: true }
     );
+
+    if (activity) {
+      batch.set(
+        doc(db, 'schoolActivityStats', firestoreActivityMetricId(schoolId, activity.id)),
+        {
+          schoolId,
+          activityId: activity.id,
+          subjectId: activity.subjectId,
+          gradeId: activity.gradeId,
+          unitId: activity.unitId,
+          [field]: increment(1),
+          [dayField]: { [day]: increment(1) },
+          lastActiveAt: at,
+        },
+        { merge: true }
+      );
+    }
+
+    await batch.commit();
     reportSyncOk();
   } catch (e) {
     reportSyncError(
@@ -221,19 +317,19 @@ async function bumpSchoolMetric(
 }
 
 /** يُستدعى من المشغّل عند تشغيل لعبة (إن كانت هناك مدرسة مختارة). */
-export function trackSchoolPlay(): void {
+export function trackSchoolPlay(activity?: Activity): void {
   const s = getSelectedSchool();
   if (!s?.id) return;
   void countSchoolUser(s.id); // إعادة محاولة احتساب المستخدم إن فشل سابقًا
-  void bumpSchoolMetric(s.id, 'plays');
+  void bumpSchoolMetric(s.id, 'plays', activity);
 }
 
-/** يُستدعى من المشغّل عند تحميل لعبة (إن كانت هناك مدرسة مختارة). */
-export function trackSchoolDownload(): void {
+/** يُستدعى عند تحميل لعبة (إن كانت هناك مدرسة مختارة). */
+export function trackSchoolDownload(activity?: Activity): void {
   const s = getSelectedSchool();
   if (!s?.id) return;
   void countSchoolUser(s.id);
-  void bumpSchoolMetric(s.id, 'downloads');
+  void bumpSchoolMetric(s.id, 'downloads', activity);
 }
 
 /** يقرأ مقاييس كل المدارس (Firestore عند التفعيل، وإلا محليًا). */
@@ -255,11 +351,45 @@ export async function getSchoolMetrics(): Promise<MetricMap> {
         plays: data.plays ?? 0,
         downloads: data.downloads ?? 0,
         days: (data.days as Record<string, number>) ?? {},
+        playsByDay: (data.playsByDay as Record<string, number>) ?? {},
+        downloadsByDay: (data.downloadsByDay as Record<string, number>) ?? {},
+        lastActiveAt: Number(data.lastActiveAt) || 0,
       };
     });
     return out;
   } catch (e) {
     reportSyncError(e, 'قراءة مقاييس المدارس');
+    return local;
+  }
+}
+
+
+/** يقرأ التفصيل مدرسة × نشاط المستخدم في فلاتر الوحدة/اللعبة والزمن. */
+export async function getSchoolActivityMetrics(): Promise<SchoolActivityMetric[]> {
+  const local = Object.values(readLocalActivityStats());
+  if (!isFirebaseConfigured) return local;
+  const db = getDb();
+  if (!db) return local;
+  try {
+    const { collection, getDocs } = await import('firebase/firestore');
+    const snap = await getDocs(collection(db, 'schoolActivityStats'));
+    return snap.docs.map((d) => {
+      const x = d.data() as Partial<SchoolActivityMetric>;
+      return {
+        schoolId: String(x.schoolId || ''),
+        activityId: String(x.activityId || ''),
+        subjectId: String(x.subjectId || ''),
+        gradeId: String(x.gradeId || ''),
+        unitId: String(x.unitId || ''),
+        plays: Number(x.plays) || 0,
+        downloads: Number(x.downloads) || 0,
+        playsByDay: (x.playsByDay as Record<string, number>) ?? {},
+        downloadsByDay: (x.downloadsByDay as Record<string, number>) ?? {},
+        lastActiveAt: Number(x.lastActiveAt) || 0,
+      };
+    }).filter((x) => x.schoolId && x.activityId);
+  } catch (e) {
+    reportSyncError(e, 'قراءة تفاصيل استخدام الأنشطة حسب المدارس');
     return local;
   }
 }
