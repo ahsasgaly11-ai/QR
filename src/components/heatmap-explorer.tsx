@@ -407,6 +407,15 @@ export function HeatmapExplorer({
     );
   }, [selectedMuni, activeSchoolIds]);
 
+  const insightEligibleCount = useMemo(() => {
+    if (!selectedMuni) return eligibleSchools.length;
+    return eligibleSchools.filter((s) => s.municipalityId === selectedMuni).length;
+  }, [selectedMuni, eligibleSchools]);
+
+  const insightSpread = insightEligibleCount
+    ? (insightSchoolIds.size / insightEligibleCount) * 100
+    : 0;
+
   const topActivities = useMemo(
     () =>
       aggregateActivities({
@@ -1572,7 +1581,7 @@ export function HeatmapExplorer({
 
                 <div className="grid grid-cols-2 gap-2">
                   <MiniCard label="مدارس نشطة" value={String(insightSchoolIds.size)} />
-                  <MiniCard label="نسبة الانتشار" value={spread.toFixed(1) + '%'} />
+                  <MiniCard label="نسبة الانتشار" value={insightSpread.toFixed(1) + '%'} />
                 </div>
 
                 <InsightList
