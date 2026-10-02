@@ -234,19 +234,14 @@ export function HeatmapExplorer({
 
   const lastActiveBySchool = useMemo(() => {
     const out: Record<string, number> = {};
-    const contentFiltered = hasContentFilter(filters);
-    if (!contentFiltered) {
-      for (const s of QATAR_SCHOOLS) {
-        out[s.id] = metrics[s.id]?.lastActiveAt || 0;
-      }
-      return out;
-    }
+    // آخر نشاط مشتق من طبقة مدرسة × نشاط الجديدة. عند استخدام فلتر وحدة
+    // نحصره في الوحدة، وإلا نأخذ آخر نشاط معروف للمدرسة على مستوى المنصة.
     for (const row of activityMetrics) {
-      if (!activityMatches(row, filters)) continue;
+      if (hasContentFilter(filters) && !activityMatches(row, filters)) continue;
       out[row.schoolId] = Math.max(out[row.schoolId] || 0, row.lastActiveAt || 0);
     }
     return out;
-  }, [metrics, activityMetrics, filters]);
+  }, [activityMetrics, filters]);
 
   const currentValuesBase = useMemo(
     () =>
