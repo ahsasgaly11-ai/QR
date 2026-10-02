@@ -329,12 +329,12 @@ export function HeatmapExplorer({
     [previousValues]
   );
   const change = useMemo(
-    () => percentChange(total, previousTotal),
-    [total, previousTotal]
+    () =>
+      filters.period === 'all'
+        ? undefined
+        : percentChange(total, previousTotal),
+    [filters.period, total, previousTotal]
   );
-  const spread = eligibleSchools.length
-    ? (activeSchoolIds.size / eligibleSchools.length) * 100
-    : 0;
 
   const activeHour = useMemo(
     () =>
@@ -406,6 +406,15 @@ export function HeatmapExplorer({
         .map((s) => s.id)
     );
   }, [selectedMuni, activeSchoolIds]);
+
+  const insightEligibleCount = useMemo(() => {
+    if (!selectedMuni) return eligibleSchools.length;
+    return eligibleSchools.filter((s) => s.municipalityId === selectedMuni).length;
+  }, [selectedMuni, eligibleSchools]);
+
+  const insightSpread = insightEligibleCount
+    ? (insightSchoolIds.size / insightEligibleCount) * 100
+    : 0;
 
   const topActivities = useMemo(
     () =>
@@ -1245,8 +1254,8 @@ export function HeatmapExplorer({
       : 'text-[color:var(--maroon)] hover:bg-[color:var(--surface-2)]');
 
   return createPortal(
-    <div className="fixed inset-0 z-[220] flex flex-col bg-[color:var(--surface)]" dir="rtl">
-      <header className="border-b border-[color:var(--hairline)] bg-[color:var(--surface)]/95 px-3 py-2 backdrop-blur">
+    <div className="fixed inset-0 z-[220] flex flex-col overflow-hidden bg-[color:var(--surface)]" dir="rtl">
+      <header className="max-h-[46vh] shrink-0 overflow-y-auto border-b border-[color:var(--hairline)] bg-[color:var(--surface)]/95 px-3 py-2 backdrop-blur lg:max-h-none lg:overflow-visible">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2">
             <GraduationCap className="h-5 w-5 shrink-0 text-[color:var(--gold)]" />
@@ -1431,12 +1440,14 @@ export function HeatmapExplorer({
             value={String(activeHour)}
           />
           <SummaryMini
-            icon={change !== null && change < 0 ? TrendingDown : TrendingUp}
+            icon={typeof change === 'number' && change < 0 ? TrendingDown : TrendingUp}
             label="مقارنة بالفترة السابقة"
             value={
-              change === null
-                ? 'بيانات جديدة'
-                : (change > 0 ? '+' : '') + change.toFixed(1) + '%'
+              change === undefined
+                ? 'غير متاح للكل'
+                : change === null
+                  ? 'بيانات جديدة'
+                  : (change > 0 ? '+' : '') + change.toFixed(1) + '%'
             }
           />
         </div>
@@ -1572,7 +1583,7 @@ export function HeatmapExplorer({
 
                 <div className="grid grid-cols-2 gap-2">
                   <MiniCard label="مدارس نشطة" value={String(insightSchoolIds.size)} />
-                  <MiniCard label="نسبة الانتشار" value={spread.toFixed(1) + '%'} />
+                  <MiniCard label="نسبة الانتشار" value={insightSpread.toFixed(1) + '%'} />
                 </div>
 
                 <InsightList
