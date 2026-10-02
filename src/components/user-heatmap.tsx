@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  MapPin, Flame, Users, GraduationCap, Building2, Trophy,
+  MapPin, Flame, Users, GraduationCap, Building2, Gauge,
   Maximize2, Expand, LayoutGrid, Play, Download, Clock, ChevronRight,
 } from 'lucide-react';
 import {
@@ -145,6 +145,7 @@ export function UserHeatmap({ className = '' }: { className?: string }) {
   const maxMuni = Math.max(1, ...byMuni.map((m) => m.users));
   const activeMunis = byMuni.filter((m) => m.users > 0).length;
   const topMuni = byMuni[0]?.users > 0 ? byMuni[0] : null;
+  const activeSchoolsCount = QATAR_SCHOOLS.filter((s) => valueOf(s.id) > 0).length;
 
   // أعلى المدارس (مصفّاة بالمنطقة عند اختيارها).
   const topSchools = useMemo(() => {
@@ -292,7 +293,7 @@ export function UserHeatmap({ className = '' }: { className?: string }) {
     { icon: METRIC_ICON[metric], label: `إجمالي ${METRIC_LABEL[metric]}`, value: total, isNum: true },
     { icon: GraduationCap, label: 'عدد المدارس', value: QATAR_SCHOOLS.length, isNum: true },
     { icon: Building2, label: 'البلديات المشمولة', value: `${activeMunis}/${MUNICIPALITIES.length}`, isNum: false },
-    { icon: Trophy, label: 'أعلى منطقة تركيزًا', value: topMuni ? topMuni.name : '—', isNum: false },
+    { icon: Gauge, label: 'انتشار المدارس', value: QATAR_SCHOOLS.length ? Math.round((activeSchoolsCount / QATAR_SCHOOLS.length) * 100) + '%' : '0%', isNum: false },
   ];
   const seg = (active: boolean) =>
     'rounded-lg px-2.5 py-1.5 text-xs font-black transition ' +
@@ -397,9 +398,9 @@ export function UserHeatmap({ className = '' }: { className?: string }) {
         {/* اللوحة الجانبية: تبويب المناطق / أعلى المدارس */}
         <div className="min-w-0">
           <div className="mb-3 flex items-center gap-1 rounded-xl bg-[color:var(--surface-2)]/70 p-0.5 ring-1 ring-[color:var(--hairline)]">
-            <button onClick={() => { setTab('regions'); setSelMuni(null); }} className={'flex-1 ' + seg(tab === 'regions')}>ترتيب المناطق</button>
+            <button onClick={() => { setTab('regions'); setSelMuni(null); }} className={'flex-1 ' + seg(tab === 'regions')}>انتشار المناطق</button>
             <button onClick={() => setTab('schools')} className={'flex-1 ' + seg(tab === 'schools')}>
-              {selMuni ? `مدارس ${MUNICIPALITY_BY_ID[selMuni].name}` : 'أعلى ١٠ مدارس'}
+              {selMuni ? `مدارس ${MUNICIPALITY_BY_ID[selMuni].name}` : 'مدارس ذات نشاط'}
             </button>
           </div>
 
@@ -409,14 +410,13 @@ export function UserHeatmap({ className = '' }: { className?: string }) {
             </p>
           ) : tab === 'regions' ? (
             <ul className="space-y-3.5">
-              {byMuni.map((m, i) => {
-                const rank = i + 1; const isTop = m.users > 0 && rank <= 3;
+              {byMuni.map((m) => {
                 return (
                   <li key={m.id}>
                     <button onClick={() => { setSelMuni(m.id); setTab('schools'); }} className="group w-full text-right">
                       <div className="mb-1 flex items-center justify-between gap-2">
                         <span className="flex min-w-0 items-center gap-2 text-sm font-bold text-foreground">
-                          <span className={'grid h-5 w-5 shrink-0 place-items-center rounded-full text-[11px] font-black tabular-nums ' + (isTop ? 'bg-[color:var(--maroon)] text-white' : 'bg-[color:var(--surface-2)] text-muted-foreground')}>{rank}</span>
+                          <Building2 className="h-4 w-4 shrink-0 text-[color:var(--gold)]" />
                           <span className="truncate group-hover:text-[color:var(--maroon)]">{m.name}</span>
                         </span>
                         <span className="flex shrink-0 items-center gap-2 text-xs font-bold tabular-nums text-muted-foreground">
@@ -444,11 +444,11 @@ export function UserHeatmap({ className = '' }: { className?: string }) {
                 <p className="rounded-2xl border border-dashed border-[color:var(--hairline-strong)] p-6 text-center text-sm text-muted-foreground">لا مستخدمين في هذه المنطقة بعد.</p>
               ) : (
                 <ul className="space-y-3">
-                  {topSchools.map(({ s, v }, i) => (
+                  {topSchools.map(({ s, v }) => (
                     <li key={s.id}>
                       <div className="mb-1 flex items-center justify-between gap-2">
                         <span className="flex min-w-0 items-center gap-2 text-sm font-bold text-foreground">
-                          <span className="w-5 shrink-0 text-center font-display text-sm font-black text-[color:var(--gold)] tabular-nums">{i + 1}</span>
+                          <MapPin className="h-4 w-4 shrink-0 text-[color:var(--gold)]" />
                           <span className="truncate">{s.name}</span>
                         </span>
                         <span className="shrink-0 text-xs font-bold tabular-nums text-muted-foreground">{formatFull(v)} {METRIC_UNIT[metric]}</span>
