@@ -1,45 +1,124 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { CheckCircle2, Download, Loader2, MonitorPlay } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  CheckCircle2,
+  Download,
+  Loader2,
+  MonitorPlay,
+  Layers3,
+  Save,
+} from 'lucide-react';
+import type { Subject } from '@/lib/types';
 import { isFirebaseConfigured } from '@/lib/firebase';
-import { getSettings, saveSettings } from '@/lib/site-settings';
+import {
+  downloadUnitKey,
+  getSettings,
+  saveSettings,
+  type DownloadMode,
+  type SiteSettings,
+} from '@/lib/site-settings';
 import { cn } from '@/lib/utils';
 
+type UnitOption = {
+  key: string;
+  subjectTitle: string;
+  gradeTitle: string;
+  unitTitle: string;
+};
+
 /**
- * تشغيل تنزيل الألعاب من الموقع أو إيقافه لكل الزوّار. عند الإيقاف تختفي
- * أزرار «تحميل» و«فتح في نافذة» من كل الصفحات، وتُستخدم الألعاب داخل الموقع
- * فقط. يُحفظ التغيير فور الضغط ويصل لكل الزوّار مباشرة (src/lib/site-settings.ts).
+ * إدارة صلاحية تنزيل الألعاب:
+ *  - جميع الألعاب
+ *  - منع التنزيل بالكامل
+ *  - السماح لوحدات مختارة فقط
+ *
+ * اختيار الوحدة يستخدم subject + grade + unit لضمان عدم تعارض المعرّفات
+ * بين مواد أو مستويات مختلفة.
  */
-export function DownloadsManager() {
-  const [enabled, setEnabled] = useState<boolean | null>(null);
+export function DownloadsManager({ structure }: { structure: Subject[] }) {
+  const [settings, setSettings] = useState<SiteSettings | null>(null);
+  const [draft, setDraft] = useState<SiteSettings | null>(null);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
 
+  const units = useMemo<UnitOption[]>(
+    () =>
+      structure.flatMap((subject) =>
+        subject.grades.flatMap((grade) =>
+          grade.units.map((unit) => ({
+            key: downloadUnitKey({
+              subjectId: subject.id,
+              gradeId: grade.id,
+              unitId: unit.id,
+            }),
+            subjectTitle: subject.title,
+            gradeTitle: grade.title,
+            unitTitle: unit.title,
+          }))
+        )
+      ),
+    [structure]
+  );
+
   useEffect(() => {
     getSettings()
-      .then((s) => setEnabled(s.downloadsEnabled))
+      .then((s) => {
+        setSettings(s);
+        setDraft(s);
+      })
       .catch(() => {
-        setError('تعذّر قراءة الإعداد الحالي. تحقّق من اتصالك ثم أعد تحميل الصفحة.');
+        setError('تعذّر قراءة إعدادات التنزيل. تحقّق من اتصالك ثم أعد تحميل الصفحة.');
       });
   }, []);
 
-  async function toggle() {
-    if (enabled === null || busy) return;
-    const next = !enabled;
+  const dirty =
+    settings &&
+    draft &&
+    (settings.downloadMode !== draft.downloadMode ||
+      settings.downloadUnitKeys.join('|') !== draft.downloadUnitKeys.join('|'));
+
+  function setMode(mode: DownloadMode) {
+    if (!draft) return;
+    setSaved(false);
+    setDraft({
+      ...draft,
+      downloadMode: mode,
+      downloadsEnabled: mode === 'all',
+    });
+  }
+
+  function toggleUnit(key: string) {
+    if (!draft) return;
+    const exists = draft.downloadUnitKeys.includes(key);
+    const next = exists
+      ? draft.downloadUnitKeys.filter((k) => k !== key)
+      : [...draft.downloadUnitKeys, key];
+
+    setSaved(false);
+    setDraft({
+      ...draft,
+      downloadMode: 'selected-units',
+      downloadsEnabled: false,
+      downloadUnitKeys: next,
+    });
+  }
+
+  async function save() {
+    if (!draft || busy) return;
     setBusy(true);
     setSaved(false);
     setError('');
     try {
-      await saveSettings({ downloadsEnabled: next });
-      setEnabled(next);
+      await saveSettings(draft);
+      setSettings(draft);
       setSaved(true);
     } catch (e) {
       const code = (e as { code?: string })?.code;
       setError(
         code === 'permission-denied'
-          ? 'رُفض الحفظ: حسابك غير مسجَّل كمالك في مجموعة admins، أو قواعد Firestore غير منشورة.'
+          ? 'رُفض الحفظ: حسابك غير مسجّل كمالك في مجموعة admins، أو قواعد Firestore غير منشورة.'
           : (e as Error)?.message || 'تعذّر الحفظ. تحقّق من اتصالك ثم أعد المحاولة.'
       );
     } finally {
@@ -47,93 +126,227 @@ export function DownloadsManager() {
     }
   }
 
-  if (enabled === null && !error) {
+  if (!draft && !error) {
     return (
       <div className="flex items-center gap-2 py-10 text-sm text-muted-foreground">
-        <Loader2 className="h-5 w-5 animate-spin" /> جارٍ تحميل الإعداد…
+        <Loader2 className="h-5 w-5 animate-spin" /> جارٍ تحميل إعدادات التنزيل…
       </div>
     );
   }
 
-  return (
-    <div className="max-w-2xl space-y-5">
-      <div className="card-premium rounded-3xl p-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <div
-              className={cn(
-                'grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-white',
-                enabled ? 'bg-[color:var(--maroon)]' : 'bg-[color:var(--gold)]'
-              )}
-            >
-              {enabled ? <Download className="h-6 w-6" /> : <MonitorPlay className="h-6 w-6" />}
-            </div>
-            <div>
-              <h3 className="font-display text-lg font-black text-[color:var(--maroon)]">
-                تنزيل الألعاب من الموقع
-              </h3>
-              <p className="mt-1 text-sm font-bold text-muted-foreground">
-                {enabled === null
-                  ? '—'
-                  : enabled
-                    ? 'مُفعَّل: يستطيع الزوّار تنزيل الألعاب.'
-                    : 'متوقّف: تُستخدم الألعاب داخل الموقع فقط.'}
-              </p>
-            </div>
-          </div>
+  const mode = draft?.downloadMode ?? 'none';
+  const selectedCount = draft?.downloadUnitKeys.length ?? 0;
 
-          <button
-            type="button"
-            role="switch"
-            aria-checked={!!enabled}
-            aria-label="السماح بتنزيل الألعاب"
-            onClick={() => void toggle()}
-            disabled={enabled === null || busy}
-            className={cn(
-              'relative h-9 w-16 shrink-0 rounded-full transition-colors disabled:opacity-50',
-              enabled ? 'bg-[color:var(--maroon)]' : 'bg-[color:var(--hairline)]'
-            )}
-          >
-            <span
-              className={cn(
-                'absolute top-1 grid h-7 w-7 place-items-center rounded-full bg-white shadow transition-all',
-                enabled ? 'right-8' : 'right-1'
-              )}
-            >
-              {busy && <Loader2 className="h-4 w-4 animate-spin text-[color:var(--maroon)]" />}
-            </span>
-          </button>
+  return (
+    <div className="max-w-3xl space-y-5">
+      <div className="card-premium rounded-3xl p-6">
+        <div className="mb-5">
+          <h3 className="font-display text-xl font-black text-[color:var(--maroon)]">
+            صلاحيات تنزيل الألعاب
+          </h3>
+          <p className="mt-1 text-sm leading-7 text-muted-foreground">
+            اختر هل تريد السماح بتنزيل كل الألعاب، منعها جميعًا، أو إتاحة التنزيل
+            لوحدات محددة فقط من الكتاب.
+          </p>
         </div>
 
-        <ul className="mt-5 space-y-1.5 border-t border-[color:var(--hairline)] pt-4 text-sm leading-7 text-muted-foreground">
-          <li>
-            <b className="text-foreground">عند التشغيل:</b> يظهر زرّ «تحميل» في بطاقات
-            الأنشطة وصفحة اللعب، ويستطيع الزوّار تنزيل اللعبة كملف HTML.
-          </li>
-          <li>
-            <b className="text-foreground">عند الإيقاف:</b> تختفي أزرار «تحميل» و«فتح في
-            نافذة» من كل الصفحات، ويلعب الزوّار داخل الموقع فقط.
-          </li>
-          <li>يصل التغيير إلى جميع الزوّار فورًا، حتى من كانت الصفحة مفتوحة لديه.</li>
-        </ul>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <ModeCard
+            active={mode === 'all'}
+            icon={Download}
+            title="كل الألعاب"
+            description="التنزيل متاح في جميع الوحدات."
+            onClick={() => setMode('all')}
+          />
+          <ModeCard
+            active={mode === 'none'}
+            icon={MonitorPlay}
+            title="منع التنزيل"
+            description="اللعب داخل الموقع فقط."
+            onClick={() => setMode('none')}
+          />
+          <ModeCard
+            active={mode === 'selected-units'}
+            icon={Layers3}
+            title="وحدات محددة"
+            description="التنزيل متاح للوحدات التي تختارها فقط."
+            onClick={() => setMode('selected-units')}
+          />
+        </div>
+
+        {mode === 'selected-units' && (
+          <div className="mt-6 border-t border-[color:var(--hairline)] pt-5">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h4 className="font-black text-foreground">اختر الوحدات المسموح تنزيل ألعابها</h4>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  المحدد حاليًا: {selectedCount} من {units.length} وحدة.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDraft((s) =>
+                      s
+                        ? {
+                            ...s,
+                            downloadMode: 'selected-units',
+                            downloadsEnabled: false,
+                            downloadUnitKeys: units.map((u) => u.key),
+                          }
+                        : s
+                    )
+                  }
+                  className="btn-ghost btn-sm px-3 py-2 text-xs"
+                >
+                  تحديد الكل
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDraft((s) =>
+                      s
+                        ? {
+                            ...s,
+                            downloadMode: 'selected-units',
+                            downloadsEnabled: false,
+                            downloadUnitKeys: [],
+                          }
+                        : s
+                    )
+                  }
+                  className="btn-ghost btn-sm px-3 py-2 text-xs"
+                >
+                  إلغاء الكل
+                </button>
+              </div>
+            </div>
+
+            <div className="max-h-[32rem] space-y-3 overflow-y-auto rounded-2xl border border-[color:var(--hairline)] bg-[color:var(--surface-2)]/40 p-3">
+              {units.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                  لا توجد وحدات في بنية المنهج الحالية.
+                </p>
+              ) : (
+                units.map((unit) => {
+                  const checked = draft?.downloadUnitKeys.includes(unit.key) ?? false;
+                  return (
+                    <label
+                      key={unit.key}
+                      className={cn(
+                        'flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition',
+                        checked
+                          ? 'border-[color:var(--maroon)] bg-[color:var(--maroon)]/5'
+                          : 'border-[color:var(--hairline)] bg-[color:var(--surface)] hover:border-[color:var(--gold)]'
+                      )}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleUnit(unit.key)}
+                        className="mt-1 h-5 w-5 accent-[color:var(--maroon)]"
+                      />
+                      <span className="min-w-0">
+                        <span className="block font-black text-[color:var(--maroon)]">
+                          {unit.unitTitle}
+                        </span>
+                        <span className="mt-1 block text-xs font-bold text-muted-foreground">
+                          {unit.subjectTitle} ← {unit.gradeTitle}
+                        </span>
+                      </span>
+                    </label>
+                  );
+                })
+              )}
+            </div>
+
+            {selectedCount === 0 && (
+              <p className="mt-3 rounded-xl bg-[color:var(--gold)]/10 px-4 py-3 text-sm font-bold text-[color:var(--gold)]">
+                لم تحدد أي وحدة؛ بعد الحفظ لن يظهر زر التحميل لأي لعبة.
+              </p>
+            )}
+          </div>
+        )}
+
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-[color:var(--hairline)] pt-5">
+          <p className="text-sm font-bold text-muted-foreground">
+            {mode === 'all'
+              ? 'الحالة: التنزيل متاح لكل الألعاب.'
+              : mode === 'none'
+                ? 'الحالة: التنزيل متوقف لجميع الألعاب.'
+                : `الحالة: التنزيل متاح في ${selectedCount} وحدة محددة.`}
+          </p>
+          <button
+            type="button"
+            onClick={() => void save()}
+            disabled={!dirty || busy}
+            className="flex items-center gap-2 rounded-xl bg-[color:var(--maroon)] px-5 py-2.5 text-sm font-black text-white shadow-md transition disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            حفظ إعدادات التنزيل
+          </button>
+        </div>
       </div>
 
       {saved && (
         <p className="flex items-center gap-2 rounded-xl bg-emerald-500/10 px-4 py-2.5 text-sm font-bold text-emerald-700 dark:text-emerald-300">
           <CheckCircle2 className="h-4 w-4" />
-          {enabled ? 'تم تشغيل التنزيل للزوّار.' : 'تم إيقاف التنزيل — الألعاب داخل الموقع فقط.'}
+          تم حفظ صلاحيات التنزيل وتصل التغييرات للزوّار مباشرة.
         </p>
       )}
+
       {error && (
         <p className="rounded-xl bg-[color:var(--coral)]/15 px-4 py-2.5 text-sm font-bold text-[color:var(--coral)]">
           {error}
         </p>
       )}
+
       {!isFirebaseConfigured && (
         <p className="rounded-xl bg-[color:var(--gold)]/15 px-4 py-2.5 text-sm font-bold text-[color:var(--gold)]">
-          وضع العرض المحلي: Firebase غير مُعدّ، لذا يُحفظ الإعداد في هذا المتصفّح فقط.
+          وضع العرض المحلي: Firebase غير مُعدّ، لذا تُحفظ الإعدادات في هذا المتصفّح فقط.
         </p>
       )}
     </div>
+  );
+}
+
+function ModeCard({
+  active,
+  icon: Icon,
+  title,
+  description,
+  onClick,
+}: {
+  active: boolean;
+  icon: typeof Download;
+  title: string;
+  description: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'rounded-2xl border p-4 text-right transition',
+        active
+          ? 'border-[color:var(--maroon)] bg-[color:var(--maroon)]/5 shadow-sm'
+          : 'border-[color:var(--hairline)] bg-[color:var(--surface)] hover:border-[color:var(--gold)]'
+      )}
+    >
+      <span
+        className={cn(
+          'mb-3 grid h-10 w-10 place-items-center rounded-xl',
+          active
+            ? 'bg-[color:var(--maroon)] text-white'
+            : 'bg-[color:var(--surface-2)] text-[color:var(--maroon)]'
+        )}
+      >
+        <Icon className="h-5 w-5" />
+      </span>
+      <span className="block font-black text-[color:var(--maroon)]">{title}</span>
+      <span className="mt-1 block text-xs leading-5 text-muted-foreground">{description}</span>
+    </button>
   );
 }
