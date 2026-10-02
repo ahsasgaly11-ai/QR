@@ -385,7 +385,9 @@ export async function getSchoolActivityMetrics(): Promise<SchoolActivityMetric[]
       };
     }).filter((x) => x.schoolId && x.activityId);
   } catch (e) {
-    reportSyncError(e, 'قراءة تفاصيل استخدام الأنشطة حسب المدارس');
+    // التحليلات التفصيلية طبقة إضافية؛ إن لم تُنشر قواعدها بعد
+    // نعود للبيانات المحلية بدون تعطيل العدادات الأساسية أو إظهار إنذار للزائر.
+    console.warn('[heatmap-analytics] detailed read failed', e);
     return local;
   }
 }
