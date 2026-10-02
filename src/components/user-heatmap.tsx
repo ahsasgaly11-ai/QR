@@ -158,7 +158,6 @@ export function UserHeatmap({ className = '' }: { className?: string }) {
 
   const maxMuni = Math.max(1, ...byMuni.map((m) => m.users));
   const activeMunis = byMuni.filter((m) => m.users > 0).length;
-  const topMuni = byMuni[0]?.users > 0 ? byMuni[0] : null;
   const activeSchoolsCount = QATAR_SCHOOLS.filter((s) => valueOf(s.id) > 0).length;
 
   // أعلى المدارس (مصفّاة بالمنطقة عند اختيارها).
