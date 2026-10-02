@@ -192,15 +192,16 @@ export async function saveSettings(settings: SiteSettings): Promise<void> {
 }
 
 /**
- * توافق خلفي: true فقط عندما يكون تنزيل جميع الأنشطة مسموحًا.
+ * هل توجد أي تنزيلات متاحة في الموقع؟ يُستخدم للنصوص العامة فقط.
  * المكوّنات التي تعرف النشاط ينبغي أن تستخدم useActivityDownloadEnabled.
  */
 export function useDownloadsEnabled(): boolean {
-  const [enabled, setEnabled] = useState(DEFAULT_SETTINGS.downloadMode === 'all');
-  useEffect(
-    () => subscribeSettings((s) => setEnabled(s.downloadMode === 'all')),
-    []
-  );
+  const hasAny = (s: SiteSettings) =>
+    s.downloadMode === 'all' ||
+    (s.downloadMode === 'selected-units' && s.downloadUnitKeys.length > 0);
+
+  const [enabled, setEnabled] = useState(() => hasAny(DEFAULT_SETTINGS));
+  useEffect(() => subscribeSettings((s) => setEnabled(hasAny(s))), []);
   return enabled;
 }
 
