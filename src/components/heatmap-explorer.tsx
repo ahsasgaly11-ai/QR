@@ -946,10 +946,10 @@ export function HeatmapExplorer({
   useEffect(() => {
     if (!mounted) return;
     fit();
-    requestDraw();
+    setThemeTick((n) => n + 1);
     const onResize = () => {
       fit();
-      requestDraw();
+      setThemeTick((n) => n + 1);
     };
     window.addEventListener('resize', onResize);
     const onKey = (e: KeyboardEvent) => {
@@ -965,7 +965,7 @@ export function HeatmapExplorer({
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [mounted, fit, requestDraw, onClose]);
+  }, [mounted, fit, onClose]);
 
   useEffect(() => {
     requestDraw();
