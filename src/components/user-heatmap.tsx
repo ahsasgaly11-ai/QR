@@ -50,6 +50,23 @@ export function UserHeatmap({ className = '' }: { className?: string }) {
 
   useEffect(() => {
     let alive = true;
+    getSchoolMetrics().then((m) => {
+      if (!alive) return;
+      setMetrics(m);
+      setUpdatedAt(Date.now());
+      setLoaded(true);
+    });
+    setMySchoolId(getSelectedSchool()?.id ?? null);
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // التفاصيل الأثقل (مدرسة × نشاط) تُحمّل فقط عند فتح مركز التحليل،
+  // ثم تتحدّث كل دقيقة ما دام مفتوحًا؛ فلا نستهلك قراءات Firestore بلا حاجة.
+  useEffect(() => {
+    if (!explore) return;
+    let alive = true;
     const load = async () => {
       const [m, detail, curriculum, allActivities] = await Promise.all([
         getSchoolMetrics(),
@@ -63,17 +80,14 @@ export function UserHeatmap({ className = '' }: { className?: string }) {
       setSubjects(curriculum);
       setActivities(allActivities);
       setUpdatedAt(Date.now());
-      setLoaded(true);
     };
     void load();
-    // تحديث هادئ كل دقيقة حتى تبقى مؤشرات «النشاط الآن» والخريطة حيّة.
     const timer = window.setInterval(() => void load(), 60_000);
-    setMySchoolId(getSelectedSchool()?.id ?? null);
     return () => {
       alive = false;
       window.clearInterval(timer);
     };
-  }, []);
+  }, [explore]);
 
   useEffect(() => {
     const obs = new MutationObserver(() => setThemeTick((n) => n + 1));
