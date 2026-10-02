@@ -29,24 +29,10 @@ export interface SchoolMetric {
   downloads: number;
   /** توزيع يومي لعدد المستخدمين الجدد: { 'YYYY-MM-DD': n }. */
   days: Record<string, number>;
-  /** توزيع يومي لمرات تشغيل الألعاب. يبدأ من نسخة التحليلات المتقدمة. */
-  playsByDay: Record<string, number>;
-  /** توزيع يومي للتنزيلات. يبدأ من نسخة التحليلات المتقدمة. */
-  downloadsByDay: Record<string, number>;
-  /** آخر تفاعل لعب/تنزيل معروف لهذه المدرسة. */
-  lastActiveAt: number;
 }
 
 export function emptyMetric(): SchoolMetric {
-  return {
-    users: 0,
-    plays: 0,
-    downloads: 0,
-    days: {},
-    playsByDay: {},
-    downloadsByDay: {},
-    lastActiveAt: 0,
-  };
+  return { users: 0, plays: 0, downloads: 0, days: {} };
 }
 
 export function metricValue(m: SchoolMetric | undefined, k: MetricKey): number {
