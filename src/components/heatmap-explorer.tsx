@@ -247,7 +247,7 @@ export function HeatmapExplorer({
   );
 
   const effectiveFilters = useMemo<HeatmapFilters>(() => {
-    if (!hasContentFilter(effectiveFilters) || curriculumActivities.length === 0) {
+    if (!hasContentFilter(filters) || curriculumActivities.length === 0) {
       return filters;
     }
 
@@ -291,7 +291,7 @@ export function HeatmapExplorer({
         metric,
         days: periodWindow.current,
       }),
-    [metrics, activityMetrics, filters, metric, periodWindow.current]
+    [metrics, activityMetrics, effectiveFilters, metric, periodWindow.current]
   );
 
   const previousValuesBase = useMemo(
@@ -304,7 +304,7 @@ export function HeatmapExplorer({
         metric,
         days: periodWindow.previous,
       }),
-    [metrics, activityMetrics, filters, metric, periodWindow.previous]
+    [metrics, activityMetrics, effectiveFilters, metric, periodWindow.previous]
   );
 
   const dailyValues = useMemo(
@@ -317,7 +317,7 @@ export function HeatmapExplorer({
         metric,
         days: periodWindow.playback,
       }),
-    [metrics, activityMetrics, filters, metric, periodWindow.playback]
+    [metrics, activityMetrics, effectiveFilters, metric, periodWindow.playback]
   );
 
   const applyRecent = useCallback(
@@ -458,7 +458,7 @@ export function HeatmapExplorer({
     () =>
       aggregateActivities({
         rows: activityMetrics,
-        effectiveFilters,
+        filters: effectiveFilters,
         metric: analysisMetric,
         days: periodWindow.current,
         schoolIds: insightSchoolIds,
@@ -476,7 +476,7 @@ export function HeatmapExplorer({
     () =>
       aggregateUnits({
         rows: activityMetrics,
-        effectiveFilters,
+        filters: effectiveFilters,
         metric: analysisMetric,
         days: periodWindow.current,
         subjects,
@@ -508,7 +508,7 @@ export function HeatmapExplorer({
       const active = schools.filter((s) => (currentValues[s.id] || 0) > 0).length;
       const unit = aggregateUnits({
         rows: activityMetrics,
-        effectiveFilters,
+        filters: effectiveFilters,
         metric: analysisMetric,
         days: periodWindow.current,
         subjects,
@@ -516,7 +516,7 @@ export function HeatmapExplorer({
       })[0];
       const activity = aggregateActivities({
         rows: activityMetrics,
-        effectiveFilters,
+        filters: effectiveFilters,
         metric: analysisMetric,
         days: periodWindow.current,
         schoolIds,
@@ -542,7 +542,7 @@ export function HeatmapExplorer({
     const schoolIds = new Set([school.id]);
     const unit = aggregateUnits({
       rows: activityMetrics,
-      effectiveFilters,
+      filters: effectiveFilters,
       metric: analysisMetric,
       days: periodWindow.current,
       subjects,
@@ -550,7 +550,7 @@ export function HeatmapExplorer({
     })[0];
     const activity = aggregateActivities({
       rows: activityMetrics,
-      effectiveFilters,
+      filters: effectiveFilters,
       metric: analysisMetric,
       days: periodWindow.current,
       schoolIds,
