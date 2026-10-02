@@ -119,7 +119,7 @@ export function ActivityCard({
       }
       saveHtml(html);
     }
-    trackSchoolDownload(); // ينسب التحميل لمدرسة المستخدم المختارة
+    trackSchoolDownload(activity); // ينسب التحميل لمدرسة المستخدم المختارة
     await trackDownload(activity.id);
   };
 
