@@ -332,10 +332,6 @@ export function HeatmapExplorer({
     () => percentChange(total, previousTotal),
     [total, previousTotal]
   );
-  const spread = eligibleSchools.length
-    ? (activeSchoolIds.size / eligibleSchools.length) * 100
-    : 0;
-
   const activeHour = useMemo(
     () =>
       eligibleSchools.filter(
