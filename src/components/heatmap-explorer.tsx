@@ -183,7 +183,7 @@ export function HeatmapExplorer({
   const [normalization, setNormalization] = useState<NormalizationMode>('total');
   const [recent, setRecent] = useState<RecentWindow>('all');
   const [filters, setFilters] = useState<HeatmapFilters>({
-    period: '30d',
+    period: 'all',
     subjectId: 'all',
     gradeId: 'all',
     unitId: 'all',
@@ -1140,7 +1140,7 @@ export function HeatmapExplorer({
 
   const resetFilters = () => {
     setFilters({
-      period: '30d',
+      period: 'all',
       subjectId: 'all',
       gradeId: 'all',
       unitId: 'all',
