@@ -1442,10 +1442,10 @@ export function HeatmapExplorer({
         </div>
       </header>
 
-      <main className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1fr)_350px]">
+      <main className="flex min-h-0 flex-1 flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_350px]">
         <section
           ref={mapRef}
-          className="relative min-h-[320px] touch-none overflow-hidden bg-gradient-to-b from-[color:var(--surface)] to-[color:var(--surface-2)]/60"
+          className="relative min-h-[280px] flex-1 touch-none overflow-hidden bg-gradient-to-b from-[color:var(--surface)] to-[color:var(--surface-2)]/60 lg:min-h-0"
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
@@ -1548,7 +1548,7 @@ export function HeatmapExplorer({
           )}
         </section>
 
-        <aside className="min-h-0 overflow-y-auto border-t border-[color:var(--hairline)] bg-[color:var(--surface)] p-4 lg:border-r lg:border-t-0">
+        <aside className="max-h-[38vh] shrink-0 overflow-y-auto border-t border-[color:var(--hairline)] bg-[color:var(--surface)] p-4 lg:max-h-none lg:min-h-0 lg:border-r lg:border-t-0">
           {selectedSchoolInfo ? (
             <SchoolDetail
               info={selectedSchoolInfo}
