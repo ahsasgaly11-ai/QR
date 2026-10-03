@@ -58,15 +58,19 @@ export default async function PlayPage({
   const { subject, unit, lesson } = locateActivity(subjects, activity);
 
   const all = await getAllActivities();
-  const related = all.filter(
-    (a) => a.lessonId === activity.lessonId && a.id !== activity.id
+  const related = all.filter((a) =>
+    activity.smartReinforcement
+      ? a.smartReinforcement && a.id !== activity.id
+      : a.lessonId === activity.lessonId && a.id !== activity.id
   );
 
   return (
     <div className="short-tight mx-auto max-w-6xl px-4 py-10 sm:px-6">
       {/* breadcrumb */}
       <div className="mb-5 flex items-center gap-3">
-        <BackButton fallback={`/subject/${activity.subjectId}`} />
+        <BackButton
+          fallback={activity.smartReinforcement ? '/smart-games' : `/subject/${activity.subjectId}`}
+        />
       </div>
 
       <nav className="short-hide mb-5 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
@@ -74,24 +78,30 @@ export default async function PlayPage({
           <Home className="h-4 w-4" /> الرئيسية
         </Link>
         <ChevronLeft className="h-4 w-4" />
-        {subject && (
+        {activity.smartReinforcement ? (
+          <span className="font-bold text-foreground">ألعاب التعزيز الذكية</span>
+        ) : (
           <>
-            <Link
-              href={`/subject/${subject.id}`}
-              className="hover:text-[color:var(--maroon)]"
-            >
-              {subject.title}
-            </Link>
-            <ChevronLeft className="h-4 w-4" />
+            {subject && (
+              <>
+                <Link
+                  href={`/subject/${subject.id}`}
+                  className="hover:text-[color:var(--maroon)]"
+                >
+                  {subject.title}
+                </Link>
+                <ChevronLeft className="h-4 w-4" />
+              </>
+            )}
+            {unit && (
+              <>
+                <span>{unit.title}</span>
+                <ChevronLeft className="h-4 w-4" />
+              </>
+            )}
+            {lesson && <span className="font-bold text-foreground">{lesson.title}</span>}
           </>
         )}
-        {unit && (
-          <>
-            <span>{unit.title}</span>
-            <ChevronLeft className="h-4 w-4" />
-          </>
-        )}
-        {lesson && <span className="font-bold text-foreground">{lesson.title}</span>}
       </nav>
 
       <h1 className="short-title mb-1 font-display text-3xl font-black text-[color:var(--maroon)] sm:text-4xl">
@@ -106,7 +116,7 @@ export default async function PlayPage({
       {related.length > 0 && (
         <section className="mt-14">
           <h2 className="mb-5 font-display text-2xl font-black text-[color:var(--maroon)]">
-            أنشطة أخرى في الدرس نفسه
+            {activity.smartReinforcement ? 'ألعاب تعزيز أخرى' : 'أنشطة أخرى في الدرس نفسه'}
           </h2>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {related.map((a, i) => (
