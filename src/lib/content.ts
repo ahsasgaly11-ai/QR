@@ -78,6 +78,8 @@ export async function fetchUploadedActivities(): Promise<Activity[]> {
 
 function attachActivities(subjects: Subject[], activities: Activity[]) {
   for (const a of activities) {
+    // ألعاب التعزيز الذكية قسم مستقل ولا تُدمج داخل دروس المواد.
+    if (a.smartReinforcement) continue;
     const subject = subjects.find((s) => s.id === a.subjectId);
     const grade = subject?.grades.find((g) => g.id === a.gradeId);
     const unit = grade?.units.find((u) => u.id === a.unitId);
