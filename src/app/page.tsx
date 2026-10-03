@@ -32,9 +32,6 @@ export default async function HomePage() {
   // العدد نفسه الذي تعرضه لوحة الإحصاءات (كل الأنشطة المنشورة).
   const total = activities.length;
   const featured = activities.slice(0, 4);
-  const smartReinforcementGames = activities
-    .filter((a) => a.smartReinforcement)
-    .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
 
   return (
     <>
@@ -212,54 +209,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ===================== SMART REINFORCEMENT GAMES ===================== */}
-      <section className="relative overflow-hidden py-16">
-        <div className="pointer-events-none absolute inset-0 bg-[color:var(--gold)]/[0.035]" />
-        <div className="relative mx-auto max-w-7xl px-6">
-          <Reveal className="mb-10 flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-[color:var(--gold)]/35 bg-[color:var(--gold)]/10 px-3 py-1 text-xs font-black text-[color:var(--maroon)]">
-                <Sparkles className="h-4 w-4 text-[color:var(--gold)]" />
-                تعلم • العب • عزّز
-              </div>
-              <h2 className="mt-3 font-calli text-3xl font-bold text-[color:var(--maroon)] sm:text-4xl">
-                ألعاب التعزيز الذكية
-              </h2>
-              <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
-                ألعاب تفاعلية مخصّصة لتعزيز المفاهيم والمهارات. يظهر أسفل كل لعبة وصف مختصر يوضّح فكرتها وما الذي يتدرّب عليه الطالب.
-              </p>
-            </div>
-            <div className="hidden h-16 w-16 place-items-center rounded-2xl bg-[color:var(--maroon)] text-white shadow-lg sm:grid">
-              <Gamepad2 className="h-8 w-8" />
-            </div>
-          </Reveal>
-
-          {smartReinforcementGames.length > 0 ? (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {smartReinforcementGames.map((a, i) => (
-                <Reveal key={a.id} delay={i * 70}>
-                  <ActivityCard activity={a} index={i} />
-                </Reveal>
-              ))}
-            </div>
-          ) : (
-            <Reveal>
-              <div className="rounded-3xl border border-dashed border-[color:var(--gold)]/45 bg-[color:var(--surface)] p-8 text-center shadow-sm sm:p-10">
-                <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[color:var(--gold)]/12 text-[color:var(--maroon)]">
-                  <Gamepad2 className="h-7 w-7" />
-                </div>
-                <h3 className="mt-4 font-display text-xl font-black text-[color:var(--maroon)]">
-                  ستظهر الألعاب هنا
-                </h3>
-                <p className="mx-auto mt-2 max-w-xl text-sm leading-7 text-muted-foreground">
-                  من لوحة الإدارة، ارفع ملف HTML واكتب وصف اللعبة ثم فعّل خيار «إظهار ضمن ألعاب التعزيز الذكية».
-                </p>
-              </div>
-            </Reveal>
-          )}
-        </div>
-      </section>
-
       {/* ===================== SUBJECTS ===================== */}
       <section className="mx-auto max-w-7xl px-6 py-16">
         <Reveal className="mb-10 flex flex-wrap items-end justify-between gap-4">
@@ -316,6 +265,35 @@ export default async function HomePage() {
               </Reveal>
             );
           })}
+          <Reveal delay={subjects.length * 100}>
+            <Link href="/smart-games" aria-label="ألعاب التعزيز الذكية">
+              <div
+                className="card-premium relative flex h-56 flex-col justify-between overflow-hidden rounded-3xl p-6 text-white shadow-xl"
+                style={{
+                  background:
+                    'linear-gradient(135deg, var(--maroon), #6a4c93)',
+                }}
+              >
+                <div className="absolute -left-8 -top-8 h-32 w-32 rounded-full bg-white/10" />
+                <div className="absolute bottom-2 left-4 text-7xl opacity-25" aria-hidden>
+                  🎮
+                </div>
+                <div className="relative">
+                  <span className="text-4xl" aria-hidden>🎮</span>
+                  <h3 className="mt-3 font-display text-2xl font-black">
+                    ألعاب التعزيز الذكية
+                  </h3>
+                  <p className="text-sm text-white/80">Smart Reinforcement Games</p>
+                </div>
+                <div className="relative flex items-center justify-between">
+                  <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold backdrop-blur">
+                    تعلّم • العب • عزّز
+                  </span>
+                  <ArrowLeft className="h-6 w-6" />
+                </div>
+              </div>
+            </Link>
+          </Reveal>
         </div>
       </section>
 
