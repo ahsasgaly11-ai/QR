@@ -310,7 +310,7 @@ export function ActivitiesManager({
                         <Sparkles className="h-3.5 w-3.5" /> ألعاب التعزيز الذكية
                       </span>
                       <span className="mt-1 block text-[11px] leading-5 text-muted-foreground">
-                        أظهر هذا النشاط أيضًا في القسم المخصص بالصفحة الرئيسية.
+                        انقل هذا النشاط إلى قسم «ألعاب التعزيز الذكية» المستقل.
                       </span>
                     </span>
                   </label>
@@ -353,7 +353,6 @@ export function ActivitiesManager({
                 </div>
 
                 {!a.smartReinforcement && (
-                  {/* نقل النشاط إلى وحدة أو درس آخر */}
                   <div className="rounded-xl border border-[color:var(--hairline)] p-3">
                     <p className="mb-2 flex items-center gap-1.5 text-xs font-black text-[color:var(--maroon)]">
                       <FolderInput className="h-4 w-4" /> موقع النشاط
