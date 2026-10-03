@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import {
-  Pencil, Trash2, X, Check, Loader2, Lock, Eye, Download, Images, Search, FolderInput, Hand,
+  Pencil, Trash2, X, Check, Loader2, Lock, Eye, Download, Images, Search, FolderInput, Hand, Sparkles,
 } from 'lucide-react';
 import type { Activity, ActivityType, Subject } from '@/lib/types';
 import { ACTIVITY_META } from '@/lib/types';
@@ -280,6 +280,24 @@ export function ActivitiesManager({
                   }
                   placeholder="الوصف"
                 />
+                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[color:var(--gold)]/30 bg-[color:var(--gold)]/5 p-3">
+                  <input
+                    type="checkbox"
+                    checked={draft.smartReinforcement ?? a.smartReinforcement ?? false}
+                    onChange={(e) =>
+                      setDraft((d) => ({ ...d, smartReinforcement: e.target.checked }))
+                    }
+                    className="mt-0.5 h-4 w-4 accent-[color:var(--maroon)]"
+                  />
+                  <span>
+                    <span className="flex items-center gap-1.5 text-xs font-black text-[color:var(--maroon)]">
+                      <Sparkles className="h-3.5 w-3.5" /> ألعاب التعزيز الذكية
+                    </span>
+                    <span className="mt-1 block text-[11px] leading-5 text-muted-foreground">
+                      أظهر هذا النشاط أيضًا في القسم المخصص بالصفحة الرئيسية.
+                    </span>
+                  </span>
+                </label>
                 <div className="flex flex-wrap gap-2">
                   {TYPES.map((t) => (
                     <button
@@ -372,6 +390,11 @@ export function ActivitiesManager({
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <ActivityTypeBadge type={a.type} />
+                    {a.smartReinforcement && (
+                      <span className="pill bg-[color:var(--gold)]/15 text-[color:var(--maroon)]">
+                        <Sparkles className="h-3 w-3" /> تعزيز ذكي
+                      </span>
+                    )}
                     <h4 className="truncate font-display text-base font-bold text-[color:var(--maroon)]">
                       {a.title}
                     </h4>
@@ -394,6 +417,7 @@ export function ActivitiesManager({
                       setDraft({
                         title: a.title,
                         description: a.description,
+                        smartReinforcement: a.smartReinforcement ?? false,
                         type: a.type,
                         signLang: a.signLang ?? '',
                         subjectId: a.subjectId,
