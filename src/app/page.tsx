@@ -31,7 +31,7 @@ export default async function HomePage() {
   const activities = await getAllActivities();
   // العدد نفسه الذي تعرضه لوحة الإحصاءات (كل الأنشطة المنشورة).
   const total = activities.length;
-  const featured = activities.slice(0, 4);
+  const featured = activities.filter((a) => !a.smartReinforcement).slice(0, 4);
 
   return (
     <>
