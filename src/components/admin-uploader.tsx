@@ -73,7 +73,6 @@ export function AdminUploader({
   const [description, setDescription] = useState('');
   const [signLang, setSignLang] = useState('');
   const [type, setType] = useState<ActivityType>(smartOnly ? 'game' : 'experiment');
-  const [smartReinforcement, setSmartReinforcement] = useState(smartOnly);
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -146,7 +145,7 @@ export function AdminUploader({
       title: title.trim(),
       description: description.trim(),
       ...(signLang.trim() ? { signLang: signLang.trim() } : {}),
-      smartReinforcement: smartOnly || smartReinforcement,
+      smartReinforcement: smartOnly,
       type,
       file: file.name,
       subjectId: finalSubjectId,
@@ -290,7 +289,6 @@ export function AdminUploader({
     setResult(null);
     setTitle('');
     setDescription('');
-    setSmartReinforcement(smartOnly);
     setFile(null);
     setNewUnitName('');
     setNewLessonName('');
@@ -318,8 +316,8 @@ export function AdminUploader({
           <CheckCircle2 className="h-9 w-9" />
           <h3 className="font-display text-2xl font-bold">
             {result.mode === 'firebase'
-              ? 'تم رفع النشاط بنجاح!'
-              : 'تم رفع النشاط — جاهز للتجربة الآن'}
+              ? smartOnly ? 'تم رفع لعبة التعزيز بنجاح!' : 'تم رفع النشاط بنجاح!'
+              : smartOnly ? 'تم رفع لعبة التعزيز — جاهزة للتجربة الآن' : 'تم رفع النشاط — جاهز للتجربة الآن'}
           </h3>
         </div>
 
@@ -332,8 +330,9 @@ export function AdminUploader({
         ) : (
           <div className="space-y-4">
             <p className="text-muted-foreground">
-              حُفظ النشاط «{result.activity.title}» وأصبح ظاهرًا في درسه داخل
-              المنصّة — يمكنك تشغيله وتحميله فورًا.
+              {smartOnly
+                ? <>حُفظت اللعبة «{result.activity.title}» وأصبحت جاهزة للتجربة في قسم ألعاب التعزيز الذكية.</>
+                : <>حُفظ النشاط «{result.activity.title}» وأصبح ظاهرًا في درسه داخل المنصّة — يمكنك تشغيله وتحميله فورًا.</>}
             </p>
             {(result.newUnit || result.newLesson) && (
               <p className="text-sm text-muted-foreground">
@@ -543,7 +542,7 @@ export function AdminUploader({
         </div>
       </div>
 
-      {smartOnly ? (
+      {smartOnly && (
         <div className="mt-5 rounded-2xl border border-[color:var(--gold)]/30 bg-[color:var(--gold)]/5 p-4">
           <p className="text-sm font-black text-[color:var(--maroon)]">
             هذه اللعبة ستُنشر في قسم «ألعاب التعزيز الذكية» فقط.
@@ -552,29 +551,10 @@ export function AdminUploader({
             لا تحتاج إلى اختيار مادة أو مستوى أو وحدة أو درس.
           </p>
         </div>
-      ) : (
-        <div className="mt-5">
-          <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-[color:var(--gold)]/30 bg-[color:var(--gold)]/5 p-4">
-            <input
-              type="checkbox"
-              checked={smartReinforcement}
-              onChange={(e) => setSmartReinforcement(e.target.checked)}
-              className="mt-1 h-4 w-4 accent-[color:var(--maroon)]"
-            />
-            <span>
-              <span className="block text-sm font-black text-[color:var(--maroon)]">
-                إظهار ضمن «ألعاب التعزيز الذكية»
-              </span>
-              <span className="mt-1 block text-xs leading-5 text-muted-foreground">
-                عند تفعيل هذا الخيار ستظهر اللعبة تلقائيًا في القسم المخصص بالصفحة الرئيسية، مع الوصف المكتوب أعلاه.
-              </span>
-            </span>
-          </label>
-        </div>
       )}
 
       <div className="mt-5">
-        <label className={labelCls}>ملف النشاط (HTML)</label>
+        <label className={labelCls}>{smartOnly ? 'ملف اللعبة (HTML)' : 'ملف النشاط (HTML)'}</label>
         <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[color:var(--gold)]/50 bg-[color:var(--surface-2)]/60 p-8 text-center transition hover:border-[color:var(--maroon)] hover:bg-[color:var(--gold)]/5">
           {file ? (
             <>
