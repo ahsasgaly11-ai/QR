@@ -33,6 +33,8 @@ export interface Activity {
   id: string;
   title: string;
   description?: string;
+  /** يظهر النشاط في قسم «ألعاب التعزيز الذكية» في الصفحة الرئيسية. */
+  smartReinforcement?: boolean;
   type: ActivityType;
   /** Path under /public/games (e.g. "muscle.html") OR a full Storage URL. */
   file: string;
