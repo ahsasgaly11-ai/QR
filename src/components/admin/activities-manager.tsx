@@ -34,12 +34,18 @@ export function ActivitiesManager({
   uploadedIds,
   labels,
   structure,
+  onlySmartReinforcement = false,
+  excludeSmartReinforcement = false,
 }: {
   activities: Activity[];
   uploadedIds: string[];
   labels: Record<string, string>;
   /** شجرة المناهج — تتيح نقل النشاط إلى وحدة أو درس آخر */
   structure: Subject[];
+  /** يعرض ألعاب التعزيز الذكية فقط في تبويبها المستقل. */
+  onlySmartReinforcement?: boolean;
+  /** يُخفي ألعاب التعزيز من مدير الأنشطة المنهجية العام. */
+  excludeSmartReinforcement?: boolean;
 }) {
   const [rows, setRows] = useState<Activity[]>(initial);
   const [uploaded, setUploaded] = useState<Set<string>>(() => new Set(uploadedIds));
@@ -51,6 +57,12 @@ export function ActivitiesManager({
   const [backfill, setBackfill] = useState<{ done: number; total: number } | null>(null);
   const [backfillMsg, setBackfillMsg] = useState('');
   const [q, setQ] = useState('');
+
+  const scopedRows = onlySmartReinforcement
+    ? rows.filter((a) => a.smartReinforcement)
+    : excludeSmartReinforcement
+      ? rows.filter((a) => !a.smartReinforcement)
+      : rows;
 
   /**
    * القائمة القادمة من الخادم قد تكون قديمة (نشاط رُفع للتوّ من تبويب الرفع)
@@ -81,6 +93,7 @@ export function ActivitiesManager({
   }, []);
 
   function labelOf(a: Activity): string {
+    if (a.smartReinforcement) return 'ألعاب التعزيز الذكية';
     if (labels[a.id]) return labels[a.id];
     const { subject, unit, lesson } = locateActivity(structure, a);
     return [subject?.title, unit?.title, lesson?.title].filter(Boolean).join(' ← ');
@@ -153,7 +166,7 @@ export function ActivitiesManager({
    * بلا صورة. هذا الزرّ يبني لها المعاينة مرّة واحدة.
    */
   async function buildMissingPreviews() {
-    const targets = rows.filter(
+    const targets = scopedRows.filter(
       (a) => a.stored === 'firestore' && (!a.hasPreview || a.previewV !== PREVIEW_VERSION) && uploaded.has(a.id)
     );
     if (!targets.length) {
@@ -194,14 +207,14 @@ export function ActivitiesManager({
 
   const needle = q.trim().toLowerCase();
   const visible = needle
-    ? rows.filter(
+    ? scopedRows.filter(
         (a) =>
           a.title.toLowerCase().includes(needle) ||
           labelOf(a).toLowerCase().includes(needle)
       )
-    : rows;
+    : scopedRows;
 
-  const missingPreviews = rows.filter(
+  const missingPreviews = scopedRows.filter(
     (a) => a.stored === 'firestore' && (!a.hasPreview || a.previewV !== PREVIEW_VERSION) && uploaded.has(a.id)
   ).length;
 
@@ -250,13 +263,15 @@ export function ActivitiesManager({
           className={inp + ' pr-9'}
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="ابحث بالعنوان أو بموقع الدرس…"
+          placeholder={onlySmartReinforcement ? 'ابحث بعنوان لعبة التعزيز…' : 'ابحث بالعنوان أو بموقع الدرس…'}
         />
       </div>
       <p className="text-sm text-muted-foreground">
         {q
-          ? `${visible.length} من ${rows.length} نشاطًا`
-          : 'عدّل عنوان أي نشاط مرفوع أو وصفه أو نوعه، وانقله إلى درس آخر، أو احذفه نهائيًا.'}
+          ? `${visible.length} من ${scopedRows.length} نشاطًا`
+          : onlySmartReinforcement
+            ? 'عدّل عنوان لعبة التعزيز أو وصفها ونوعها، أو احذفها من القسم.'
+            : 'عدّل عنوان أي نشاط مرفوع أو وصفه أو نوعه، وانقله إلى درس آخر، أو احذفه نهائيًا.'}
       </p>
       {visible.map((a) => {
         const isUp = uploaded.has(a.id);
@@ -280,24 +295,26 @@ export function ActivitiesManager({
                   }
                   placeholder="الوصف"
                 />
-                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[color:var(--gold)]/30 bg-[color:var(--gold)]/5 p-3">
-                  <input
-                    type="checkbox"
-                    checked={draft.smartReinforcement ?? a.smartReinforcement ?? false}
-                    onChange={(e) =>
-                      setDraft((d) => ({ ...d, smartReinforcement: e.target.checked }))
-                    }
-                    className="mt-0.5 h-4 w-4 accent-[color:var(--maroon)]"
-                  />
-                  <span>
-                    <span className="flex items-center gap-1.5 text-xs font-black text-[color:var(--maroon)]">
-                      <Sparkles className="h-3.5 w-3.5" /> ألعاب التعزيز الذكية
+                {!onlySmartReinforcement && (
+                  <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[color:var(--gold)]/30 bg-[color:var(--gold)]/5 p-3">
+                    <input
+                      type="checkbox"
+                      checked={draft.smartReinforcement ?? a.smartReinforcement ?? false}
+                      onChange={(e) =>
+                        setDraft((d) => ({ ...d, smartReinforcement: e.target.checked }))
+                      }
+                      className="mt-0.5 h-4 w-4 accent-[color:var(--maroon)]"
+                    />
+                    <span>
+                      <span className="flex items-center gap-1.5 text-xs font-black text-[color:var(--maroon)]">
+                        <Sparkles className="h-3.5 w-3.5" /> ألعاب التعزيز الذكية
+                      </span>
+                      <span className="mt-1 block text-[11px] leading-5 text-muted-foreground">
+                        أظهر هذا النشاط أيضًا في القسم المخصص بالصفحة الرئيسية.
+                      </span>
                     </span>
-                    <span className="mt-1 block text-[11px] leading-5 text-muted-foreground">
-                      أظهر هذا النشاط أيضًا في القسم المخصص بالصفحة الرئيسية.
-                    </span>
-                  </span>
-                </label>
+                  </label>
+                )}
                 <div className="flex flex-wrap gap-2">
                   {TYPES.map((t) => (
                     <button
@@ -335,41 +352,43 @@ export function ActivitiesManager({
                   </p>
                 </div>
 
-                {/* نقل النشاط إلى وحدة أو درس آخر */}
-                <div className="rounded-xl border border-[color:var(--hairline)] p-3">
-                  <p className="mb-2 flex items-center gap-1.5 text-xs font-black text-[color:var(--maroon)]">
-                    <FolderInput className="h-4 w-4" /> موقع النشاط
-                  </p>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    <select
-                      className={inp}
-                      value={draft.unitId ?? ''}
-                      onChange={(e) => {
-                        const u = draftGrade?.units.find((x) => x.id === e.target.value);
-                        setDraft((d) => ({
-                          ...d,
-                          unitId: e.target.value,
-                          lessonId: u?.lessons[0]?.id ?? '',
-                        }));
-                      }}
-                    >
-                      {draftGrade?.units.map((u) => (
-                        <option key={u.id} value={u.id}>{u.title}</option>
-                      ))}
-                    </select>
-                    <select
-                      className={inp}
-                      value={draft.lessonId ?? ''}
-                      onChange={(e) =>
-                        setDraft((d) => ({ ...d, lessonId: e.target.value }))
-                      }
-                    >
-                      {draftUnit?.lessons.map((l) => (
-                        <option key={l.id} value={l.id}>{l.title}</option>
-                      ))}
-                    </select>
+                {!a.smartReinforcement && (
+                  {/* نقل النشاط إلى وحدة أو درس آخر */}
+                  <div className="rounded-xl border border-[color:var(--hairline)] p-3">
+                    <p className="mb-2 flex items-center gap-1.5 text-xs font-black text-[color:var(--maroon)]">
+                      <FolderInput className="h-4 w-4" /> موقع النشاط
+                    </p>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <select
+                        className={inp}
+                        value={draft.unitId ?? ''}
+                        onChange={(e) => {
+                          const u = draftGrade?.units.find((x) => x.id === e.target.value);
+                          setDraft((d) => ({
+                            ...d,
+                            unitId: e.target.value,
+                            lessonId: u?.lessons[0]?.id ?? '',
+                          }));
+                        }}
+                      >
+                        {draftGrade?.units.map((u) => (
+                          <option key={u.id} value={u.id}>{u.title}</option>
+                        ))}
+                      </select>
+                      <select
+                        className={inp}
+                        value={draft.lessonId ?? ''}
+                        onChange={(e) =>
+                          setDraft((d) => ({ ...d, lessonId: e.target.value }))
+                        }
+                      >
+                        {draftUnit?.lessons.map((l) => (
+                          <option key={l.id} value={l.id}>{l.title}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div className="flex gap-2">
                   <button
