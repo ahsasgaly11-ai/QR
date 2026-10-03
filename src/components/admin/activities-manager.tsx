@@ -295,26 +295,6 @@ export function ActivitiesManager({
                   }
                   placeholder="الوصف"
                 />
-                {!onlySmartReinforcement && (
-                  <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[color:var(--gold)]/30 bg-[color:var(--gold)]/5 p-3">
-                    <input
-                      type="checkbox"
-                      checked={draft.smartReinforcement ?? a.smartReinforcement ?? false}
-                      onChange={(e) =>
-                        setDraft((d) => ({ ...d, smartReinforcement: e.target.checked }))
-                      }
-                      className="mt-0.5 h-4 w-4 accent-[color:var(--maroon)]"
-                    />
-                    <span>
-                      <span className="flex items-center gap-1.5 text-xs font-black text-[color:var(--maroon)]">
-                        <Sparkles className="h-3.5 w-3.5" /> ألعاب التعزيز الذكية
-                      </span>
-                      <span className="mt-1 block text-[11px] leading-5 text-muted-foreground">
-                        انقل هذا النشاط إلى قسم «ألعاب التعزيز الذكية» المستقل.
-                      </span>
-                    </span>
-                  </label>
-                )}
                 <div className="flex flex-wrap gap-2">
                   {TYPES.map((t) => (
                     <button
@@ -435,7 +415,6 @@ export function ActivitiesManager({
                       setDraft({
                         title: a.title,
                         description: a.description,
-                        smartReinforcement: a.smartReinforcement ?? false,
                         type: a.type,
                         signLang: a.signLang ?? '',
                         subjectId: a.subjectId,
