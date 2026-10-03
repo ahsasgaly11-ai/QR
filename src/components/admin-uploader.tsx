@@ -50,7 +50,13 @@ interface Result {
   fileName: string;
 }
 
-export function AdminUploader({ subjects }: { subjects: Subject[] }) {
+export function AdminUploader({
+  subjects,
+  smartOnly = false,
+}: {
+  subjects: Subject[];
+  smartOnly?: boolean;
+}) {
   const available = subjects.filter((s) => s.grades.length > 0);
   const [subjectId, setSubjectId] = useState(available[0]?.id ?? '');
   const subject = subjects.find((s) => s.id === subjectId);
@@ -66,8 +72,8 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [signLang, setSignLang] = useState('');
-  const [type, setType] = useState<ActivityType>('experiment');
-  const [smartReinforcement, setSmartReinforcement] = useState(false);
+  const [type, setType] = useState<ActivityType>(smartOnly ? 'game' : 'experiment');
+  const [smartReinforcement, setSmartReinforcement] = useState(smartOnly);
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -109,18 +115,30 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
     setError('');
     if (!file) return setError('الرجاء اختيار ملف HTML للنشاط.');
     if (!title.trim()) return setError('الرجاء إدخال عنوان النشاط.');
-    if (!subjectId || !gradeId) return setError('الرجاء اختيار المادة والمستوى.');
-    if (unitIsNew && !newUnitName.trim())
-      return setError('الرجاء إدخال اسم الوحدة الجديدة.');
-    if (lessonIsNew && !newLessonName.trim())
-      return setError('الرجاء إدخال اسم الدرس الجديد.');
-    if (!unitIsNew && !unitId) return setError('الرجاء اختيار الوحدة.');
-    if (!lessonIsNew && !lessonId) return setError('الرجاء اختيار الدرس.');
+    if (!smartOnly) {
+      if (!subjectId || !gradeId) return setError('الرجاء اختيار المادة والمستوى.');
+      if (unitIsNew && !newUnitName.trim())
+        return setError('الرجاء إدخال اسم الوحدة الجديدة.');
+      if (lessonIsNew && !newLessonName.trim())
+        return setError('الرجاء إدخال اسم الدرس الجديد.');
+      if (!unitIsNew && !unitId) return setError('الرجاء اختيار الوحدة.');
+      if (!lessonIsNew && !lessonId) return setError('الرجاء اختيار الدرس.');
+    }
 
     // معرّفات لاتينية آمنة في الروابط (العناوين العربية تُكسر ترميز الـ URL)
     const stamp = Date.now().toString(36);
-    const finalUnitId = unitIsNew ? `u-${stamp}-${rid()}` : unitId;
-    const finalLessonId = lessonIsNew ? `l-${stamp}-${rid()}` : lessonId;
+    const finalSubjectId = smartOnly ? 'smart-games' : subjectId;
+    const finalGradeId = smartOnly ? 'standalone' : gradeId;
+    const finalUnitId = smartOnly
+      ? 'smart-games'
+      : unitIsNew
+        ? `u-${stamp}-${rid()}`
+        : unitId;
+    const finalLessonId = smartOnly
+      ? 'smart-games'
+      : lessonIsNew
+        ? `l-${stamp}-${rid()}`
+        : lessonId;
     const id = `act-${stamp}-${rid()}`;
 
     const baseActivity: Activity = {
@@ -128,11 +146,11 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
       title: title.trim(),
       description: description.trim(),
       ...(signLang.trim() ? { signLang: signLang.trim() } : {}),
-      smartReinforcement,
+      smartReinforcement: smartOnly || smartReinforcement,
       type,
       file: file.name,
-      subjectId,
-      gradeId,
+      subjectId: finalSubjectId,
+      gradeId: finalGradeId,
       unitId: finalUnitId,
       lessonId: finalLessonId,
       createdAt: Date.now(),
@@ -145,7 +163,7 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
         const html = await file.text();
 
         // احفظ أي وحدة/درس جديد في البنية المحلية ليجد النشاط مكانه
-        if (unitIsNew || lessonIsNew) {
+        if (!smartOnly && (unitIsNew || lessonIsNew)) {
           const tree = getLocalStructure() ?? toStructure(subjects);
           const s = tree.find((x) => x.id === subjectId);
           const g = s?.grades.find((x) => x.id === gradeId);
@@ -180,8 +198,8 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
         setResult({
           mode: 'demo',
           activity: localActivity,
-          newUnit: unitIsNew ? newUnitName.trim() : undefined,
-          newLesson: lessonIsNew ? newLessonName.trim() : undefined,
+          newUnit: !smartOnly && unitIsNew ? newUnitName.trim() : undefined,
+          newLesson: !smartOnly && lessonIsNew ? newLessonName.trim() : undefined,
           fileName: file.name,
         });
       } catch (err) {
@@ -207,7 +225,7 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
         );
 
       // 1) persist any new unit/lesson into the curriculum structure
-      if (unitIsNew || lessonIsNew) {
+      if (!smartOnly && (unitIsNew || lessonIsNew)) {
         const tree = toStructure(subjects);
         const s = tree.find((x) => x.id === subjectId);
         const g = s?.grades.find((x) => x.id === gradeId);
@@ -254,7 +272,10 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
       });
 
       // حدّث الصفحات فورًا ليظهر النشاط للجميع بلا انتظار
-      await revalidateContent({ subjectId, activityId: id });
+      await revalidateContent({
+        subjectId: smartOnly ? undefined : subjectId,
+        activityId: id,
+      });
 
       setResult({ mode: 'firebase', activity: baseActivity, fileName: file.name });
     } catch (err) {
@@ -269,7 +290,7 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
     setResult(null);
     setTitle('');
     setDescription('');
-    setSmartReinforcement(false);
+    setSmartReinforcement(smartOnly);
     setFile(null);
     setNewUnitName('');
     setNewLessonName('');
@@ -304,9 +325,9 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
 
         {result.mode === 'firebase' ? (
           <p className="text-muted-foreground">
-            أصبح النشاط «{result.activity.title}» متاحًا الآن في المنصّة ضمن
-            الدرس المحدّد. يمكن للزوّار تجربته وتحميله، وتُحتسب مشاهداته
-            وتنزيلاته تلقائيًا.
+            {smartOnly
+              ? <>أصبحت اللعبة «{result.activity.title}» متاحة الآن في قسم ألعاب التعزيز الذكية.</>
+              : <>أصبح النشاط «{result.activity.title}» متاحًا الآن في المنصّة ضمن الدرس المحدّد. يمكن للزوّار تجربته وتحميله، وتُحتسب مشاهداته وتنزيلاته تلقائيًا.</>}
           </p>
         ) : (
           <div className="space-y-4">
@@ -329,10 +350,11 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
                 <Play className="h-5 w-5 fill-current" /> جرّب اللعبة الآن
               </Link>
               <Link
-                href={`/subject/${result.activity.subjectId}`}
+                href={smartOnly ? '/smart-games' : `/subject/${result.activity.subjectId}`}
                 className="btn-ghost px-6 text-base"
               >
-                <BookOpen className="h-5 w-5" /> عرضها في الدرس
+                <BookOpen className="h-5 w-5" />
+                {smartOnly ? 'عرض قسم الألعاب' : 'عرضها في الدرس'}
               </Link>
             </div>
 
@@ -373,7 +395,7 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
           </div>
         )}
         <button onClick={reset} className="btn-primary btn-sm mt-6 px-6 py-2.5 text-sm">
-          <UploadCloud className="h-4 w-4" /> رفع نشاط آخر
+          <UploadCloud className="h-4 w-4" /> {smartOnly ? 'رفع لعبة أخرى' : 'رفع نشاط آخر'}
         </button>
       </div>
     );
@@ -395,83 +417,85 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
         </div>
       )}
 
-      <div className="grid gap-5 sm:grid-cols-2">
-        <div>
-          <label className={labelCls}>المادة</label>
-          <select className={inputCls} value={subjectId} onChange={(e) => pickSubject(e.target.value)}>
-            {available.map((s) => (
-              <option key={s.id} value={s.id}>{s.title}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className={labelCls}>المستوى</label>
-          <select className={inputCls} value={gradeId} onChange={(e) => pickGrade(e.target.value)}>
-            {subject?.grades.map((g) => (
-              <option key={g.id} value={g.id}>{g.title}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Unit: existing or new */}
-        <div>
-          <label className={labelCls}>الوحدة</label>
-          {hasUnits && (
-            <select className={inputCls} value={unitId} onChange={(e) => pickUnit(e.target.value)}>
-              {grade?.units.map((u) => (
-                <option key={u.id} value={u.id}>{u.title}</option>
+      {!smartOnly && (
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div>
+            <label className={labelCls}>المادة</label>
+            <select className={inputCls} value={subjectId} onChange={(e) => pickSubject(e.target.value)}>
+              {available.map((s) => (
+                <option key={s.id} value={s.id}>{s.title}</option>
               ))}
-              <option value={NEW}>➕ وحدة جديدة…</option>
             </select>
-          )}
-          {unitIsNew && (
-            <div className={hasUnits ? 'mt-2' : ''}>
-              <input
-                className={inputCls}
-                value={newUnitName}
-                onChange={(e) => setNewUnitName(e.target.value)}
-                placeholder="اسم الوحدة الجديدة (مثال: الوحدة الأولى: النباتات)"
-              />
-            </div>
-          )}
-          {!hasUnits && (
-            <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-              <Plus className="h-3 w-3" /> لا توجد وحدات بعد — اكتب اسم أول وحدة.
-            </p>
-          )}
-        </div>
-
-        {/* Lesson: existing or new */}
-        <div>
-          <label className={labelCls}>الدرس</label>
-          {!unitIsNew && hasLessons && (
-            <select className={inputCls} value={lessonId} onChange={(e) => setLessonId(e.target.value)}>
-              {unit?.lessons.map((l) => (
-                <option key={l.id} value={l.id}>{l.title}</option>
+          </div>
+          <div>
+            <label className={labelCls}>المستوى</label>
+            <select className={inputCls} value={gradeId} onChange={(e) => pickGrade(e.target.value)}>
+              {subject?.grades.map((g) => (
+                <option key={g.id} value={g.id}>{g.title}</option>
               ))}
-              <option value={NEW}>➕ درس جديد…</option>
             </select>
-          )}
-          {lessonIsNew && (
-            <div className={!unitIsNew && hasLessons ? 'mt-2' : ''}>
-              <input
-                className={inputCls}
-                value={newLessonName}
-                onChange={(e) => setNewLessonName(e.target.value)}
-                placeholder="اسم الدرس الجديد (مثال: أجزاء النبات)"
-              />
-            </div>
-          )}
+          </div>
+  
+          {/* Unit: existing or new */}
+          <div>
+            <label className={labelCls}>الوحدة</label>
+            {hasUnits && (
+              <select className={inputCls} value={unitId} onChange={(e) => pickUnit(e.target.value)}>
+                {grade?.units.map((u) => (
+                  <option key={u.id} value={u.id}>{u.title}</option>
+                ))}
+                <option value={NEW}>➕ وحدة جديدة…</option>
+              </select>
+            )}
+            {unitIsNew && (
+              <div className={hasUnits ? 'mt-2' : ''}>
+                <input
+                  className={inputCls}
+                  value={newUnitName}
+                  onChange={(e) => setNewUnitName(e.target.value)}
+                  placeholder="اسم الوحدة الجديدة (مثال: الوحدة الأولى: النباتات)"
+                />
+              </div>
+            )}
+            {!hasUnits && (
+              <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                <Plus className="h-3 w-3" /> لا توجد وحدات بعد — اكتب اسم أول وحدة.
+              </p>
+            )}
+          </div>
+  
+          {/* Lesson: existing or new */}
+          <div>
+            <label className={labelCls}>الدرس</label>
+            {!unitIsNew && hasLessons && (
+              <select className={inputCls} value={lessonId} onChange={(e) => setLessonId(e.target.value)}>
+                {unit?.lessons.map((l) => (
+                  <option key={l.id} value={l.id}>{l.title}</option>
+                ))}
+                <option value={NEW}>➕ درس جديد…</option>
+              </select>
+            )}
+            {lessonIsNew && (
+              <div className={!unitIsNew && hasLessons ? 'mt-2' : ''}>
+                <input
+                  className={inputCls}
+                  value={newLessonName}
+                  onChange={(e) => setNewLessonName(e.target.value)}
+                  placeholder="اسم الدرس الجديد (مثال: أجزاء النبات)"
+                />
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="mt-5">
-        <label className={labelCls}>عنوان النشاط / اللعبة</label>
+        <label className={labelCls}>{smartOnly ? 'عنوان لعبة التعزيز' : 'عنوان النشاط / اللعبة'}</label>
         <input
           className={inputCls}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="مثال: تجربة دورة الماء في الطبيعة"
+          placeholder={smartOnly ? 'مثال: تحدي خصائص المواد' : 'مثال: تجربة دورة الماء في الطبيعة'}
         />
       </div>
 
@@ -519,24 +543,35 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
         </div>
       </div>
 
-      <div className="mt-5">
-        <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-[color:var(--gold)]/30 bg-[color:var(--gold)]/5 p-4">
-          <input
-            type="checkbox"
-            checked={smartReinforcement}
-            onChange={(e) => setSmartReinforcement(e.target.checked)}
-            className="mt-1 h-4 w-4 accent-[color:var(--maroon)]"
-          />
-          <span>
-            <span className="block text-sm font-black text-[color:var(--maroon)]">
-              إظهار ضمن «ألعاب التعزيز الذكية»
+      {smartOnly ? (
+        <div className="mt-5 rounded-2xl border border-[color:var(--gold)]/30 bg-[color:var(--gold)]/5 p-4">
+          <p className="text-sm font-black text-[color:var(--maroon)]">
+            هذه اللعبة ستُنشر في قسم «ألعاب التعزيز الذكية» فقط.
+          </p>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            لا تحتاج إلى اختيار مادة أو مستوى أو وحدة أو درس.
+          </p>
+        </div>
+      ) : (
+        <div className="mt-5">
+          <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-[color:var(--gold)]/30 bg-[color:var(--gold)]/5 p-4">
+            <input
+              type="checkbox"
+              checked={smartReinforcement}
+              onChange={(e) => setSmartReinforcement(e.target.checked)}
+              className="mt-1 h-4 w-4 accent-[color:var(--maroon)]"
+            />
+            <span>
+              <span className="block text-sm font-black text-[color:var(--maroon)]">
+                إظهار ضمن «ألعاب التعزيز الذكية»
+              </span>
+              <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+                عند تفعيل هذا الخيار ستظهر اللعبة تلقائيًا في القسم المخصص بالصفحة الرئيسية، مع الوصف المكتوب أعلاه.
+              </span>
             </span>
-            <span className="mt-1 block text-xs leading-5 text-muted-foreground">
-              عند تفعيل هذا الخيار ستظهر اللعبة تلقائيًا في القسم المخصص بالصفحة الرئيسية، مع الوصف المكتوب أعلاه.
-            </span>
-          </span>
-        </label>
-      </div>
+          </label>
+        </div>
+      )}
 
       <div className="mt-5">
         <label className={labelCls}>ملف النشاط (HTML)</label>
@@ -581,7 +616,7 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
           </>
         ) : (
           <>
-            <UploadCloud className="h-5 w-5" /> رفع النشاط
+            <UploadCloud className="h-5 w-5" /> {smartOnly ? 'رفع لعبة التعزيز' : 'رفع النشاط'}
           </>
         )}
       </button>
