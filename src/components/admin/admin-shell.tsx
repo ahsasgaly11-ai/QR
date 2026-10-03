@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { UploadCloud, ListChecks, Layers, LogOut, Megaphone, Download } from 'lucide-react';
+import { UploadCloud, ListChecks, Layers, LogOut, Megaphone, Download, Gamepad2 } from 'lucide-react';
 import type { Subject, Activity } from '@/lib/types';
 import { AuthGate } from './auth-gate';
 import { AdminUploader } from '@/components/admin-uploader';
@@ -12,7 +12,7 @@ import { DownloadsManager } from './downloads-manager';
 import { signOutAdmin, isFirebaseConfigured } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 
-type Tab = 'upload' | 'activities' | 'content' | 'ticker' | 'downloads';
+type Tab = 'upload' | 'activities' | 'smart-games' | 'content' | 'ticker' | 'downloads';
 
 export function AdminShell({
   subjects,
@@ -32,6 +32,7 @@ export function AdminShell({
   const tabs: { id: Tab; label: string; icon: typeof UploadCloud }[] = [
     { id: 'upload', label: 'رفع نشاط', icon: UploadCloud },
     { id: 'activities', label: 'إدارة الأنشطة', icon: ListChecks },
+    { id: 'smart-games', label: 'ألعاب التعزيز', icon: Gamepad2 },
     { id: 'content', label: 'إدارة المناهج', icon: Layers },
     { id: 'ticker', label: 'الشريط المتحرّك', icon: Megaphone },
     { id: 'downloads', label: 'التنزيل', icon: Download },
@@ -74,7 +75,40 @@ export function AdminShell({
           uploadedIds={uploadedIds}
           labels={labels}
           structure={structure}
+          excludeSmartReinforcement
         />
+      )}
+      {tab === 'smart-games' && (
+        <div className="space-y-10">
+          <div>
+            <div className="mb-4">
+              <h2 className="font-display text-xl font-black text-[color:var(--maroon)]">
+                رفع لعبة تعزيز ذكية
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                ارفع ملف HTML واكتب عنوان اللعبة ووصفها. ستظهر في القسم المستقل فقط.
+              </p>
+            </div>
+            <AdminUploader subjects={subjects} smartOnly />
+          </div>
+          <div>
+            <div className="mb-4">
+              <h2 className="font-display text-xl font-black text-[color:var(--maroon)]">
+                إدارة ألعاب التعزيز
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                عدّل الألعاب المرفوعة أو احذفها من القسم.
+              </p>
+            </div>
+            <ActivitiesManager
+              activities={activities}
+              uploadedIds={uploadedIds}
+              labels={labels}
+              structure={structure}
+              onlySmartReinforcement
+            />
+          </div>
+        </div>
       )}
       {tab === 'content' && <ContentManager initial={structure} />}
       {tab === 'ticker' && <TickerManager />}
