@@ -67,6 +67,7 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
   const [description, setDescription] = useState('');
   const [signLang, setSignLang] = useState('');
   const [type, setType] = useState<ActivityType>('experiment');
+  const [smartReinforcement, setSmartReinforcement] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -127,6 +128,7 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
       title: title.trim(),
       description: description.trim(),
       ...(signLang.trim() ? { signLang: signLang.trim() } : {}),
+      smartReinforcement,
       type,
       file: file.name,
       subjectId,
@@ -267,6 +269,7 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
     setResult(null);
     setTitle('');
     setDescription('');
+    setSmartReinforcement(false);
     setFile(null);
     setNewUnitName('');
     setNewLessonName('');
@@ -514,6 +517,25 @@ export function AdminUploader({ subjects }: { subjects: Subject[] }) {
             </button>
           ))}
         </div>
+      </div>
+
+      <div className="mt-5">
+        <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-[color:var(--gold)]/30 bg-[color:var(--gold)]/5 p-4">
+          <input
+            type="checkbox"
+            checked={smartReinforcement}
+            onChange={(e) => setSmartReinforcement(e.target.checked)}
+            className="mt-1 h-4 w-4 accent-[color:var(--maroon)]"
+          />
+          <span>
+            <span className="block text-sm font-black text-[color:var(--maroon)]">
+              إظهار ضمن «ألعاب التعزيز الذكية»
+            </span>
+            <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+              عند تفعيل هذا الخيار ستظهر اللعبة تلقائيًا في القسم المخصص بالصفحة الرئيسية، مع الوصف المكتوب أعلاه.
+            </span>
+          </span>
+        </label>
       </div>
 
       <div className="mt-5">
