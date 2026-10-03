@@ -265,13 +265,29 @@ export default async function HomePage() {
               </Reveal>
             );
           })}
-          <Reveal delay={subjects.length * 100}>
-            <Link href="/smart-games" aria-label="ألعاب التعزيز الذكية">
+
+        </div>
+      </section>
+
+      {/* ===================== SMART REINFORCEMENT ENTRY ===================== */}
+      <section className="mx-auto max-w-7xl px-6 py-8">
+        <Reveal className="mb-8">
+          <p className="text-sm font-black text-[color:var(--gold)]">قسم مستقل</p>
+          <h2 className="mt-1 font-calli text-3xl font-bold text-[color:var(--maroon)] sm:text-4xl">
+            ألعاب التعزيز الذكية
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
+            ادخل إلى مكتبة مستقلة من الألعاب التفاعلية المخصّصة لتعزيز التعلّم.
+          </p>
+        </Reveal>
+
+        <div className="grid gap-6 md:grid-cols-3">
+          <Reveal>
+            <Link href="/smart-games" aria-label="الدخول إلى ألعاب التعزيز الذكية">
               <div
                 className="card-premium relative flex h-56 flex-col justify-between overflow-hidden rounded-3xl p-6 text-white shadow-xl"
                 style={{
-                  background:
-                    'linear-gradient(135deg, var(--maroon), #6a4c93)',
+                  background: 'linear-gradient(135deg, var(--maroon), #6a4c93)',
                 }}
               >
                 <div className="absolute -left-8 -top-8 h-32 w-32 rounded-full bg-white/10" />
@@ -323,17 +339,16 @@ export default async function HomePage() {
             <div className="pointer-events-none absolute inset-0 girih-light" />
             <div className="pointer-events-none absolute -right-10 -top-10 h-48 w-48 rounded-full bg-[color:var(--gold)]/20 blur-2xl spin-slower" />
             <h2 className="relative font-calli text-3xl font-bold sm:text-4xl">
-              هل لديك نشاط تفاعلي جاهز؟
+              تعلّم بطريقة أكثر تفاعلاً
             </h2>
             <p className="relative mx-auto mt-3 max-w-xl text-white/85">
-              ارفع ملف الـ HTML الخاص بك ونظّمه حسب المادة والوحدة والدرس ليصبح
-              متاحًا للطلبة في جميع أنحاء المنصّة.
+              استكشف المواد الدراسية والأنشطة والألعاب التفاعلية واختر ما يناسب تعلّمك.
             </p>
             <Link
-              href="/admin"
+              href="/browse"
               className="relative mt-7 inline-flex items-center gap-2 rounded-2xl bg-[color:var(--gold)] px-8 py-3.5 font-black text-[color:var(--maroon-700)] shadow-lg transition-transform hover:-translate-y-1"
             >
-              ارفع نشاطك الآن
+              استكشف المحتوى
             </Link>
           </div>
         </Reveal>
