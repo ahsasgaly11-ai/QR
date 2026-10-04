@@ -1,10 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ChevronLeft, Gamepad2, Home, Sparkles } from 'lucide-react';
+import { ChevronLeft, Home, Sparkles } from 'lucide-react';
 import { getAllActivities } from '@/lib/content';
-import { ActivityCard } from '@/components/activity-card';
 import { BackButton } from '@/components/back-button';
-import { Reveal } from '@/components/reveal';
+import { SmartGamesGrid } from '@/components/smart-games-grid';
 import { SITE_NAME } from '@/lib/site';
 
 export const revalidate = 30;
@@ -80,46 +79,7 @@ export default async function SmartGamesPage() {
       </section>
 
       <section className="mx-auto max-w-7xl px-6 py-12">
-        {games.length > 0 ? (
-          <>
-            <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-black text-[color:var(--gold)]">
-                  مكتبة الألعاب
-                </p>
-                <h2 className="mt-1 font-calli text-3xl font-bold text-[color:var(--maroon)]">
-                  اختر لعبة وابدأ
-                </h2>
-              </div>
-              <div className="inline-flex items-center gap-2 rounded-2xl border border-[color:var(--gold)]/25 bg-[color:var(--surface)] px-4 py-2 text-sm font-black text-[color:var(--maroon)] shadow-sm">
-                <Gamepad2 className="h-4 w-4" />
-                {games.length} {games.length === 1 ? 'لعبة' : 'ألعاب'}
-              </div>
-            </div>
-
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {games.map((game, i) => (
-                <Reveal key={game.id} delay={i * 70}>
-                  <ActivityCard activity={game} index={i} />
-                </Reveal>
-              ))}
-            </div>
-          </>
-        ) : (
-          <Reveal>
-            <div className="rounded-3xl border border-dashed border-[color:var(--gold)]/45 bg-[color:var(--surface)] p-10 text-center shadow-sm">
-              <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-[color:var(--gold)]/12 text-[color:var(--maroon)]">
-                <Gamepad2 className="h-8 w-8" />
-              </div>
-              <h2 className="mt-4 font-display text-2xl font-black text-[color:var(--maroon)]">
-                لا توجد ألعاب مضافة بعد
-              </h2>
-              <p className="mx-auto mt-2 max-w-xl text-sm leading-7 text-muted-foreground">
-                ستظهر ألعاب التعزيز هنا تلقائيًا عند إضافتها من لوحة الإدارة.
-              </p>
-            </div>
-          </Reveal>
-        )}
+        <SmartGamesGrid initialGames={games} />
       </section>
     </div>
   );
