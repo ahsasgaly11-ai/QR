@@ -5,6 +5,7 @@ import { Gamepad2, ShieldCheck } from 'lucide-react';
 import type { Activity } from '@/lib/types';
 import { ActivityCard } from '@/components/activity-card';
 import { Reveal } from '@/components/reveal';
+import { SchoolGate } from '@/components/school-gate';
 import {
   isFirebaseConfigured,
   isOwnerUid,
@@ -44,7 +45,7 @@ export function SmartGamesGrid({ initialGames }: { initialGames: Activity[] }) {
   }
 
   return (
-    <>
+    <SchoolGate>
       <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm font-black text-[color:var(--gold)]">
@@ -95,6 +96,6 @@ export function SmartGamesGrid({ initialGames }: { initialGames: Activity[] }) {
           </div>
         </Reveal>
       )}
-    </>
+    </SchoolGate>
   );
 }
