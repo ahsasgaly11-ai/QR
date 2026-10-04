@@ -35,24 +35,38 @@ export function ActivityCard({
   const canDownload = useActivityDownloadEnabled(activity);
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(activity.title);
+  const [description, setDescription] = useState(activity.description ?? '');
   const [busy, setBusy] = useState(false);
   const [gone, setGone] = useState(false);
 
   const canManage = isOwner && activity.stored === 'firestore';
 
-  async function saveTitle() {
-    const next = title.trim();
-    if (!next || next === activity.title) return setEditing(false);
+  async function saveDetails() {
+    const nextTitle = title.trim();
+    const nextDescription = description.trim();
+    if (!nextTitle) return;
+    if (
+      nextTitle === activity.title &&
+      nextDescription === (activity.description ?? '')
+    ) {
+      setEditing(false);
+      return;
+    }
     setBusy(true);
     try {
       const { updateActivity } = await import('@/lib/content');
       const { revalidateContent } = await import('@/lib/revalidate');
-      await updateActivity(activity.id, { title: next });
+      const patch = {
+        title: nextTitle,
+        description: nextDescription,
+      };
+      await updateActivity(activity.id, patch);
       await revalidateContent({ subjectId: activity.subjectId, activityId: activity.id });
-      onChanged?.(activity.id, { title: next });
+      onChanged?.(activity.id, patch);
       setEditing(false);
     } catch {
       setTitle(activity.title);
+      setDescription(activity.description ?? '');
     } finally {
       setBusy(false);
     }
@@ -140,8 +154,8 @@ export function ActivityCard({
           <button
             onClick={() => setEditing(true)}
             className="grid h-9 w-9 place-items-center rounded-xl bg-white/95 text-[color:var(--maroon)] shadow-md backdrop-blur transition hover:scale-105"
-            title="تعديل العنوان"
-            aria-label="تعديل العنوان"
+            title="تعديل اللعبة"
+            aria-label="تعديل اللعبة"
           >
             <Pencil className="h-4 w-4" />
           </button>
@@ -149,8 +163,8 @@ export function ActivityCard({
             onClick={() => void removeActivity()}
             disabled={busy}
             className="grid h-9 w-9 place-items-center rounded-xl bg-white/95 text-[color:var(--coral)] shadow-md backdrop-blur transition hover:scale-105 disabled:opacity-50"
-            title="حذف النشاط"
-            aria-label="حذف النشاط"
+            title="حذف اللعبة"
+            aria-label="حذف اللعبة"
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
           </button>
@@ -193,48 +207,62 @@ export function ActivityCard({
       </div>
 
       {editing ? (
-        <div className="flex items-center gap-2">
+        <div className="space-y-2">
           <input
             autoFocus
             className="w-full rounded-xl border border-[color:var(--maroon)] bg-[color:var(--surface)] px-3 py-2 text-base font-black text-[color:var(--maroon)] outline-none"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            placeholder="عنوان اللعبة"
             onKeyDown={(e) => {
-              if (e.key === 'Enter') void saveTitle();
               if (e.key === 'Escape') {
                 setTitle(activity.title);
+                setDescription(activity.description ?? '');
                 setEditing(false);
               }
             }}
           />
-          <button
-            onClick={() => void saveTitle()}
-            disabled={busy}
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[color:var(--maroon)] text-white"
-            title="حفظ"
-          >
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-          </button>
-          <button
-            onClick={() => {
-              setTitle(activity.title);
-              setEditing(false);
-            }}
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[color:var(--surface-2)] text-[color:var(--maroon)]"
-            title="إلغاء"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <textarea
+            className="w-full resize-none rounded-xl border border-[color:var(--hairline-strong)] bg-[color:var(--surface)] px-3 py-2 text-sm leading-6 outline-none focus:border-[color:var(--maroon)]"
+            rows={3}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="وصف اللعبة"
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={() => void saveDetails()}
+              disabled={busy || !title.trim()}
+              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[color:var(--maroon)] px-3 py-2 text-sm font-black text-white disabled:opacity-50"
+              title="حفظ التعديلات"
+            >
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+              حفظ
+            </button>
+            <button
+              onClick={() => {
+                setTitle(activity.title);
+                setDescription(activity.description ?? '');
+                setEditing(false);
+              }}
+              className="flex items-center justify-center gap-1 rounded-lg bg-[color:var(--surface-2)] px-3 py-2 text-sm font-bold text-[color:var(--maroon)]"
+              title="إلغاء"
+            >
+              <X className="h-4 w-4" /> إلغاء
+            </button>
+          </div>
         </div>
       ) : (
-        <h3 className="font-display text-lg font-black leading-snug text-[color:var(--maroon)]">
-          {activity.title}
-        </h3>
-      )}
-      {activity.description && (
-        <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted-foreground">
-          {activity.description}
-        </p>
+        <>
+          <h3 className="font-display text-lg font-black leading-snug text-[color:var(--maroon)]">
+            {activity.title}
+          </h3>
+          {activity.description && (
+            <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted-foreground">
+              {activity.description}
+            </p>
+          )}
+        </>
       )}
 
       <div className="mt-5 flex items-center gap-2">
