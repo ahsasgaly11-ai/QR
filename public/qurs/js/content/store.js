@@ -6,9 +6,10 @@ const DEF_BANK = [
   'ما الغاز الذي نحتاجه للتنفس؟ | الأكسجين\nماذا نسمي الحيوانات التي تأكل النباتات فقط؟ | آكلات الأعشاب\nما القوة التي تسحب الأجسام نحو الأرض؟ | الجاذبية\nماذا نسمي تحوّل بخار الماء إلى قطرات ماء؟ | التكثف\nكم كوكبًا في المجموعة الشمسية؟ | ثمانية كواكب',
   'ما أقرب كوكب إلى الشمس؟ | عطارد\nما العملية التي يصنع بها النبات غذاءه؟ | البناء الضوئي\nما أكبر كوكب في المجموعة الشمسية؟ | المشتري',
 ];
-export const TEAM_COL = ['#3fb6ff', '#ff5d8f', '#7be36a', '#ffb020'];
+export const TEAM_COL = ['#3fb6ff', '#ff5d8f', '#7be36a', '#ffb020', '#b58cff', '#3fe0d0', '#ff8a4c', '#f25ad6', '#c9e14a', '#7aa2ff', '#ff6b6b', '#e0c38a'];
+export const MAX_PLAYERS = 12;
 export function defaultConfig() {
-  return { teams: ['الفريق الأول', 'الفريق الثاني', 'الفريق الثالث', 'الفريق الرابع'], nTeams: 2, balls: 3, qOn: true, grade: 'primary', className: '',
+  return { teams: ['الفريق الأول', 'الفريق الثاني', 'الفريق الثالث', 'الفريق الرابع'], nTeams: 2, mode: 'groups', players: ['اللاعب الأول', 'اللاعب الثاني'], rounds: 0, balls: 3, qOn: true, grade: 'primary', className: '',
     tiers: [{ bonus: 10, prize: 'تصفيق الصف', bank: DEF_BANK[0] }, { bonus: 30, prize: 'نجمة فضية', bank: DEF_BANK[1] }, { bonus: 60, prize: 'نجمة ذهبية', bank: DEF_BANK[2] }, { bonus: 100, prize: 'وسام البطل', bank: DEF_BANK[3] }], zones: {}, sens: 38 };
 }
 

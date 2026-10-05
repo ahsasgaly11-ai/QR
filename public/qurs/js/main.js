@@ -4,7 +4,7 @@ import { rings, zoneAt, tierOf, TIERS, zoneColor, applyH, inv3, drawBoard } from
 import { ARScene } from './render/arscene.js';
 import { Game } from './game/state.js';
 import { SND, setMuted, isMuted } from './game/audio.js';
-import { store, TEAM_COL } from './content/store.js';
+import { store, TEAM_COL, MAX_PLAYERS } from './content/store.js';
 import { connectCloud } from './content/firebase.js';
 import { initEditor, openEditor } from './ui/editor.js';
 import { initCollect, enterCollect } from './ui/collect.js';
@@ -71,7 +71,7 @@ function goHome() { vision.stop(); if (mediaEl) { mediaEl.remove(); mediaEl = nu
 let armT = 0;
 function arm() { app.mode = 'arming'; armT = performance.now(); $('scanUI').hidden = true; $('playUI').hidden = false; vision.send({ type: 'arm', t: armT }); }
 function beginPlay() { show('play'); $('playStatus').hidden = true; $('more').hidden = true; $('qcard').hidden = true; ar.setGrid(gridMode);
-  if (game.keep) { game.keep = false; } else game.start(); SND.lock(); banner('ابدأوا الرمي!\nدور ' + game.teams[game.cur].name, 2200); }
+  if (game.keep) { game.keep = false; } else game.start(); $('btnNext').textContent = game.solo ? 'اللاعب التالي' : 'المجموعة التالية'; SND.lock(); banner((game.solo ? 'ابدأ الرمي!' : 'ابدأوا الرمي!') + '\nدور ' + game.teams[game.cur].name, 2200); }
 
 /* ---------- أحداث عامل الرؤية ---------- */
 vision.addEventListener('locked', () => { if (app.mode === 'scan') { SND.lock(); $('btnArm').disabled = false; } });
@@ -90,12 +90,18 @@ game.addEventListener('hit', (e) => { const { z, u, v, t } = e.detail; ar.hit(z,
 game.addEventListener('queued', (e) => banner('كرة مسجّلة — تُحتسب بعد السؤال الحالي', 1500));
 game.addEventListener('miss', (e) => { SND.miss(); ar.text(e.detail.u, e.detail.v, 0.1, 'خارج القرص', '#ffb4a6', 0.14, 1.2); });
 game.addEventListener('question', (e) => ask(e.detail));
-game.addEventListener('turn', (e) => { SND.turn(); banner((game.teams.length > 1 ? 'دور ' + e.detail.team.name : 'جولة جديدة') + '\nاجمعوا الكرات ثم ارموا', 2600); });
+game.addEventListener('turn', (e) => { SND.turn(); banner((game.teams.length > 1 ? 'دور ' + e.detail.team.name : 'جولة جديدة') + (game.solo ? '\nاجمع الكرات ثم ارمِ' : '\nاجمعوا الكرات ثم ارموا'), 2600); });
 game.addEventListener('end', (e) => { SND.win(); const r = $('rank'); r.innerHTML = ''; e.detail.ranking.forEach((t, i) => { const d = document.createElement('div'); d.style.setProperty('--tc', t.c); const a = document.createElement('span'); a.textContent = (i === 0 ? 'الأول: ' : '') + t.name + (t.prizes.length ? ' — ' + t.prizes.length + ' جائزة' : ''); const b = document.createElement('span'); b.textContent = t.score; d.append(a, b); r.append(d); }); $('endSheet').hidden = false; });
 
-function chips() { const el = $('chips'); el.innerHTML = ''; game.teams.forEach((t, i) => { const d = document.createElement('div'); d.className = 'chip' + (i === game.cur ? ' on' : ''); d.style.setProperty('--tc', t.c);
-  const nm = document.createElement('span'); nm.textContent = t.name; const dot = document.createElement('i'), sc = document.createElement('b'); sc.textContent = t.score; d.append(dot, nm, sc);
-  if (i === game.cur) { const b = document.createElement('span'); b.className = 'balls'; for (let k = 0; k < store.cfg.balls; k++) { const s = document.createElement('span'); if (k >= game.left) s.className = 'used'; b.append(s); } d.append(b); } el.append(d); }); }
+function chip(t, on, mini, label) { const d = document.createElement('div'); d.className = 'chip' + (on ? ' on' : '') + (mini ? ' mini' : ''); d.style.setProperty('--tc', t.c);
+  const nm = document.createElement('span'); nm.textContent = (label ? label + ' ' : '') + t.name; const dot = document.createElement('i'), sc = document.createElement('b'); sc.textContent = t.score; d.append(dot, nm, sc);
+  if (on) { const b = document.createElement('span'); b.className = 'balls'; for (let k = 0; k < store.cfg.balls; k++) { const s = document.createElement('span'); if (k >= game.left) s.className = 'used'; b.append(s); } d.append(b); } return d; }
+function chips() { const el = $('chips'); el.innerHTML = ''; const T = game.teams;
+  if (T.length <= 4) { T.forEach((t, i) => el.append(chip(t, i === game.cur))); }
+  else { // لاعبون كثيرون: صاحب الدور، ثم التالي والمتصدر بشرائح صغيرة حتى لا يُغطّى القرص
+    el.append(chip(T[game.cur], true)); el.append(chip(T[(game.cur + 1) % T.length], false, true, 'التالي:'));
+    const lead = game.ranking()[0]; if (lead.score > 0) el.append(chip(lead, false, true, 'المتصدر:')); }
+  if (store.cfg.rounds > 0) { const r = document.createElement('div'); r.className = 'chip mini'; r.textContent = 'الجولة ' + game.round + ' من ' + store.cfg.rounds; el.append(r); } }
 let bannerT = 0; function banner(t, ms) { const b = $('banner'); b.textContent = t; b.style.whiteSpace = 'pre-line'; b.hidden = false; clearTimeout(bannerT); bannerT = setTimeout(() => (b.hidden = true), ms); }
 function flash(a, col) { const f = $('flash'); f.style.background = col || '#fff'; f.style.transition = 'none'; f.style.opacity = Math.min(0.85, a); requestAnimationFrame(() => requestAnimationFrame(() => { f.style.transition = 'opacity .45s ease-out'; f.style.opacity = 0; })); }
 let shakeT = 0, shakeAmp = 0, shakeDur = 0.3;
@@ -159,9 +165,26 @@ ov.addEventListener('pointerup', () => { app.drag = -1; });
 
 /* ---------- الأزرار ---------- */
 function seg(id, vals, get, set) { const el = $(id); el.innerHTML = ''; vals.forEach((v) => { const b = document.createElement('button'); b.textContent = v; b.setAttribute('aria-pressed', String(get() === v)); b.onclick = () => { set(v); seg(id, vals, get, set); }; el.append(b); }); }
-function teamInputs() { const el = $('teamInputs'); el.innerHTML = ''; for (let i = 0; i < store.cfg.nTeams; i++) { const inp = document.createElement('input'); inp.type = 'text'; inp.id = 'team' + i; inp.className = 'teamin'; inp.value = store.cfg.teams[i]; inp.maxLength = 18; inp.setAttribute('aria-label', 'اسم الفريق ' + (i + 1)); inp.style.borderInlineStartColor = TEAM_COL[i]; inp.oninput = () => { store.cfg.teams[i] = inp.value; store.save(); }; el.append(inp); } }
-function homeUI() { seg('segTeams', [1, 2, 3, 4], () => store.cfg.nTeams, (v) => { store.cfg.nTeams = v; store.save(); teamInputs(); }); seg('segBalls', [1, 2, 3, 5], () => store.cfg.balls, (v) => { store.cfg.balls = v; store.save(); }); teamInputs();
+function nameRow(i, value, color, aria, onInput, onRemove) { const d = document.createElement('div'); d.className = 'name'; d.style.setProperty('--tc', color);
+  const n = document.createElement('span'); n.className = 'num'; n.textContent = i + 1; const inp = document.createElement('input'); inp.type = 'text'; inp.value = value; inp.maxLength = 20; inp.setAttribute('aria-label', aria); inp.oninput = () => onInput(inp.value); inp.enterKeyHint = 'next'; d.append(n, inp);
+  if (onRemove) { const x = document.createElement('button'); x.className = 'x'; x.textContent = '×'; x.setAttribute('aria-label', 'حذف ' + (value || aria)); x.onclick = onRemove; d.append(x); } return d; }
+function teamInputs() { const el = $('teamInputs'); el.innerHTML = ''; for (let i = 0; i < store.cfg.nTeams; i++) { const r = nameRow(i, store.cfg.teams[i], TEAM_COL[i], 'اسم المجموعة ' + (i + 1), (v) => { store.cfg.teams[i] = v; store.save(); }); r.querySelector('input').id = 'team' + i; el.append(r); } }
+function soloInputs(focusLast) { const el = $('soloList'), P = store.cfg.players; el.innerHTML = '';
+  P.forEach((name, i) => { const r = nameRow(i, name, TEAM_COL[i % TEAM_COL.length], 'اسم اللاعب ' + (i + 1), (v) => { P[i] = v; store.save(); }, P.length > 1 ? () => { P.splice(i, 1); store.save(); soloInputs(); } : null); r.querySelector('input').id = 'player' + i; el.append(r); });
+  $('soloCount').textContent = P.length + ' من ' + MAX_PLAYERS; $('btnAddPlayer').disabled = P.length >= MAX_PLAYERS;
+  if (focusLast) { const inp = el.lastElementChild?.querySelector('input'); inp?.focus(); inp?.select(); } }
+function setMode(m) { store.cfg.mode = m; store.save(); const solo = m === 'solo'; $('modeSolo').setAttribute('aria-selected', String(solo)); $('modeGroups').setAttribute('aria-selected', String(!solo)); $('panelSolo').hidden = !solo; $('panelGroups').hidden = solo; }
+function homeUI() { if (store.cfg.nTeams < 2) store.cfg.nTeams = 2;
+  seg('segTeams', [2, 3, 4], () => store.cfg.nTeams, (v) => { store.cfg.nTeams = v; store.save(); teamInputs(); }); seg('segBalls', [1, 2, 3, 5], () => store.cfg.balls, (v) => { store.cfg.balls = v; store.save(); });
+  seg('segRounds', ['مفتوح', 1, 2, 3, 5], () => store.cfg.rounds || 'مفتوح', (v) => { store.cfg.rounds = v === 'مفتوح' ? 0 : v; store.save(); });
+  teamInputs(); soloInputs(); setMode(store.cfg.mode === 'solo' ? 'solo' : 'groups');
   $('className').value = store.cfg.className || ''; const c = $('logo').getContext('2d'); c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, 600, 600); c.translate(300, 300); c.scale(290, 290); drawBoard(c); }
+$('modeSolo').onclick = () => setMode('solo'); $('modeGroups').onclick = () => setMode('groups');
+$('btnAddPlayer').onclick = () => { const P = store.cfg.players; if (P.length >= MAX_PLAYERS) return; P.push('اللاعب ' + (P.length + 1)); store.save(); soloInputs(true); };
+$('btnShuffle').onclick = () => { const P = store.cfg.players; for (let i = P.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [P[i], P[j]] = [P[j], P[i]]; } store.save(); soloInputs(); };
+$('btnPaste').onclick = () => { $('pasteBox').hidden = !$('pasteBox').hidden; if (!$('pasteBox').hidden) { $('pasteNames').value = store.cfg.players.join('\n'); $('pasteNames').focus(); } };
+$('btnPasteCancel').onclick = () => ($('pasteBox').hidden = true);
+$('btnPasteOk').onclick = () => { const names = $('pasteNames').value.split(/[\n,،]+/).map((x) => x.trim()).filter(Boolean).slice(0, MAX_PLAYERS); if (names.length) { store.cfg.players = names; store.save(); } $('pasteBox').hidden = true; soloInputs(); };
 $('className').oninput = () => { store.cfg.className = $('className').value; store.save(); };
 $('btnCam').onclick = startCam; $('btnDemo').onclick = startDemo; $('btnScanBack').onclick = goHome;
 $('btnFlip').onclick = () => { app.facing = app.facing === 'user' ? 'environment' : 'user'; startCam(); };

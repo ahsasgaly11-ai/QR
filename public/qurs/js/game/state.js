@@ -5,7 +5,11 @@ import { TEAM_COL } from '../content/store.js';
 export class Game extends EventTarget {
   constructor(store) { super(); this.store = store; this.teams = []; this.cur = 0; this.left = 3; this.paused = false; this.busy = false; this.hist = []; this.bankUsed = [{}, {}, {}, {}]; this.startedAt = 0; this.pending = []; }
   get cfg() { return this.store.cfg; }
-  start() { const c = this.cfg; this.teams = c.teams.slice(0, c.nTeams).map((n, i) => ({ name: n || 'الفريق ' + (i + 1), c: TEAM_COL[i], score: 0, prizes: [], hits: 0, throws: 0 }));
+  start() { const c = this.cfg, solo = c.mode === 'solo';
+    const names = solo ? c.players.map((n) => (n || '').trim()).filter(Boolean) : c.teams.slice(0, c.nTeams);
+    if (!names.length) names.push(solo ? 'اللاعب' : 'المجموعة');
+    this.solo = solo; this.round = 1; this.turns = 0;
+    this.teams = names.map((n, i) => ({ name: n || (solo ? 'اللاعب ' : 'المجموعة ') + (i + 1), c: TEAM_COL[i % TEAM_COL.length], score: 0, prizes: [], hits: 0, throws: 0 }));
     this.cur = 0; this.left = c.balls; this.hist = []; this.pending = []; this.paused = false; this.busy = false; this.startedAt = Date.now(); this.emit('change'); }
   emit(type, d) { this.dispatchEvent(new CustomEvent(type, { detail: d || {} })); }
   hit(u, v, auto) {
@@ -32,9 +36,11 @@ export class Game extends EventTarget {
     this.emit('answered', { ok, bonus: ok ? +tr.bonus || 0 : 0, prize: ok ? pz : '' }); this.emit('change'); }
   after() { this.busy = false; if (this.left <= 0) this.next();   // انتهى الدور: الكرات الزائدة لا تُحتسب
     if (this.pending.length) { const p = this.pending.shift(); this.busy = true; setTimeout(() => { this.busy = false; this.hit(p[0], p[1], true); }, 450); } }
-  next(keepQueue) { if (!keepQueue) this.pending = []; this.cur = (this.cur + 1) % this.teams.length; this.left = this.cfg.balls; this.busy = false; this.emit('turn', { team: this.teams[this.cur] }); this.emit('change'); }
+  next(keepQueue) { if (!keepQueue) this.pending = []; this.cur = (this.cur + 1) % this.teams.length; this.left = this.cfg.balls; this.busy = false;
+    if (this.cur === 0) { this.round++; if (this.cfg.rounds > 0 && this.round > this.cfg.rounds) { this.round = this.cfg.rounds; this.end(); return; } }  // انتهت الجولات المحددة
+    this.emit('turn', { team: this.teams[this.cur], round: this.round }); this.emit('change'); }
   undo() { const h = this.hist.pop(); if (!h) return false; const tm = this.teams[h.team]; tm.score -= h.d; tm.hits--; tm.throws--; if (h.prize) tm.prizes.pop(); if (this.cur !== h.team) { this.cur = h.team; this.left = 0; } this.left = Math.min(this.cfg.balls, this.left + 1); this.busy = false; this.emit('change'); return true; }
   ranking() { return [...this.teams].sort((a, b) => b.score - a.score); }
-  async end() { const r = { className: this.cfg.className || '', teams: this.teams.map((t) => ({ name: t.name, score: t.score, prizes: t.prizes, hits: t.hits })), balls: this.cfg.balls, duration: Date.now() - this.startedAt };
+  async end() { const r = { className: this.cfg.className || '', mode: this.solo ? 'solo' : 'groups', teams: this.teams.map((t) => ({ name: t.name, score: t.score, prizes: t.prizes, hits: t.hits })), balls: this.cfg.balls, duration: Date.now() - this.startedAt };
     await this.store.addResult(r); this.emit('end', { ranking: this.ranking() }); return r; }
 }
