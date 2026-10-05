@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#0b1410">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="قرص التحدي">
+<title>قرص التحدي</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;800&display=swap" onerror="this.remove()">
+<script type="importmap">{"imports":{"three":"./vendor/three.module.min.js"}}</script>
+</head>
+<body>
+<div id="stage" class="bars" hidden>
+  <canvas id="gl"></canvas>
+  <canvas id="ov"></canvas>
+  <div id="flash"></div>
+
+  <div id="scanUI" hidden>
+    <div class="top"><div id="scanStatus" class="status">وجّه الكاميرا نحو القرص…</div><button class="btn sm" id="btnScanBack">رجوع</button></div>
+    <div class="dock">
+      <button class="btn sm" id="btnManual" aria-pressed="false">ضبط يدوي</button>
+      <button class="btn sm" id="btnRot">تدوير ١٢٠°</button>
+      <button class="btn sm" id="btnFlip" hidden>تبديل الكاميرا</button>
+      <button class="btn primary" id="btnArm" disabled>ابدأ اللعب</button>
+    </div>
+  </div>
+
+  <div id="playUI" hidden>
+    <div class="top"><div class="chips" id="chips"></div><div class="chips"><div id="trkq" class="chip q0">التتبع</div><div id="playStatus" class="status" hidden></div></div></div>
+    <div class="more" id="more" hidden>
+      <button class="btn sm" id="btnPause">إيقاف مؤقت</button>
+      <button class="btn sm" id="btnQ">الأسئلة: تعمل</button>
+      <button class="btn sm" id="btnRecal">إعادة المعايرة</button>
+      <button class="btn sm" id="btnRebase">القرص فارغ الآن: التقط صورته</button>
+      <button class="btn sm" id="btnTap">التسجيل باللمس: متوقف</button>
+      <button class="btn sm" id="btnGrid">الشبكة: خفيفة</button>
+      <button class="btn sm" id="btnShake" hidden>اهتزاز الكاميرا: متوقف</button>
+      <button class="btn sm" id="btnFs">ملء الشاشة</button>
+      <button class="btn sm" id="btnEdit2">الأسئلة والجوائز</button>
+      <button class="btn sm red" id="btnEnd">إنهاء اللعبة</button>
+    </div>
+    <div class="dock">
+      <button class="btn sm" id="btnMute">الصوت: يعمل</button>
+      <button class="btn sm" id="btnUndo">تراجع</button>
+      <button class="btn sm" id="btnNext">الفريق التالي</button>
+      <button class="btn sm" id="btnMore" aria-expanded="false">المزيد</button>
+    </div>
+    <div class="banner" id="banner" hidden></div>
+    <div class="qcard" id="qcard" hidden></div>
+  </div>
+
+  <div id="collectUI" hidden>
+    <div class="top"><div id="colStatus" class="status">جمع بيانات التدريب</div><button class="btn sm" id="btnColBack">رجوع</button></div>
+    <div class="dock">
+      <span class="status" id="colCount">العينات: ٠</span>
+      <button class="btn sm" id="btnColAuto" aria-pressed="false">تسجيل تلقائي</button>
+      <button class="btn primary" id="btnColShot">التقاط إطار</button>
+    </div>
+    <div class="qcard" id="colCard" hidden></div>
+  </div>
+</div>
+
+<div class="screen" id="home">
+  <div class="home">
+    <div class="hero">
+      <canvas id="logo" width="600" height="600"></canvas>
+      <h1>قرص التحدي</h1>
+      <p class="sub">ارمِ الكرة، أصب الهدف، وأجب عن السؤال</p>
+      <p class="note" id="installHint" hidden>لتثبيت التطبيق على الجهاز: من قائمة المشاركة اختر «إضافة إلى الشاشة الرئيسية».</p>
+    </div>
+    <div class="card">
+      <ol class="steps">
+        <li>افتح الكاميرا ووجّهها نحو القرص حتى يظهر الإطار المضيء فوقه.</li>
+        <li>اضغط «ابدأ اللعب» والقرص فارغ. اللعبة تتابع القرص حتى لو تحرّك الجهاز.</li>
+        <li>يرمي الطلاب الكرات، واللعبة تحسب النقاط وتعرض السؤال.</li>
+      </ol>
+      <div class="row"><label id="lblTeams">عدد الفرق</label><div class="seg" id="segTeams" role="group" aria-labelledby="lblTeams"></div>
+        <label id="lblBalls">كرات كل دور</label><div class="seg" id="segBalls" role="group" aria-labelledby="lblBalls"></div></div>
+      <div class="teams" id="teamInputs"></div>
+      <label class="field"><span>الصف (يُسجَّل مع النتائج)</span><input type="text" id="className" placeholder="مثال: الرابع ب"></label>
+      <div class="row">
+        <button class="btn primary" id="btnCam">افتح الكاميرا</button>
+        <button class="btn" id="btnDemo">تجربة بدون كاميرا</button>
+        <button class="btn" id="btnEdit">الأسئلة والجوائز</button>
+        <button class="btn" id="btnResults">سجل النتائج</button>
+        <button class="btn" id="btnCollect">جمع بيانات التدريب</button>
+      </div>
+      <p class="note" id="camMsg">يعمل الصوت بعد أول لمسة للشاشة. الكاميرا تحتاج فتح التطبيق من رابط https.</p>
+    </div>
+  </div>
+</div>
+
+<div class="sheet" id="editor" hidden>
+  <div class="card">
+    <div class="row" style="justify-content:space-between"><h2>الأسئلة والجوائز</h2><button class="btn primary sm" id="btnEdClose">حفظ وإغلاق</button></div>
+    <div class="edgrid">
+      <div><svg id="edBoard" viewBox="-1.08 -1.08 2.16 2.16" role="img" aria-label="خانات القرص"></svg>
+        <p class="note">اضغط خانة لتكتب سؤالها. الخانة التي لها سؤال خاص تظهر عليها نقطة.</p></div>
+      <div class="card" style="background:var(--panel2)">
+        <h3 id="edTitle">اختر خانة</h3>
+        <label class="field"><span>السؤال</span><textarea id="edQ" placeholder="اتركه فارغًا لاستخدام بنك أسئلة المستوى"></textarea></label>
+        <label class="field"><span>الخيارات (اختياري): خيار في كل سطر، وضع * قبل الخيار الصحيح</span><textarea id="edC" placeholder="*الخيار الصحيح&#10;خيار آخر"></textarea></label>
+        <label class="field"><span>الإجابة أو الشرح</span><input type="text" id="edA"></label>
+        <label class="field"><span>جائزة خاصة بهذه الخانة (اختياري)</span><input type="text" id="edP"></label>
+      </div>
+    </div>
+    <h3>مستويات الصعوبة: المكافأة والجائزة وبنك الأسئلة</h3>
+    <p class="note">بنك الأسئلة: سؤال في كل سطر بالصيغة «السؤال | الإجابة». تُسحب منه أسئلة الخانات التي ليس لها سؤال خاص.</p>
+    <div class="tiers" id="edTiers"></div>
+    <h3>نسخ الإعدادات ونقلها</h3>
+    <label class="field"><span>انسخ هذا النص لحفظ إعداداتك، أو الصق نصًّا محفوظًا ثم اضغط «استيراد»</span><textarea id="edJson"></textarea></label>
+    <div class="row"><button class="btn sm" id="btnExport">تحديث النص</button><button class="btn sm" id="btnImport">استيراد</button><button class="btn sm red" id="btnReset">استعادة الأسئلة الافتراضية</button><span class="note" id="edMsg"></span></div>
+  </div>
+</div>
+
+<div class="sheet" id="resultsSheet" hidden>
+  <div class="card">
+    <div class="row" style="justify-content:space-between"><h2>سجل النتائج</h2><button class="btn primary sm" id="btnResClose">إغلاق</button></div>
+    <div id="resList" class="rank"></div>
+    <div class="row"><button class="btn sm" id="btnResExport">تصدير CSV</button><button class="btn sm red" id="btnResClear">مسح السجل</button></div>
+  </div>
+</div>
+
+<div class="sheet" id="endSheet" hidden>
+  <div class="card" style="max-width:620px">
+    <h2>النتيجة النهائية</h2>
+    <div class="rank" id="rank"></div>
+    <div class="row"><button class="btn primary" id="btnAgain">جولة جديدة</button><button class="btn" id="btnHome">الشاشة الرئيسية</button></div>
+  </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

@@ -28,6 +28,13 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  // لعبة «قرص التحدي» (تطبيق ويب ثابت داخل public/qurs): رابط نظيف يفتح الملف الرئيسي.
+  async redirects() {
+    return [
+      { source: '/qurs', destination: '/qurs/index.html', permanent: false },
+      { source: '/qurs/', destination: '/qurs/index.html', permanent: false },
+    ];
+  },
   images: {
     unoptimized: true,
     remotePatterns: [
