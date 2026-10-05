@@ -6,6 +6,7 @@ import type { Activity } from '@/lib/types';
 import { ActivityCard } from '@/components/activity-card';
 import { Reveal } from '@/components/reveal';
 import { SchoolGate } from '@/components/school-gate';
+import { QursFeaturedCard } from '@/components/qurs-featured-card';
 import {
   isFirebaseConfigured,
   isOwnerUid,
@@ -46,6 +47,8 @@ export function SmartGamesGrid({ initialGames }: { initialGames: Activity[] }) {
 
   return (
     <SchoolGate>
+      <QursFeaturedCard />
+
       <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm font-black text-[color:var(--gold)]">
