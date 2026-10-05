@@ -191,7 +191,7 @@ function enterScan(){R_BULL=R_BULL0;R_IN=R_IN0;R_RIM=R_RIM0;mode='scan';scan={ma
 const G=160,EXT=1.22,N=G*G;
 const cv={map:new Int32Array(N),cur:new Uint8Array(N*3),prev:new Uint8Array(N*3),bg:new Float32Array(N*3),clean:new Float32Array(N*3),
   mask:new Uint8Array(N),er:new Uint8Array(N),lab:new Int32Array(N),st:new Int32Array(N),age:new Uint16Array(N),balls:[],cands:[],lastHit:0,
-  flight:null,ballCol:null,cleanH:null,cleanFrame:null,out:new Uint8Array(N)};
+  flight:null,cleanH:null,cleanFrame:null,out:new Uint8Array(N),hi:new Uint8Array(N),tmp:new Uint8Array(N)};
 for(let j=0;j<G;j++)for(let i=0;i<G;i++){const u=((i+0.5)/G*2-1)*EXT,v=((j+0.5)/G*2-1)*EXT;cv.out[j*G+i]=u*u+v*v>1.0*1.0?1:0;}
 function buildMap(){const f=PW/src.w,Hm=cal.H;for(let j=0;j<G;j++)for(let i=0;i<G;i++){const u=((i+0.5)/G*2-1)*EXT,v=((j+0.5)/G*2-1)*EXT,k=j*G+i;
   if(u*u+v*v>EXT*EXT*0.98){cv.map[k]=-1;continue;}const w=Hm[6]*u+Hm[7]*v+1,x=Math.round((Hm[0]*u+Hm[1]*v+Hm[2])/w*f),y=Math.round((Hm[3]*u+Hm[4]*v+Hm[5])/w*f);cv.map[k]=(x<0||y<0||x>=PW||y>=PH)?-1:(y*PW+x)*4;}}
@@ -200,12 +200,13 @@ function rebase(){buildMap();sample();for(let i=0;i<N*3;i++){cv.bg[i]=cv.cur[i];
   cv.cleanH=cal.H.slice();cv.cleanFrame=new Uint8ClampedArray(frame.data);}
 const g2b=(x,y)=>[((x+0.5)/G*2-1)*EXT,((y+0.5)/G*2-1)*EXT];
 let sens=38;
-function sdiff(ref,k,gain){ // فرق يتحمّل إزاحة خلية واحدة، حتى لا يُحسب اهتزاز الصورة تغيّرًا
+function sdiffT(ref,k,gain,thr){ // فرق يتحمّل إزاحة خلية واحدة، حتى لا يُحسب اهتزاز الصورة تغيّرًا
   const cur=cv.cur,j=k*3,r=cur[j],g=cur[j+1],b=cur[j+2];
-  let best=Math.max(Math.abs(r-ref[j]*gain),Math.abs(g-ref[j+1]*gain),Math.abs(b-ref[j+2]*gain));if(best<=sens)return best;
+  let best=Math.max(Math.abs(r-ref[j]*gain),Math.abs(g-ref[j+1]*gain),Math.abs(b-ref[j+2]*gain));if(best<=thr)return best;
   for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const kk=k+dy*G+dx;if(kk<0||kk>=N||cv.map[kk]<0)continue;const q=kk*3;
-    const d=Math.max(Math.abs(r-ref[q]*gain),Math.abs(g-ref[q+1]*gain),Math.abs(b-ref[q+2]*gain));if(d<best){best=d;if(best<=sens)return best;}}
+    const d=Math.max(Math.abs(r-ref[q]*gain),Math.abs(g-ref[q+1]*gain),Math.abs(b-ref[q+2]*gain));if(d<best){best=d;if(best<=thr)return best;}}
   return best;}
+const sdiff=(ref,k,gain)=>sdiffT(ref,k,gain,sens);
 const pxAt=(d,x,y)=>{if(x<0||y<0||x>=PW-1||y>=PH-1)return null;const x0=x|0,y0=y|0,fx=x-x0,fy=y-y0,o=[0,0,0];
   for(let c=0;c<3;c++){const j=(y0*PW+x0)*4+c;o[c]=d[j]*(1-fx)*(1-fy)+d[j+4]*fx*(1-fy)+d[j+PW*4]*(1-fx)*fy+d[j+PW*4+4]*fx*fy;}return o;};
 function subpixel(u0,v0,gc){ // مركز الكرة بدقة: مقارنة الإطار الحالي بصورة القرص الفارغ عند نفس نقاط القرص (كلٌّ بهوموغرافيّه)
@@ -232,36 +233,42 @@ function cvStep(t){
     if(!paused&&cv.flight.n>=2)post('trail',{u:p[0],v:p[1]});}
   else if(cv.flight&&t-cv.flight.t>700)cv.flight=null;
   // ٢) الاستقرار: ما يختلف عن الخلفية ويثبت
-  for(let k=0;k<N;k++){if(map[k]<0||cv.out[k]){mask[k]=0;continue;}const j=k*3;
-    if(sdiff(bg,k,gain)>sens){mask[k]=1;if(++age[k]>90){bg[j]=cur[j];bg[j+1]=cur[j+1];bg[j+2]=cur[j+2];age[k]=0;}}  // تغيّر ثابت طويلًا (إضاءة/شخص واقف): يُستوعب بلا نقاط
-    else{mask[k]=0;age[k]=0;bg[j]+=(cur[j]-bg[j])*0.08;bg[j+1]+=(cur[j+1]-bg[j+1])*0.08;bg[j+2]+=(cur[j+2]-bg[j+2])*0.08;}}
-  er.fill(0);for(let y=1;y<G-1;y++)for(let x=1;x<G-1;x++){const k=y*G+x;er[k]=mask[k]&mask[k-1]&mask[k+1]&mask[k-G]&mask[k+G];}
+  // عتبتان: منخفضة تلتقط كرة قريبة اللون من خانتها (ظلّها وتدرّج سطحها)، وعالية تميّز التغيّر الواضح
+  const lo=sens*0.6,hi=cv.hi;
+  for(let k=0;k<N;k++){if(map[k]<0||cv.out[k]){mask[k]=0;hi[k]=0;continue;}const j=k*3,d=sdiffT(bg,k,gain,lo);
+    if(d>lo){mask[k]=1;hi[k]=d>sens?1:0;if(++age[k]>90){bg[j]=cur[j];bg[j+1]=cur[j+1];bg[j+2]=cur[j+2];age[k]=0;}}  // تغيّر ثابت طويلًا (إضاءة/شخص واقف): يُستوعب بلا نقاط
+    else{mask[k]=0;hi[k]=0;age[k]=0;bg[j]+=(cur[j]-bg[j])*0.08;bg[j+1]+=(cur[j+1]-bg[j+1])*0.08;bg[j+2]+=(cur[j+2]-bg[j+2])*0.08;}}
+  // إغلاق (تمديد ثم تآكل) يلحم أجزاء الكرة المتقطعة، ثم تآكل إضافي يزيل الخطوط الرفيعة الناتجة عن اهتزاز الحواف
+  const tmp=cv.tmp;tmp.fill(0);for(let y=1;y<G-1;y++)for(let x=1;x<G-1;x++){const k=y*G+x;tmp[k]=mask[k]|mask[k-1]|mask[k+1]|mask[k-G]|mask[k+G];}
+  er.fill(0);for(let y=1;y<G-1;y++)for(let x=1;x<G-1;x++){const k=y*G+x;er[k]=tmp[k]&tmp[k-1]&tmp[k+1]&tmp[k-G]&tmp[k+G];}
+  tmp.fill(0);for(let y=1;y<G-1;y++)for(let x=1;x<G-1;x++){const k=y*G+x;tmp[k]=er[k]&er[k-1]&er[k+1]&er[k-G]&er[k+G];}
+  er.set(tmp);
   const lab=cv.lab,st=cv.st;lab.fill(0);let L=0;const found=[];
-  for(let i=0;i<N;i++){if(!er[i]||lab[i])continue;L++;let sp=0,a=0,sx=0,sy=0,x0=G,x1=0,y0=G,y1=0,dc=0,db=0,cr=0,cg=0,cb=0;st[sp++]=i;lab[i]=L;
+  for(let i=0;i<N;i++){if(!er[i]||lab[i])continue;L++;let sp=0,a=0,sx=0,sy=0,x0=G,x1=0,y0=G,y1=0,dc=0,db=0,nh=0;st[sp++]=i;lab[i]=L;
     while(sp){const p=st[--sp],x=p%G,y=(p/G)|0;a++;sx+=x;sy+=y;if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;
-      if(a<900){dc+=sdiff(clean,p,gc);db+=sdiff(bg,p,gain);const j=p*3;cr+=cur[j];cg+=cur[j+1];cb+=cur[j+2];}
+      nh+=hi[p];if(a<900){dc+=sdiffT(clean,p,gc,0);db+=sdiffT(bg,p,gain,0);}
       if(er[p-1]&&!lab[p-1]){lab[p-1]=L;st[sp++]=p-1;}if(er[p+1]&&!lab[p+1]){lab[p+1]=L;st[sp++]=p+1;}
       if(er[p-G]&&!lab[p-G]){lab[p-G]=L;st[sp++]=p-G;}if(er[p+G]&&!lab[p+G]){lab[p+G]=L;st[sp++]=p+G;}}
     const bw=x1-x0+1,bh=y1-y0+1,ar=bw/bh;
-    if(a<36||a>820||bw>40||bh>40||a/(bw*bh)<0.5||ar<0.5||ar>2)continue;       // ليست بحجم كرة ولا بشكلها
-    const p=g2b(sx/a,sy/a),m=Math.min(a,900);if(Math.hypot(p[0],p[1])>1.0)continue;   // خارج القرص: الخلفية قد تتحرك نسبةً للقرص
-    found.push({a,u:p[0],v:p[1],clean:dc/m<sens*0.9||dc<db*0.5,x0,x1,y0,y1,n:1,col:[cr/m,cg/m,cb/m]});}
+    if(a<26||a>900||bw>44||bh>44)continue;                                   // ليست بحجم كرة
+    const fill=a/(bw*bh),strong=nh>=a*0.2;
+    if(strong?(fill<0.45||ar<0.45||ar>2.2):(fill<0.6||ar<0.65||ar>1.55))continue;   // تغيّر ضعيف: نقبله فقط إن كان مستديرًا بوضوح
+    const p=g2b(sx/a,sy/a);if(Math.hypot(p[0],p[1])>1.0)continue;            // خارج القرص: الخلفية قد تتحرك نسبةً للقرص
+    found.push({a,u:p[0],v:p[1],clean:dc<db*0.5,strong,x0,x1,y0,y1,n:1});}
   const next=[];
   for(const f of found){const c=cv.cands.find(c=>!c.used&&Math.hypot(c.u-f.u,c.v-f.v)<0.07&&f.a>c.a*0.5&&f.a<c.a*2);
     if(c){c.used=1;f.n=c.n+1;f.first=c.first;}else f.first=t;
     // رمية رأيناها تطير قبل لحظات واستقرت هنا: نؤكد بسرعة. وإلا ننتظر إطارات أكثر (ظل/إضاءة/يد)
     const fl=cv.flight,fromFlight=fl&&t-fl.t<900&&Math.hypot(fl.u-f.u,fl.v-f.v)<0.35;
-    const need=fromFlight?2:4;
-    let colOk=true;if(cv.ballCol&&!f.clean){const d=Math.hypot(f.col[0]-cv.ballCol[0],f.col[1]-cv.ballCol[1],f.col[2]-cv.ballCol[2]);colOk=d<110;}
-    if(f.n<need||(!colOk&&f.n<10)){next.push(f);continue;}
+    const need=(fromFlight?2:4)+(f.strong?0:2);
+    if(f.n<need){next.push(f);continue;}
     // تأكدت: كرة التصقت، أو كرة أُزيلت
     for(let y=Math.max(0,f.y0-3);y<=Math.min(G-1,f.y1+3);y++)for(let x=Math.max(0,f.x0-3);x<=Math.min(G-1,f.x1+3);x++){const k=y*G+x,j=k*3;bg[j]=cur[j];bg[j+1]=cur[j+1];bg[j+2]=cur[j+2];age[k]=0;}
-    let near=-1;cv.balls.forEach((b,i)=>{if(Math.hypot(b.u-f.u,b.v-f.v)<0.12)near=i;});
-    if(f.clean||near>=0){if(near>=0)cv.balls.splice(near,1);continue;}
-    if(!colOk)continue;
-    const sp=subpixel(f.u,f.v,gc);if(sp.col)cv.ballCol=cv.ballCol?cv.ballCol.map((v,i)=>v*0.7+sp.col[i]*0.3):sp.col;
+    if(f.clean)continue;                                                      // عاد القرص فارغًا هنا: كرة أُزيلت
+    const sp=subpixel(f.u,f.v,gc);
+    if(cv.balls.some(b=>Math.hypot(b.u-sp.u,b.v-sp.v)<0.06))continue;         // الكرة نفسها مسجّلة من قبل
     cv.balls.push({u:sp.u,v:sp.v});cv.flight=null;
-    if(!paused&&t-cv.lastHit>450){cv.lastHit=t;post('hit',{u:sp.u,v:sp.v});}}
+    if(!paused)post('hit',{u:sp.u,v:sp.v});}
   cv.cands=next;
   // كل كرة مسجّلة يجب أن تبقى ظاهرة فوق لقطة القرص الفارغ، وإلا فقد أُزيلت
   cv.balls=cv.balls.filter(b=>{const gx=Math.round((b.u/EXT+1)/2*G-0.5),gy=Math.round((b.v/EXT+1)/2*G-0.5);let s=0,n=0;

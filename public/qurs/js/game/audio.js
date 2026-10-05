@@ -25,19 +25,24 @@ function tone(f, t, d, type, g, f2) { if (!AC) return; const o = AC.createOscill
 export function boom(t, d, cut, g) { if (!AC) return; const n = Math.floor(AC.sampleRate * d), b = AC.createBuffer(1, n, AC.sampleRate), ch = b.getChannelData(0); for (let i = 0; i < n; i++) ch[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2.2);
   const s = AC.createBufferSource(), f = AC.createBiquadFilter(), ga = AC.createGain(), t0 = AC.currentTime + t; s.buffer = b; f.type = 'lowpass'; f.frequency.setValueAtTime(cut, t0); f.frequency.exponentialRampToValueAtTime(Math.max(60, cut / 8), t0 + d);
   ga.gain.value = g; s.connect(f); f.connect(ga); ga.connect(master); s.start(t0); }
+function crackle(t, dur, n, g) { if (!AC) return; for (let i = 0; i < n; i++) { const t0 = AC.currentTime + t + Math.random() * dur, len = 0.012 + Math.random() * 0.03, b = AC.createBuffer(1, Math.floor(AC.sampleRate * len), AC.sampleRate), ch = b.getChannelData(0); for (let k = 0; k < ch.length; k++) ch[k] = (Math.random() * 2 - 1) * (1 - k / ch.length);
+  const s = AC.createBufferSource(), f = AC.createBiquadFilter(), ga = AC.createGain(); s.buffer = b; f.type = 'highpass'; f.frequency.value = 1800 + Math.random() * 3000; ga.gain.value = g * (0.4 + Math.random() * 0.6); s.connect(f); f.connect(ga); ga.connect(master); s.start(t0); } }
+function whoosh(t, d, g) { if (!AC) return; const n = Math.floor(AC.sampleRate * d), b = AC.createBuffer(1, n, AC.sampleRate), ch = b.getChannelData(0); for (let i = 0; i < n; i++) ch[i] = (Math.random() * 2 - 1) * Math.pow(i / n, 1.5);
+  const s = AC.createBufferSource(), f = AC.createBiquadFilter(), ga = AC.createGain(), t0 = AC.currentTime + t; s.buffer = b; f.type = 'bandpass'; f.Q.value = 2.5; f.frequency.setValueAtTime(250, t0); f.frequency.exponentialRampToValueAtTime(3200, t0 + d); ga.gain.value = g; s.connect(f); f.connect(ga); ga.connect(master); s.start(t0); }
 function playBuf(k) { if (AC && buf[k]) { const s = AC.createBufferSource(); s.buffer = buf[k]; s.connect(master); s.start(); return true; } return false; }
 
 export const SND = {
   tick() { tone(880, 0, 0.06, 'square', 0.08); },
   lock() { tone(523, 0, 0.12, 'triangle', 0.25); tone(784, 0.1, 0.12, 'triangle', 0.25); tone(1047, 0.2, 0.25, 'triangle', 0.3); },
   hit(t) {
-    if (t === 0) { boom(0, 0.18, 1800, 0.5); tone(520, 0, 0.16, 'triangle', 0.3, 780); }
-    else if (t === 1) { boom(0, 0.3, 1400, 0.7); [523, 659, 784].forEach((f, i) => tone(f, i * 0.07, 0.2, 'triangle', 0.28)); }
-    else if (t === 2) { boom(0, 0.7, 900, 1); tone(90, 0, 0.5, 'sine', 0.7, 40); [392, 523, 659, 784, 1047].forEach((f, i) => tone(f, 0.08 + i * 0.06, 0.28, 'sawtooth', 0.14)); }
-    else { boom(0, 1.4, 700, 1.2); tone(70, 0, 1.1, 'sine', 0.9, 30); boom(0.5, 0.5, 2500, 0.5); boom(0.9, 0.5, 3000, 0.5); boom(1.4, 0.6, 2600, 0.5);
-      [523, 659, 784, 1047, 784, 1047, 1319, 1568].forEach((f, i) => tone(f, 0.25 + i * 0.13, 0.3, 'square', 0.12)); [262, 330, 392].forEach((f) => tone(f, 1.35, 1.2, 'sawtooth', 0.1)); }
+    if (t === 0) { boom(0, 0.22, 1700, 0.55); tone(120, 0, 0.14, 'sine', 0.35, 60); crackle(0.02, 0.25, 8, 0.25); }
+    else if (t === 1) { boom(0, 0.45, 1300, 0.8); tone(95, 0, 0.3, 'sine', 0.6, 45); crackle(0.03, 0.6, 18, 0.3); }
+    else if (t === 2) { boom(0, 0.9, 900, 1.1); boom(0.02, 0.5, 3200, 0.45); tone(80, 0, 0.6, 'sine', 0.85, 34); crackle(0.05, 1.3, 40, 0.32); [0.24, 0.41, 0.58, 0.75].forEach((d) => boom(d, 0.3, 1500, 0.4)); }
+    else { whoosh(0, 0.36, 0.5); tone(160, 0, 0.36, 'sawtooth', 0.12, 900);
+      boom(0.36, 1.8, 650, 1.3); boom(0.37, 0.7, 3600, 0.55); tone(62, 0.36, 1.4, 'sine', 1.0, 26); tone(45, 0.4, 1.8, 'sine', 0.6, 22); crackle(0.45, 2.8, 110, 0.34);
+      [523, 659, 784, 1047, 1319, 1568].forEach((f, i) => tone(f, 1.1 + i * 0.12, 0.4, 'triangle', 0.14)); [262, 330, 392, 523].forEach((f) => tone(f, 1.9, 1.3, 'sawtooth', 0.07)); }
   },
-  firework() { boom(0, 0.35, 2600, 0.35); },
+  firework() { boom(0, 0.4, 2400, 0.4); crackle(0.05, 0.45, 14, 0.22); },
   miss() { tone(220, 0, 0.3, 'sawtooth', 0.15, 90); },
   ok() { if (!playBuf('ok')) [659, 784, 1047, 1319].forEach((f, i) => tone(f, i * 0.09, 0.25, 'triangle', 0.3)); },
   bad() { if (!playBuf('bad')) { tone(200, 0, 0.25, 'sawtooth', 0.2, 140); tone(140, 0.2, 0.4, 'sawtooth', 0.2, 90); } },

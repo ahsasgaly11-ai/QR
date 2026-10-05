@@ -20,6 +20,12 @@ const vision = (app.vision = new VisionClient());
 const ar = (app.ar = new ARScene($('gl')));
 const game = (app.game = new Game(store));
 ar.onFirework = () => SND.firework();
+// لحظة الانفجار: وميض واهتزاز وتعتيم سينمائي يتدرج بحسب الهدف
+ar.onBlast = (tier, phase) => {
+  if (tier === 3 && phase === 'charge') { dim(0.55, 3400); $('stage').classList.add('cine'); setTimeout(() => $('stage').classList.remove('cine'), 3400); return; }
+  flash([0.12, 0.3, 0.5, 0.85][tier], tier === 3 ? '#fff3d6' : '#ffd9a8'); shake([4, 9, 16, 28][tier], [0.25, 0.35, 0.5, 0.8][tier]);
+  if (tier === 1) dim(0.22, 700); else if (tier === 2) dim(0.4, 1500);
+};
 initEditor(app, $); initCollect(app, $);
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 if (navigator.standalone === false && /iPad|iPhone/.test(navigator.userAgent)) $('installHint').hidden = false;
@@ -80,8 +86,8 @@ vision.addEventListener('pose', (e) => { const p = e.detail; if (p.rings) { ring
 
 /* ---------- أحداث اللعبة ---------- */
 game.addEventListener('change', chips);
-game.addEventListener('hit', (e) => { const { z, u, v, t } = e.detail; ar.hit(z, u, v, () => { $('stage').classList.add('cine'); setTimeout(() => $('stage').classList.remove('cine'), 3200); flash(1); });
-  SND.hit(t); if (t >= 1) flash(0.25 + t * 0.15); if (t >= 1) shake(); });
+game.addEventListener('hit', (e) => { const { z, u, v, t } = e.detail; ar.hit(z, u, v); SND.hit(t); });
+game.addEventListener('queued', (e) => banner('كرة مسجّلة — تُحتسب بعد السؤال الحالي', 1500));
 game.addEventListener('miss', (e) => { SND.miss(); ar.text(e.detail.u, e.detail.v, 0.1, 'خارج القرص', '#ffb4a6', 0.14, 1.2); });
 game.addEventListener('question', (e) => ask(e.detail));
 game.addEventListener('turn', (e) => { SND.turn(); banner((game.teams.length > 1 ? 'دور ' + e.detail.team.name : 'جولة جديدة') + '\nاجمعوا الكرات ثم ارموا', 2600); });
@@ -91,8 +97,11 @@ function chips() { const el = $('chips'); el.innerHTML = ''; game.teams.forEach(
   const nm = document.createElement('span'); nm.textContent = t.name; const dot = document.createElement('i'), sc = document.createElement('b'); sc.textContent = t.score; d.append(dot, nm, sc);
   if (i === game.cur) { const b = document.createElement('span'); b.className = 'balls'; for (let k = 0; k < store.cfg.balls; k++) { const s = document.createElement('span'); if (k >= game.left) s.className = 'used'; b.append(s); } d.append(b); } el.append(d); }); }
 let bannerT = 0; function banner(t, ms) { const b = $('banner'); b.textContent = t; b.style.whiteSpace = 'pre-line'; b.hidden = false; clearTimeout(bannerT); bannerT = setTimeout(() => (b.hidden = true), ms); }
-function flash(a) { const f = $('flash'); f.style.opacity = Math.min(0.75, a); setTimeout(() => (f.style.opacity = 0), 90); }
-function shake() { const s = $('stage'); s.classList.remove('shake'); void s.offsetWidth; s.classList.add('shake'); }
+function flash(a, col) { const f = $('flash'); f.style.background = col || '#fff'; f.style.transition = 'none'; f.style.opacity = Math.min(0.85, a); requestAnimationFrame(() => requestAnimationFrame(() => { f.style.transition = 'opacity .45s ease-out'; f.style.opacity = 0; })); }
+let shakeT = 0, shakeAmp = 0, shakeDur = 0.3;
+function shake(amp = 8, dur = 0.35) { shakeAmp = amp; shakeDur = dur; shakeT = performance.now(); }
+function applyShake(t) { const st = $('stage'), k = (t - shakeT) / 1000 / shakeDur; if (k >= 1 || !shakeAmp) { if (st.style.transform) st.style.transform = ''; return; } const a = shakeAmp * (1 - k) * (1 - k); st.style.transform = `translate(${(Math.random() - 0.5) * 2 * a}px,${(Math.random() - 0.5) * 2 * a}px)`; }
+let dimT = 0; function dim(level, ms) { const d = $('dim'); d.style.opacity = level; clearTimeout(dimT); dimT = setTimeout(() => (d.style.opacity = 0), ms); }
 function ask({ z, t, q }) {
   const el = $('qcard'), T = TIERS[t], tr = store.cfg.tiers[t]; el.innerHTML = ''; el.style.setProperty('--qc', T.c); el.hidden = false;
   const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
@@ -106,12 +115,12 @@ function ask({ z, t, q }) {
 /* ---------- الحلقة الرئيسية ---------- */
 let lastT = 0, gridMode = 'soft', frameAvg = 16, quality = 2;
 function loop(t) {
-  requestAnimationFrame(loop); const dt = Math.min(0.05, (t - lastT) / 1000 || 0.016); lastT = t;
+  requestAnimationFrame(loop); const dt = Math.min(0.1, (t - lastT) / 1000 || 0.016); lastT = t;
   // جودة تكيفية: إن بطؤ الرسم على جهاز قديم نخفض دقة طبقة المؤثرات لا دقة الرؤية
   frameAvg = frameAvg * 0.95 + Math.min(200, dt * 1000) * 0.05;
   if (frameAvg > 45 && quality > 0.6) { quality = Math.max(0.6, quality - 0.3); ar.resize(ar.w, ar.h, quality); frameAvg = 16; }
   if (app.mode === 'home' || !vision.src) return;
-  vision.pump(t);
+  vision.pump(t); applyShake(t);
   if (bgc) bgc.getContext('2d').drawImage(vision.src.el, 0, 0, bgc.width, bgc.height);
   const p = vision.pose;
   ar.setPose(p.pose3, vision.src.w, vision.src.h); ar.setLight(vision.brightness);

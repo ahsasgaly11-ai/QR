@@ -58,7 +58,7 @@ export class VisionClient extends EventTarget {
     c.fillStyle = '#e9ece6'; c.fillRect(w * 0.06, h * 0.1, w * 0.88, h * 0.8); c.strokeStyle = '#7d8a83'; c.lineWidth = 6; c.strokeRect(w * 0.06, h * 0.1, w * 0.88, h * 0.8);
     c.save(); c.translate(T.cx, T.cy); c.rotate(T.rot); c.scale(T.r, T.r * T.sy);
     if (d.img) { const G = d.imgGeo; c.drawImage(d.img, -G.cx / G.r, -G.cy / G.r, d.img.width / G.r, d.img.height / G.r); } else drawBoard(c);
-    for (const b of d.balls) { const k2 = Math.min(1, (t - b.t0) / 240), e = 1 - (1 - k2) * (1 - k2); ball(c, b.u + (1 - e) * b.du, b.v + (1 - e) * b.dv, 0.115 * (1 + (1 - e) * 1.6)); }
+    for (const b of d.balls) { const k2 = Math.min(1, (t - b.t0) / 240), e = 1 - (1 - k2) * (1 - k2); ball(c, b.u + (1 - e) * b.du, b.v + (1 - e) * b.dv, 0.115 * (1 + (1 - e) * 1.6), b.col, e > 0.98); }
     c.restore();
   }
   demoToBoard(x, y) { const T = this.demo.T, dx = x - T.cx, dy = y - T.cy, cs = Math.cos(-T.rot), sn = Math.sin(-T.rot); return [(dx * cs - dy * sn) / T.r, (dx * sn + dy * cs) / (T.r * T.sy)]; }
@@ -83,7 +83,8 @@ export class VisionClient extends EventTarget {
   }
 }
 
-function ball(c, x, y, r) {
+function ball(c, x, y, r, col, shadow) {
+  if (shadow) { c.fillStyle = 'rgba(0,0,0,.28)'; c.beginPath(); c.ellipse(x + r * 0.28, y + r * 0.34, r * 0.95, r * 0.9, 0, 0, 7); c.fill(); } // ظل الكرة على القماش
   const gr = c.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r);
-  gr.addColorStop(0, '#bfe6ff'); gr.addColorStop(1, '#1c6fd1'); c.fillStyle = gr; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
+  gr.addColorStop(0, col ? col[0] : '#bfe6ff'); gr.addColorStop(0.55, col ? col[1] : '#3b8fe0'); gr.addColorStop(1, col ? col[2] : '#1c6fd1'); c.fillStyle = gr; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
 }
