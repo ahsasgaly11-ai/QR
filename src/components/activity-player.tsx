@@ -27,6 +27,11 @@ import {
   FS_STATE_KEY,
 } from '@/lib/local-store';
 
+function nativeFullscreenElement(): Element | null {
+  const d = document as Document & { webkitFullscreenElement?: Element | null };
+  return document.fullscreenElement ?? d.webkitFullscreenElement ?? null;
+}
+
 function fileUrl(a: Activity) {
   return a.external ? a.file : `/games/${a.file}`;
 }
@@ -200,13 +205,29 @@ function PlayerInner({ activity, localHtml }: PlayerProps) {
   const immersiveRef = useRef(immersive);
   immersiveRef.current = immersive;
 
-  const exitImmersive = useCallback(() => {
+  // هل أُضيف قيد في سجلّ التصفّح لوضع العرض الكامل؟ به يُغلق زرّ «رجوع»
+  // في المتصفّح/الجوال وضعَ العرض بدل مغادرة الصفحة كلّها.
+  const historyRef = useRef(false);
+  // هل نحن فعلًا في ملء الشاشة الأصلي الذي طلبناه؟
+  const nativeRef = useRef(false);
+
+  const exitImmersive = useCallback((fromHistory = false) => {
     gameOwnedRef.current = false;
+    nativeRef.current = false;
     setImmersive(false);
-    const d = document as Document & { webkitExitFullscreen?: () => void };
-    if (document.fullscreenElement) document.exitFullscreen?.();
-    else if ((d as unknown as { webkitFullscreenElement?: Element }).webkitFullscreenElement) {
-      d.webkitExitFullscreen?.();
+    if (nativeFullscreenElement()) {
+      const d = document as Document & { webkitExitFullscreen?: () => void };
+      try {
+        if (document.exitFullscreen) void document.exitFullscreen().catch(() => {});
+        else d.webkitExitFullscreen?.();
+      } catch {
+        /* لا شيء */
+      }
+    }
+    if (historyRef.current) {
+      historyRef.current = false;
+      // أزل القيد الذي أضفناه حتى لا يحتاج الزائر للضغط على «رجوع» مرّتين
+      if (!fromHistory) window.history.back();
     }
   }, []);
 
@@ -220,10 +241,48 @@ function PlayerInner({ activity, localHtml }: PlayerProps) {
     return () => window.removeEventListener('keydown', onKey);
   }, [immersive, exitImmersive]);
 
+  // زرّ «رجوع» أثناء وضع العرض الكامل يُغلقه فقط ولا يغادر الصفحة
+  useEffect(() => {
+    const onPop = () => {
+      if (historyRef.current && immersiveRef.current) exitImmersive(true);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [exitImmersive]);
+
+  // خروج المتصفّح من ملء الشاشة الأصلي (Esc، إيماءة السحب على iPad، زرّ الرجوع
+  // في Android) يُنهي الطبقة أيضًا؛ وإلا بقيت تغطّي الصفحة والتمرير مقفل.
+  useEffect(() => {
+    const onChange = () => {
+      const fsEl = nativeFullscreenElement();
+      if (fsEl && fsEl === wrapRef.current) {
+        nativeRef.current = true;
+      } else if (nativeRef.current) {
+        nativeRef.current = false;
+        if (immersiveRef.current) exitImmersive();
+      }
+    };
+    document.addEventListener('fullscreenchange', onChange);
+    document.addEventListener('webkitfullscreenchange', onChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', onChange);
+      document.removeEventListener('webkitfullscreenchange', onChange);
+    };
+  }, [exitImmersive]);
+
   const enterImmersive = useCallback(() => {
     setImmersive(true);
+    if (!historyRef.current) {
+      try {
+        // نسخ الحالة الحالية يحفظ بيانات موجّه Next.js فلا يُعاد تحميل الصفحة
+        window.history.pushState({ ...(window.history.state ?? {}), [FS_STATE_KEY]: true }, '');
+        historyRef.current = true;
+      } catch {
+        /* يبقى زرّ «خروج» */
+      }
+    }
     // محاولة ملء الشاشة الأصلي كميزة إضافية — وفشلها لا يؤثّر على الطبقة
-    if (document.fullscreenElement) return;
+    if (nativeFullscreenElement()) return;
     const el = wrapRef.current as (HTMLDivElement & {
       webkitRequestFullscreen?: () => Promise<void> | void;
     }) | null;
@@ -353,7 +412,7 @@ function PlayerInner({ activity, localHtml }: PlayerProps) {
 
         {immersive && (
           <button
-            onClick={exitImmersive}
+            onClick={() => exitImmersive()}
             className="absolute left-3 top-3 z-20 flex items-center gap-1.5 rounded-xl bg-[color:var(--maroon)]/90 px-3 py-2 text-sm font-black text-white shadow-lg backdrop-blur transition hover:bg-[color:var(--maroon)]"
             aria-label="إنهاء ملء الشاشة"
           >
