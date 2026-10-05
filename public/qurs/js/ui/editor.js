@@ -28,4 +28,4 @@ function edTiers() { const el = $('edTiers'); el.innerHTML = ''; const rng = ['�
   TIERS.forEach((T, i) => { const d = document.createElement('div'); d.className = 'tier'; d.style.setProperty('--tc', T.c);
     const f = (lab, type, val, key, num) => { const l = document.createElement('label'); l.className = 'field'; const s = document.createElement('span'); s.textContent = lab; const inp = document.createElement(type === 'ta' ? 'textarea' : 'input'); if (type !== 'ta') inp.type = type; inp.id = 'tier' + i + key; inp.value = val; inp.oninput = () => { store.cfg.tiers[i][key] = num ? +inp.value || 0 : inp.value; }; l.append(s, inp); return l; };
     const h = document.createElement('h3'); h.textContent = T.name + ' (' + rng[i] + ')'; h.style.color = T.c;
-    d.append(h, f('نقاط مكافأة الإجابة الصحيحة', 'number', store.cfg.tiers[i].bonus, 'bonus', true), f('الجائزة', 'text', store.cfg.tiers[i].prize, 'prize'), f('بنك الأسئلة', 'ta', store.cfg.tiers[i].bank, 'bank')); el.append(d); }); }
+    d.append(h, f('جائزة الإجابة الصحيحة', 'text', store.cfg.tiers[i].prize, 'prize'), f('بنك الأسئلة', 'ta', store.cfg.tiers[i].bank, 'bank')); el.append(d); }); }

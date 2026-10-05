@@ -32,8 +32,9 @@ export class Game extends EventTarget {
     return { q: parts[0].trim(), a: (parts[1] || '').trim(), opts: null, right: -1, prize: '' };
   }
   answer(ok, t, q) { const tm = this.teams[this.cur], tr = this.cfg.tiers[t], pz = q.prize || tr.prize;
-    if (ok) { tm.score += +tr.bonus || 0; const h = this.hist[this.hist.length - 1]; h.d += +tr.bonus || 0; if (pz) { tm.prizes.push(pz); h.prize = true; } }
-    this.emit('answered', { ok, bonus: ok ? +tr.bonus || 0 : 0, prize: ok ? pz : '' }); this.emit('change'); }
+    // النقاط = قيمة الخانة المصابة فقط؛ الإجابة الصحيحة تمنح الجائزة ولا تضيف نقاطًا
+    if (ok && pz) { tm.prizes.push(pz); this.hist[this.hist.length - 1].prize = true; }
+    this.emit('answered', { ok, bonus: 0, prize: ok ? pz : '' }); this.emit('change'); }
   after() { this.busy = false; if (this.left <= 0) this.next();   // انتهى الدور: الكرات الزائدة لا تُحتسب
     if (this.pending.length) { const p = this.pending.shift(); this.busy = true; setTimeout(() => { this.busy = false; this.hit(p[0], p[1], true); }, 450); } }
   next(keepQueue) { if (!keepQueue) this.pending = []; this.cur = (this.cur + 1) % this.teams.length; this.left = this.cfg.balls; this.busy = false;

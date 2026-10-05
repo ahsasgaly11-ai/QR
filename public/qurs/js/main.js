@@ -111,8 +111,8 @@ let dimT = 0; function dim(level, ms) { const d = $('dim'); d.style.opacity = le
 function ask({ z, t, q }) {
   const el = $('qcard'), T = TIERS[t], tr = store.cfg.tiers[t]; el.innerHTML = ''; el.style.setProperty('--qc', T.c); el.hidden = false;
   const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
-  const head = mk('div', 'qhead'); head.append(mk('span', '', 'خانة ' + z.pts + ' — مستوى ' + T.name), mk('span', '', 'مكافأة الإجابة: +' + tr.bonus)); el.append(head, mk('p', 'qtext', q.q));
-  const done = (ok) => { game.answer(ok, t, q); if (ok) { SND.ok(); ar.celebrate(); ar.text(0, 0, 0.3, '+' + tr.bonus, '#ffd23d', 0.3, 1.6); const pz = q.prize || tr.prize; el.append(mk('div', 'prize', pz ? 'الجائزة: ' + pz : 'إجابة صحيحة!')); } else { SND.bad(); shake(); }
+  const head = mk('div', 'qhead'); head.append(mk('span', '', 'خانة ' + z.pts + ' — مستوى ' + T.name), mk('span', '', (q.prize || tr.prize) ? 'الجائزة: ' + (q.prize || tr.prize) : '')); el.append(head, mk('p', 'qtext', q.q));
+  const done = (ok) => { game.answer(ok, t, q); if (ok) { SND.ok(); ar.celebrate(); const pz = q.prize || tr.prize; el.append(mk('div', 'prize', pz ? 'الجائزة: ' + pz : 'إجابة صحيحة!')); } else { SND.bad(); shake(); }
     if (q.a) el.append(mk('div', 'ans', q.a)); const nx = mk('button', 'btn primary', 'متابعة'); nx.onclick = () => { el.hidden = true; game.after(); }; el.append(nx); nx.focus(); };
   if (q.opts) { const box = mk('div', 'opts'); q.opts.forEach((o, i) => { const b = mk('button', 'btn', o); b.onclick = () => { [...box.children].forEach((c, k) => { c.disabled = true; if (k === q.right) c.classList.add('right'); }); if (i !== q.right) b.classList.add('wrong'); done(i === q.right); }; box.append(b); }); el.append(box); }
   else { const row = mk('div', 'row'), y = mk('button', 'btn green', 'إجابة صحيحة'), n = mk('button', 'btn red', 'إجابة خاطئة'); y.onclick = () => { row.remove(); done(true); }; n.onclick = () => { row.remove(); done(false); }; row.append(y, n); el.append(row); }
