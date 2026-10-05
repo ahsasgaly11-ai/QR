@@ -1,7 +1,7 @@
 // مشهد الواقع المعزز: كاميرا Three.js توضع من وضعية الكاميرا الحقيقية، فتُرسم المؤثرات أجسامًا فوق سطح القرص.
 // الإحداثيات: x,y = إحداثيات القرص (y نحو الأسفل على الجدار)، z>0 = خارج القرص نحو الكاميرا.
 // النار ترتفع على الجدار (‎-y)، والشرر يسقط بالجاذبية (‎+y)، والدخان يتصاعد ويتمدد.
-import * as THREE from 'three';
+import * as THREE from '../../vendor/three.module.min.js'; // مسار مباشر بدل importmap ليعمل على Safari الأقدم (iOS 15)
 import { rings, ANG0, zoneColor, tierOf, TIERS } from '../vision/geometry.js';
 
 const MAX_ADD = 7000, MAX_SMOKE = 1600, MAX_STREAK = 2600;

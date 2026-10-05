@@ -1,5 +1,5 @@
 // عامل الخدمة: يخزّن التطبيق كاملًا عند أول فتح ليعمل دون إنترنت، ويحدّثه في الخلفية عند توفر نسخة أحدث.
-const VERSION = 'qurs-v3.3.0';
+const VERSION = 'qurs-v3.4.0';
 const SHELL = ['./index.html', './manifest.webmanifest', './config.js', './css/app.css', './vendor/three.module.min.js',
   './js/main.js', './js/vision/worker.js', './js/vision/camera.js', './js/vision/geometry.js', './js/vision/ball-onnx.js', './js/render/arscene.js',
   './js/game/state.js', './js/game/audio.js', './js/content/store.js', './js/content/firebase.js', './js/ui/editor.js', './js/ui/collect.js',

@@ -68,6 +68,8 @@ export class VisionClient extends EventTarget {
   pump(t) {
     if (!this.src) return;
     if (this.src.demo) this.drawDemo(t);
+    else { const el = this.src.el; if (el.videoWidth && (el.videoWidth !== this.src.w || el.videoHeight !== this.src.h)) { // iPhone/iPad: تدوير الجهاز يبدّل أبعاد الفيديو
+      this.src.w = el.videoWidth; this.src.h = el.videoHeight; this.pose = { ...this.pose, ok: false, H: null, pts: null, pose3: null, balls: [] }; this.send({ type: 'dims', w: this.src.w, h: this.src.h }); this.dispatchEvent(new CustomEvent('dims')); } }
     const fresh = this.src.demo || this.newFrame || !this.src.el.requestVideoFrameCallback;
     if (this.busy || !fresh) return;
     this.newFrame = false;

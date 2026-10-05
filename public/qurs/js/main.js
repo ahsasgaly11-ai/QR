@@ -74,6 +74,8 @@ function beginPlay() { show('play'); $('playStatus').hidden = true; $('more').hi
   if (game.keep) { game.keep = false; } else game.start(); $('btnNext').textContent = game.solo ? 'اللاعب التالي' : 'المجموعة التالية'; SND.lock(); banner((game.solo ? 'ابدأ الرمي!' : 'ابدأوا الرمي!') + '\nدور ' + game.teams[game.cur].name, 2200); }
 
 /* ---------- أحداث عامل الرؤية ---------- */
+vision.addEventListener('dims', () => resize());
+window.addEventListener('orientationchange', () => setTimeout(resize, 250));
 vision.addEventListener('locked', () => { if (app.mode === 'scan') { SND.lock(); $('btnArm').disabled = false; } });
 vision.addEventListener('playing', () => { if (app.mode === 'arming') beginPlay(); });
 vision.addEventListener('hit', (e) => { if (app.mode === 'play' && !game.paused) game.hit(e.detail.u, e.detail.v, true); });

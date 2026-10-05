@@ -210,6 +210,7 @@ const sdiff=(ref,k,gain)=>sdiffT(ref,k,gain,sens);
 const pxAt=(d,x,y)=>{if(x<0||y<0||x>=PW-1||y>=PH-1)return null;const x0=x|0,y0=y|0,fx=x-x0,fy=y-y0,o=[0,0,0];
   for(let c=0;c<3;c++){const j=(y0*PW+x0)*4+c;o[c]=d[j]*(1-fx)*(1-fy)+d[j+4]*fx*(1-fy)+d[j+PW*4]*(1-fx)*fy+d[j+PW*4+4]*fx*fy;}return o;};
 function subpixel(u0,v0,gc){ // مركز الكرة بدقة: مقارنة الإطار الحالي بصورة القرص الفارغ عند نفس نقاط القرص (كلٌّ بهوموغرافيّه)
+  if(!cv.cleanFrame)return {u:u0,v:v0,col:null};
   const f=PW/src.w,Hn=cal.H,Hc=cv.cleanH,R=0.13,n=36;let sw=0,su=0,sv=0,cr=0,cg=0,cb=0;
   for(let j=0;j<n;j++)for(let i=0;i<n;i++){const u=u0+(i/(n-1)*2-1)*R,v=v0+(j/(n-1)*2-1)*R;if(u*u+v*v>1.1)continue;
     const w1=Hn[6]*u+Hn[7]*v+Hn[8],p1=pxAt(frame.data,(Hn[0]*u+Hn[1]*v+Hn[2])/w1*f,(Hn[3]*u+Hn[4]*v+Hn[5])/w1*f);
@@ -293,6 +294,7 @@ let armT=0;
 self.onmessage=(e)=>{const m=e.data;
   switch(m.type){
     case 'init': src={w:m.w,h:m.h}; enterScan(); break;
+    case 'dims': src={w:m.w,h:m.h}; cal=null; trk.lost=99; trk.P=null; trk.prevH=null; trk.ok=false; scan.locked=false; scan.good=0; cv.cands=[]; cv.flight=null; cv.cleanFrame=null; break; // تدوير الجهاز: أبعاد الفيديو تغيّرت، نعيد التعرف ونُبقي اللعبة
     case 'scan': enterScan(); break;
     case 'manual': scan.manual=m.on; if(m.on&&!cal){const r=Math.min(src.w,src.h)*0.3,cx=src.w/2,cy=src.h/2;setCal([[cx,cy-r],[cx+r,cy],[cx,cy+r],[cx-r,cy]]);} if(m.on)trk.ok=true; else{scan.locked=false;scan.good=0;} break;
     case 'setPts': if(m.pts)setCal(m.pts); break;
