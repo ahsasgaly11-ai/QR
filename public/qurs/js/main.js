@@ -81,9 +81,14 @@ vision.addEventListener('playing', () => { if (app.mode === 'arming') beginPlay(
 vision.addEventListener('hit', (e) => { if (app.mode === 'play' && !game.paused) game.hit(e.detail.u, e.detail.v, true); });
 vision.addEventListener('trail', (e) => { if (app.mode === 'play') ar.trail(e.detail.u, e.detail.v); });
 vision.addEventListener('pose', (e) => { const p = e.detail; if (p.rings) { rings.bull = p.rings[0]; rings.inner = p.rings[1]; rings.rim = p.rings[2]; }
+  // حجم القرص في الصورة وإضاءة المشهد: إرشاد فوري لمن يمسك الهاتف
+  let pct = 0; if (p.pts && vision.src) pct = Math.hypot(p.pts[1][0] - p.pts[3][0], p.pts[1][1] - p.pts[3][1]) / Math.min(vision.src.w, vision.src.h);
+  app.boardPct = pct; const hint = !vision.src || vision.src.demo ? '' : vision.brightness < 0.2 ? 'الإضاءة ضعيفة: أضئ الغرفة أو اقترب من النافذة' : p.ok && pct > 0 && pct < 0.3 ? 'القرص صغير في الصورة: قرّب الجهاز حتى يملأ نصف العرض' : p.ok && p.q === 1 ? 'ثبّت يدك أو أسند الجهاز' : '';
+  if (app.mode === 'scan') { const h = $('scanHint'); h.hidden = !hint; if (hint && h.textContent !== hint) h.textContent = hint; }
   if (app.mode === 'scan') { if (p.manual) return; if (p.ok) setStatus('scanStatus', p.locked ? 'تم التعرف على القرص — اضغط «ابدأ اللعب»' : 'جارٍ التعرف على القرص…', p.locked ? 'ok' : ''); else if (p.lost > 12) { $('btnArm').disabled = true; setStatus('scanStatus', 'وجّه الكاميرا نحو القرص…', ''); } }
   if (app.mode === 'play') { const q = $('trkq'); const txt = !p.ok ? 'التتبع: مفقود' : p.q >= 3 ? 'التتبع: ممتاز' : p.q === 2 ? 'التتبع: جيد' : 'التتبع: ضعيف'; if (q.textContent !== txt) { q.textContent = txt; q.className = 'chip q' + (p.ok ? p.q : 0); }
-    if (!p.ok && p.lost > 25) { $('playStatus').hidden = false; setStatus('playStatus', 'القرص غير ظاهر للكاميرا…', 'warn'); } else $('playStatus').hidden = true; }
+    if (!p.ok && p.lost > 25) { $('playStatus').hidden = false; setStatus('playStatus', 'القرص غير ظاهر للكاميرا…', 'warn'); } else if (hint) { $('playStatus').hidden = false; setStatus('playStatus', hint, 'warn'); } else $('playStatus').hidden = true;
+    if (diagOn) { const st = vision.stat; $('diag').textContent = `${vision.src.w}x${vision.src.h} > ${p.pw}x${p.ph} | ${st.fps.toFixed(0)} fps | ${st.ms.toFixed(0)} ms | rms ${(p.rms * 100).toFixed(1)}% | board ${(pct * 100).toFixed(0)}% | light ${(vision.brightness * 100).toFixed(0)}%`; } }
 });
 
 /* ---------- أحداث اللعبة ---------- */
@@ -203,6 +208,7 @@ $('btnQ').onclick = () => { store.cfg.qOn = !store.cfg.qOn; store.save(); $('btn
 $('btnRecal').onclick = () => { game.keep = true; enterScan(); };
 $('btnRebase').onclick = () => { vision.send({ type: 'rebase' }); $('more').hidden = true; banner('تم أخذ لقطة مرجعية جديدة', 1400); };
 $('btnTap').onclick = () => { app.tapOn = !app.tapOn; $('btnTap').textContent = app.tapOn ? 'التسجيل باللمس: يعمل' : 'التسجيل باللمس: متوقف'; };
+let diagOn = false; $('btnDiag').onclick = () => { diagOn = !diagOn; $('diag').hidden = !diagOn; $('btnDiag').textContent = diagOn ? 'معلومات التتبع: ظاهرة' : 'معلومات التتبع: مخفية'; $('more').hidden = true; };
 $('btnGrid').onclick = () => { gridMode = gridMode === 'soft' ? 'off' : gridMode === 'off' ? 'strong' : 'soft'; ar.setGrid(gridMode); $('btnGrid').textContent = 'الشبكة: ' + { soft: 'خفيفة', off: 'مخفية', strong: 'قوية' }[gridMode]; };
 $('btnShake').onclick = () => { if (!vision.demo) return; vision.demo.shake = !vision.demo.shake; $('btnShake').textContent = vision.demo.shake ? 'اهتزاز الكاميرا: يعمل' : 'اهتزاز الكاميرا: متوقف'; };
 $('btnFs').onclick = () => { const d = document, el = d.documentElement; try { if (d.fullscreenElement || d.webkitFullscreenElement) (d.exitFullscreen || d.webkitExitFullscreen).call(d); else { const p = (el.requestFullscreen || el.webkitRequestFullscreen).call(el); if (p && p.catch) p.catch(() => {}); } } catch { banner('ثبّت التطبيق على الشاشة الرئيسية ليعمل بملء الشاشة', 1800); } $('more').hidden = true; };

@@ -23,7 +23,7 @@
   <div id="flash"></div>
 
   <div id="scanUI" hidden>
-    <div class="top"><div id="scanStatus" class="status">وجّه الكاميرا نحو القرص…</div><button class="btn sm" id="btnScanBack">رجوع</button></div>
+    <div class="top"><div class="chips"><div id="scanStatus" class="status">وجّه الكاميرا نحو القرص…</div><div id="scanHint" class="status warn" hidden></div></div><button class="btn sm" id="btnScanBack">رجوع</button></div>
     <div class="dock">
       <button class="btn sm" id="btnManual" aria-pressed="false">ضبط يدوي</button>
       <button class="btn sm" id="btnRot">تدوير ١٢٠°</button>
@@ -33,7 +33,7 @@
   </div>
 
   <div id="playUI" hidden>
-    <div class="top"><div class="chips" id="chips"></div><div class="chips"><div id="trkq" class="chip q0">التتبع</div><div id="playStatus" class="status" hidden></div></div></div>
+    <div class="top"><div class="chips" id="chips"></div><div class="chips"><div id="trkq" class="chip q0">التتبع</div><div id="diag" class="chip mini" dir="ltr" hidden></div><div id="playStatus" class="status" hidden></div></div></div>
     <div class="more" id="more" hidden>
       <button class="btn sm" id="btnPause">إيقاف مؤقت</button>
       <button class="btn sm" id="btnQ">الأسئلة: تعمل</button>
@@ -41,6 +41,7 @@
       <button class="btn sm" id="btnRebase">القرص فارغ الآن: التقط صورته</button>
       <button class="btn sm" id="btnTap">التسجيل باللمس: متوقف</button>
       <button class="btn sm" id="btnGrid">الشبكة: خفيفة</button>
+      <button class="btn sm" id="btnDiag">معلومات التتبع: مخفية</button>
       <button class="btn sm" id="btnShake" hidden>اهتزاز الكاميرا: متوقف</button>
       <button class="btn sm" id="btnFs">ملء الشاشة</button>
       <button class="btn sm" id="btnEdit2">الأسئلة والجوائز</button>

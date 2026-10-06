@@ -1,7 +1,7 @@
 // مصدر الصورة (كاميرا أو مشهد تجريبي) + ضخ الإطارات إلى عامل الرؤية مع ضغط خلفي (لا نرسل إطارًا جديدًا قبل رد العامل).
 import { drawBoard } from './geometry.js';
 
-const PW = 800;
+const PROC_MAX = 800, PROC_MIN = 520; // أطول ضلع لصورة المعالجة؛ يُخفَّض تلقائيًا على الأجهزة الأبطأ
 
 export class VisionClient extends EventTarget {
   constructor() {
@@ -14,18 +14,24 @@ export class VisionClient extends EventTarget {
     this.pctx = this.proc.getContext('2d', { willReadFrequently: true });
     this.pose = { ok: false, q: 0, mode: 'scan', H: null, pts: null, pose3: null, balls: [], rings: [0.165, 0.615, 0.965] };
     this.frameId = 0; this.newFrame = true; this.lastSent = 0; this.lastRoundTrip = 0;
-    this.brightness = 0.5;
+    this.brightness = 0.5; this.procMax = PROC_MAX; this.stat = { n: 0, t0: performance.now(), fps: 0, ms: 0, rt: 0 };
     this.demo = null;
   }
   #onMessage(m) {
-    if (m.type === 'pose') { this.busy = false; this.lastRoundTrip = performance.now() - this.lastSent; this.pose = m; this.dispatchEvent(new CustomEvent('pose', { detail: m })); return; }
+    if (m.type === 'pose') { this.busy = false; const now = performance.now(); this.lastRoundTrip = now - this.lastSent; this.pose = m;
+      // قياس الأداء والتكيّف: إن طال زمن الإطار نخفّض دقة المعالجة حتى يلحق التتبع بحركة اليد
+      this.stat.n++; this.stat.ms = this.stat.ms * 0.9 + (m.ms || 0) * 0.1; this.stat.rt = this.stat.rt * 0.9 + this.lastRoundTrip * 0.1;
+      if (now - this.stat.t0 > 1000) { this.stat.fps = (this.stat.n * 1000) / (now - this.stat.t0); this.stat.n = 0; this.stat.t0 = now;
+        if (!this.src?.demo) { if (this.stat.fps < 17 && this.procMax > PROC_MIN) this.procMax = Math.max(PROC_MIN, this.procMax - 80); else if (this.stat.fps > 27 && this.stat.ms < 12 && this.procMax < PROC_MAX) this.procMax = Math.min(PROC_MAX, this.procMax + 40); } } this.dispatchEvent(new CustomEvent('pose', { detail: m })); return; }
     this.dispatchEvent(new CustomEvent(m.type, { detail: m }));
   }
   send(msg) { this.worker.postMessage(msg); }
 
   async openCamera(facing = 'environment') {
     if (!navigator.mediaDevices?.getUserMedia) throw new Error('nosupport');
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: facing }, width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 60, max: 60 } } });
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: facing }, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30, max: 60 } } });
+    // تركيز وتعريض مستمران إن دعمهما الجهاز (يقلّل ضبابية الحركة والتذبذب)
+    try { const tr = stream.getVideoTracks()[0], caps = tr.getCapabilities?.() || {}, adv = {}; if (caps.focusMode?.includes('continuous')) adv.focusMode = 'continuous'; if (caps.exposureMode?.includes('continuous')) adv.exposureMode = 'continuous'; if (Object.keys(adv).length) await tr.applyConstraints({ advanced: [adv] }); } catch {}
     const el = document.createElement('video');
     el.setAttribute('playsinline', ''); el.muted = true; el.autoplay = true; el.srcObject = stream;
     await el.play();
@@ -73,15 +79,16 @@ export class VisionClient extends EventTarget {
     const fresh = this.src.demo || this.newFrame || !this.src.el.requestVideoFrameCallback;
     if (this.busy || !fresh) return;
     this.newFrame = false;
-    const ph = Math.round((PW * this.src.h) / this.src.w);
-    if (this.proc.width !== PW || this.proc.height !== ph) { this.proc.width = PW; this.proc.height = ph; }
-    this.pctx.drawImage(this.src.el, 0, 0, PW, ph);
-    const img = this.pctx.getImageData(0, 0, PW, ph);
+    // أطول ضلع = procMax في الوضعين العرضي والطولي (كان الطولي يُعالَج بثلاثة أضعاف البكسلات)
+    const M = this.procMax, land = this.src.w >= this.src.h, pw = land ? M : Math.round((M * this.src.w) / this.src.h), ph = land ? Math.round((M * this.src.h) / this.src.w) : M;
+    if (this.proc.width !== pw || this.proc.height !== ph) { this.proc.width = pw; this.proc.height = ph; }
+    this.pctx.drawImage(this.src.el, 0, 0, pw, ph);
+    const img = this.pctx.getImageData(0, 0, pw, ph);
     // تقدير إضاءة البيئة من عيّنة متفرقة (لتلوين المؤثرات)
     let s = 0, n = 0; const d = img.data; for (let i = 0; i < d.length; i += 4 * 97) { s += d[i] + d[i + 1] + d[i + 2]; n++; }
     this.brightness = s / (n * 765);
     this.busy = true; this.lastSent = t;
-    this.worker.postMessage({ type: 'frame', buf: img.data.buffer, w: PW, h: ph, t }, [img.data.buffer]);
+    this.worker.postMessage({ type: 'frame', buf: img.data.buffer, w: pw, h: ph, t }, [img.data.buffer]);
   }
 }
 
