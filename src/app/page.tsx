@@ -17,6 +17,8 @@ import { SiteStatsStrip } from '@/components/site-stats-strip';
 import { ActivityCard } from '@/components/activity-card';
 import { Icon3D } from '@/components/icon-3d';
 import { DownloadsSwitch } from '@/components/downloads-switch';
+import { UnitReviewsSection } from '@/components/unit-reviews-section';
+import { reviewHref, unitReviews } from '@/lib/unit-reviews';
 
 // المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
 // وإلا لما ظهرت الأنشطة المرفوعة بعد البناء إلا بنشر جديد.
@@ -87,6 +89,15 @@ export default async function HomePage() {
               >
                 لوحة الإحصاءات
               </Link>
+              {unitReviews[0] && (
+                <a
+                  href={reviewHref(unitReviews[0])}
+                  className="flex items-center gap-2 rounded-2xl bg-[color:var(--gold)] px-7 py-3.5 text-base font-black text-[#1a1600] shadow-xl shadow-[color:var(--gold)]/30 transition-all hover:-translate-y-1"
+                >
+                  <Gamepad2 className="h-5 w-5" />
+                  {unitReviews[0].title} – {unitReviews[0].subject}
+                </a>
+              )}
             </div>
           </div>
 
@@ -113,6 +124,9 @@ export default async function HomePage() {
           <SiteStatsStrip activities={total} />
         </div>
       </section>
+
+      {/* ===================== UNIT REVIEWS ===================== */}
+      <UnitReviewsSection />
 
       {/* ===================== HOW IT WORKS ===================== */}
       <section className="mx-auto max-w-7xl px-6 py-16">
