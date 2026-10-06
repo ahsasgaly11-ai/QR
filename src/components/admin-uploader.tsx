@@ -53,9 +53,12 @@ interface Result {
 export function AdminUploader({
   subjects,
   smartOnly = false,
+  reviewOnly = false,
 }: {
   subjects: Subject[];
   smartOnly?: boolean;
+  /** رفع لعبة مراجعة لوحدة كاملة: مادة ومستوى ووحدة فقط، دون درس. */
+  reviewOnly?: boolean;
 }) {
   const available = subjects.filter((s) => s.grades.length > 0);
   const [subjectId, setSubjectId] = useState(available[0]?.id ?? '');
@@ -72,7 +75,7 @@ export function AdminUploader({
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [signLang, setSignLang] = useState('');
-  const [type, setType] = useState<ActivityType>(smartOnly ? 'game' : 'experiment');
+  const [type, setType] = useState<ActivityType>(smartOnly || reviewOnly ? 'game' : 'experiment');
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -81,7 +84,8 @@ export function AdminUploader({
   const [copied, setCopied] = useState(false);
 
   const unitIsNew = unitId === NEW;
-  const lessonIsNew = lessonId === NEW || unitIsNew;
+  // المراجعة تخصّ الوحدة كلّها فلا تحتاج إلى درس
+  const lessonIsNew = !reviewOnly && (lessonId === NEW || unitIsNew);
 
   function pickSubject(id: string) {
     setSubjectId(id);
@@ -121,7 +125,7 @@ export function AdminUploader({
       if (lessonIsNew && !newLessonName.trim())
         return setError('الرجاء إدخال اسم الدرس الجديد.');
       if (!unitIsNew && !unitId) return setError('الرجاء اختيار الوحدة.');
-      if (!lessonIsNew && !lessonId) return setError('الرجاء اختيار الدرس.');
+      if (!reviewOnly && !lessonIsNew && !lessonId) return setError('الرجاء اختيار الدرس.');
     }
 
     // معرّفات لاتينية آمنة في الروابط (العناوين العربية تُكسر ترميز الـ URL)
@@ -135,7 +139,9 @@ export function AdminUploader({
         : unitId;
     const finalLessonId = smartOnly
       ? 'smart-games'
-      : lessonIsNew
+      : reviewOnly
+        ? 'unit-review'
+        : lessonIsNew
         ? `l-${stamp}-${rid()}`
         : lessonId;
     const id = `act-${stamp}-${rid()}`;
@@ -146,6 +152,7 @@ export function AdminUploader({
       description: description.trim(),
       ...(signLang.trim() ? { signLang: signLang.trim() } : {}),
       smartReinforcement: smartOnly,
+      ...(reviewOnly ? { unitReview: true } : {}),
       type,
       file: file.name,
       subjectId: finalSubjectId,
@@ -272,7 +279,7 @@ export function AdminUploader({
 
       // حدّث الصفحات فورًا ليظهر النشاط للجميع بلا انتظار
       await revalidateContent({
-        subjectId: smartOnly ? undefined : subjectId,
+        subjectId: smartOnly || reviewOnly ? undefined : subjectId,
         activityId: id,
       });
 
@@ -315,22 +322,28 @@ export function AdminUploader({
         <div className="mb-4 flex items-center gap-3 text-[color:var(--teal)]">
           <CheckCircle2 className="h-9 w-9" />
           <h3 className="font-display text-2xl font-bold">
-            {result.mode === 'firebase'
-              ? smartOnly ? 'تم رفع لعبة التعزيز بنجاح!' : 'تم رفع النشاط بنجاح!'
-              : smartOnly ? 'تم رفع لعبة التعزيز — جاهزة للتجربة الآن' : 'تم رفع النشاط — جاهز للتجربة الآن'}
+            {reviewOnly
+              ? 'تم رفع لعبة المراجعة بنجاح!'
+              : result.mode === 'firebase'
+                ? smartOnly ? 'تم رفع لعبة التعزيز بنجاح!' : 'تم رفع النشاط بنجاح!'
+                : smartOnly ? 'تم رفع لعبة التعزيز — جاهزة للتجربة الآن' : 'تم رفع النشاط — جاهز للتجربة الآن'}
           </h3>
         </div>
 
         {result.mode === 'firebase' ? (
           <p className="text-muted-foreground">
-            {smartOnly
+            {reviewOnly
+              ? <>أصبحت المراجعة «{result.activity.title}» ظاهرة الآن أعلى الصفحة الرئيسية في قسم «مراجعات الوحدات».</>
+              : smartOnly
               ? <>أصبحت اللعبة «{result.activity.title}» متاحة الآن في قسم ألعاب التعزيز الذكية.</>
               : <>أصبح النشاط «{result.activity.title}» متاحًا الآن في المنصّة ضمن الدرس المحدّد. يمكن للزوّار تجربته وتحميله، وتُحتسب مشاهداته وتنزيلاته تلقائيًا.</>}
           </p>
         ) : (
           <div className="space-y-4">
             <p className="text-muted-foreground">
-              {smartOnly
+              {reviewOnly
+                ? <>حُفظت المراجعة «{result.activity.title}» في هذا المتصفّح وأصبحت جاهزة للتجربة.</>
+                : smartOnly
                 ? <>حُفظت اللعبة «{result.activity.title}» وأصبحت جاهزة للتجربة في قسم ألعاب التعزيز الذكية.</>
                 : <>حُفظ النشاط «{result.activity.title}» وأصبح ظاهرًا في درسه داخل المنصّة — يمكنك تشغيله وتحميله فورًا.</>}
             </p>
@@ -349,11 +362,11 @@ export function AdminUploader({
                 <Play className="h-5 w-5 fill-current" /> جرّب اللعبة الآن
               </Link>
               <Link
-                href={smartOnly ? '/smart-games' : `/subject/${result.activity.subjectId}`}
+                href={smartOnly ? '/smart-games' : reviewOnly ? '/' : `/subject/${result.activity.subjectId}`}
                 className="btn-ghost px-6 text-base"
               >
                 <BookOpen className="h-5 w-5" />
-                {smartOnly ? 'عرض قسم الألعاب' : 'عرضها في الدرس'}
+                {smartOnly ? 'عرض قسم الألعاب' : reviewOnly ? 'عرض الصفحة الرئيسية' : 'عرضها في الدرس'}
               </Link>
             </div>
 
@@ -394,7 +407,7 @@ export function AdminUploader({
           </div>
         )}
         <button onClick={reset} className="btn-primary btn-sm mt-6 px-6 py-2.5 text-sm">
-          <UploadCloud className="h-4 w-4" /> {smartOnly ? 'رفع لعبة أخرى' : 'رفع نشاط آخر'}
+          <UploadCloud className="h-4 w-4" /> {smartOnly || reviewOnly ? 'رفع لعبة أخرى' : 'رفع نشاط آخر'}
         </button>
       </div>
     );
@@ -464,6 +477,7 @@ export function AdminUploader({
           </div>
   
           {/* Lesson: existing or new */}
+          {!reviewOnly && (
           <div>
             <label className={labelCls}>الدرس</label>
             {!unitIsNew && hasLessons && (
@@ -485,16 +499,25 @@ export function AdminUploader({
               </div>
             )}
           </div>
+          )}
         </div>
       )}
 
       <div className="mt-5">
-        <label className={labelCls}>{smartOnly ? 'عنوان لعبة التعزيز' : 'عنوان النشاط / اللعبة'}</label>
+        <label className={labelCls}>
+          {smartOnly ? 'عنوان لعبة التعزيز' : reviewOnly ? 'عنوان المراجعة' : 'عنوان النشاط / اللعبة'}
+        </label>
         <input
           className={inputCls}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder={smartOnly ? 'مثال: تحدي خصائص المواد' : 'مثال: تجربة دورة الماء في الطبيعة'}
+          placeholder={
+            smartOnly
+              ? 'مثال: تحدي خصائص المواد'
+              : reviewOnly
+                ? 'مثال: مراجعة الوحدة الأولى – العلوم'
+                : 'مثال: تجربة دورة الماء في الطبيعة'
+          }
         />
       </div>
 
@@ -542,6 +565,17 @@ export function AdminUploader({
         </div>
       </div>
 
+      {reviewOnly && (
+        <div className="mt-5 rounded-2xl border border-[color:var(--gold)]/30 bg-[color:var(--gold)]/5 p-4">
+          <p className="text-sm font-black text-[color:var(--maroon)]">
+            ستظهر المراجعة أعلى الصفحة الرئيسية في قسم «مراجعات الوحدات».
+          </p>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            أحدث مراجعة مرفوعة يظهر لها أيضًا زرّ ذهبي في الواجهة الأولى للموقع.
+          </p>
+        </div>
+      )}
+
       {smartOnly && (
         <div className="mt-5 rounded-2xl border border-[color:var(--gold)]/30 bg-[color:var(--gold)]/5 p-4">
           <p className="text-sm font-black text-[color:var(--maroon)]">
@@ -554,7 +588,9 @@ export function AdminUploader({
       )}
 
       <div className="mt-5">
-        <label className={labelCls}>{smartOnly ? 'ملف اللعبة (HTML)' : 'ملف النشاط (HTML)'}</label>
+        <label className={labelCls}>
+          {smartOnly || reviewOnly ? 'ملف اللعبة (HTML)' : 'ملف النشاط (HTML)'}
+        </label>
         <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[color:var(--gold)]/50 bg-[color:var(--surface-2)]/60 p-8 text-center transition hover:border-[color:var(--maroon)] hover:bg-[color:var(--gold)]/5">
           {file ? (
             <>
@@ -596,7 +632,8 @@ export function AdminUploader({
           </>
         ) : (
           <>
-            <UploadCloud className="h-5 w-5" /> {smartOnly ? 'رفع لعبة التعزيز' : 'رفع النشاط'}
+            <UploadCloud className="h-5 w-5" />{' '}
+            {smartOnly ? 'رفع لعبة التعزيز' : reviewOnly ? 'رفع المراجعة' : 'رفع النشاط'}
           </>
         )}
       </button>

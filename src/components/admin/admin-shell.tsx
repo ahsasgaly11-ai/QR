@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { UploadCloud, ListChecks, Layers, LogOut, Megaphone, Download, Gamepad2 } from 'lucide-react';
+import { UploadCloud, ListChecks, Layers, LogOut, Megaphone, Download, Gamepad2, ClipboardCheck } from 'lucide-react';
 import type { Subject, Activity } from '@/lib/types';
 import { AuthGate } from './auth-gate';
 import { AdminUploader } from '@/components/admin-uploader';
@@ -12,7 +12,7 @@ import { DownloadsManager } from './downloads-manager';
 import { signOutAdmin, isFirebaseConfigured } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 
-type Tab = 'upload' | 'activities' | 'smart-games' | 'content' | 'ticker' | 'downloads';
+type Tab = 'upload' | 'activities' | 'smart-games' | 'reviews' | 'content' | 'ticker' | 'downloads';
 
 export function AdminShell({
   subjects,
@@ -33,6 +33,7 @@ export function AdminShell({
     { id: 'upload', label: 'رفع نشاط', icon: UploadCloud },
     { id: 'activities', label: 'إدارة الأنشطة', icon: ListChecks },
     { id: 'smart-games', label: 'ألعاب التعزيز', icon: Gamepad2 },
+    { id: 'reviews', label: 'مراجعات الوحدات', icon: ClipboardCheck },
     { id: 'content', label: 'إدارة المناهج', icon: Layers },
     { id: 'ticker', label: 'الشريط المتحرّك', icon: Megaphone },
     { id: 'downloads', label: 'التنزيل', icon: Download },
@@ -106,6 +107,39 @@ export function AdminShell({
               labels={labels}
               structure={structure}
               onlySmartReinforcement
+            />
+          </div>
+        </div>
+      )}
+      {tab === 'reviews' && (
+        <div className="space-y-10">
+          <div>
+            <div className="mb-4">
+              <h2 className="font-display text-xl font-black text-[color:var(--maroon)]">
+                رفع مراجعة وحدة
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                ارفع ملف HTML للعبة المراجعة واختر المادة والمستوى والوحدة. تظهر
+                المراجعة أعلى الصفحة الرئيسية ليراها الزوّار فور دخولهم.
+              </p>
+            </div>
+            <AdminUploader subjects={subjects} reviewOnly />
+          </div>
+          <div>
+            <div className="mb-4">
+              <h2 className="font-display text-xl font-black text-[color:var(--maroon)]">
+                إدارة المراجعات
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                عدّل المراجعات المرفوعة أو احذفها — الحذف يُخفيها من الصفحة الرئيسية.
+              </p>
+            </div>
+            <ActivitiesManager
+              activities={activities}
+              uploadedIds={uploadedIds}
+              labels={labels}
+              structure={structure}
+              onlyUnitReview
             />
           </div>
         </div>

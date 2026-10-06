@@ -36,6 +36,7 @@ export function ActivitiesManager({
   structure,
   onlySmartReinforcement = false,
   excludeSmartReinforcement = false,
+  onlyUnitReview = false,
 }: {
   activities: Activity[];
   uploadedIds: string[];
@@ -46,6 +47,8 @@ export function ActivitiesManager({
   onlySmartReinforcement?: boolean;
   /** يُخفي ألعاب التعزيز من مدير الأنشطة المنهجية العام. */
   excludeSmartReinforcement?: boolean;
+  /** يعرض مراجعات الوحدات فقط في تبويبها المستقل. */
+  onlyUnitReview?: boolean;
 }) {
   const [rows, setRows] = useState<Activity[]>(initial);
   const [uploaded, setUploaded] = useState<Set<string>>(() => new Set(uploadedIds));
@@ -58,11 +61,13 @@ export function ActivitiesManager({
   const [backfillMsg, setBackfillMsg] = useState('');
   const [q, setQ] = useState('');
 
-  const scopedRows = onlySmartReinforcement
-    ? rows.filter((a) => a.smartReinforcement)
-    : excludeSmartReinforcement
-      ? rows.filter((a) => !a.smartReinforcement)
-      : rows;
+  const scopedRows = onlyUnitReview
+    ? rows.filter((a) => a.unitReview)
+    : onlySmartReinforcement
+      ? rows.filter((a) => a.smartReinforcement)
+      : excludeSmartReinforcement
+        ? rows.filter((a) => !a.smartReinforcement && !a.unitReview)
+        : rows;
 
   /**
    * القائمة القادمة من الخادم قد تكون قديمة (نشاط رُفع للتوّ من تبويب الرفع)
@@ -94,6 +99,10 @@ export function ActivitiesManager({
 
   function labelOf(a: Activity): string {
     if (a.smartReinforcement) return 'ألعاب التعزيز الذكية';
+    if (a.unitReview) {
+      const { subject, grade, unit } = locateActivity(structure, a);
+      return ['مراجعة', subject?.title, grade?.title, unit?.title].filter(Boolean).join(' ← ');
+    }
     if (labels[a.id]) return labels[a.id];
     const { subject, unit, lesson } = locateActivity(structure, a);
     return [subject?.title, unit?.title, lesson?.title].filter(Boolean).join(' ← ');
@@ -332,7 +341,7 @@ export function ActivitiesManager({
                   </p>
                 </div>
 
-                {!a.smartReinforcement && (
+                {!a.smartReinforcement && !a.unitReview && (
                   <div className="rounded-xl border border-[color:var(--hairline)] p-3">
                     <p className="mb-2 flex items-center gap-1.5 text-xs font-black text-[color:var(--maroon)]">
                       <FolderInput className="h-4 w-4" /> موقع النشاط

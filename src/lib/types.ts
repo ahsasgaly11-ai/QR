@@ -35,6 +35,11 @@ export interface Activity {
   description?: string;
   /** يظهر النشاط في قسم «ألعاب التعزيز الذكية» في الصفحة الرئيسية. */
   smartReinforcement?: boolean;
+  /**
+   * لعبة مراجعة شاملة لوحدة كاملة: تظهر في قسم «مراجعات الوحدات» أعلى
+   * الصفحة الرئيسية، ومرتبطة بالمادة والمستوى والوحدة دون درس محدّد.
+   */
+  unitReview?: boolean;
   type: ActivityType;
   /** Path under /public/games (e.g. "muscle.html") OR a full Storage URL. */
   file: string;

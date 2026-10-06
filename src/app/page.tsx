@@ -18,7 +18,6 @@ import { ActivityCard } from '@/components/activity-card';
 import { Icon3D } from '@/components/icon-3d';
 import { DownloadsSwitch } from '@/components/downloads-switch';
 import { UnitReviewsSection } from '@/components/unit-reviews-section';
-import { reviewHref, unitReviews } from '@/lib/unit-reviews';
 
 // المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
 // وإلا لما ظهرت الأنشطة المرفوعة بعد البناء إلا بنشر جديد.
@@ -33,7 +32,14 @@ export default async function HomePage() {
   const activities = await getAllActivities();
   // العدد نفسه الذي تعرضه لوحة الإحصاءات (كل الأنشطة المنشورة).
   const total = activities.length;
-  const featured = activities.filter((a) => !a.smartReinforcement).slice(0, 4);
+  const featured = activities
+    .filter((a) => !a.smartReinforcement && !a.unitReview)
+    .slice(0, 4);
+  // مراجعات الوحدات التي رفعها المشرف، الأحدث أولًا
+  const reviews = activities
+    .filter((a) => a.unitReview)
+    .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
+  const latestReview = reviews[0];
 
   return (
     <>
@@ -89,14 +95,14 @@ export default async function HomePage() {
               >
                 لوحة الإحصاءات
               </Link>
-              {unitReviews[0] && (
-                <a
-                  href={reviewHref(unitReviews[0])}
+              {latestReview && (
+                <Link
+                  href={`/play/${latestReview.id}`}
                   className="flex items-center gap-2 rounded-2xl bg-[color:var(--gold)] px-7 py-3.5 text-base font-black text-[#1a1600] shadow-xl shadow-[color:var(--gold)]/30 transition-all hover:-translate-y-1"
                 >
                   <Gamepad2 className="h-5 w-5" />
-                  {unitReviews[0].title} – {unitReviews[0].subject}
-                </a>
+                  {latestReview.title}
+                </Link>
               )}
             </div>
           </div>
@@ -126,7 +132,7 @@ export default async function HomePage() {
       </section>
 
       {/* ===================== UNIT REVIEWS ===================== */}
-      <UnitReviewsSection />
+      <UnitReviewsSection reviews={reviews} subjects={subjects} />
 
       {/* ===================== HOW IT WORKS ===================== */}
       <section className="mx-auto max-w-7xl px-6 py-16">

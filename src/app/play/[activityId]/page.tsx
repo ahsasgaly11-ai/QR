@@ -61,7 +61,9 @@ export default async function PlayPage({
   const related = all.filter((a) =>
     activity.smartReinforcement
       ? a.smartReinforcement && a.id !== activity.id
-      : a.lessonId === activity.lessonId && a.id !== activity.id
+      : activity.unitReview
+        ? a.unitReview && a.id !== activity.id
+        : a.lessonId === activity.lessonId && a.id !== activity.id
   );
 
   return (
@@ -69,7 +71,13 @@ export default async function PlayPage({
       {/* breadcrumb */}
       <div className="mb-5 flex items-center gap-3">
         <BackButton
-          fallback={activity.smartReinforcement ? '/smart-games' : `/subject/${activity.subjectId}`}
+          fallback={
+            activity.smartReinforcement
+              ? '/smart-games'
+              : activity.unitReview
+                ? '/'
+                : `/subject/${activity.subjectId}`
+          }
         />
       </div>
 
@@ -99,7 +107,11 @@ export default async function PlayPage({
                 <ChevronLeft className="h-4 w-4" />
               </>
             )}
-            {lesson && <span className="font-bold text-foreground">{lesson.title}</span>}
+            {activity.unitReview ? (
+              <span className="font-bold text-foreground">مراجعة الوحدة</span>
+            ) : (
+              lesson && <span className="font-bold text-foreground">{lesson.title}</span>
+            )}
           </>
         )}
       </nav>
@@ -116,7 +128,11 @@ export default async function PlayPage({
       {related.length > 0 && (
         <section className="mt-14">
           <h2 className="mb-5 font-display text-2xl font-black text-[color:var(--maroon)]">
-            {activity.smartReinforcement ? 'ألعاب تعزيز أخرى' : 'أنشطة أخرى في الدرس نفسه'}
+            {activity.smartReinforcement
+              ? 'ألعاب تعزيز أخرى'
+              : activity.unitReview
+                ? 'مراجعات أخرى'
+                : 'أنشطة أخرى في الدرس نفسه'}
           </h2>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {related.map((a, i) => (
