@@ -29,7 +29,7 @@ export class VisionClient extends EventTarget {
     for (const m of this.sent) this.worker.postMessage(m);
     this.dispatchEvent(new CustomEvent('engine', { detail: this.engine }));
   }
-  #fallback(reason) { if (this.engine.name !== 'cv') return; clearTimeout(this.engineTimer); this.engine.fallbackReason = reason; this.#spawn('legacy'); }
+  #fallback(reason) { if (this.engine.name !== 'cv') return; clearTimeout(this.engineTimer); this.#spawn('legacy'); this.engine.fallbackReason = reason; this.dispatchEvent(new CustomEvent('engine', { detail: this.engine })); }
   async #loadRef() { // الصورة المرجعية القانونية للقرص (يُفكّ ترميزها هنا لأن بعض المتصفحات لا تدعم ذلك داخل العامل)
     try { const img = new Image(); img.src = './assets/board-ref.png'; await img.decode(); const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; const x = c.getContext('2d'); x.drawImage(img, 0, 0); const d = x.getImageData(0, 0, c.width, c.height);
       if (this.engine.name === 'cv') this.worker.postMessage({ type: 'ref', buf: d.data.buffer, w: c.width, h: c.height }, [d.data.buffer]); }
