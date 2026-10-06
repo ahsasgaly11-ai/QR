@@ -33,13 +33,13 @@ let src={w:1280,h:720},frame=null,paused=false,mode='scan';
 const post=(type,d)=>self.postMessage(Object.assign({type},d||{}));
 /* ================= التعرف على القرص بالألوان (مع تصحيح المنظور) ================= */
 let PW=800,PH=450;   // أبعاد صورة المعالجة، تأتي مع كل إطار
-function colorClass(r,g,b){const mx=r>g?(r>b?r:b):(g>b?g:b),mn=r<g?(r<b?r:b):(g<b?g:b),d=mx-mn;if(mx<48||d<mx*0.32)return 0;
+function colorClass(r,g,b){const mx=r>g?(r>b?r:b):(g>b?g:b),mn=r<g?(r<b?r:b):(g<b?g:b),d=mx-mn;if(mx<55||d<mx*0.36)return 0;
   let h;if(mx===r)h=(g-b)/d;else if(mx===g)h=(b-r)/d+2;else h=(r-g)/d+4;h*=60;if(h<0)h+=360;
   return (h<33||h>335)?1:h<75?2:h<190?3:0;}
 function mul3(a,b){const o=new Array(9);for(let r=0;r<3;r++)for(let c=0;c<3;c++)o[r*3+c]=a[r*3]*b[c]+a[r*3+1]*b[3+c]+a[r*3+2]*b[6+c];return o;}
 const det={cl:null,m:null,o:null,lab:null,st:null,n:0};
 function detectBoard(prev){
-  const S=2,w=Math.floor(PW/S),h=Math.floor(PH/S),n=w*h,d=frame.data;
+  const S=3,w=Math.floor(PW/S),h=Math.floor(PH/S),n=w*h,d=frame.data;
   if(det.n!==n){det.n=n;det.cl=new Uint8Array(n);det.m=new Uint8Array(n);det.o=new Uint8Array(n);det.lab=new Int32Array(n);det.st=new Int32Array(n);}
   const cl=det.cl;let m=det.m,o=det.o;const lab=det.lab,st=det.st;lab.fill(0);
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){const j=(y*S*PW+x*S)*4;cl[y*w+x]=colorClass(d[j],d[j+1],d[j+2]);}
@@ -165,9 +165,9 @@ function colourMatch(Hm,rot){const f=PW/src.w,d=frame.data;let ok=0;
   for(const q of COL_SMP){const an=(q[1]+rot)*Math.PI/180,u=q[0]*Math.sin(an),v=-q[0]*Math.cos(an),w=Hm[6]*u+Hm[7]*v+Hm[8],x=Math.round((Hm[0]*u+Hm[1]*v+Hm[2])/w*f),y=Math.round((Hm[3]*u+Hm[4]*v+Hm[5])/w*f);
     if(x<0||y<0||x>=PW||y>=PH)continue;const j=(y*PW+x)*4;if(colorClass(d[j],d[j+1],d[j+2])===q[2])ok++;}
   return ok/COL_SMP.length;}
-// الوضع الصحيح يطابق الألوان بوضوح أكثر من الوضعين المُزاحين ±٣٠° (مقارنة نسبية لا تتأثر بالإضاءة ولا بالكرات)
-function colourScore(Hm){const c=colourMatch(Hm,0);trk.cdiff=c-Math.max(colourMatch(Hm,30),colourMatch(Hm,-30));return c;}
-const colourOK=(Hm)=>{const c=colourScore(Hm);return c>=0.3&&trk.cdiff>=0.2;};
+// نرفض الوضعية فقط إذا طابقت الألوان وضعًا مُزاحًا ±٣٠° أفضل بوضوح من الوضع الحالي.
+// إن كانت الألوان غير مقروءة (إضاءة ضعيفة، كاميرا مختلفة) لا نرفض شيئًا: التتبع بالحواف يكفي.
+function colourOK(Hm){const c=colourMatch(Hm,0),m=Math.max(colourMatch(Hm,30),colourMatch(Hm,-30));trk.cdiff=c-m;return !(m>c+0.15&&m>=0.3);}
 function setCalH(Hm){const pts=BP.map(q=>apply(Hm,q[0],q[1]));return setCal(pts);}
 function track(){
   if(scan.manual){trk.ok=!!cal;trk.jump=false;trk.mode='manual';return;}
@@ -180,14 +180,15 @@ function track(){
     if(R&&R.rms<0.03&&cok){const c0=b2v(0,0),c1=apply(R.H,0,0),e1=b2v(1,0),rad=Math.hypot(e1[0]-c0[0],e1[1]-c0[1]),mv=Math.hypot(c1[0]-c0[0],c1[1]-c0[1]);
       trk.jump=mv>rad*0.08;const al=mv<rad*0.003?0.5:1;   // ثابت: تنعيم خفيف؛ متحرك: بلا تأخير
       trk.lost=0;trk.rms=R.rms;trk.q=R.rms<0.012?3:R.rms<0.02?2:1;trk.mode='track';trk.prevH=cal.H.slice();
+      trk.stable=(R.rms<0.02&&!trk.jump)?(trk.stable||0)+1:0;trk.move=mv/rad;
       const Hn=cal.H.map((v,i)=>v*(1-al)+R.H[i]*al);trk.ok=setCalH(Hn);return;}}
-  trk.prevH=null;
+  trk.prevH=null;trk.stable=0;trk.move=1;
   // ٢) وإلا: كشف كامل بالألوان ثم تحسين
   const r=detectBoard(trk.lost<30?trk.P:null);trk.score=r?r.score:0;trk.mode='search';
   if(!r||r.score<THR){trk.ok=false;trk.lost++;trk.q=0;return;}
   let pts=scan.rot?rotPts(r.pts,scan.rot):r.pts;trk.jump=false;
   if(cal&&trk.lost<10){const dm=Math.max(...pts.map((p,i)=>Math.hypot(p[0]-cal.pts[i][0],p[1]-cal.pts[i][1])))/r.rad;trk.jump=dm>0.07;}
-  trk.P=r.P;trk.lost=0;trk.ok=setCal(pts);
+  trk.P=r.P;trk.lost=0;trk.ok=setCal(pts);if(!trk.ok||!cal){trk.ok=false;trk.lost++;return;}
   const R=refinePose(cal.H);if(R&&R.rms<0.03&&colourOK(R.H)){setCalH(R.H);trk.rms=R.rms;trk.q=R.rms<0.012?3:2;}else{trk.rms=0.04;trk.q=1;}
   trk.prevH=cal.H.slice();
 }
@@ -230,8 +231,9 @@ function subpixel(u0,v0,gc){ // مركز الكرة بدقة: مقارنة ال�
     const wgt=d-sens*0.8;sw+=wgt;su+=u*wgt;sv+=v*wgt;cr+=p1[0]*wgt;cg+=p1[1]*wgt;cb+=p1[2]*wgt;}
   if(sw<1)return {u:u0,v:v0,col:null};return {u:su/sw,v:sv/sw,col:[cr/sw,cg/sw,cb/sw]};}
 function cvStep(t){
-  if(!trk.ok){cv.cands.length=0;cv.flight=null;return;}                   // القرص غير ظاهر: لا نحكم
-  if(trk.jump)return;                                                     // قفزة حركة (يد تمسك الهاتف): نتجاوز هذا الإطار فقط ونُبقي المرشحين
+  // لا نبحث عن كرات إلا والتتبع موثوق: وضعية محسَّنة بالحواف ومستقرة منذ خمسة إطارات على الأقل.
+  // وضعية تقريبية أو قفزة حركة تُزيح الصورة المقوَّمة فتبدو حواف القرص وأرقامه كأنها كرات.
+  if(!trk.ok||trk.jump||(trk.stable||0)<5&&!scan.manual){cv.cands.length=0;cv.flight=null;cv.skip=(cv.skip||0)+1;return;}
   buildMap();sample();
   const cur=cv.cur,prev=cv.prev,bg=cv.bg,clean=cv.clean,map=cv.map,mask=cv.mask,er=cv.er,age=cv.age;let sc=0,sb=0,sl=0;
   for(let k=0;k<N;k++){if(map[k]<0)continue;const j=k*3;sc+=cur[j]+cur[j+1]+cur[j+2];sb+=bg[j]+bg[j+1]+bg[j+2];sl+=clean[j]+clean[j+1]+clean[j+2];}
@@ -252,6 +254,9 @@ function cvStep(t){
     if(d>lo){mask[k]=1;hi[k]=d>sens?1:0;if(++age[k]>90){bg[j]=cur[j];bg[j+1]=cur[j+1];bg[j+2]=cur[j+2];age[k]=0;}}  // تغيّر ثابت طويلًا (إضاءة/شخص واقف): يُستوعب بلا نقاط
     else{mask[k]=0;hi[k]=0;age[k]=0;bg[j]+=(cur[j]-bg[j])*0.08;bg[j+1]+=(cur[j+1]-bg[j+1])*0.08;bg[j+2]+=(cur[j+2]-bg[j+2])*0.08;}}
   // إغلاق (تمديد ثم تآكل) يلحم أجزاء الكرة المتقطعة، ثم تآكل إضافي يزيل الخطوط الرفيعة الناتجة عن اهتزاز الحواف
+  // بوابة الهدوء: كرة واحدة تغيّر نحو ١٪ من سطح القرص. تغيّر واسع = شخص أمام القرص، أو اهتزاز، أو تبدّل إضاءة: لا نحكم.
+  let cnt=0,ins=0;for(let k=0;k<N;k++){if(map[k]>=0&&!cv.out[k]){ins++;cnt+=mask[k];}}
+  cv.busyFrac=ins?cnt/ins:1;if(cv.busyFrac>0.085){cv.cands.length=0;cv.flight=null;return;}
   const tmp=cv.tmp;tmp.fill(0);for(let y=1;y<G-1;y++)for(let x=1;x<G-1;x++){const k=y*G+x;tmp[k]=mask[k]|mask[k-1]|mask[k+1]|mask[k-G]|mask[k+G];}
   er.fill(0);for(let y=1;y<G-1;y++)for(let x=1;x<G-1;x++){const k=y*G+x;er[k]=tmp[k]&tmp[k-1]&tmp[k+1]&tmp[k-G]&tmp[k+G];}
   tmp.fill(0);for(let y=1;y<G-1;y++)for(let x=1;x<G-1;x++){const k=y*G+x;tmp[k]=er[k]&er[k-1]&er[k+1]&er[k-G]&er[k+G];}
@@ -273,9 +278,9 @@ function cvStep(t){
     if(c){c.used=1;f.n=c.n+1;f.first=c.first;f.move=Math.hypot(c.u-f.u,c.v-f.v);}else{f.first=t;f.move=1;}
     // رمية رأيناها تطير قبل لحظات واستقرت هنا: نؤكد بسرعة. وإلا ننتظر إطارات أكثر (ظل/إضاءة/يد)
     const fl=cv.flight,fromFlight=fl&&t-fl.t<900&&Math.hypot(fl.u-f.u,fl.v-f.v)<0.35;
-    const need=(fromFlight?3:4)+(f.strong?0:2);
+    const need=(fromFlight&&trk.move<0.004?4:5)+(f.strong?0:4);
     // لا نؤكد كرة ما زالت تتحرك (في آخر طيرانها أو تتأرجح مع القماش): موضعها سيكون خاطئًا
-    if(f.n<need||t-f.first<110||f.move>0.022){next.push(f);continue;}
+    if(f.n<need||t-f.first<200||f.move>(f.strong?0.022:0.04)){next.push(f);continue;}
     // تأكدت: كرة التصقت، أو كرة أُزيلت
     for(let y=Math.max(0,f.y0-3);y<=Math.min(G-1,f.y1+3);y++)for(let x=Math.max(0,f.x0-3);x<=Math.min(G-1,f.x1+3);x++){const k=y*G+x,j=k*3;bg[j]=cur[j];bg[j+1]=cur[j+1];bg[j+2]=cur[j+2];age[k]=0;}
     if(f.clean)continue;                                                      // عاد القرص فارغًا هنا: كرة أُزيلت
@@ -304,7 +309,9 @@ function updatePose(){
   Object.assign(pose3,{r1,r2,r3,t,f,cx,cy,ok:true});}
 
 let armT=0;
-self.onmessage=(e)=>{const m=e.data;
+// أي خطأ غير متوقع في إطار واحد يجب ألا يوقف التتبع: نبلّغ عنه ونكمل بالإطار التالي
+self.onmessage=(e)=>{try{handle(e);}catch(err){if(e.data&&e.data.type==='frame'){trk.ok=false;trk.stable=0;cal=null;trk.lost=99;trk.prevH=null;post('pose',{ok:false,q:0,rms:1,lost:99,jump:false,locked:false,manual:scan.manual,mode,pts:null,H:null,pose3:null,balls:[],rings:[R_BULL,R_IN,R_RIM],err:String(err&&err.message||err)});}}};
+const handle=(e)=>{const m=e.data;
   switch(m.type){
     case 'init': src={w:m.w,h:m.h}; enterScan(); break;
     case 'dims': src={w:m.w,h:m.h}; cal=null; trk.lost=99; trk.P=null; trk.prevH=null; trk.ok=false; scan.locked=false; scan.good=0; cv.cands=[]; cv.flight=null; cv.cleanFrame=null; break; // تدوير الجهاز: أبعاد الفيديو تغيّرت، نعيد التعرف ونُبقي اللعبة
@@ -323,7 +330,7 @@ self.onmessage=(e)=>{const m=e.data;
       if(mode==='scan')scanStep(); else if(mode==='arming'){track(); if(t-armT>1100){ if(trk.ok){rebase();mode='play';post('playing');} else armT=t; }}
       else if(mode==='play'){track();cvStep(t);}
       if(cal)updatePose(); else pose3.ok=false;
-      post('pose',{ms:Date.now()-t0,score:trk.score,tm:trk.mode,pw:PW,ph:PH,ok:trk.ok,q:trk.q,rms:trk.rms,lost:trk.lost,jump:trk.jump,locked:scan.locked,manual:scan.manual,mode,pts:cal?cal.pts:null,H:cal?cal.H:null,
+      post('pose',{ms:Date.now()-t0,score:trk.score,tm:trk.mode,stable:trk.stable||0,busy:cv.busyFrac||0,pw:PW,ph:PH,ok:trk.ok,q:trk.q,rms:trk.rms,lost:trk.lost,jump:trk.jump,locked:scan.locked,manual:scan.manual,mode,pts:cal?cal.pts:null,H:cal?cal.H:null,
         pose3:pose3.ok?{r1:pose3.r1,r2:pose3.r2,r3:pose3.r3,t:pose3.t,f:pose3.f,cx:pose3.cx,cy:pose3.cy}:null,balls:cv.balls.map(b=>[b.u,b.v]),rings:[R_BULL,R_IN,R_RIM]});
       break; }
   }

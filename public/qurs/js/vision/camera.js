@@ -8,6 +8,7 @@ export class VisionClient extends EventTarget {
     super();
     this.worker = new Worker('./js/vision/worker.js');
     this.worker.onmessage = (e) => this.#onMessage(e.data);
+    this.worker.onerror = () => { this.busy = false; };
     this.busy = false;
     this.src = null; // {el,w,h,demo}
     this.proc = document.createElement('canvas');
@@ -22,7 +23,9 @@ export class VisionClient extends EventTarget {
       // قياس الأداء والتكيّف: إن طال زمن الإطار نخفّض دقة المعالجة حتى يلحق التتبع بحركة اليد
       this.stat.n++; this.stat.ms = this.stat.ms * 0.9 + (m.ms || 0) * 0.1; this.stat.rt = this.stat.rt * 0.9 + this.lastRoundTrip * 0.1;
       if (now - this.stat.t0 > 1000) { this.stat.fps = (this.stat.n * 1000) / (now - this.stat.t0); this.stat.n = 0; this.stat.t0 = now;
-        if (!this.src?.demo) { if (this.stat.fps < 17 && this.procMax > PROC_MIN) this.procMax = Math.max(PROC_MIN, this.procMax - 80); else if (this.stat.fps > 27 && this.stat.ms < 12 && this.procMax < PROC_MAX) this.procMax = Math.min(PROC_MAX, this.procMax + 40); } } this.dispatchEvent(new CustomEvent('pose', { detail: m })); return; }
+        // المعيار زمن المعالجة لا عدد الإطارات: الكاميرا نفسها تُبطئ إطاراتها في الإضاءة الضعيفة، وهذا ليس بطئًا في الجهاز
+        if (!this.src?.demo) { if (this.stat.ms > 34 && this.procMax > PROC_MIN) this.procMax = Math.max(PROC_MIN, this.procMax - 80); else if (this.stat.ms < 14 && this.procMax < PROC_MAX) this.procMax = Math.min(PROC_MAX, this.procMax + 40); } }
+      this.dispatchEvent(new CustomEvent('pose', { detail: m })); return; }
     this.dispatchEvent(new CustomEvent(m.type, { detail: m }));
   }
   send(msg) { this.worker.postMessage(msg); }
@@ -60,12 +63,17 @@ export class VisionClient extends EventTarget {
     const T = d.T, T0 = d.T0, k = d.shake ? 1 : 0;
     T.cx = T0.cx + k * (22 * Math.sin(t / 170) + 9 * Math.sin(t / 61)); T.cy = T0.cy + k * (16 * Math.sin(t / 230 + 1) + 8 * Math.sin(t / 47));
     T.rot = T0.rot + k * 0.05 * Math.sin(t / 390); T.r = T0.r * (1 + k * 0.05 * Math.sin(t / 510));
+    if (d.real) { T.cx += 3.5 * Math.sin(t / 23) + 2.5 * Math.sin(t / 37 + 2) + (Math.random() - 0.5) * 2.5; T.cy += 3 * Math.sin(t / 29 + 1) + 2.5 * Math.sin(t / 41) + (Math.random() - 0.5) * 2.5; T.rot += 0.006 * Math.sin(t / 53); }
     const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#cfd6d2'); g.addColorStop(1, '#aab4ae'); c.fillStyle = g; c.fillRect(0, 0, w, h);
     c.fillStyle = '#e9ece6'; c.fillRect(w * 0.06, h * 0.1, w * 0.88, h * 0.8); c.strokeStyle = '#7d8a83'; c.lineWidth = 6; c.strokeRect(w * 0.06, h * 0.1, w * 0.88, h * 0.8);
     c.save(); c.translate(T.cx, T.cy); c.rotate(T.rot); c.scale(T.r, T.r * T.sy);
     if (d.img) { const G = d.imgGeo; c.drawImage(d.img, -G.cx / G.r, -G.cy / G.r, d.img.width / G.r, d.img.height / G.r); } else drawBoard(c);
     for (const b of d.balls) { const k2 = Math.min(1, (t - b.t0) / 240), e = 1 - (1 - k2) * (1 - k2); ball(c, b.u + (1 - e) * b.du, b.v + (1 - e) * b.dv, 0.115 * (1 + (1 - e) * 1.6), b.col, e > 0.98); }
     c.restore();
+    if (d.real) { // ضجيج الحساس + وميض التعريض التلقائي
+      if (!d.noise) { const n = document.createElement('canvas'); n.width = n.height = 256; const nc = n.getContext('2d'), im = nc.createImageData(256, 256); for (let i = 0; i < im.data.length; i += 4) { const v = Math.random() * 255; im.data[i] = v; im.data[i + 1] = Math.random() * 255; im.data[i + 2] = Math.random() * 255; im.data[i + 3] = 255; } nc.putImageData(im, 0, 0); d.noise = n; }
+      c.save(); c.globalAlpha = 0.09; c.globalCompositeOperation = 'overlay'; const ox = -Math.random() * 256, oy = -Math.random() * 256; for (let y = oy; y < h; y += 256) for (let x = ox; x < w; x += 256) c.drawImage(d.noise, x, y); c.restore();
+      const fl = 0.05 * Math.sin(t / 900) + 0.03 * Math.sin(t / 130); c.fillStyle = fl > 0 ? `rgba(255,255,255,${fl})` : `rgba(0,0,0,${-fl})`; c.fillRect(0, 0, w, h); }
   }
   demoToBoard(x, y) { const T = this.demo.T, dx = x - T.cx, dy = y - T.cy, cs = Math.cos(-T.rot), sn = Math.sin(-T.rot); return [(dx * cs - dy * sn) / T.r, (dx * sn + dy * cs) / (T.r * T.sy)]; }
   demoBoardToVideo(u, v) { const T = this.demo.T, x = u * T.r, y = v * T.r * T.sy, c = Math.cos(T.rot), s = Math.sin(T.rot); return [T.cx + x * c - y * s, T.cy + x * s + y * c]; }
@@ -77,6 +85,7 @@ export class VisionClient extends EventTarget {
     else { const el = this.src.el; if (el.videoWidth && (el.videoWidth !== this.src.w || el.videoHeight !== this.src.h)) { // iPhone/iPad: تدوير الجهاز يبدّل أبعاد الفيديو
       this.src.w = el.videoWidth; this.src.h = el.videoHeight; this.pose = { ...this.pose, ok: false, H: null, pts: null, pose3: null, balls: [] }; this.send({ type: 'dims', w: this.src.w, h: this.src.h }); this.dispatchEvent(new CustomEvent('dims')); } }
     const fresh = this.src.demo || this.newFrame || !this.src.el.requestVideoFrameCallback;
+    if (this.busy && t - this.lastSent > 1500) this.busy = false; // حارس: لو لم يردّ العامل على إطار نكمل بالتالي ولا يتجمد التتبع
     if (this.busy || !fresh) return;
     this.newFrame = false;
     // أطول ضلع = procMax في الوضعين العرضي والطولي (كان الطولي يُعالَج بثلاثة أضعاف البكسلات)

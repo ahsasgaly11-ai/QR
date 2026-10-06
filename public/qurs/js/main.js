@@ -88,7 +88,7 @@ vision.addEventListener('pose', (e) => { const p = e.detail; if (p.rings) { ring
   if (app.mode === 'scan') { if (p.manual) return; if (p.ok) setStatus('scanStatus', p.locked ? 'تم التعرف على القرص — اضغط «ابدأ اللعب»' : 'جارٍ التعرف على القرص…', p.locked ? 'ok' : ''); else if (p.lost > 12) { $('btnArm').disabled = true; setStatus('scanStatus', 'وجّه الكاميرا نحو القرص…', ''); } }
   if (app.mode === 'play') { const q = $('trkq'); const txt = !p.ok ? 'التتبع: مفقود' : p.q >= 3 ? 'التتبع: ممتاز' : p.q === 2 ? 'التتبع: جيد' : 'التتبع: ضعيف'; if (q.textContent !== txt) { q.textContent = txt; q.className = 'chip q' + (p.ok ? p.q : 0); }
     if (!p.ok && p.lost > 25) { $('playStatus').hidden = false; setStatus('playStatus', 'القرص غير ظاهر للكاميرا…', 'warn'); } else if (hint) { $('playStatus').hidden = false; setStatus('playStatus', hint, 'warn'); } else $('playStatus').hidden = true;
-    if (diagOn) { const st = vision.stat; $('diag').textContent = `${vision.src.w}x${vision.src.h} > ${p.pw}x${p.ph} | ${st.fps.toFixed(0)} fps | ${st.ms.toFixed(0)} ms | rms ${(p.rms * 100).toFixed(1)}% | board ${(pct * 100).toFixed(0)}% | light ${(vision.brightness * 100).toFixed(0)}%`; } }
+    if (diagOn) { const st = vision.stat; $('diag').textContent = `${vision.src.w}x${vision.src.h} > ${p.pw}x${p.ph} | ${st.fps.toFixed(0)} fps | ${st.ms.toFixed(0)} ms | rms ${(p.rms * 100).toFixed(1)}% | board ${(pct * 100).toFixed(0)}% | light ${(vision.brightness * 100).toFixed(0)}% | ${p.tm} st${Math.min(99, p.stable)} chg ${((p.busy || 0) * 100).toFixed(1)}%${p.err ? ' | ERR ' + p.err : ''}`; } }
 });
 
 /* ---------- أحداث اللعبة ---------- */
