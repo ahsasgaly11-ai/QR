@@ -35,7 +35,7 @@ export class Game extends EventTarget {
     // النقاط = قيمة الخانة المصابة فقط؛ الإجابة الصحيحة تمنح الجائزة ولا تضيف نقاطًا
     if (ok && pz) { tm.prizes.push(pz); this.hist[this.hist.length - 1].prize = true; }
     this.emit('answered', { ok, bonus: 0, prize: ok ? pz : '' }); this.emit('change'); }
-  after() { this.busy = false; if (this.left <= 0) this.next();   // انتهى الدور: الكرات الزائدة لا تُحتسب
+  after() { this.busy = false; if (this.left <= 0) this.next(this.solo);   // انتهى الدور. فردي: رمي متواصل، ما رُمي مبكرًا يُحسب للاعب التالي؛ مجموعات: الكرات الزائدة لا تُحتسب
     if (this.pending.length) { const p = this.pending.shift(); this.busy = true; setTimeout(() => { this.busy = false; this.hit(p[0], p[1], true); }, 450); } }
   next(keepQueue) { if (!keepQueue) this.pending = []; this.cur = (this.cur + 1) % this.teams.length; this.left = this.cfg.balls; this.busy = false;
     if (this.cur === 0) { this.round++; if (this.cfg.rounds > 0 && this.round > this.cfg.rounds) { this.round = this.cfg.rounds; this.end(); return; } }  // انتهت الجولات المحددة

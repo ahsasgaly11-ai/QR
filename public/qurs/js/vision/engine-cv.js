@@ -262,7 +262,7 @@ function cvStep(t) {
     for (let y = Math.max(0, f.y0 - 3); y <= Math.min(G - 1, f.y1 + 3); y++) for (let x = Math.max(0, f.x0 - 3); x <= Math.min(G - 1, f.x1 + 3); x++) { const k = y * G + x, j = k * 3; bg[j] = cur[j]; bg[j + 1] = cur[j + 1]; bg[j + 2] = cur[j + 2]; age[k] = 0; }
     if (f.clean) continue;                                                                   // عاد القرص فارغًا هنا: كرة أُزيلت
     const sp = subpixel(f.u, f.v, gc);
-    if (cb.balls.some((b) => Math.hypot(b.u - sp.u, b.v - sp.v) < 0.12 || Math.hypot(b.u - f.u, b.v - f.v) < 0.12)) continue;
+    if (cb.balls.some((b) => Math.hypot(b.u - sp.u, b.v - sp.v) < 0.08 || Math.hypot(b.u - f.u, b.v - f.v) < 0.08)) continue;   // الكرة نفسها (كرة جديدة ملاصقة تبعد ≥ قطر كرة فتُحتسب)
     cb.balls.push({ u: sp.u, v: sp.v }); cb.flight = null; if (!paused) post('hit', { u: sp.u, v: sp.v }); }
   cb.cands = next;
   cb.balls = cb.balls.filter((b) => { const gx = Math.round((b.u / EXT + 1) / 2 * G - 0.5), gy = Math.round((b.v / EXT + 1) / 2 * G - 0.5); let s = 0, n = 0;
@@ -299,7 +299,7 @@ function onFrame(m) {
   // الإطار الحالي يصبح السابق للتدفق البصري
   if (!M.prevGray) M.prevGray = new cv.Mat(); M.gray.copyTo(M.prevGray);
   let Hv = null, pts = null; if (trk.H) { Hv = toVideo(trk.H); pts = BP.map((q) => apply(Hv, q[0], q[1])); updatePose(Hv); } else pose3.ok = false;
-  post('pose', { ms: performance.now() - t0, score: trk.inl, tm: trk.mode + (trk.live ? '+live' : ''), stable: trk.stable, busy: cb.busyFrac || 0, pw: PW, ph: PH, ok: trk.ok, q: trk.q, rms: trk.rms, lost: trk.lost, jump: trk.jump, locked: scan.locked, manual: scan.manual, mode, pts, H: Hv, inl: trk.inl, engine: 'cv', dbg: [trk.tTrack | 0, trk.tCv | 0, trk.pts.length, refs.length],
+  post('pose', { ms: performance.now() - t0, score: trk.inl, tm: trk.mode + (trk.live ? '+live' : ''), stable: trk.stable, busy: cb.busyFrac || 0, pw: PW, ph: PH, ok: trk.ok, q: trk.q, rms: trk.rms, lost: trk.lost, jump: trk.jump, locked: scan.locked, manual: scan.manual, mode, pts, H: Hv, inl: trk.inl, engine: 'cv', dbg: [trk.tTrack | 0, trk.tCv | 0, trk.pts.length, refs.length, cb.cands.length],
     pose3: pose3.ok ? { r1: pose3.r1, r2: pose3.r2, r3: pose3.r3, t: pose3.t, f: pose3.f, cx: pose3.cx, cy: pose3.cy } : null, balls: cb.balls.map((b) => [b.u, b.v]), rings: RINGS });
 }
 let refImg = null;

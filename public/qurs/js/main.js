@@ -103,7 +103,7 @@ game.addEventListener('hit', (e) => { const { z, u, v, t } = e.detail; ar.hit(z,
 game.addEventListener('queued', (e) => banner('كرة مسجّلة — تُحتسب بعد السؤال الحالي', 1500));
 game.addEventListener('miss', (e) => { SND.miss(); ar.text(e.detail.u, e.detail.v, 0.1, 'خارج القرص', '#ffb4a6', 0.14, 1.2); });
 game.addEventListener('question', (e) => ask(e.detail));
-game.addEventListener('turn', (e) => { SND.turn(); banner((game.teams.length > 1 ? 'دور ' + e.detail.team.name : 'جولة جديدة') + (game.solo ? '\nاجمع الكرات ثم ارمِ' : '\nاجمعوا الكرات ثم ارموا'), 2600); });
+game.addEventListener('turn', (e) => { SND.turn(); banner(game.solo ? (game.teams.length > 1 ? 'دور ' + e.detail.team.name + '\nارمِ!' : 'جولة جديدة\nارمِ!') : (game.teams.length > 1 ? 'دور ' + e.detail.team.name : 'جولة جديدة') + '\nاجمعوا الكرات ثم ارموا', 2200); });
 game.addEventListener('end', (e) => { SND.win(); const r = $('rank'); r.innerHTML = ''; e.detail.ranking.forEach((t, i) => { const d = document.createElement('div'); d.style.setProperty('--tc', t.c); const a = document.createElement('span'); a.textContent = (i === 0 ? 'الأول: ' : '') + t.name + (t.prizes.length ? ' — ' + t.prizes.length + ' جائزة' : ''); const b = document.createElement('span'); b.textContent = t.score; d.append(a, b); r.append(d); }); $('endSheet').hidden = false; });
 
 function chip(t, on, mini, label) { const d = document.createElement('div'); d.className = 'chip' + (on ? ' on' : '') + (mini ? ' mini' : ''); d.style.setProperty('--tc', t.c);
@@ -126,7 +126,13 @@ function ask({ z, t, q }) {
   const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
   const head = mk('div', 'qhead'); head.append(mk('span', '', 'خانة ' + z.pts + ' — مستوى ' + T.name), mk('span', '', (q.prize || tr.prize) ? 'الجائزة: ' + (q.prize || tr.prize) : '')); el.append(head, mk('p', 'qtext', q.q));
   const done = (ok) => { game.answer(ok, t, q); if (ok) { SND.ok(); ar.celebrate(); const pz = q.prize || tr.prize; el.append(mk('div', 'prize', pz ? 'الجائزة: ' + pz : 'إجابة صحيحة!')); } else { SND.bad(); shake(); }
-    if (q.a) el.append(mk('div', 'ans', q.a)); const nx = mk('button', 'btn primary', 'متابعة'); nx.onclick = () => { el.hidden = true; game.after(); }; el.append(nx); nx.focus(); };
+    if (q.a) el.append(mk('div', 'ans', q.a));
+    const close = () => { if (el.hidden) return; clearTimeout(autoT); el.hidden = true; el.onclick = null; game.after(); };
+    let autoT = 0;
+    if (game.solo) { // اللعب الفردي: رمي متواصل — البطاقة تُغلق نفسها بعد عرض النتيجة (أو بلمسة)، ولا حاجة لزر متابعة
+      const bar = mk('div', 'autobar'); bar.append(mk('i')); el.append(bar); requestAnimationFrame(() => bar.classList.add('run'));
+      autoT = setTimeout(close, 2600); setTimeout(() => { if (!el.hidden) el.onclick = close; }, 80); }   // لمسة البطاقة تغلقها (بعد انتهاء نقرة الإجابة نفسها)
+    else { const nx = mk('button', 'btn primary', 'متابعة'); nx.onclick = close; el.append(nx); nx.focus(); } };
   if (q.opts) { const box = mk('div', 'opts'); q.opts.forEach((o, i) => { const b = mk('button', 'btn', o); b.onclick = () => { [...box.children].forEach((c, k) => { c.disabled = true; if (k === q.right) c.classList.add('right'); }); if (i !== q.right) b.classList.add('wrong'); done(i === q.right); }; box.append(b); }); el.append(box); }
   else { const row = mk('div', 'row'), y = mk('button', 'btn green', 'إجابة صحيحة'), n = mk('button', 'btn red', 'إجابة خاطئة'); y.onclick = () => { row.remove(); done(true); }; n.onclick = () => { row.remove(); done(false); }; row.append(y, n); el.append(row); }
 }

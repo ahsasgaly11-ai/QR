@@ -130,6 +130,7 @@ textarea{min-height:96px;resize:vertical;line-height:1.6}
 .opts .btn.wrong{background:var(--red);color:#fff}
 .ans{background:#0d1a14;border-radius:12px;padding:10px 14px;font-size:1.2rem;font-weight:800;color:#8ff0c0;border:2px dashed var(--green)}
 .prize{font-size:1.15rem;font-weight:800;color:var(--gold)}
+.autobar{height:6px;border-radius:3px;background:#ffffff22;overflow:hidden;margin-top:4px}.autobar i{display:block;height:100%;width:100%;background:var(--qc,var(--gold));transform-origin:right;transition:transform 2.5s linear}.autobar.run i{transform:scaleX(0)}
 
 /* النوافذ */
 .sheet{position:fixed;inset:0;background:#060c09e8;overflow:auto;touch-action:pan-y;z-index:5;
