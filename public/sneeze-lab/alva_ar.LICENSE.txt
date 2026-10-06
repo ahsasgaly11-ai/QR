@@ -1,0 +1,2 @@
+alva_ar.js is AlvaAR by Alan Ross — https://github.com/alanross/AlvaAR
+Licensed under the GNU General Public License v3.0 (GPL-3.0). Source code is available at the URL above.

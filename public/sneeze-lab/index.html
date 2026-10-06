@@ -62,6 +62,10 @@ h1,h2{font-weight:800;text-wrap:balance;line-height:1.25}
 #arbar{position:absolute;inset:0;pointer-events:none;z-index:2}
 #arbar>*{pointer-events:auto}
 #arHint{position:absolute;top:58px;left:50%;transform:translateX(-50%);max-width:min(92%,640px);background:#0a0911d9;border:1.5px solid var(--germ);border-radius:14px;padding:6px 14px;font-size:17px;font-weight:800;text-align:center;pointer-events:none}
+#arStatBox{position:absolute;bottom:10px;inset-inline-end:68px;display:flex;gap:8px;align-items:center}
+#arStat{background:#0a0911d9;border:1.5px solid var(--line);border-radius:10px;padding:2px 10px;font-size:15px;font-weight:800}
+#arStat.ok{border-color:var(--mint);color:var(--mint)}#arStat.warn{border-color:var(--amber);color:var(--amber)}#arStat.bad{border-color:var(--bad);color:var(--bad)}
+#arMotion{min-height:44px;padding:0 14px;border-radius:12px;background:var(--plum);border:2px solid var(--orchid);color:#fff;font-weight:800;font-size:16px}
 #arPlace{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);white-space:nowrap}
 #arPlace:active{transform:translateX(-50%) translateY(3px)}
 #arTools{position:absolute;inset-inline-start:8px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px;align-items:center;background:#0a0911b3;border:1.5px solid var(--line);border-radius:18px;padding:6px}
@@ -208,6 +212,7 @@ th{color:var(--muted);font-size:15px}td.n{font-variant-numeric:tabular-nums;font
       <div id="banner" hidden></div>
       <div id="arbar" hidden>
         <div id="arHint"></div>
+        <div id="arStatBox"><span id="arStat"></span><button id="arMotion" hidden>فعّل مستشعر الحركة</button></div>
         <button class="cta" id="arPlace">ثبّت هنا 📍</button>
         <div id="arTools" hidden>
           <button class="icon" id="arMove" aria-label="نقل المشهد إلى مكان آخر" title="نقل">📍</button>
@@ -82577,7 +82582,7 @@ function init3D(){
 }
 function mateX(){return MOUTH_X+S.dist+.19}
 function placeMate(){kidB.g.position.x=mateX()}
-function resize(){ if(!glOK)return; const w=stage.clientWidth,h=stage.clientHeight;if(!w||!h)return;R.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();if(S.ar)arFov();baseScale=h*R.getPixelRatio()/(2*Math.tan(camera.fov*Math.PI/360));pts.material.uniforms.scale.value=baseScale*AR.s;if(!S.ar&&(camGoal.active||!resize.done)){frameCam(true);resize.done=true} }
+function resize(){ if(!glOK)return; const w=stage.clientWidth,h=stage.clientHeight;if(!w||!h)return;R.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();if(S.ar){arFov();clearTimeout(resize.t);resize.t=setTimeout(slamInit,350)}baseScale=h*R.getPixelRatio()/(2*Math.tan(camera.fov*Math.PI/360));pts.material.uniforms.scale.value=baseScale*AR.s;if(!S.ar&&(camGoal.active||!resize.done)){frameCam(true);resize.done=true} }
 function frameCam(snap){
   const x0=-.7,x1=Math.max(mateX()+.7,2.2),W=x1-x0,H=2.1,asp=camera.aspect||1,tv=Math.tan(camera.fov*Math.PI/360);
   const d=Math.max((W/2)/(tv*asp),(H/2)/tv)*1.06;
@@ -82717,28 +82722,69 @@ function arFov(){const vid=$('#cam'),vw=vid.videoWidth||4,vh=vid.videoHeight||3,
 function floorHit(x,y,out){nd.set(x,y);ray.setFromCamera(nd,camera);const o=ray.ray.origin,d=ray.ray.direction;if(d.y>-.06)return false;const t=-o.y/d.y;out.copy(o).addScaledVector(d,t);const dx=out.x-o.x,dz=out.z-o.z,r=Math.sqrt(dx*dx+dz*dz);if(r>7){out.x=o.x+dx*7/r;out.z=o.z+dz*7/r}return true}
 function arApply(){AR.s=clamp(AR.s,.12,2.5);world.scale.setScalar(AR.s);world.rotation.y=AR.yaw;world.position.set(AR.center.x-AR.s*CX*Math.cos(AR.yaw),0,AR.center.z+AR.s*CX*Math.sin(AR.yaw));
   keyL.target.position.copy(AR.center);keyL.position.set(AR.center.x+1.5,5,AR.center.z+3.5);pts.material.uniforms.scale.value=baseScale*AR.s;$('#arScale').textContent=Math.round(AR.s*100)+'%'}
+/* visual SLAM (AlvaAR, loaded only when its file sits next to the page) fused with the gyro: gives real position tracking */
+const SL={alva:null,loading:false,failed:false,tracking:false,A:T?new T.Quaternion():null,k:0,ks:[],off:T?new T.Vector3():null,lastPlane:0,cv:null,ctx:null,w:0,h:0,sx:0,sy:0,sw:0,sh:0,gen:0,cost:0,skip:0};
+const m4=T?new T.Matrix4():null,qs=T?new T.Quaternion():null,qv=T?new T.Quaternion():null,tq=T?new T.Quaternion():null,ts=T?new T.Vector3():null,su=T?new T.Vector3():null,tp=T?new T.Vector3():null,pp=T?new T.Vector3():null,qref=T?new T.Quaternion():null;
+function slamInit(){
+  if(SL.failed||!S.ar)return; const vid=$('#cam'),vw=vid.videoWidth,vh=vid.videoHeight,cw=stage.clientWidth,ch=stage.clientHeight;if(!vw||!vh||!cw||!ch)return;
+  const sa=cw/ch;let w,h;if(sa>=1){w=480;h=Math.round(480/sa/2)*2}else{h=480;w=Math.round(480*sa/2)*2}
+  if(vw/vh>sa){SL.sh=vh;SL.sw=vh*sa;SL.sx=(vw-SL.sw)/2;SL.sy=0}else{SL.sw=vw;SL.sh=vw/sa;SL.sx=0;SL.sy=(vh-SL.sh)/2}
+  if(SL.alva&&SL.w===w&&SL.h===h)return;
+  const gen=++SL.gen;SL.alva=null;SL.tracking=false;SL.w=w;SL.h=h;
+  if(!SL.cv){SL.cv=document.createElement('canvas');}SL.cv.width=w;SL.cv.height=h;SL.ctx=SL.cv.getContext('2d',{alpha:false,willReadFrequently:true});
+  const f=(h/2)/Math.tan(camera.fov*Math.PI/360),asp=w/h;let best=45,be=1e9;
+  for(let fv=8;fv<=140;fv+=.25){const fH=w>h?fv*asp:fv,fV=w>h?fv:fv*asp;if(fH>=175||fV>=175)continue;const fx=(w/2)/Math.tan(fH*Math.PI/360),fy=(h/2)/Math.tan(fV*Math.PI/360),e=Math.abs(Math.min(fx,fy)-f);if(e<be){be=e;best=fv}}
+  SL.loading=true;
+  (SL.modP||(SL.modP=import(new URL('alva_ar.js',location.href).href))).then(mod=>mod.AlvaAR.Initialize(w,h,best)).then(a=>{SL.loading=false;if(gen===SL.gen&&S.ar){SL.alva=a;SL.ks=[];}}).catch(e=>{SL.loading=false;SL.failed=true;console.info('SLAM unavailable, using gyro only')});
+}
+function slamStep(){
+  if(!SL.alva)return false;const vid=$('#cam');if(vid.readyState<2)return false;
+  SL.skip=(SL.skip+1)%(SL.cost>60?3:SL.cost>24?2:1);if(SL.skip)return SL.tracking;
+  const t0=performance.now();let pose=null;
+  try{SL.ctx.drawImage(vid,SL.sx,SL.sy,SL.sw,SL.sh,0,0,SL.w,SL.h);pose=SL.alva.findCameraPose(SL.ctx.getImageData(0,0,SL.w,SL.h))}catch(e){SL.alva=null;SL.failed=true;SL.tracking=false;return false}
+  SL.cost=SL.cost*.8+(performance.now()-t0)*.2;
+  if(!pose){SL.tracking=false;return false}
+  m4.fromArray(pose);qv.setFromRotationMatrix(m4);qs.set(-qv.x,qv.y,qv.z,qv.w);ts.set(pose[12],-pose[13],-pose[14]);
+  if(!SL.tracking){SL.A.copy(qref).multiply(qv.copy(qs).invert());su.copy(ts).applyQuaternion(SL.A);SL.off.copy(camera.position).addScaledVector(su,-SL.k);SL.tracking=true;SL.ks=[];SL.k=0;SL.off.copy(camera.position);SL.lastPlane=0}
+  su.copy(ts).applyQuaternion(SL.A);
+  if(SL.ks.length<9&&t0-SL.lastPlane>500&&(camera.getWorldDirection(pp).y<-.2)){SL.lastPlane=t0;let pl=null;try{pl=SL.alva.findPlane(150)}catch(e){}
+    if(pl){pp.set(pl[12],-pl[13],-pl[14]).applyQuaternion(SL.A);const dh=su.y-pp.y;if(dh>.01){SL.ks.push(camera.position.y/dh);if(SL.ks.length>=2){const a=SL.ks.slice().sort((x,y)=>x-y),nk=a[(a.length-1)>>1];tp.copy(SL.off).addScaledVector(su,SL.k);SL.k=nk;SL.off.copy(tp).addScaledVector(su,-nk)}}}}
+  tq.copy(SL.A).multiply(qs);tp.copy(SL.off).addScaledVector(su,SL.k);tp.y=clamp(tp.y,.25,2.6);
+  camera.quaternion.slerp(tq,.65);camera.position.lerp(tp,.65);return true;
+}
+function arStatus(){const el=$('#arStat');let t,c;
+  if(SL.tracking&&SL.k>0){t='تتبّع الأرض يعمل ✓';c='ok'}
+  else if(SL.tracking){t='وجّه الكاميرا نحو الأرض لحظة لضبط التتبّع';c='warn'}
+  else if(SL.alva){t='حرّك الجهاز ببطء يمينًا ويسارًا ليبدأ تتبّع الأرض';c='warn'}
+  else if(SL.loading){t='جارٍ تحميل التتبّع…';c='warn'}
+  else if(AR.gyro){t='تثبيت بدوران الجهاز فقط';c='warn'}
+  else{t='مستشعر الحركة غير مفعّل';c='bad'}
+  if(el.textContent!==t){el.textContent=t;el.className=c}$('#arMotion').hidden=AR.gyro||SL.tracking}
 function arTick(dt){
-  if(AR.gyro&&AR.o){const o=AR.o,k=Math.PI/180;eul.set((o.beta||0)*k,(o.alpha||0)*k,-(o.gamma||0)*k,'YXZ');qT.setFromEuler(eul).multiply(Q1).multiply(q0.setFromAxisAngle(ZEE,-scrAngle()));camera.quaternion.slerp(qT,1-Math.pow(.000001,dt))}
-  else camera.rotation.set(-.42,0,0);
-  camera.position.set(0,AR.h,0);camera.updateMatrixWorld();
-  if(AR.placing){ if(floorHit(0,-.3,hA)){AR.center.lerp(hA,.35);camera.getWorldDirection(hB);AR.yaw=Math.atan2(-hB.x,-hB.z);if(!AR.userS){const d=Math.sqrt(AR.center.x*AR.center.x+AR.center.z*AR.center.z);AR.s=clamp(d/3.4,.25,1)}}
+  if(AR.gyro&&AR.o){const o=AR.o,k=Math.PI/180;eul.set((o.beta||0)*k,(o.alpha||0)*k,-(o.gamma||0)*k,'YXZ');qT.setFromEuler(eul).multiply(Q1).multiply(q0.setFromAxisAngle(ZEE,-scrAngle()));qref.copy(qT)}
+  else qref.copy(camera.quaternion);
+  if(!slamStep()&&AR.gyro)camera.quaternion.slerp(qref,1-Math.pow(.000001,dt));
+  camera.updateMatrixWorld();
+  if(AR.placing){ if(floorHit(0,-.3,hA)){AR.center.lerp(hA,.35);camera.getWorldDirection(hB);AR.yaw=Math.atan2(-hB.x,-hB.z);if(!AR.userS){const dx=AR.center.x-camera.position.x,dz=AR.center.z-camera.position.z;AR.s=clamp(Math.sqrt(dx*dx+dz*dz)/3.4,.25,1)}}
     reticle.position.set(AR.center.x,.01,AR.center.z);const p=1+.08*Math.sin(performance.now()/180);reticle.scale.set(p*Math.max(AR.s,.4),1,p*Math.max(AR.s,.4)) }
-  arApply();
+  arApply();arStatus();
 }
 function arPlacing(on){AR.placing=on;reticle.visible=on;$('#arPlace').hidden=!on;$('#arTools').hidden=on;$('#arHint').textContent=on?(AR.gyro?'وجّه الجهاز نحو الأرض وحرّكه حتى تصل الحلقة إلى المكان المناسب، ثم اضغط «ثبّت هنا».':'اضغط «ثبّت هنا»، ثم حرّك المشهد بإصبعك.'):'إصبع واحد: تحريك على الأرض · إصبعان: تكبير وتصغير وتدوير';$('#arHint').hidden=false;clearTimeout(arPlacing.t);if(!on)arPlacing.t=setTimeout(()=>{$('#arHint').hidden=true},6000)}
-function askMotion(){try{const D=window.DeviceOrientationEvent;if(D&&typeof D.requestPermission==='function'){D.requestPermission().then(r=>{if(r!=='granted')toast('لم يُسمح بمستشعر الحركة، فلن يثبت المشهد عند تدوير الجهاز. يمكنك تحريكه بإصبعك.',6000)}).catch(function(){})}}catch(e){}}
+function askMotion(){try{const D=window.DeviceOrientationEvent;if(D&&typeof D.requestPermission==='function')return D.requestPermission().then(r=>{if(r!=='granted')toast('لم يُسمح بمستشعر الحركة. أغلق تبويب الصفحة وافتحه من جديد ثم اختر «سماح» ليثبت المشهد.',7000)}).catch(function(){})}catch(e){}return Promise.resolve()}
+function getCam(){const m=/[?&]arvideo=([^&]+)/.exec(location.search);if(m){const v=$('#cam');v.src=decodeURIComponent(m[1]);v.loop=true;const r=/[?&]arrate=([^&]+)/.exec(location.search);if(r)v.defaultPlaybackRate=v.playbackRate=parseFloat(r[1]);return Promise.resolve(null)}
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)return Promise.reject(new Error('nocam'));
+  return navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false})}
 function setAR(on){
   const btn=$('#tAR'),vid=$('#cam');
   if(on){
     if(!glOK)return;
-    askMotion();
-    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){toast('الكاميرا غير متاحة هنا. يعمل الواقع المعزز عند فتح الصفحة من رابط آمن (https) على الهاتف أو اللوحي.',6500);return}
-    navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}},audio:false}).then(st=>{stream=st;vid.srcObject=st;vid.hidden=false;vid.onloadedmetadata=()=>{resize()};const p=vid.play();if(p&&p.catch)p.catch(function(){});
+    if(setAR.busy)return;setAR.busy=true;
+    askMotion().then(getCam).then(st=>{setAR.busy=false;stream=st;if(st)vid.srcObject=st;vid.hidden=false;vid.onloadedmetadata=()=>{resize();slamInit()};const p=vid.play();if(p&&p.catch)p.catch(function(){});
       S.ar=true;btn.setAttribute('aria-pressed','true');R.setClearColor(0,0);scene.fog.near=900;scene.fog.far=1000;floor.visible=false;ground.visible=true;stage.style.background='transparent';
-      controls.enabled=false;camGoal.active=false;AR.userS=false;AR.s=1;AR.center.set(0,0,-2.6);AR.yaw=0;pts.material.blending=T.NormalBlending;pts.material.uniforms.rim.value=1;pts.material.needsUpdate=true;
+      controls.enabled=false;camGoal.active=false;AR.userS=false;AR.s=1;AR.center.set(0,0,-2.6);AR.yaw=0;camera.position.set(0,AR.h,0);camera.rotation.set(-.42,0,0);SL.tracking=false;SL.k=0;SL.ks=[];pts.material.blending=T.NormalBlending;pts.material.uniforms.rim.value=1;pts.material.needsUpdate=true;
       $('#arbar').hidden=false;arPlacing(true);resize()})
-    .catch(()=>{toast('تعذر فتح الكاميرا. اسمح بالكاميرا من إعدادات المتصفح ثم حاول مجددًا.',6500)});
-  }else{ if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}vid.hidden=true;vid.srcObject=null;S.ar=false;btn.setAttribute('aria-pressed','false');$('#arbar').hidden=true;
+    .catch(e=>{setAR.busy=false;toast(e&&e.message==='nocam'?'الكاميرا غير متاحة هنا. يعمل الواقع المعزز عند فتح الصفحة من رابط الموقع (https).':'تعذر فتح الكاميرا. اسمح بالكاميرا من إعدادات المتصفح ثم حاول مجددًا.',6500)});
+  }else{ if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}vid.hidden=true;vid.srcObject=null;vid.removeAttribute('src');S.ar=false;SL.gen++;SL.alva=null;SL.tracking=false;btn.setAttribute('aria-pressed','false');$('#arbar').hidden=true;
     if(R){R.setClearColor(0x0a0911,1);scene.fog.near=10;scene.fog.far=26;floor.visible=true;ground.visible=false;reticle.visible=false;AR.s=1;AR.placing=false;world.scale.setScalar(1);world.rotation.y=0;world.position.set(0,0,0);keyL.target.position.set(1,0,0);keyL.position.set(1.5,5,5);
       pts.material.blending=T.AdditiveBlending;pts.material.uniforms.rim.value=0;pts.material.needsUpdate=true;controls.enabled=true;camera.fov=38;camera.quaternion.identity();camera.updateProjectionMatrix();resize();frameCam(true)}
     stage.style.background=''}
@@ -82756,6 +82802,7 @@ function arGestures(){
   const up=e=>{delete P[e.pointerId];g0=two();AR.prev=null};
   cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
   cv.addEventListener('wheel',e=>{if(!S.ar)return;e.preventDefault();AR.s*=e.deltaY<0?1.08:.925;AR.userS=true},{passive:false});
+  $('#arMotion').addEventListener('click',()=>{SFX.click();askMotion()});
   $('#arPlace').addEventListener('click',()=>{SFX.pop();arPlacing(false)});
   $('#arMove').addEventListener('click',()=>{SFX.click();arPlacing(true)});
   $('#arPlus').addEventListener('click',()=>{SFX.click();AR.s*=1.15;AR.userS=true});
@@ -82867,7 +82914,7 @@ function confetti(){ if(reduce)return; const c=$('#fx'),x=c.getContext('2d');c.w
 function boot(){
   try{ if(!T)throw new Error('no three');init3D();setupLabels();arGestures() }catch(e){glOK=false;console.warn('3D init failed',e)}
   mission();resize();requestAnimationFrame(tick);$('#boot').hidden=true;
-  window.__lab={S:S,sim:sim,go:go,start:startSneeze,view:function(x,y,z){camGoal.active=false;camera.position.set(x,y,z);controls.target.set(.1,1.02,0);controls.update()}};
+  window.__lab={S:S,sim:sim,go:go,start:startSneeze,dbg:function(){return [SL.tracking,+SL.k.toFixed(2),SL.ks.length,+SL.cost.toFixed(1),camera.position.toArray().map(function(v){return +v.toFixed(2)})]},view:function(x,y,z){camGoal.active=false;camera.position.set(x,y,z);controls.target.set(.1,1.02,0);controls.update()}};
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
