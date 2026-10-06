@@ -1,14 +1,11 @@
 // مصدر الصورة (كاميرا أو مشهد تجريبي) + ضخ الإطارات إلى عامل الرؤية مع ضغط خلفي (لا نرسل إطارًا جديدًا قبل رد العامل).
 import { drawBoard } from './geometry.js';
 
-const PROC_MAX = 800, PROC_MIN = 520; // أطول ضلع لصورة المعالجة؛ يُخفَّض تلقائيًا على الأجهزة الأبطأ
+const PROC_MAX = 800, PROC_MIN = 480; // أطول ضلع لصورة المعالجة؛ يُخفَّض تلقائيًا على الأجهزة الأبطأ
 
 export class VisionClient extends EventTarget {
   constructor() {
     super();
-    this.worker = new Worker('./js/vision/worker.js');
-    this.worker.onmessage = (e) => this.#onMessage(e.data);
-    this.worker.onerror = () => { this.busy = false; };
     this.busy = false;
     this.src = null; // {el,w,h,demo}
     this.proc = document.createElement('canvas');
@@ -16,7 +13,27 @@ export class VisionClient extends EventTarget {
     this.pose = { ok: false, q: 0, mode: 'scan', H: null, pts: null, pose3: null, balls: [], rings: [0.165, 0.615, 0.965] };
     this.frameId = 0; this.newFrame = true; this.lastSent = 0; this.lastRoundTrip = 0;
     this.brightness = 0.5; this.procMax = PROC_MAX; this.stat = { n: 0, t0: performance.now(), fps: 0, ms: 0, rt: 0 };
-    this.demo = null;
+    this.demo = null; this.engine = { name: 'cv', state: 'loading', pct: 0 }; this.sent = [];
+    this.#spawn(window.__forceLegacyEngine ? 'legacy' : 'cv');
+  }
+  // محرك الرؤية ٤ (OpenCV WebAssembly: ميزات + تدفق بصري) وإلا المحرك الاحتياطي (ألوان + حواف) إن تعذّر تحميله
+  #spawn(name) {
+    if (this.worker) this.worker.terminate();
+    this.engine = { name, state: name === 'cv' ? 'loading' : 'ready', pct: 0 };
+    this.worker = new Worker(name === 'cv' ? './js/vision/engine-cv.js' : './js/vision/worker.js');
+    this.worker.onmessage = (e) => this.#onMessage(e.data);
+    this.worker.onerror = (e) => { this.busy = false; if (name === 'cv' && this.engine.state !== 'ready') this.#fallback('worker error'); };
+    this.busy = false;
+    if (name === 'cv') { this.#loadRef(); this.engineTimer = setTimeout(() => { if (this.engine.state !== 'ready') this.#fallback('timeout'); }, 90000); }
+    // أعد إرسال حالة المصدر إلى المحرك الجديد
+    for (const m of this.sent) this.worker.postMessage(m);
+    this.dispatchEvent(new CustomEvent('engine', { detail: this.engine }));
+  }
+  #fallback(reason) { if (this.engine.name !== 'cv') return; clearTimeout(this.engineTimer); this.engine.fallbackReason = reason; this.#spawn('legacy'); }
+  async #loadRef() { // الصورة المرجعية القانونية للقرص (يُفكّ ترميزها هنا لأن بعض المتصفحات لا تدعم ذلك داخل العامل)
+    try { const img = new Image(); img.src = './assets/board-ref.png'; await img.decode(); const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; const x = c.getContext('2d'); x.drawImage(img, 0, 0); const d = x.getImageData(0, 0, c.width, c.height);
+      if (this.engine.name === 'cv') this.worker.postMessage({ type: 'ref', buf: d.data.buffer, w: c.width, h: c.height }, [d.data.buffer]); }
+    catch (e) { this.#fallback('ref'); }
   }
   #onMessage(m) {
     if (m.type === 'pose') { this.busy = false; const now = performance.now(); this.lastRoundTrip = now - this.lastSent; this.pose = m;
@@ -24,11 +41,12 @@ export class VisionClient extends EventTarget {
       this.stat.n++; this.stat.ms = this.stat.ms * 0.9 + (m.ms || 0) * 0.1; this.stat.rt = this.stat.rt * 0.9 + this.lastRoundTrip * 0.1;
       if (now - this.stat.t0 > 1000) { this.stat.fps = (this.stat.n * 1000) / (now - this.stat.t0); this.stat.n = 0; this.stat.t0 = now;
         // المعيار زمن المعالجة لا عدد الإطارات: الكاميرا نفسها تُبطئ إطاراتها في الإضاءة الضعيفة، وهذا ليس بطئًا في الجهاز
-        if (!this.src?.demo) { if (this.stat.ms > 34 && this.procMax > PROC_MIN) this.procMax = Math.max(PROC_MIN, this.procMax - 80); else if (this.stat.ms < 14 && this.procMax < PROC_MAX) this.procMax = Math.min(PROC_MAX, this.procMax + 40); } }
+        if (!this.src?.demo && m.mode === 'play') { if (this.stat.ms > 34 && this.procMax > PROC_MIN) this.procMax = Math.max(PROC_MIN, this.procMax - 80); else if (this.stat.ms < 14 && this.procMax < PROC_MAX) this.procMax = Math.min(PROC_MAX, this.procMax + 40); } }
       this.dispatchEvent(new CustomEvent('pose', { detail: m })); return; }
+    if (m.type === 'engine') { Object.assign(this.engine, m); delete this.engine.type; if (m.state === 'ready') clearTimeout(this.engineTimer); if (m.state === 'fail') { this.#fallback(m.err); return; } }
     this.dispatchEvent(new CustomEvent(m.type, { detail: m }));
   }
-  send(msg) { this.worker.postMessage(msg); }
+  send(msg) { if (msg.type === 'init' || msg.type === 'dims') this.sent = [{ type: 'init', w: msg.w, h: msg.h }]; else if (msg.type === 'sens') this.sent.push(msg); this.worker.postMessage(msg); }
 
   async openCamera(facing = 'environment') {
     if (!navigator.mediaDevices?.getUserMedia) throw new Error('nosupport');
@@ -51,6 +69,8 @@ export class VisionClient extends EventTarget {
     const r = Math.min(cv.width, cv.height) * 0.36;
     this.demo = { cv, T: { cx: cv.width / 2, cy: cv.height / 2, r, sy: 0.93, rot: (4 * Math.PI) / 180 }, T0: null, shake: false, balls: [], img: null, imgGeo: null, raw: null, rawBalls: [] };
     this.demo.T0 = { ...this.demo.T };
+    // المشهد التجريبي يعرض صورة القرص الحقيقي (المرجع القانوني) لا رسمًا تخطيطيًا
+    const d = this.demo, img = new Image(); img.onload = () => { if (this.demo === d && !d.img) { d.img = img; d.imgGeo = { cx: 256, cy: 256, r: 248 }; } }; img.src = './assets/board-ref.png';
     this.src = { el: cv, w: cv.width, h: cv.height, demo: true };
     this.send({ type: 'init', w: cv.width, h: cv.height });
     return this.src;
@@ -59,7 +79,13 @@ export class VisionClient extends EventTarget {
 
   drawDemo(t) {
     const d = this.demo, c = d.cv.getContext('2d'), w = d.cv.width, h = d.cv.height;
-    if (d.raw) { c.drawImage(d.raw, 0, 0, w, h); for (const b of d.rawBalls) ball(c, b.x, b.y, b.r); return; }
+    if (d.raw) { // صورة ثابتة (منظور) مع حركة يد اختيارية وعائق متحرك وإضاءة متغيرة (للاختبار الآلي)
+      const m = d.rawMotion || null; c.save(); c.fillStyle = '#9aa39d'; c.fillRect(0, 0, w, h);
+      if (m) { const k = m.amp || 0; c.translate(w / 2 + k * (Math.sin(t / 310) * 1.0 + Math.sin(t / 97) * 0.4), h / 2 + k * (Math.sin(t / 260 + 1) * 0.8 + Math.sin(t / 71) * 0.4)); c.rotate((m.rot || 0) * Math.sin(t / 530)); const z = 1 + (m.zoom || 0) * Math.sin(t / 700); c.scale(z, z); c.translate(-w / 2, -h / 2); }
+      c.drawImage(d.raw, 0, 0, w, h); for (const b of d.rawBalls) ball(c, b.x, b.y, b.r); c.restore();
+      if (d.occluder) { const o = d.occluder, x = o.x0 + (t - o.t0) * o.vx; c.fillStyle = o.col || '#3a2f28'; c.fillRect(x, o.y, o.w, o.h); c.fillStyle = '#d9b48f'; c.beginPath(); c.arc(x + o.w / 2, o.y - 10, o.w * 0.35, 0, 7); c.fill(); }
+      if (d.light != null) { const L = d.light; c.fillStyle = L < 1 ? `rgba(0,0,0,${1 - L})` : `rgba(255,255,255,${Math.min(0.6, L - 1)})`; c.fillRect(0, 0, w, h); }
+      return; }
     const T = d.T, T0 = d.T0, k = d.shake ? 1 : 0;
     T.cx = T0.cx + k * (22 * Math.sin(t / 170) + 9 * Math.sin(t / 61)); T.cy = T0.cy + k * (16 * Math.sin(t / 230 + 1) + 8 * Math.sin(t / 47));
     T.rot = T0.rot + k * 0.05 * Math.sin(t / 390); T.r = T0.r * (1 + k * 0.05 * Math.sin(t / 510));

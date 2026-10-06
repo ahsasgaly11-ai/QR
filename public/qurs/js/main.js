@@ -65,7 +65,7 @@ async function startCam() {
   catch (e) { $('camMsg').className = 'note err'; $('camMsg').textContent = e?.name === 'NotAllowedError' ? 'لم يُسمح باستخدام الكاميرا. اسمح بها من إعدادات المتصفح ثم أعد المحاولة.' : 'تعذّر فتح الكاميرا. افتح التطبيق من رابط https في Safari أو Chrome، أو جرّب اللعبة بدون كاميرا.'; }
 }
 function startDemo() { vision.openDemo(window.innerWidth >= window.innerHeight); attachMedia(); enterScan(); $('btnShake').hidden = false; }
-function enterScan() { show('scan'); app.manual = false; $('btnManual').setAttribute('aria-pressed', 'false'); $('btnArm').disabled = true; vision.send({ type: 'scan' }); setStatus('scanStatus', 'وجّه الكاميرا نحو القرص…', ''); ar.setGrid('strong'); }
+function enterScan() { show('scan'); app.manual = false; $('btnManual').setAttribute('aria-pressed', 'false'); $('btnArm').disabled = true; vision.send({ type: 'scan' }); setStatus('scanStatus', 'وجّه الكاميرا نحو القرص…', ''); ar.setGrid('strong'); engineUI(); }
 function setStatus(id, t, cls) { const e = $(id); if (e.textContent !== t) e.textContent = t; e.className = 'status ' + (cls || ''); }
 function goHome() { vision.stop(); if (mediaEl) { mediaEl.remove(); mediaEl = null; } show('home'); $('endSheet').hidden = true; homeUI(); }
 let armT = 0;
@@ -75,6 +75,12 @@ function beginPlay() { show('play'); $('playStatus').hidden = true; $('more').hi
 
 /* ---------- أحداث عامل الرؤية ---------- */
 vision.addEventListener('dims', () => resize());
+// محرك الرؤية: تحميل OpenCV أول مرة (يُخزَّن بعدها للعمل دون إنترنت)؛ وإن تعذّر يعمل المحرك الاحتياطي تلقائيًا
+function engineUI() { const e = vision.engine; $('btnRot').hidden = e.name === 'cv' && !app.manual;
+  if (app.mode !== 'scan') return;
+  if (e.name === 'cv' && e.state !== 'ready') setStatus('scanStatus', e.state === 'compiling' ? 'تجهيز محرك التعرّف…' : 'تحميل محرك التعرّف' + (e.pct > 0 ? ' ' + e.pct + '٪' : '') + '…', '');
+  else if (e.name === 'legacy' && e.fallbackReason && !engineUI.told) { engineUI.told = true; banner('يعمل محرك التعرّف الاحتياطي على هذا الجهاز', 2600); } }
+vision.addEventListener('engine', engineUI);
 window.addEventListener('orientationchange', () => setTimeout(resize, 250));
 vision.addEventListener('locked', () => { if (app.mode === 'scan') { SND.lock(); $('btnArm').disabled = false; } });
 vision.addEventListener('playing', () => { if (app.mode === 'arming') beginPlay(); });
@@ -85,10 +91,10 @@ vision.addEventListener('pose', (e) => { const p = e.detail; if (p.rings) { ring
   let pct = 0; if (p.pts && vision.src) pct = Math.hypot(p.pts[1][0] - p.pts[3][0], p.pts[1][1] - p.pts[3][1]) / Math.min(vision.src.w, vision.src.h);
   app.boardPct = pct; const hint = !vision.src || vision.src.demo ? '' : vision.brightness < 0.2 ? 'الإضاءة ضعيفة: أضئ الغرفة أو اقترب من النافذة' : p.ok && pct > 0 && pct < 0.3 ? 'القرص صغير في الصورة: قرّب الجهاز حتى يملأ نصف العرض' : p.ok && p.q === 1 ? 'ثبّت يدك أو أسند الجهاز' : '';
   if (app.mode === 'scan') { const h = $('scanHint'); h.hidden = !hint; if (hint && h.textContent !== hint) h.textContent = hint; }
-  if (app.mode === 'scan') { if (p.manual) return; if (p.ok) setStatus('scanStatus', p.locked ? 'تم التعرف على القرص — اضغط «ابدأ اللعب»' : 'جارٍ التعرف على القرص…', p.locked ? 'ok' : ''); else if (p.lost > 12) { $('btnArm').disabled = true; setStatus('scanStatus', 'وجّه الكاميرا نحو القرص…', ''); } }
+  if (app.mode === 'scan') { if (p.manual) return; if (p.engine === 'loading') { engineUI(); return; } if (p.ok) setStatus('scanStatus', p.locked ? 'تم التعرف على القرص — اضغط «ابدأ اللعب»' : 'جارٍ التعرف على القرص…', p.locked ? 'ok' : ''); else if (p.lost > 12) { $('btnArm').disabled = true; setStatus('scanStatus', 'وجّه الكاميرا نحو القرص…', ''); } }
   if (app.mode === 'play') { const q = $('trkq'); const txt = !p.ok ? 'التتبع: مفقود' : p.q >= 3 ? 'التتبع: ممتاز' : p.q === 2 ? 'التتبع: جيد' : 'التتبع: ضعيف'; if (q.textContent !== txt) { q.textContent = txt; q.className = 'chip q' + (p.ok ? p.q : 0); }
     if (!p.ok && p.lost > 25) { $('playStatus').hidden = false; setStatus('playStatus', 'القرص غير ظاهر للكاميرا…', 'warn'); } else if (hint) { $('playStatus').hidden = false; setStatus('playStatus', hint, 'warn'); } else $('playStatus').hidden = true;
-    if (diagOn) { const st = vision.stat; $('diag').textContent = `${vision.src.w}x${vision.src.h} > ${p.pw}x${p.ph} | ${st.fps.toFixed(0)} fps | ${st.ms.toFixed(0)} ms | rms ${(p.rms * 100).toFixed(1)}% | board ${(pct * 100).toFixed(0)}% | light ${(vision.brightness * 100).toFixed(0)}% | ${p.tm} st${Math.min(99, p.stable)} chg ${((p.busy || 0) * 100).toFixed(1)}%${p.err ? ' | ERR ' + p.err : ''}`; } }
+    if (diagOn) { const st = vision.stat; $('diag').textContent = `${vision.src.w}x${vision.src.h} > ${p.pw}x${p.ph} | ${st.fps.toFixed(0)} fps | ${st.ms.toFixed(0)} ms | rms ${(p.rms * 100).toFixed(1)}% | board ${(pct * 100).toFixed(0)}% | light ${(vision.brightness * 100).toFixed(0)}% | ${vision.engine.name} ${p.tm} pts${p.inl ?? p.score ?? 0} st${Math.min(99, p.stable)} chg ${((p.busy || 0) * 100).toFixed(1)}%${p.err ? ' | ERR ' + p.err : ''}`; } }
 });
 
 /* ---------- أحداث اللعبة ---------- */
@@ -195,7 +201,7 @@ $('btnPasteOk').onclick = () => { const names = $('pasteNames').value.split(/[\n
 $('className').oninput = () => { store.cfg.className = $('className').value; store.save(); };
 $('btnCam').onclick = startCam; $('btnDemo').onclick = startDemo; $('btnScanBack').onclick = goHome;
 $('btnFlip').onclick = () => { app.facing = app.facing === 'user' ? 'environment' : 'user'; startCam(); };
-$('btnManual').onclick = () => { app.manual = !app.manual; $('btnManual').setAttribute('aria-pressed', String(app.manual)); vision.send({ type: 'manual', on: app.manual });
+$('btnManual').onclick = () => { app.manual = !app.manual; $('btnManual').setAttribute('aria-pressed', String(app.manual)); vision.send({ type: 'manual', on: app.manual }); engineUI();
   if (app.manual) { $('btnArm').disabled = false; setStatus('scanStatus', 'اسحب النقاط البيضاء إلى حافة القرص. في الضبط اليدوي يجب أن يبقى الجهاز ثابتًا', 'warn'); } else { $('btnArm').disabled = true; } };
 $('btnRot').onclick = () => vision.send({ type: 'rotate' });
 $('btnArm').onclick = arm;
