@@ -14,13 +14,17 @@ import {
   FolderOpen,
   FileScan,
   ImagePlus,
+  Pencil,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
-import type { Subject } from '@/lib/types';
+import type { Subject, Activity, Unit } from '@/lib/types';
 import { saveStructure } from '@/lib/content';
 import { revalidateContent } from '@/lib/revalidate';
 import { isFirebaseConfigured } from '@/lib/firebase';
 import { IndexImporter } from './index-importer';
 import { UnitFromImage } from './unit-from-image';
+import { UnitEditor, ConfirmDeleteUnit } from './unit-editor';
 import type { ParsedUnit, DraftUnit } from '@/lib/index-parser';
 
 function uid(prefix: string) {
@@ -44,7 +48,17 @@ const PALETTE: { name: string; color: string; accent: string }[] = [
   { name: 'نحاسي', color: '#b4602a', accent: '#8a441c' },
 ];
 
-export function ContentManager({ initial }: { initial: Subject[] }) {
+/** مفتاح موضع النشاط في الشجرة — المعرّفات فريدة داخل أبويها فقط. */
+const posKey = (...ids: string[]) => ids.join('/');
+
+export function ContentManager({
+  initial,
+  activities = [],
+}: {
+  initial: Subject[];
+  /** كل الأنشطة — لعرض ما يرتبط بكل وحدة/درس والتنبيه قبل حذفه */
+  activities?: Activity[];
+}) {
   const [tree, setTree] = useState<Subject[]>(() =>
     JSON.parse(JSON.stringify(initial))
   );
@@ -59,6 +73,43 @@ export function ContentManager({ initial }: { initial: Subject[] }) {
   );
   const targetSubject = unitTarget && tree.find((x) => x.id === unitTarget.subjectId);
   const targetGrade = targetSubject?.grades.find((x) => x.id === unitTarget?.gradeId);
+
+  // عدّ الأنشطة لكل وحدة ولكل درس (مراجعات الوحدات تُحتسب على الوحدة)
+  const unitCounts = new Map<string, number>();
+  const lessonCounts = new Map<string, number>();
+  for (const a of activities) {
+    if (a.smartReinforcement) continue;
+    const uk = posKey(a.subjectId, a.gradeId, a.unitId);
+    unitCounts.set(uk, (unitCounts.get(uk) ?? 0) + 1);
+    if (!a.unitReview) {
+      const lk = posKey(uk, a.lessonId);
+      lessonCounts.set(lk, (lessonCounts.get(lk) ?? 0) + 1);
+    }
+  }
+
+  /** الوحدة المفتوحة للتعديل أو المنتظرة تأكيد الحذف */
+  type UnitRef = { subjectId: string; gradeId: string; unitId: string };
+  const [editing, setEditing] = useState<UnitRef | null>(null);
+  const [deleting, setDeleting] = useState<UnitRef | null>(null);
+  const findUnit = (r: UnitRef | null) => {
+    if (!r) return null;
+    const s = tree.find((x) => x.id === r.subjectId);
+    const g = s?.grades.find((x) => x.id === r.gradeId);
+    const u = g?.units.find((x) => x.id === r.unitId);
+    return s && g && u ? { s, g, u } : null;
+  };
+  const editingUnit = findUnit(editing);
+  const deletingUnit = findUnit(deleting);
+
+  function replaceUnit(r: UnitRef, fn: (units: Unit[], i: number) => void) {
+    update((t) => {
+      const units = t
+        .find((x) => x.id === r.subjectId)
+        ?.grades.find((x) => x.id === r.gradeId)?.units;
+      const i = units?.findIndex((x) => x.id === r.unitId) ?? -1;
+      if (units && i >= 0) fn(units, i);
+    });
+  }
 
   /** يضيف وحدة واحدة مبنيّة من صورة إلى نهاية وحدات المستوى المحدّد. */
   function addUnitFromImage(unit: DraftUnit) {
@@ -177,6 +228,31 @@ export function ContentManager({ initial }: { initial: Subject[] }) {
         />
       )}
 
+      {editing && editingUnit && (
+        <UnitEditor
+          unit={editingUnit.u}
+          context={`${editingUnit.s.title} ← ${editingUnit.g.title}`}
+          activityCount={(lessonId) =>
+            lessonCounts.get(posKey(editing.subjectId, editing.gradeId, editing.unitId, lessonId)) ?? 0
+          }
+          onSave={(u) => replaceUnit(editing, (units, i) => (units[i] = u))}
+          onDelete={() => {
+            setDeleting(editing);
+            setEditing(null);
+          }}
+          onClose={() => setEditing(null)}
+        />
+      )}
+
+      {deleting && deletingUnit && (
+        <ConfirmDeleteUnit
+          unit={deletingUnit.u}
+          activities={unitCounts.get(posKey(deleting.subjectId, deleting.gradeId, deleting.unitId)) ?? 0}
+          onConfirm={() => replaceUnit(deleting, (units, i) => units.splice(i, 1))}
+          onClose={() => setDeleting(null)}
+        />
+      )}
+
       {tree.map((s, si) => (
         <div key={s.id} className="card-premium rounded-2xl p-4">
           <div className="flex items-center gap-2">
@@ -270,15 +346,62 @@ export function ContentManager({ initial }: { initial: Subject[] }) {
                             )
                           }
                         />
+                        {(unitCounts.get(posKey(s.id, g.id, u.id)) ?? 0) > 0 && (
+                          <span
+                            className="hidden shrink-0 rounded-full bg-[color:var(--teal)]/15 px-2 py-0.5 text-[11px] font-black text-[color:var(--teal)] sm:inline"
+                            title="أنشطة ومراجعات مرتبطة بالوحدة"
+                          >
+                            {unitCounts.get(posKey(s.id, g.id, u.id))} نشاط
+                          </span>
+                        )}
+                        <button
+                          className={iconBtn + ' bg-[color:var(--surface-2)] text-muted-foreground disabled:opacity-30'}
+                          disabled={ui === 0}
+                          onClick={() =>
+                            update((t) => {
+                              const us = t[si].grades[gi].units;
+                              us.splice(ui - 1, 0, us.splice(ui, 1)[0]);
+                            })
+                          }
+                          title="تحريك الوحدة لأعلى"
+                          aria-label="تحريك الوحدة لأعلى"
+                        >
+                          <ArrowUp className="h-4 w-4" />
+                        </button>
+                        <button
+                          className={iconBtn + ' bg-[color:var(--surface-2)] text-muted-foreground disabled:opacity-30'}
+                          disabled={ui === g.units.length - 1}
+                          onClick={() =>
+                            update((t) => {
+                              const us = t[si].grades[gi].units;
+                              us.splice(ui + 1, 0, us.splice(ui, 1)[0]);
+                            })
+                          }
+                          title="تحريك الوحدة لأسفل"
+                          aria-label="تحريك الوحدة لأسفل"
+                        >
+                          <ArrowDown className="h-4 w-4" />
+                        </button>
+                        <button
+                          className={iconBtn + ' bg-[color:var(--gold)]/20 text-[color:var(--maroon)]'}
+                          onClick={() => setEditing({ subjectId: s.id, gradeId: g.id, unitId: u.id })}
+                          title="تعديل الوحدة"
+                          aria-label="تعديل الوحدة"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
                         <button
                           className={iconBtn + ' bg-[color:var(--coral)]/15 text-[color:var(--coral)]'}
-                          onClick={() =>
-                            update((t) => t[si].grades[gi].units.splice(ui, 1))
-                          }
+                          onClick={() => setDeleting({ subjectId: s.id, gradeId: g.id, unitId: u.id })}
+                          title="حذف الوحدة"
+                          aria-label="حذف الوحدة"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
+                      {u.summary && (
+                        <p className="mt-1 pr-6 text-xs text-muted-foreground">{u.summary}</p>
+                      )}
                       {/* lessons */}
                       <div className="mt-2 space-y-1.5 border-r-2 border-[color:var(--hairline)] pr-3">
                         {u.lessons.map((l, li) => (
