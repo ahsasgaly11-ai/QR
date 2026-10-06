@@ -94,3 +94,33 @@ export function countSelected(units: ParsedUnit[]) {
     .reduce((n, x) => n + x.lessons.filter((y) => y.include).length, 0);
   return { units: u, lessons: l };
 }
+
+/** وحدة واحدة مستخرجة من صورة/نص — لإضافة وحدة جديدة إلى مستوى قائم. */
+export interface DraftUnit {
+  title: string;
+  summary: string;
+  lessons: string[];
+}
+
+/**
+ * يحوّل نص وحدة واحدة إلى مسودّة وحدة: إن تعرّف المحلّل على سطر «الوحدة …»
+ * أخذه عنوانًا وجمع كل الدروس تحته (حتى لو امتدّت لأكثر من وحدة يُدمج
+ * الكل). وإلا اعتبر السطر الأول عنوانًا وكل سطر بعده درسًا.
+ */
+export function textToDraftUnit(text: string): DraftUnit | null {
+  const parsed = parseIndexText(text);
+  if (parsed.length > 0 && parsed.some((u) => u.lessons.length > 0)) {
+    return {
+      title: parsed[0].title === 'وحدة بلا عنوان' ? '' : parsed[0].title,
+      summary: '',
+      lessons: parsed.flatMap((u) => u.lessons.map((l) => l.title)),
+    };
+  }
+  const lines = text
+    .split(/\r?\n/)
+    .map(cleanLine)
+    .filter((l) => l.length >= 2);
+  if (lines.length === 0) return null;
+  const [title, ...lessons] = lines;
+  return { title, summary: '', lessons };
+}

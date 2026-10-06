@@ -13,13 +13,15 @@ import {
   GraduationCap,
   FolderOpen,
   FileScan,
+  ImagePlus,
 } from 'lucide-react';
 import type { Subject } from '@/lib/types';
 import { saveStructure } from '@/lib/content';
 import { revalidateContent } from '@/lib/revalidate';
 import { isFirebaseConfigured } from '@/lib/firebase';
 import { IndexImporter } from './index-importer';
-import type { ParsedUnit } from '@/lib/index-parser';
+import { UnitFromImage } from './unit-from-image';
+import type { ParsedUnit, DraftUnit } from '@/lib/index-parser';
 
 function uid(prefix: string) {
   return prefix + '-' + Math.random().toString(36).slice(2, 8);
@@ -51,6 +53,30 @@ export function ContentManager({ initial }: { initial: Subject[] }) {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
   const [importing, setImporting] = useState(false);
+  /** المستوى الذي تُضاف إليه وحدة من صورة (أو null عند الإغلاق) */
+  const [unitTarget, setUnitTarget] = useState<{ subjectId: string; gradeId: string } | null>(
+    null
+  );
+  const targetSubject = unitTarget && tree.find((x) => x.id === unitTarget.subjectId);
+  const targetGrade = targetSubject?.grades.find((x) => x.id === unitTarget?.gradeId);
+
+  /** يضيف وحدة واحدة مبنيّة من صورة إلى نهاية وحدات المستوى المحدّد. */
+  function addUnitFromImage(unit: DraftUnit) {
+    if (!unitTarget) return;
+    const { subjectId, gradeId } = unitTarget;
+    update((t) => {
+      const s = t.find((x) => x.id === subjectId);
+      const g = s?.grades.find((x) => x.id === gradeId);
+      if (!g) return;
+      g.units.push({
+        id: uid('u'),
+        title: unit.title,
+        summary: unit.summary,
+        color: s?.color ?? '#8a173e',
+        lessons: unit.lessons.map((title) => ({ id: uid('l'), title, activities: [] })),
+      });
+    });
+  }
 
   /** يدمج وحدات/دروس مستوردة من الفهرس في الشجرة الحالية (دون حفظ فوري). */
   function applyImport(units: ParsedUnit[], subjectId: string, gradeId: string) {
@@ -138,6 +164,16 @@ export function ContentManager({ initial }: { initial: Subject[] }) {
           subjects={tree}
           onImport={applyImport}
           onClose={() => setImporting(false)}
+        />
+      )}
+
+      {targetSubject && targetGrade && (
+        <UnitFromImage
+          subjectTitle={targetSubject.title}
+          gradeTitle={targetGrade.title}
+          existingUnitTitles={targetGrade.units.map((u) => u.title)}
+          onAdd={addUnitFromImage}
+          onClose={() => setUnitTarget(null)}
         />
       )}
 
@@ -289,22 +325,30 @@ export function ContentManager({ initial }: { initial: Subject[] }) {
                       </div>
                     </div>
                   ))}
-                  <button
-                    className="flex items-center gap-1 text-xs font-bold text-[color:var(--maroon)] hover:underline"
-                    onClick={() =>
-                      update((t) =>
-                        t[si].grades[gi].units.push({
-                          id: uid('u'),
-                          title: 'وحدة جديدة',
-                          summary: '',
-                          color: s.color,
-                          lessons: [],
-                        })
-                      )
-                    }
-                  >
-                    <Plus className="h-3.5 w-3.5" /> إضافة وحدة
-                  </button>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                    <button
+                      className="flex items-center gap-1 text-xs font-bold text-[color:var(--maroon)] hover:underline"
+                      onClick={() =>
+                        update((t) =>
+                          t[si].grades[gi].units.push({
+                            id: uid('u'),
+                            title: 'وحدة جديدة',
+                            summary: '',
+                            color: s.color,
+                            lessons: [],
+                          })
+                        )
+                      }
+                    >
+                      <Plus className="h-3.5 w-3.5" /> إضافة وحدة
+                    </button>
+                    <button
+                      className="flex items-center gap-1 rounded-full bg-[color:var(--gold)]/15 px-2.5 py-1 text-xs font-bold text-[color:var(--maroon)] transition hover:bg-[color:var(--gold)]/25"
+                      onClick={() => setUnitTarget({ subjectId: s.id, gradeId: g.id })}
+                    >
+                      <ImagePlus className="h-3.5 w-3.5" /> إضافة وحدة من صورة
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
