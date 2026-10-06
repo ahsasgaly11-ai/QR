@@ -40,6 +40,11 @@ export interface Activity {
    * الصفحة الرئيسية، ومرتبطة بالمادة والمستوى والوحدة دون درس محدّد.
    */
   unitReview?: boolean;
+  /**
+   * تنزيل المراجعة (لمراجعات الوحدات فقط): يتحكّم به المشرف لكل مراجعة على
+   * حدة، مستقلًّا عن إعدادات تبويب «التنزيل». غيابه يعني أن التنزيل موقوف.
+   */
+  downloadable?: boolean;
   type: ActivityType;
   /** Path under /public/games (e.g. "muscle.html") OR a full Storage URL. */
   file: string;

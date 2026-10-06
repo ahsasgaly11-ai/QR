@@ -38,7 +38,8 @@ const CACHE_KEY = 'qa-site-settings-v2';
 const LEGACY_CACHE_KEY = 'qa-site-settings-v1';
 const LOCAL_EVENT = 'qa-site-settings-change';
 
-type DownloadTarget = Pick<Activity, 'subjectId' | 'gradeId' | 'unitId'>;
+type DownloadTarget = Pick<Activity, 'subjectId' | 'gradeId' | 'unitId'> &
+  Partial<Pick<Activity, 'unitReview' | 'downloadable'>>;
 
 export function downloadUnitKey(target: DownloadTarget): string {
   return [target.subjectId, target.gradeId, target.unitId].join('::');
@@ -97,6 +98,8 @@ export function isDownloadAllowed(
   settings: SiteSettings,
   target?: DownloadTarget
 ): boolean {
+  // مراجعات الوحدات: مفتاح التنزيل خاصّ بكل مراجعة ويُضبط من تبويبها.
+  if (target?.unitReview) return target.downloadable === true;
   if (settings.downloadMode === 'all') return true;
   if (settings.downloadMode === 'none') return false;
   if (!target) return false;
@@ -213,7 +216,7 @@ export function useActivityDownloadEnabled(target: DownloadTarget): boolean {
 
   useEffect(
     () => subscribeSettings((s) => setEnabled(isDownloadAllowed(s, target))),
-    [target.subjectId, target.gradeId, target.unitId]
+    [target.subjectId, target.gradeId, target.unitId, target.unitReview, target.downloadable]
   );
 
   return enabled;

@@ -75,6 +75,7 @@ export function AdminUploader({
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [signLang, setSignLang] = useState('');
+  const [downloadable, setDownloadable] = useState(false);
   const [type, setType] = useState<ActivityType>(smartOnly || reviewOnly ? 'game' : 'experiment');
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
@@ -152,7 +153,7 @@ export function AdminUploader({
       description: description.trim(),
       ...(signLang.trim() ? { signLang: signLang.trim() } : {}),
       smartReinforcement: smartOnly,
-      ...(reviewOnly ? { unitReview: true } : {}),
+      ...(reviewOnly ? { unitReview: true, downloadable } : {}),
       type,
       file: file.name,
       subjectId: finalSubjectId,
@@ -572,6 +573,18 @@ export function AdminUploader({
           </p>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
             أحدث مراجعة مرفوعة يظهر لها أيضًا زرّ ذهبي في الواجهة الأولى للموقع.
+          </p>
+          <label className="mt-3 flex cursor-pointer items-center gap-2 text-sm font-bold text-foreground">
+            <input
+              type="checkbox"
+              className="h-4 w-4 accent-[color:var(--maroon)]"
+              checked={downloadable}
+              onChange={(e) => setDownloadable(e.target.checked)}
+            />
+            السماح للزوّار بتنزيل المراجعة
+          </label>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            يمكن إيقافه أو تفعيله لاحقًا من «إدارة المراجعات» أدناه.
           </p>
         </div>
       )}

@@ -125,26 +125,44 @@ export function ActivitiesManager({
     setError('');
     try {
       const patch: Partial<Activity> = { ...draft, title: draft.title!.trim() };
-      const current = rows.find((a) => a.id === id);
-      if (isFirebaseConfigured) {
-        await updateActivity(id, patch);
-        await revalidateContent({ subjectId: current?.subjectId, activityId: id });
-        if (patch.subjectId && patch.subjectId !== current?.subjectId)
-          await revalidateContent({ subjectId: patch.subjectId });
-      } else {
-        const { getLocalRecord, saveLocalActivity } = await import('@/lib/local-store');
-        const rec = await getLocalRecord(id);
-        if (!rec) throw new Error('لم يُعثر على النشاط في هذا المتصفّح.');
-        const ok = await saveLocalActivity({ ...rec.activity, ...patch }, rec.html);
-        if (!ok) throw new Error('تعذّر حفظ التعديل في متصفّحك.');
-      }
-      setRows((r) => r.map((a) => (a.id === id ? { ...a, ...patch } : a)));
+      await persist(id, patch);
       setEditing(null);
     } catch (err) {
       setError(errorText(err, 'تعذّر حفظ التعديل.'));
     } finally {
       setBusy(false);
     }
+  }
+
+  /** إيقاف تنزيل المراجعة أو تفعيله بضغطة واحدة. */
+  async function toggleDownload(a: Activity) {
+    setBusy(true);
+    setError('');
+    try {
+      await persist(a.id, { downloadable: !a.downloadable });
+    } catch (err) {
+      setError(errorText(err, 'تعذّر تغيير حالة التنزيل.'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /** يحفظ التعديل في Firestore (أو في المتصفّح بوضع العرض) ثم في القائمة. */
+  async function persist(id: string, patch: Partial<Activity>) {
+    const current = rows.find((a) => a.id === id);
+    if (isFirebaseConfigured) {
+      await updateActivity(id, patch);
+      await revalidateContent({ subjectId: current?.subjectId, activityId: id });
+      if (patch.subjectId && patch.subjectId !== current?.subjectId)
+        await revalidateContent({ subjectId: patch.subjectId });
+    } else {
+      const { getLocalRecord, saveLocalActivity } = await import('@/lib/local-store');
+      const rec = await getLocalRecord(id);
+      if (!rec) throw new Error('لم يُعثر على النشاط في هذا المتصفّح.');
+      const ok = await saveLocalActivity({ ...rec.activity, ...patch }, rec.html);
+      if (!ok) throw new Error('تعذّر حفظ التعديل في متصفّحك.');
+    }
+    setRows((r) => r.map((a) => (a.id === id ? { ...a, ...patch } : a)));
   }
 
   async function remove(id: string) {
@@ -416,6 +434,22 @@ export function ActivitiesManager({
                   </p>
                 </div>
                 <div className="flex shrink-0 gap-2">
+                  {a.unitReview && (
+                    <button
+                      onClick={() => toggleDownload(a)}
+                      disabled={!isUp || busy}
+                      aria-pressed={!!a.downloadable}
+                      className={`flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-bold transition hover:scale-105 disabled:opacity-30 ${
+                        a.downloadable
+                          ? 'bg-[color:var(--teal)]/15 text-[color:var(--teal)]'
+                          : 'bg-[color:var(--surface-2)] text-muted-foreground'
+                      }`}
+                      title={a.downloadable ? 'اضغط لإيقاف التنزيل' : 'اضغط لتفعيل التنزيل'}
+                    >
+                      <Download className="h-4 w-4" />
+                      {a.downloadable ? 'التنزيل مفعّل' : 'التنزيل موقوف'}
+                    </button>
+                  )}
                   <button
                     onClick={() => {
                       setError('');
