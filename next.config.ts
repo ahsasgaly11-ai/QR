@@ -33,6 +33,9 @@ const nextConfig: NextConfig = {
     return [
       { source: '/qurs', destination: '/qurs/index.html', permanent: false },
       { source: '/qurs/', destination: '/qurs/index.html', permanent: false },
+      // «مختبر العطسة» (ملف واحد ثابت داخل public/sneeze-lab)
+      { source: '/sneeze-lab', destination: '/sneeze-lab/index.html', permanent: false },
+      { source: '/sneeze-lab/', destination: '/sneeze-lab/index.html', permanent: false },
     ];
   },
   images: {
