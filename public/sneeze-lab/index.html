@@ -118,18 +118,35 @@ h1,h2{font-weight:800;text-wrap:balance;line-height:1.25}
   .lab{font-size:14px}
 }
 /* immersive (fullscreen experiment mode): small frame, tools uncovered */
+/* fullscreen: the stage fills the screen and the controls become one compact floating bar */
 #app.fs #top{display:none}
-#app.fs #mission{display:none}
-#app.fs .row>span{display:none}
-#app.fs .seg button{min-height:44px;font-size:13px}
-#app.fs .seg button i{font-size:18px}
-#app.fs #go{min-height:48px;font-size:21px;flex:1 1 auto!important}
-#app.fs #toolrow{flex-wrap:nowrap}
-#app.fs #banner{inset-inline-end:68px;font-size:16px}
-#app.fs .tool{flex:none}
-#app.fs #tLog{display:none}
-#app.fs #dock{gap:5px;padding:6px 8px}
-#app.fs .tool{width:44px;height:44px}
+#app.fs[data-step=lab] #main{display:block}
+#app.fs[data-step=lab] #stage{position:absolute;inset:0}
+#app.fs #dock{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100% - 20px);flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px 10px;padding:8px;
+  background:#120f1cc7;-webkit-backdrop-filter:blur(16px) saturate(1.3);backdrop-filter:blur(16px) saturate(1.3);border:1px solid #ffffff2b;border-radius:24px;box-shadow:0 10px 34px #000a;overflow:visible}
+#app.fs #mission,#app.fs .row>span,#app.fs #tLog{display:none}
+#app.fs .row{flex:none;width:auto;gap:6px;flex-wrap:nowrap}
+#app.fs .seg{flex:none;gap:2px;padding:3px;border-radius:16px;background:#ffffff14}
+#app.fs .seg button{flex:none;width:62px;min-height:50px;border:0;border-radius:13px;background:transparent;font-size:12.5px;color:var(--muted)}
+#app.fs #segDist button{width:74px;font-size:14px}
+#app.fs .seg button i{font-size:21px}
+#app.fs .seg button[aria-pressed=true]{background:var(--mint);color:#07231d;box-shadow:0 2px 8px #0006}
+#app.fs .seg button[aria-pressed=true] .done{color:#07231d}
+#app.fs #toolrow{order:3}
+#app.fs #go{flex:none!important;min-width:150px;min-height:50px;font-size:21px;border-radius:16px;box-shadow:0 4px 0 #6f8c1d}
+#app.fs .tool{flex:none;width:46px;height:46px;border-radius:50%;border:0;background:#ffffff14;font-size:20px}
+#app.fs .tool[aria-pressed=true]{background:#c4ee4a26;box-shadow:inset 0 0 0 2px #c4ee4a}
+#app.fs #nextRow{order:4}
+#app.fs #next{min-height:50px;font-size:16px;border-radius:16px;padding:0 14px;white-space:nowrap}
+#app.fs #banner{bottom:calc(var(--dockh,90px) + 12px);font-size:17px;max-width:min(92%,620px)}
+#app.fs #slowtag{bottom:auto;top:58px}
+#app.fs #arPlace{bottom:calc(var(--dockh,90px) + 16px)}
+#app.fs #arStatBox{bottom:calc(var(--dockh,90px) + 14px);inset-inline-end:auto;inset-inline-start:10px}
+#app.fs #arTools{top:44%}
+#app.fs #fsx{bottom:auto;top:10px;inset-inline-end:10px;border-radius:50%;background:#120f1cc7;border:1px solid #ffffff2b}
+#app.fs #hud{inset-inline:120px}
+@media (max-height:520px){#app.fs #dock{flex-wrap:nowrap;gap:6px;padding:6px;bottom:6px;border-radius:20px}#app.fs .seg button{width:48px;min-height:42px;font-size:11px}#app.fs .seg button i{font-size:17px}#app.fs #segDist button{width:58px;font-size:12.5px}#app.fs #go{min-width:104px;min-height:42px;font-size:17px}#app.fs .tool{width:38px;height:38px;font-size:17px}#app.fs #next{min-height:42px;font-size:13px;padding:0 8px}#app.fs #arTools{top:auto;bottom:calc(var(--dockh,70px) + 8px)}#app.fs #arStatBox{bottom:auto;top:8px;inset-inline-start:auto;inset-inline-end:60px}}
+@media (max-width:640px){#app.fs #arHint{top:100px;font-size:15px}#app.fs #arPlace{bottom:calc(var(--dockh,150px) + 58px)}#app.fs .seg button{width:54px;min-height:46px}#app.fs #segDist button{width:66px}#app.fs #go{min-width:120px}#app.fs .tool{width:42px;height:42px}#app.fs #hud{inset-inline:8px;top:58px}}
 
 /* content screens */
 .eyebrow{color:var(--germ);font-weight:800;font-size:18px;letter-spacing:.04em}
@@ -82716,6 +82733,10 @@ const qT=T?new T.Quaternion():null,q0=T?new T.Quaternion():null,Q1=T?new T.Quate
 const CX=.85;
 window.addEventListener('deviceorientation',e=>{if(e&&(e.beta!==null||e.alpha!==null)){AR.o=e;AR.gyro=true}});
 function scrAngle(){return ((window.screen&&screen.orientation&&typeof screen.orientation.angle==='number')?screen.orientation.angle:(window.orientation||0))*Math.PI/180}
+/* screen rotation is taken from gravity, not from the orientation API (which misreports on some iPads): of the rotations that fit the viewport shape, keep the one whose 'up' points up */
+function scrAuto(qB){const land=(stage.clientWidth||innerWidth)>(stage.clientHeight||innerHeight),c=land?[Math.PI/2,-Math.PI/2]:[0,Math.PI];let best=c[0],bv=-9;
+  for(let i=0;i<2;i++){tq.copy(qB).multiply(q0.setFromAxisAngle(ZEE,-c[i]));hB.set(0,1,0).applyQuaternion(tq);const v=hB.y+(AR.rot===c[i]?.2:0);if(v>bv){bv=v;best=c[i]}}
+  AR.rot=best;return best}
 function arFov(){const vid=$('#cam'),vw=vid.videoWidth||4,vh=vid.videoHeight||3,va=vw/vh,sa=(stage.clientWidth||4)/(stage.clientHeight||3),t=Math.tan(31.5*Math.PI/180);
   let tv; if(va>=1){const tvV=t/va;tv=sa>va?t/sa:tvV}else{const th=t*va;tv=sa>va?th/sa:t}
   camera.fov=2*Math.atan(tv)*180/Math.PI;camera.updateProjectionMatrix()}
@@ -82761,7 +82782,7 @@ function arStatus(){const el=$('#arStat');let t,c;
   else{t='مستشعر الحركة غير مفعّل';c='bad'}
   if(el.textContent!==t){el.textContent=t;el.className=c}$('#arMotion').hidden=AR.gyro||SL.tracking}
 function arTick(dt){
-  if(AR.gyro&&AR.o){const o=AR.o,k=Math.PI/180;eul.set((o.beta||0)*k,(o.alpha||0)*k,-(o.gamma||0)*k,'YXZ');qT.setFromEuler(eul).multiply(Q1).multiply(q0.setFromAxisAngle(ZEE,-scrAngle()));qref.copy(qT)}
+  if(AR.gyro&&AR.o){const o=AR.o,k=Math.PI/180;eul.set((o.beta||0)*k,(o.alpha||0)*k,-(o.gamma||0)*k,'YXZ');qT.setFromEuler(eul).multiply(Q1).multiply(q0.setFromAxisAngle(ZEE,-scrAuto(qT)));qref.copy(qT)}
   else qref.copy(camera.quaternion);
   if(!slamStep()&&AR.gyro)camera.quaternion.slerp(qref,1-Math.pow(.000001,dt));
   camera.updateMatrixWorld();
@@ -82811,7 +82832,8 @@ function arGestures(){
   $('#arRotR').addEventListener('click',()=>{SFX.click();AR.yaw-=Math.PI/8});
 }
 /* fullscreen experiment mode */
-function setFs(on){S.fs=on;app.classList.toggle('fs',on);$('#tFs').setAttribute('aria-pressed',String(on));$('#fsx').hidden=!on;
+function dockH(){setTimeout(()=>{app.style.setProperty('--dockh',(S.fs?$('#dock').offsetHeight+12:0)+'px')},30)}
+function setFs(on){S.fs=on;app.classList.toggle('fs',on);dockH();$('#tFs').setAttribute('aria-pressed',String(on));$('#fsx').hidden=!on;
   const el=document.documentElement;try{ if(on){const f=el.requestFullscreen||el.webkitRequestFullscreen;if(f){const p=f.call(el);if(p&&p.catch)p.catch(function(){})}}else{const d=document,x=d.exitFullscreen||d.webkitExitFullscreen;if(x&&(d.fullscreenElement||d.webkitFullscreenElement)){const p=x.call(d);if(p&&p.catch)p.catch(function(){})}} }catch(e){}
   setTimeout(resize,60);setTimeout(resize,400)}
 ['fullscreenchange','webkitfullscreenchange'].forEach(e=>document.addEventListener(e,()=>{if(S.fs&&!(document.fullscreenElement||document.webkitFullscreenElement)&&(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen)){S.fs=false;app.classList.remove('fs');$('#tFs').setAttribute('aria-pressed','false');$('#fsx').hidden=true}setTimeout(resize,80)}));
@@ -82856,7 +82878,7 @@ $('#tLog').addEventListener('click',()=>{SFX.click();renderLog();$('#sheet').hid
 $('#sheetClose').addEventListener('click',()=>{$('#sheet').hidden=true});
 $('#next').addEventListener('click',()=>go('conclude'));
 function has(c){return S.trials.some(t=>t.cover===c)}
-function mission(){const a=has('none'),b=has('tissue');$('#mission').innerHTML='المهمة: جرّب '+(a?'<b>✓ بلا غطاء</b>':'بلا غطاء')+' ثم '+(b?'<b>✓ بمنديل</b>':'بمنديل')+' وقارن';$('#nextRow').hidden=!(a&&b);$('#mission').hidden=a&&b;
+function mission(){dockH();const a=has('none'),b=has('tissue');$('#mission').innerHTML='المهمة: جرّب '+(a?'<b>✓ بلا غطاء</b>':'بلا غطاء')+' ثم '+(b?'<b>✓ بمنديل</b>':'بمنديل')+' وقارن';$('#nextRow').hidden=!(a&&b);$('#mission').hidden=a&&b;
   $$('#segCover button').forEach(x=>x.querySelector('span').className=has(x.dataset.cover)?'done':'')}
 function distTxt(d){return d===.5?'نصف متر':d===1?'متر':'متران'}
 function logTable(){if(!S.trials.length)return '<p class="lead">لا توجد تجارب بعد. اضغط «عطسة!».</p>';return '<table><thead><tr><th>#</th><th>طريقة العطس</th><th>بُعد الزميل</th><th>وصل إلى الزميل</th><th>أبعد قطرة</th></tr></thead><tbody>'+S.trials.map((t,i)=>'<tr><td>'+(i+1)+'</td><td>'+COVER[t.cover]+'</td><td>'+distTxt(t.dist)+'</td><td class="n">'+t.hit+'</td><td class="n">'+t.far.toFixed(1)+' م</td></tr>').join('')+'</tbody></table>'}
