@@ -9,6 +9,7 @@ import { AccessibilityPanel } from '@/components/accessibility-panel';
 import { VisitTracker } from '@/components/visit-tracker';
 import { VisionTicker } from '@/components/vision-ticker';
 import { Analytics } from '@/components/analytics';
+import { HeritageIconSprite } from '@/components/heritage-icons';
 import { SITE_URL, SITE_NAME, GOOGLE_SITE_VERIFICATION } from '@/lib/site';
 
 const DESC =
@@ -85,7 +86,8 @@ export default function RootLayout({
             // يُطبَّق قبل الرسم لمنع الوميض: الوضع الليلي + إعدادات إمكانية
             // الوصول (التباين، القراءة الميسّرة، حجم الخط، تقليل الحركة).
             // الافتراضي دائمًا: نهاري وبلا تعديلات، ولا نتبع إعداد النظام.
-            __html: `(function(){try{var r=document.documentElement,g=function(k,d){try{return localStorage.getItem(k)||d}catch(e){return d}};var t=g('qa-theme','light');r.setAttribute('data-theme',t);r.classList.toggle('dark',t==='dark');r.setAttribute('data-contrast',g('qa-a11y-contrast','normal'));r.setAttribute('data-reading',g('qa-a11y-reading','normal'));r.setAttribute('data-text',g('qa-a11y-text','base'));r.setAttribute('data-motion',g('qa-a11y-motion','auto'));r.setAttribute('data-signlang',g('qa-a11y-signlang','off'));try{var sr=new URLSearchParams(location.search).get('sign-review');if(sr==='1')localStorage.setItem('qa-sign-review','1');else if(sr==='0')localStorage.removeItem('qa-sign-review');}catch(e){}}catch(e){}})();`,
+            // ومشهد افتتاح الرئيسية يُعرض مرّة واحدة في الجلسة (data-hero-seen).
+            __html: `(function(){try{var r=document.documentElement,g=function(k,d){try{return localStorage.getItem(k)||d}catch(e){return d}};var t=g('qa-theme','light');r.setAttribute('data-theme',t);r.classList.toggle('dark',t==='dark');r.setAttribute('data-contrast',g('qa-a11y-contrast','normal'));r.setAttribute('data-reading',g('qa-a11y-reading','normal'));r.setAttribute('data-text',g('qa-a11y-text','base'));r.setAttribute('data-motion',g('qa-a11y-motion','auto'));r.setAttribute('data-signlang',g('qa-a11y-signlang','off'));try{if(sessionStorage.getItem('qa-hero-intro'))r.setAttribute('data-hero-seen','1')}catch(e){}try{var sr=new URLSearchParams(location.search).get('sign-review');if(sr==='1')localStorage.setItem('qa-sign-review','1');else if(sr==='0')localStorage.removeItem('qa-sign-review');}catch(e){}}catch(e){}})();`,
           }}
         />
       </head>
@@ -96,6 +98,7 @@ export default function RootLayout({
         >
           تخطَّ إلى المحتوى
         </a>
+        <HeritageIconSprite />
         <VisitTracker />
         <SiteHeader />
         <main id="main" className="relative">

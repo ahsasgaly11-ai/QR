@@ -1,23 +1,17 @@
 import Link from 'next/link';
-import {
-  ArrowLeft,
-  FlaskConical,
-  Atom,
-  HelpCircle,
-  Gamepad2,
-  Sparkles,
-  MonitorPlay,
-  DownloadCloud,
-  Layers,
-} from 'lucide-react';
+import { ArrowLeft, Gamepad2 } from 'lucide-react';
 import { getSubjects, getAllActivities } from '@/lib/content';
-import { Book3D } from '@/components/book-3d';
 import { Reveal } from '@/components/reveal';
 import { SiteStatsStrip } from '@/components/site-stats-strip';
 import { ActivityCard } from '@/components/activity-card';
-import { Icon3D } from '@/components/icon-3d';
 import { DownloadsSwitch } from '@/components/downloads-switch';
 import { UnitReviewsSection } from '@/components/unit-reviews-section';
+import { DohaWindow } from '@/components/home/doha-window';
+import { HeritageDoor } from '@/components/home/heritage-door';
+import { emblemFor } from '@/components/home/door-emblem';
+import { SectionHead } from '@/components/home/section-head';
+import { HeritageIcon } from '@/components/heritage-icons';
+import type { HeritageIconKind } from '@/components/heritage-icons';
 
 // المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
 // وإلا لما ظهرت الأنشطة المرفوعة بعد البناء إلا بنشر جديد.
@@ -26,6 +20,16 @@ export const revalidate = 60;
 // الرابط المعياري لكل صفحة يُضبط فيها وحدها؛ لو وُضع في layout لورثته كل
 // الصفحات فعدّتها Google نسخًا من الرئيسية ولم تفهرسها.
 export const metadata = { alternates: { canonical: '/' } };
+
+// ألوان الأبواب القطرية القديمة: خشب مطليّ بالأزرق والأخضر والعنّابي أو ساج طبيعي
+const DOOR_PAINT = ['#8a1538', '#2b6b62', '#2d5f7c', '#3f6b3a', '#5b3a22'];
+
+const TYPES: { icon: HeritageIconKind; label: string; desc: string }[] = [
+  { icon: 'flask', label: 'تجارب عملية', desc: 'يجرّب الطالب بيده ويرى النتيجة كما في المختبر.' },
+  { icon: 'globe', label: 'محاكاة تفاعلية', desc: 'ظواهر يصعب رؤيتها في الصف، يغيّر الطالب متغيّراتها ويراقب.' },
+  { icon: 'question', label: 'أسئلة وتقويم', desc: 'أسئلة قصيرة تُظهر للطالب ما فهمه وما يحتاج مراجعته.' },
+  { icon: 'oyster', label: 'ألعاب تعليمية', desc: 'تحدّيات ومراحل تعزّز ما تعلّمه الطالب في الدرس.' },
+];
 
 export default async function HomePage() {
   const subjects = await getSubjects();
@@ -40,308 +44,172 @@ export default async function HomePage() {
     .filter((a) => a.unitReview)
     .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
   const latestReview = reviews[0];
+  const smartGames = activities.filter((a) => a.smartReinforcement).length;
 
   return (
     <>
-      {/* ===================== HERO ===================== */}
-      <section className="relative overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 girih-backdrop" />
-        {/* floating orbs */}
-        <div className="pointer-events-none absolute right-[8%] top-24 h-40 w-40 rounded-full bg-[color:var(--gold)]/20 blur-3xl float-slow" />
-        <div className="pointer-events-none absolute left-[6%] top-64 h-52 w-52 rounded-full bg-[color:var(--gold)]/20 blur-3xl float-mid" />
-        <div className="pointer-events-none absolute bottom-10 right-1/3 h-44 w-44 rounded-full bg-[color:var(--maroon)]/15 blur-3xl float-slow" />
-
-        <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-6 py-16 lg:grid-cols-2 lg:py-24">
-          <div className="order-2 text-center lg:order-1 lg:text-right">
-            <div className="rise-in inline-flex items-center gap-2 rounded-full border border-[color:var(--gold)]/40 bg-[color:var(--surface)]/75 px-4 py-1.5 text-xs font-bold text-[color:var(--maroon)] shadow-sm">
-              <Sparkles className="h-4 w-4 text-[color:var(--gold)]" />
+      {/* ===================== نافذة الدوحة ===================== */}
+      <section className="home-hero" data-hero>
+        <div className="mx-auto grid max-w-7xl items-center gap-8 px-5 pb-10 pt-8 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,540px)] lg:gap-14 lg:pb-14 lg:pt-14">
+          <div className="hero-rise order-2 lg:order-1">
+            <p className="kicker" style={{ '--i': 0 } as React.CSSProperties}>
               منصة تعليمية تفاعلية • دولة قطر
-            </div>
-
-            <h1
-              className="rise-in mt-5 font-calli text-4xl font-bold sm:text-5xl lg:text-6xl"
-              style={{ animationDelay: '80ms' }}
-            >
-              <span className="text-gradient-maroon">تعلّم مناهجك</span>
-              <br />
-              <span className="text-foreground">باللمس والتجربة</span>
-              <span className="text-gradient-gold"> والاكتشاف</span>
-            </h1>
-
-            <p
-              className="rise-in mx-auto mt-5 max-w-xl text-base leading-8 text-muted-foreground lg:mx-0 lg:text-lg"
-              style={{ animationDelay: '160ms' }}
-            >
-              تجارب عملية ومحاكاة ثلاثية الأبعاد وأسئلة تفاعلية وألعاب
-              تعليمية عبر مواد المناهج القطرية — جرّبها مباشرة من المتصفّح
-              <DownloadsSwitch on=" أو حمّلها للعمل دون اتصال" off="" />. صُمّمت
-              بروح المناهج القطرية.
             </p>
-
-            <div
-              className="rise-in mt-8 flex flex-wrap items-center justify-center gap-3 lg:justify-start"
-              style={{ animationDelay: '240ms' }}
+            <h1
+              className="mt-4 font-calli text-[2.4rem] leading-[1.45] text-foreground sm:text-5xl lg:text-[3.6rem]"
+              style={{ '--i': 1 } as React.CSSProperties}
             >
-              <Link
-                href="/browse"
-                className="group flex items-center gap-2 rounded-2xl bg-[color:var(--maroon)] px-7 py-3.5 text-base font-black text-white shadow-xl shadow-[color:var(--maroon)]/30 transition-all hover:-translate-y-1 hover:bg-[color:var(--maroon-700)]"
-              >
-                ابدأ الاستكشاف
-                <ArrowLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" />
-              </Link>
-              <Link
-                href="/dashboard"
-                className="flex items-center gap-2 rounded-2xl border-2 border-[color:var(--gold)] bg-[color:var(--surface)]/70 px-7 py-3.5 text-base font-black text-[color:var(--maroon)] transition-all hover:-translate-y-1 hover:bg-[color:var(--gold)]/15"
-              >
-                لوحة الإحصاءات
-              </Link>
-              {latestReview && (
-                <Link
-                  href={`/play/${latestReview.id}`}
-                  className="flex items-center gap-2 rounded-2xl bg-[color:var(--gold)] px-7 py-3.5 text-base font-black text-[#1a1600] shadow-xl shadow-[color:var(--gold)]/30 transition-all hover:-translate-y-1"
-                >
-                  <Gamepad2 className="h-5 w-5" />
+              نتعلّم <span className="text-[color:var(--maroon)]">بأيدينا</span>
+              <br />
+              ونكتشف <span className="text-[color:var(--maroon)]">بعقولنا</span>
+            </h1>
+            <p
+              className="mt-5 max-w-[34rem] text-[1.05rem] leading-8 text-[color:var(--ink-2)]"
+              style={{ '--i': 2 } as React.CSSProperties}
+            >
+              تجارب عملية ومحاكاة وأسئلة وألعاب تعليمية لمناهج دولة قطر، مرتّبة
+              حسب المادة والوحدة والدرس — جرّبها مباشرة من المتصفّح
+              <DownloadsSwitch on=" أو حمّلها للعمل دون اتصال" off=" في الصف أو البيت" />.
+            </p>
+            <div
+              className="mt-8 flex flex-wrap items-center gap-3"
+              style={{ '--i': 3 } as React.CSSProperties}
+            >
+              <a href="#doors" className="btn-primary px-7 text-[1.05rem]">
+                ادخل إلى المواد
+                <ArrowLeft className="h-5 w-5" />
+              </a>
+              {latestReview ? (
+                <Link href={`/play/${latestReview.id}`} className="btn-ghost px-6">
+                  <Gamepad2 className="h-5 w-5 text-[color:var(--maroon)]" />
                   {latestReview.title}
+                </Link>
+              ) : (
+                <Link href="/dashboard" className="btn-ghost px-6">
+                  لوحة الإحصاءات
                 </Link>
               )}
             </div>
-          </div>
-
-          {/* 3D book */}
-          <div className="order-1 flex max-w-full justify-center overflow-hidden lg:order-2">
-            <div className="fade-in relative max-w-full">
-              <div className="pointer-events-none absolute -inset-2 rounded-full bg-gradient-to-tr from-[color:var(--maroon)]/15 to-[color:var(--gold)]/15 blur-2xl sm:-inset-8" />
-              <div className="relative">
-                <Book3D
-                  subjects={subjects.map((s) => ({
-                    id: s.id,
-                    title: s.title,
-                    emoji: s.emoji,
-                    color: s.color,
-                  }))}
-                />
-              </div>
+            <div className="mt-10" style={{ '--i': 4 } as React.CSSProperties}>
+              <SiteStatsStrip activities={total} />
             </div>
           </div>
-        </div>
 
-        {/* stats strip */}
-        <div className="relative mx-auto -mt-4 max-w-6xl px-6 pb-8">
-          <SiteStatsStrip activities={total} />
+          <div className="order-1 mx-auto w-full max-w-[440px] lg:order-2 lg:max-w-none">
+            <DohaWindow />
+          </div>
         </div>
       </section>
 
-      {/* ===================== UNIT REVIEWS ===================== */}
+      <div className="sadu-band" aria-hidden />
+
+      {/* ===================== مراجعات الوحدات ===================== */}
       <UnitReviewsSection reviews={reviews} subjects={subjects} />
 
-      {/* ===================== HOW IT WORKS ===================== */}
-      <section className="mx-auto max-w-7xl px-6 py-16">
-        <Reveal className="text-center">
-          <p className="diamond-divider mx-auto max-w-xs text-sm font-black">
-            كيف تعمل المنصّة؟
-          </p>
-          <h2 className="mt-3 font-calli text-3xl font-bold text-[color:var(--maroon)] sm:text-4xl">
-            ثلاث خطوات نحو تعلّم ممتع
-          </h2>
-        </Reveal>
+      {/* ===================== أبواب المواد ===================== */}
+      <section id="doors" className="door-wall scroll-mt-24">
+        <div className="relative mx-auto max-w-7xl px-5 py-14 sm:px-6 lg:py-20">
+          <SectionHead
+            kicker="المواد الدراسية"
+            title="افتح باب المادة"
+            lead="كل مادة باب. ادخل لتصل إلى وحداتها ودروسها وأنشطتها."
+            action={{ href: '/browse', label: 'كل المناهج' }}
+          />
+          <div className="door-row">
+            {/* المواد الحيّة من قاعدة البيانات، لا القائمة المضمّنة —
+                وإلا لما ظهرت أي مادة يضيفها المشرف من لوحة الإدارة. */}
+            {subjects.map((s, i) => {
+              const count = activities.filter((a) => a.subjectId === s.id && !a.smartReinforcement).length;
+              const available = s.grades.length > 0;
+              return (
+                <HeritageDoor
+                  key={s.id}
+                  href={`/subject/${s.id}`}
+                  title={s.title}
+                  meta={
+                    available
+                      ? [s.grades.map((g) => g.title).join(' • '), count > 0 && `${count} نشاطًا`]
+                          .filter(Boolean)
+                          .join(' • ')
+                      : 'قريبًا'
+                  }
+                  color={DOOR_PAINT[i % DOOR_PAINT.length]}
+                  emblem={emblemFor(s.id)}
+                  locked={!available}
+                />
+              );
+            })}
+            <HeritageDoor
+              href="/smart-games"
+              title="ألعاب التعزيز الذكية"
+              meta={smartGames > 0 ? `${smartGames} لعبة` : 'تعلّم • العب • عزّز'}
+              color="#2d5f7c"
+              emblem="games"
+            />
+          </div>
+        </div>
+      </section>
 
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
-          {[
-            {
-              icon: Layers,
-              title: 'تصفّح حسب المنهج',
-              desc: 'اختر المادة ثم المستوى فالوحدة فالدرس لتصل إلى الأنشطة المناسبة.',
-              color: 'var(--maroon)',
-            },
-            {
-              icon: MonitorPlay,
-              title: 'جرّب مباشرة',
-              desc: 'شغّل التجربة أو المحاكاة أو اللعبة داخل المتصفّح دون أي تثبيت.',
-              color: 'var(--maroon-700)',
-            },
-            {
-              icon: DownloadCloud,
-              title: 'حمّل واستخدم دون اتصال',
-              desc: 'نزّل النشاط كملف HTML واحد يعمل على أي جهاز في الصف أو المنزل.',
-              color: 'var(--gold)',
-              // عند إيقاف المشرف للتنزيل تُستخدم الأنشطة داخل الموقع فقط
-              whenDownloadsOff: {
-                icon: Sparkles,
-                title: 'تعلّم داخل المنصّة',
-                desc: 'استخدم الأنشطة مباشرة من الموقع في الصف أو المنزل، على أي جهاز متصل بالإنترنت.',
-              },
-            },
-          ].map((step, i) => (
-            <Reveal key={step.title} delay={i * 120}>
-              <div className="card-premium relative h-full overflow-hidden rounded-3xl border border-[color:var(--gold)]/20 bg-[color:var(--surface)] p-7 shadow-lg">
-                <span
-                  className="absolute left-5 top-5 font-calli text-6xl font-bold opacity-10"
-                  aria-hidden
-                >
-                  {i + 1}
+      {/* ===================== كيف تعمل المنصّة ===================== */}
+      <section className="mx-auto max-w-7xl px-5 py-16 sm:px-6 lg:py-20">
+        <SectionHead kicker="كيف تعمل المنصّة؟" title="من الكتاب إلى التجربة في ثلاث خطوات" />
+        <ol className="steps">
+          <li>
+            <span className="steps-n">١</span>
+            <h3>اختر الدرس</h3>
+            <p>المادة، ثم المستوى، ثم الوحدة، ثم الدرس — بترتيب الكتاب المدرسي نفسه.</p>
+          </li>
+          <li>
+            <span className="steps-n">٢</span>
+            <h3>جرّب مباشرة</h3>
+            <p>شغّل التجربة أو المحاكاة أو اللعبة داخل المتصفّح دون أي تثبيت، وبملء الشاشة على السبورة.</p>
+          </li>
+          <li>
+            <span className="steps-n">٣</span>
+            <DownloadsSwitch
+              on={
+                <>
+                  <h3>خذها معك</h3>
+                  <p>نزّل النشاط ملفًا واحدًا يعمل على أي جهاز في الصف أو البيت دون اتصال.</p>
+                </>
+              }
+              off={
+                <>
+                  <h3>تعلّم في أي مكان</h3>
+                  <p>استخدم الأنشطة من الموقع في الصف أو البيت، على أي جهاز متصل بالإنترنت.</p>
+                </>
+              }
+            />
+          </li>
+        </ol>
+      </section>
+
+      {/* ===================== أنواع الأنشطة ===================== */}
+      <section className="types-band">
+        <div className="mx-auto max-w-7xl px-5 py-16 sm:px-6 lg:py-20">
+          <SectionHead kicker="أنواع الأنشطة" title="أربع طرق لتعلّم الدرس نفسه" />
+          <ul className="types-grid">
+            {TYPES.map((t, i) => (
+              <li key={t.label} className="type-tile">
+                <span className="type-icon" style={{ '--d': `${-i * 1.1}s` } as React.CSSProperties}>
+                  <HeritageIcon kind={t.icon} />
                 </span>
-                {'whenDownloadsOff' in step && step.whenDownloadsOff ? (
-                  <DownloadsSwitch
-                    on={<StepBody {...step} />}
-                    off={<StepBody {...step.whenDownloadsOff} color={step.color} />}
-                  />
-                ) : (
-                  <StepBody {...step} />
-                )}
-              </div>
-            </Reveal>
-          ))}
-        </div>
-      </section>
-
-      {/* ===================== ACTIVITY TYPES ===================== */}
-      <section className="relative overflow-hidden py-16">
-        <div className="mx-auto max-w-7xl px-6">
-          <Reveal className="mb-10 text-center">
-            <h2 className="font-calli text-3xl font-bold text-[color:var(--maroon)] sm:text-4xl">
-              أربعة أنواع من الأنشطة التفاعلية
-            </h2>
-          </Reveal>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              { icon: FlaskConical, label: 'تجارب عملية', color: 'var(--maroon-700)' },
-              { icon: Atom, label: 'محاكاة تفاعلية', color: 'var(--maroon)' },
-              { icon: HelpCircle, label: 'أسئلة وتقويم', color: 'var(--gold)' },
-              { icon: Gamepad2, label: 'ألعاب تعليمية', color: 'var(--maroon-300)' },
-            ].map((t, i) => (
-              <Reveal key={t.label} delay={i * 90}>
-                <div
-                  className="group relative flex h-40 flex-col items-center justify-center gap-3 overflow-hidden rounded-3xl text-white shadow-xl transition-transform hover:-translate-y-2"
-                  style={{ background: t.color }}
-                >
-                  <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10 transition-transform group-hover:scale-150" />
-                  <Icon3D
-                    icon={t.icon}
-                    color="rgba(255,255,255,0.22)"
-                    size="xl"
-                    className="backdrop-blur-sm"
-                  />
-                  <span className="font-display text-lg font-black">{t.label}</span>
-                </div>
-              </Reveal>
+                <h3>{t.label}</h3>
+                <p>{t.desc}</p>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       </section>
 
-      {/* ===================== SUBJECTS ===================== */}
-      <section className="mx-auto max-w-7xl px-6 py-16">
-        <Reveal className="mb-10 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="text-sm font-black text-[color:var(--gold)]">المواد الدراسية</p>
-            <h2 className="mt-1 font-calli text-3xl font-bold text-[color:var(--maroon)] sm:text-4xl">
-              اختر مادّتك
-            </h2>
-          </div>
-          <Link
-            href="/browse"
-            className="flex items-center gap-1 text-sm font-black text-[color:var(--maroon)] hover:underline"
-          >
-            كل المواد <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Reveal>
-
-        <div className="grid gap-6 md:grid-cols-3">
-          {/* المواد الحيّة من قاعدة البيانات، لا القائمة المضمّنة —
-              وإلا لما ظهرت أي مادة يضيفها المشرف من لوحة الإدارة. */}
-          {subjects.map((s, i) => {
-            const available = s.grades.length > 0;
-            const card = (
-              <div
-                className="card-premium relative flex h-56 flex-col justify-between overflow-hidden rounded-3xl p-6 text-white shadow-xl"
-                style={{
-                  background: `linear-gradient(135deg, ${s.color}, ${s.accent})`,
-                }}
-              >
-                <div className="absolute -left-8 -top-8 h-32 w-32 rounded-full bg-white/10" />
-                <div className="absolute bottom-2 left-4 text-7xl opacity-25">
-                  {s.emoji}
-                </div>
-                <div className="relative">
-                  <span className="text-4xl">{s.emoji}</span>
-                  <h3 className="mt-3 font-display text-2xl font-black">{s.title}</h3>
-                  <p className="text-sm text-white/80">{s.titleEn}</p>
-                </div>
-                <div className="relative flex items-center justify-between">
-                  <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold backdrop-blur">
-                    {available ? s.tagline : 'قريبًا'}
-                  </span>
-                  {available && <ArrowLeft className="h-6 w-6" />}
-                </div>
-              </div>
-            );
-            return (
-              <Reveal key={s.id} delay={i * 100}>
-                {available ? (
-                  <Link href={`/subject/${s.id}`}>{card}</Link>
-                ) : (
-                  <div className="cursor-not-allowed opacity-70">{card}</div>
-                )}
-              </Reveal>
-            );
-          })}
-
-        </div>
-      </section>
-
-      {/* ===================== SMART REINFORCEMENT ENTRY ===================== */}
-      <section className="mx-auto max-w-7xl px-6 py-8">
-        <Reveal className="mb-8">
-          <p className="text-sm font-black text-[color:var(--gold)]">قسم مستقل</p>
-          <h2 className="mt-1 font-calli text-3xl font-bold text-[color:var(--maroon)] sm:text-4xl">
-            ألعاب التعزيز الذكية
-          </h2>
-          <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
-            ادخل إلى مكتبة مستقلة من الألعاب التفاعلية المخصّصة لتعزيز التعلّم.
-          </p>
-        </Reveal>
-
-        <div className="grid gap-6 md:grid-cols-3">
-          <Reveal>
-            <Link href="/smart-games" aria-label="الدخول إلى ألعاب التعزيز الذكية">
-              <div
-                className="card-premium relative flex h-56 flex-col justify-between overflow-hidden rounded-3xl p-6 text-white shadow-xl"
-                style={{
-                  background: 'linear-gradient(135deg, var(--maroon), #6a4c93)',
-                }}
-              >
-                <div className="absolute -left-8 -top-8 h-32 w-32 rounded-full bg-white/10" />
-                <div className="absolute bottom-2 left-4 text-7xl opacity-25" aria-hidden>
-                  🎮
-                </div>
-                <div className="relative">
-                  <span className="text-4xl" aria-hidden>🎮</span>
-                  <h3 className="mt-3 font-display text-2xl font-black">
-                    ألعاب التعزيز الذكية
-                  </h3>
-                  <p className="text-sm text-white/80">Smart Reinforcement Games</p>
-                </div>
-                <div className="relative flex items-center justify-between">
-                  <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold backdrop-blur">
-                    تعلّم • العب • عزّز
-                  </span>
-                  <ArrowLeft className="h-6 w-6" />
-                </div>
-              </div>
-            </Link>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* ===================== FEATURED (only when content exists) ========= */}
+      {/* ===================== أنشطة مميّزة (عند وجود محتوى) ========= */}
       {featured.length > 0 && (
-        <section className="mx-auto max-w-7xl px-6 py-16">
-          <Reveal className="mb-10 text-center">
-            <p className="text-sm font-black text-[color:var(--gold)]">الأكثر تفاعلاً</p>
-            <h2 className="mt-1 font-calli text-3xl font-bold text-[color:var(--maroon)] sm:text-4xl">
-              أنشطة مميّزة
-            </h2>
-          </Reveal>
+        <section className="mx-auto max-w-7xl px-5 py-16 sm:px-6">
+          <SectionHead
+            kicker="الأكثر تفاعلًا"
+            title="أنشطة مميّزة"
+            action={{ href: '/search', label: 'كل الأنشطة' }}
+          />
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {featured.map((a, i) => (
               <Reveal key={a.id} delay={i * 80}>
@@ -352,49 +220,27 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* ===================== CTA ===================== */}
-      <section className="mx-auto max-w-7xl px-6 pb-8">
-        <Reveal>
-          <div className="relative overflow-hidden rounded-[2rem] bg-[color:var(--maroon)] p-10 text-center text-white shadow-2xl md:p-16">
-            <div className="pointer-events-none absolute inset-0 girih-light" />
-            <div className="pointer-events-none absolute -right-10 -top-10 h-48 w-48 rounded-full bg-[color:var(--gold)]/20 blur-2xl spin-slower" />
-            <h2 className="relative font-calli text-3xl font-bold sm:text-4xl">
-              تعلّم بطريقة أكثر تفاعلاً
-            </h2>
-            <p className="relative mx-auto mt-3 max-w-xl text-white/85">
-              استكشف المواد الدراسية والأنشطة والألعاب التفاعلية واختر ما يناسب تعلّمك.
-            </p>
-            <Link
-              href="/browse"
-              className="relative mt-7 inline-flex items-center gap-2 rounded-2xl bg-[color:var(--gold)] px-8 py-3.5 font-black text-[color:var(--maroon-700)] shadow-lg transition-transform hover:-translate-y-1"
-            >
-              استكشف المحتوى
+      {/* ===================== الخاتمة ===================== */}
+      <section className="mx-auto max-w-7xl px-5 pb-6 sm:px-6">
+        <div className="closing-band">
+          <div className="sadu-band" aria-hidden />
+          <div className="closing-body">
+            <HeritageIcon kind="pearl" className="closing-pearl" />
+            <div className="min-w-0 flex-1">
+              <h2 className="font-calli text-2xl text-white sm:text-3xl">
+                كل درس فيه لؤلؤة تنتظر من يكتشفها
+              </h2>
+              <p className="mt-2 max-w-xl text-white/80">
+                تصفّح المناهج واختر الدرس الذي تدرسه هذا الأسبوع، وابدأ بنشاطه.
+              </p>
+            </div>
+            <Link href="/browse" className="closing-cta">
+              تصفّح المناهج
+              <ArrowLeft className="h-5 w-5" />
             </Link>
           </div>
-        </Reveal>
+        </div>
       </section>
-    </>
-  );
-}
-
-function StepBody({
-  icon,
-  title,
-  desc,
-  color,
-}: {
-  icon: typeof Layers;
-  title: string;
-  desc: string;
-  color: string;
-}) {
-  return (
-    <>
-      <Icon3D icon={icon} color={color} size="lg" />
-      <h3 className="mt-5 font-display text-xl font-black text-[color:var(--maroon)]">
-        {title}
-      </h3>
-      <p className="mt-2 text-sm leading-7 text-muted-foreground">{desc}</p>
     </>
   );
 }

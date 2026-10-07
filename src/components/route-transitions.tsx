@@ -41,6 +41,8 @@ function internalLink(e: MouseEvent): HTMLAnchorElement | null {
   if (!a) return null;
   if (a.target && a.target !== '_self') return null;
   if (a.hasAttribute('download')) return null;
+  // روابط لها انتقالها الخاص (أبواب المواد في الرئيسية)
+  if (a.hasAttribute('data-no-vt')) return null;
 
   const url = new URL(a.href, location.href);
   if (url.origin !== location.origin) return null;
