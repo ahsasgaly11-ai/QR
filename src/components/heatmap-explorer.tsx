@@ -871,7 +871,7 @@ export function HeatmapExplorer({
         ctx.fill();
         if (g.ids.length > 1) {
           ctx.fillStyle = active && !dark ? '#fff' : dark ? '#1e1215' : '#fff';
-          ctx.font = '800 10px Tajawal, sans-serif';
+          ctx.font = '800 10px "IBM Plex Sans Arabic", sans-serif';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(String(g.ids.length), x, y + 0.5);
@@ -913,7 +913,7 @@ export function HeatmapExplorer({
         clusterHitsRef.current.push({ x, y, r: 13, ids: [school.id] });
 
         if (t.scale >= 4 && (value > 0 || school.id === selectedSchool)) {
-          ctx.font = '700 11px Tajawal, sans-serif';
+          ctx.font = '700 11px "IBM Plex Sans Arabic", sans-serif';
           const tw = Math.min(170, ctx.measureText(school.name).width);
           const box = { x: x - tw / 2 - 5, y: y + 8, w: tw + 10, h: 16 };
           const collides = occupied.some(
@@ -940,7 +940,7 @@ export function HeatmapExplorer({
     ctx.direction = 'rtl';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = '800 13px Tajawal, sans-serif';
+    ctx.font = '800 13px "IBM Plex Sans Arabic", sans-serif';
     for (const m of municipalityRows) {
       const shape = SHAPE_BY_ID[m.id];
       const cx = shape ? shape.centroid[0] : m.lng;
@@ -1214,10 +1214,10 @@ export function HeatmapExplorer({
     c.textAlign = 'right';
     c.textBaseline = 'middle';
     c.fillStyle = '#6a0f2e';
-    c.font = '800 21px Tajawal, sans-serif';
+    c.font = '800 21px "IBM Plex Sans Arabic", sans-serif';
     c.fillText('تحليلات الخريطة التعليمية — دولة قطر', W - 20, 30);
     c.fillStyle = '#80652d';
-    c.font = '600 13px Tajawal, sans-serif';
+    c.font = '600 13px "IBM Plex Sans Arabic", sans-serif';
     c.fillText(
       metricLabel +
         ' · ' +

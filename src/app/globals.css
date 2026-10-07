@@ -5,20 +5,21 @@
 /* =========================================================================
    منصة مناهج قطر التفاعلية — Qatar Curriculum Platform
    Design language: "Qatar Heritage Modern"
-   Refined MOEHE identity (maroon + gold) over warm editorial neutrals,
-   layered elevation, a grain-and-aurora atmosphere, and restrained motion.
+   Qatari maroon (the flag's colour) and heritage gold over plaster-warm
+   neutrals, with materials from the place itself: Sadu weaving, the flag's
+   nine-point serration, carved wooden doors, the Doha skyline.
    ========================================================================= */
 
 :root {
   /* --- Brand (official MOEHE identity: maroon-dominant) ------------------- */
-  --maroon: #8a173e;          /* اللون الرسمي المستخرج من شعار الوزارة */
-  --maroon-700: #6a0f2e;
-  --maroon-800: #4d0a21;
+  --maroon: #8a1538;          /* العنّابي القطري (لون العلم) */
+  --maroon-700: #6b0f2b;
+  --maroon-800: #4d0a20;
   --maroon-300: #b8496a;
   --maroon-200: #d98da4;
   --maroon-100: #f6dfe6;
-  --gold: #b0892e;            /* الذهبي التراثي (إطار الشعار) */
-  --gold-500: #c9a227;
+  --gold: #a8812a;            /* ذهبي تراثي بتباين كافٍ للنص على الخلفية الفاتحة */
+  --gold-500: #d4a843;        /* ذهبي النحاس للزخارف والمسامير */
   --gold-200: #ecd9a6;
   /* ألوان تمييز محايدة وخفيفة فقط — لا تُستخدم كألوان مهيمنة */
   --sky: #2f6f96;
@@ -26,11 +27,19 @@
   --teal: #2b7d74;
   --coral: #c0526e;
 
+  /* --- Heritage materials (السدو، الجص، خشب الساج، البحر، النخل) ------------ */
+  --plaster: #f3e8d6;
+  --clay: #c49a6c;
+  --teak: #5b3a22;
+  --sadu-ink: #231a17;
+  --sea: #2d5f7c;
+  --palm: #3f6b3a;
+
   /* --- Warm neutral scale ----------------------------------------------- */
-  --paper: #faf6f0;
-  --surface: #fffdfa;
-  --surface-2: #f6efe5;
-  --ink: #211619;
+  --paper: #faf5ec;
+  --surface: #fffcf6;
+  --surface-2: #f3e8d6;
+  --ink: #231a17;
   --ink-2: #4b3d3a;
   --muted: #6f6058;
   --hairline: rgba(33, 22, 25, 0.09);
@@ -62,7 +71,11 @@
   --border: 33 20% 86%;
   --input: 33 20% 86%;
   --ring: 340 73% 31%;
-  --radius: 1.15rem;
+  --radius: 0.75rem;
+
+  /* --- Type ------------------------------------------------------------- */
+  --font-display: 'Noto Kufi Arabic', 'IBM Plex Sans Arabic', Tahoma, sans-serif;
+  --font-body: 'IBM Plex Sans Arabic', Tahoma, sans-serif;
 }
 
 :root[data-theme='dark'],
@@ -81,6 +94,12 @@
   --gold: #e3c26b;
   --gold-200: #4a3c1c;
   --sky: #59b6e8;
+  --plaster: #2a1e1b;
+  --clay: #8a6a4a;
+  --teak: #3a2516;
+  --sadu-ink: #0d0909;
+  --sea: #3f7fa3;
+  --palm: #5c8d55;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.4), 0 16px 34px -14px rgba(0, 0, 0, 0.6);
   --shadow-lg: 0 4px 10px rgba(0, 0, 0, 0.45), 0 36px 70px -26px rgba(0, 0, 0, 0.7);
@@ -118,8 +137,8 @@ html {
 body {
   background-color: var(--paper);
   color: var(--ink);
-  font-family: 'Tajawal', system-ui, sans-serif;
-  font-weight: 500;
+  font-family: var(--font-body);
+  font-weight: 400;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
@@ -127,17 +146,14 @@ body {
   min-height: 100vh;
 }
 
-/* Grain + aurora atmosphere (fixed, behind everything) */
+/* أرضية جصّية ثابتة: لون واحد هادئ وحبيبات خفيفة كملمس الجدار، بلا بقع
+   متوهّجة متحرّكة. */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   z-index: -2;
-  background:
-    radial-gradient(60% 55% at 15% -10%, rgba(138, 21, 56, 0.10), transparent 60%),
-    radial-gradient(55% 50% at 92% 0%, rgba(26, 134, 201, 0.10), transparent 60%),
-    radial-gradient(65% 60% at 50% 115%, rgba(176, 137, 46, 0.12), transparent 62%);
-  animation: aurora 24s ease-in-out infinite alternate;
+  background: var(--paper);
 }
 body::after {
   content: '';
@@ -145,25 +161,23 @@ body::after {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  opacity: 0.05;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.06;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.32 0 0 0 0 0.2 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 .dark body::after { opacity: 0.08; }
 
-@keyframes aurora {
-  0% { transform: translate3d(0, 0, 0) scale(1); }
-  100% { transform: translate3d(0, -3%, 0) scale(1.08); }
-}
+
 
 /* =========================================================================
    Typography
    ========================================================================= */
-/* عناوين واجهة المستخدم (وظيفية، واضحة) */
+/* عناوين واجهة المستخدم: كوفي هندسي قريب من خط شعار الوزارة.
+   الحروف الكوفية أطول رأسيًا من حروف النصوص، فتحتاج سطرًا أرحب. */
 .font-display {
-  font-family: 'Tajawal', sans-serif;
+  font-family: var(--font-display);
   font-weight: 800;
-  letter-spacing: -0.01em;
-  line-height: 1.3;
+  letter-spacing: 0;
+  line-height: 1.5;
 }
 
 /* العناوين الكبرى بخط الهوية الرسمي — للعناوين الضخمة فقط لضمان الوضوح */
@@ -311,30 +325,27 @@ body::after {
 }
 
 .font-calli {
-  font-family: 'Aref Ruqaa', 'Tajawal', serif;
-  font-weight: 700;
-  line-height: 1.6;
+  font-family: var(--font-display);
+  font-weight: 900;
+  line-height: 1.55;
   letter-spacing: 0;
 }
 
-/* خط «أَرِف رقعة» حروفه ممتدّة رأسيًا ويعلوها التشكيل، فارتفاع السطر
-   المعتاد يجعل الأسطر تتراكب. أدوات Tailwind (text-3xl وأخواتها) تضبط
-   ارتفاع السطر أيضًا وتأتي بعد الفئات في الأسبقية فتُلغي القيمة أعلاه —
-   لذا نرفع الأسبقية بضمّ اسم الوسم إلى الفئة، دون اللجوء إلى !important.
-
-   و padding-bottom يمنع قصّ أطراف الحروف النازلة حين يُستخدم العنوان مع
-   تدرّج لوني (background-clip: text) فيُقصّ ما تجاوز صندوق السطر. */
+/* العناوين الكبرى بالكوفي الثقيل. أدوات Tailwind (text-3xl وأخواتها) تضبط
+   ارتفاع السطر أيضًا وتأتي بعد الفئات في الأسبقية فتُلغي القيمة أعلاه،
+   والكوفي يحتاج سطرًا أرحب حتى لا تتلامس النقاط والهمزات بين الأسطر —
+   لذا نرفع الأسبقية بضمّ اسم الوسم إلى الفئة، دون اللجوء إلى !important. */
 :is(h1, h2, h3, h4, h5, h6, p, span, div, a, button).font-calli {
-  line-height: 1.75;
+  line-height: 1.6;
   padding-bottom: 0.08em;
 }
 .font-playful {
-  font-family: 'Baloo Bhaijaan 2', 'Tajawal', sans-serif;
+  font-family: 'Baloo Bhaijaan 2', var(--font-body);
   font-weight: 800;
 }
 
 .eyebrow {
-  font-family: 'Tajawal', sans-serif;
+  font-family: var(--font-body);
   font-weight: 700;
   letter-spacing: 0.04em;
   font-size: 0.82rem;
@@ -342,41 +353,51 @@ body::after {
   text-transform: none;
 }
 
-.text-gradient-maroon {
-  background: linear-gradient(105deg, var(--maroon), var(--maroon-300) 60%, var(--gold));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-.text-gradient-sky {
-  background: linear-gradient(105deg, var(--sky), var(--teal));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.text-gradient-gold {
-  background: linear-gradient(105deg, var(--gold), var(--gold-500) 55%, var(--maroon-300));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
+/* كانت هذه الفئات تدرّجات لونية على النص؛ صارت ألوانًا مصمتة من الهوية
+   لأن النص المتدرّج من علامات القوالب الآلية ويضعف وضوح القراءة. */
+.text-gradient-maroon { color: var(--maroon); }
+.text-gradient-sky { color: var(--sky); }
+.text-gradient-gold { color: var(--gold); }
 
 /* =========================================================================
    Qatar flag serration — used sparingly as a refined accent
    ========================================================================= */
+/* شريط نسيج السدو: معيّنات بيضاء على سدى أسود بحاشيتين عنّابيتين.
+   يتمدّد مع ارتفاع العنصر فيصلح للشرائط الرفيعة والسميكة معًا. */
+.sadu-band,
 .flag-strip {
-  background-image: repeating-linear-gradient(
-    -37deg,
-    var(--maroon) 0 20px,
-    var(--gold-200) 20px 22px,
-    var(--maroon) 22px 24px
-  );
+  background-color: var(--sadu-ink);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='26' viewBox='0 0 52 26'%3E%3Crect width='52' height='26' fill='%23231a17'/%3E%3Crect width='52' height='4' fill='%238a1538'/%3E%3Crect y='22' width='52' height='4' fill='%238a1538'/%3E%3Cpath d='M0 13L13 4 26 13 39 4 52 13 39 22 26 13 13 22z' fill='%23f3e8d6'/%3E%3Cpath d='M13 8l5 5-5 5-5-5zM39 8l5 5-5 5-5-5z' fill='%238a1538'/%3E%3Cpath d='M26 10l3 3-3 3-3-3zM0 10l3 3-3 3-3-3zM52 10l3 3-3 3-3-3z' fill='%23d4a843'/%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+  background-size: auto 100%;
+  background-position: center;
 }
-.flag-hairline {
-  height: 3px;
-  background: linear-gradient(90deg, transparent, var(--gold), var(--maroon), var(--gold), transparent);
+.sadu-band { height: 22px; }
+@media (min-width: 768px) { .sadu-band { height: 26px; } }
+
+/* شريط العلم: عنّابي مع الحافّة المسنّنة البيضاء ذات الرؤوس التسعة عند
+   سارية العلم (الجهة اليسرى كما يُرفع العلم). */
+.qatar-flag-bar {
+  position: relative;
+  background: var(--maroon);
+  color: #f3e8d6;
 }
+.qatar-flag-bar::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: 3.25rem;
+  background: #fff;
+  clip-path: polygon(0 0, 62% 0, 100% 5.55%, 62% 11.1%, 100% 16.65%, 62% 22.2%, 100% 27.75%, 62% 33.3%, 100% 38.85%, 62% 44.4%, 100% 50%, 62% 55.5%, 100% 61.05%, 62% 66.6%, 100% 72.15%, 62% 77.7%, 100% 83.25%, 62% 88.8%, 100% 94.35%, 62% 100%, 0 100%);
+}
+:root[data-theme='dark'] .qatar-flag-bar,
+.dark .qatar-flag-bar { background: #6b0f2b; }
+
+/* خط أفق الدوحة أعلى التذييل */
+/* الارتفاع يتبع نسبة الرسم (1280×110) فلا تُقصّ قمم الأبراج، مع حدّ أدنى للجوال
+   (يُقصّ الطرفان هناك ويبقى الوسط) وحدّ أعلى للشاشات العريضة جدًا. */
+.doha-skyline { display: block; width: 100%; height: clamp(56px, calc(100vw * 110 / 1280), 150px); color: var(--maroon-800); }
 
 /* =========================================================================
    Surfaces & components
@@ -444,7 +465,7 @@ body::after {
       0 0 0 5px color-mix(in srgb, var(--gold) 15%, transparent);
   }
 
-  /* buttons */
+  /* buttons — لون مصمت بحافّة سفلية تُضغط كزرّ حقيقي */
   .btn-primary {
     position: relative;
     display: inline-flex;
@@ -453,24 +474,19 @@ body::after {
     gap: 0.5rem;
     /* مساحة لمس مريحة للمرحلة الابتدائية (≥ 60px) */
     min-height: 60px;
-    border-radius: 1.15rem;
-    background: linear-gradient(180deg, var(--maroon-300) -40%, var(--maroon) 45%, var(--maroon-700));
+    border-radius: 0.6rem;
+    background: var(--maroon);
     color: #fff;
-    font-weight: 800;
-    box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.28),
-      inset 0 -2px 0 rgba(0, 0, 0, 0.18);
-    transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.2, 1), box-shadow 0.35s ease, filter 0.35s ease;
-    overflow: hidden;
+    font-weight: 700;
+    box-shadow: 0 4px 0 var(--maroon-800), 0 10px 18px -10px rgba(77, 10, 32, 0.55);
+    transition: transform 0.2s cubic-bezier(0.2, 0.9, 0.2, 1), box-shadow 0.2s ease, background-color 0.2s ease;
   }
-  .btn-primary:hover { transform: translateY(-2px); filter: brightness(1.06); box-shadow: var(--shadow-lg); }
-  .btn-primary::after {
-    content: '';
-    position: absolute; inset: 0;
-    background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,.28) 50%, transparent 70%);
-    transform: translateX(-120%);
-    transition: transform 0.7s ease;
-  }
-  .btn-primary:hover::after { transform: translateX(120%); }
+  .btn-primary:hover { transform: translateY(-1px); background: var(--maroon-700); box-shadow: 0 5px 0 var(--maroon-800), 0 14px 22px -12px rgba(77, 10, 32, 0.6); }
+  .btn-primary:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--maroon-800); }
+  :root[data-theme='dark'] .btn-primary,
+  .dark .btn-primary { background: #8a1538; box-shadow: 0 4px 0 #4d0a20, 0 10px 18px -10px rgba(0, 0, 0, 0.7); }
+  :root[data-theme='dark'] .btn-primary:hover,
+  .dark .btn-primary:hover { background: #a01a43; }
 
   .btn-ghost {
     display: inline-flex;
@@ -478,19 +494,33 @@ body::after {
     justify-content: center;
     gap: 0.5rem;
     min-height: 60px;
-    border-radius: 1.15rem;
-    border: 2px solid color-mix(in srgb, var(--gold) 60%, transparent);
-    background: color-mix(in srgb, var(--surface) 60%, transparent);
-    color: var(--maroon);
-    font-weight: 800;
-    transition: transform 0.35s ease, background 0.35s ease, border-color 0.35s ease;
+    border-radius: 0.6rem;
+    border: 1.5px solid color-mix(in srgb, var(--ink) 70%, transparent);
+    background: transparent;
+    color: var(--ink);
+    font-weight: 700;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
   }
-  .btn-ghost:hover { transform: translateY(-2px); background: color-mix(in srgb, var(--gold) 12%, transparent); }
+  .btn-ghost:hover { background: var(--surface-2); border-color: var(--maroon); color: var(--maroon); }
+
+  /* أزرار الأيقونات في الترويسة (الوضع الليلي، القائمة) */
+  .header-icon-btn {
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--hairline-strong);
+    background: var(--surface);
+    color: var(--maroon);
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+  }
+  .header-icon-btn:hover { background: var(--surface-2); border-color: var(--maroon); }
 
   /* نسخة مضغوطة لأزرار الترويسة ولوحة الإدارة (خارج واجهة الطلبة) */
   .btn-sm {
     min-height: 44px;
-    border-radius: 0.85rem;
+    border-radius: 0.5rem;
   }
 }
 
@@ -650,7 +680,7 @@ body::after {
 ::-webkit-scrollbar { width: 12px; height: 12px; }
 ::-webkit-scrollbar-track { background: var(--surface-2); }
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(var(--maroon), var(--maroon-700));
+  background: var(--clay);
   border-radius: 999px;
   border: 3px solid var(--surface-2);
 }
