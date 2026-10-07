@@ -10,12 +10,13 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['"Tajawal"', 'sans-serif'],
-        headline: ['"Tajawal"', 'sans-serif'],
-        display: ['"Aref Ruqaa"', '"Tajawal"', 'serif'],
-        playful: ['"Baloo Bhaijaan 2"', '"Tajawal"', 'sans-serif'],
-        // خط رسمي هادئ قريب من أسلوب البوابات الحكومية — لروابط الشريط العلوي
-        gov: ['"IBM Plex Sans Arabic"', '"Tajawal"', 'sans-serif'],
+        // هوية الخطوط: كوفي هندسي للعناوين (قريب من خط شعار الوزارة)
+        // وخط نصوص واضح مفتوح الحروف يناسب قراءة طلبة الابتدائي.
+        body: ['"IBM Plex Sans Arabic"', 'Tahoma', 'sans-serif'],
+        headline: ['"Noto Kufi Arabic"', '"IBM Plex Sans Arabic"', 'sans-serif'],
+        display: ['"Noto Kufi Arabic"', '"IBM Plex Sans Arabic"', 'sans-serif'],
+        playful: ['"Baloo Bhaijaan 2"', '"IBM Plex Sans Arabic"', 'sans-serif'],
+        gov: ['"IBM Plex Sans Arabic"', 'Tahoma', 'sans-serif'],
         code: ['"Source Code Pro"', 'monospace'],
       },
       colors: {

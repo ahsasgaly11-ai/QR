@@ -29,10 +29,14 @@ export function ThemeToggle() {
     <button
       onClick={toggle}
       aria-label={dark ? 'الوضع النهاري' : 'الوضع الليلي'}
-      className="icon-3d icon-3d-lift h-10 w-10 rounded-xl"
-      style={{ ['--i3d' as string]: dark ? 'var(--sky)' : 'var(--gold-500)' }}
+      className="header-icon-btn"
     >
-      {mounted && (dark ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />)}
+      {mounted &&
+        (dark ? (
+          <Moon className="h-5 w-5 text-[color:var(--sky)]" />
+        ) : (
+          <Sun className="h-5 w-5 text-[color:var(--gold)]" />
+        ))}
     </button>
   );
 }

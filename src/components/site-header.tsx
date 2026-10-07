@@ -38,54 +38,61 @@ export function SiteHeader() {
     href === '/' ? pathname === '/' : pathname.startsWith(href);
 
   return (
-    <header className="sticky top-0 z-50">
-      <div className="flag-hairline" aria-hidden />
-      <div
+    <>
+      {/* شريط العلم: يمرّ مع الصفحة ولا يثبت، فيبقى الشريط المثبّت نحيفًا */}
+      <div className="qatar-flag-bar">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 py-1.5 pl-16 pr-4 font-gov text-[12px] leading-5">
+          <span>منصة تعليمية لطلبة مدارس دولة قطر</span>
+          <span className="hidden sm:inline">وزارة التربية والتعليم والتعليم العالي</span>
+        </div>
+      </div>
+
+      <header
         className={cn(
-          'transition-all duration-500',
-          scrolled ? 'glass shadow-[var(--shadow-md)]' : 'bg-transparent'
+          'sticky top-0 z-50 border-b border-[color:var(--hairline-strong)] bg-[color:var(--paper)] transition-shadow duration-300',
+          scrolled && 'shadow-[var(--shadow-sm)]'
         )}
       >
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-2.5">
-          <Link href="/" className="group flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
-            <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-2xl bg-white p-1 gold-ring transition-transform duration-500 group-hover:scale-105 group-hover:rotate-3 sm:h-11 sm:w-11">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
+          <Link href="/" className="group flex min-w-0 flex-1 items-center gap-3">
+            <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-[color:var(--hairline-strong)] bg-white p-1">
               <Image
                 src="/images/moehe-mark.png"
                 alt="شعار وزارة التربية والتعليم والتعليم العالي"
                 fill
                 sizes="44px"
-                className="object-contain"
+                className="object-contain p-0.5"
                 priority
               />
             </div>
             <div className="min-w-0 leading-tight">
-              <p className="truncate font-display text-[15px] font-bold text-[color:var(--maroon)] sm:text-[17px]">
+              <p className="truncate font-display text-[15px] font-extrabold leading-snug text-[color:var(--maroon)] sm:text-[17px]">
                 {SITE_NAME}
               </p>
-              <p className="hidden truncate text-[11px] font-medium text-muted-foreground sm:block">
-                وزارة التربية والتعليم والتعليم العالي
+              <p className="hidden truncate font-gov text-[12px] text-muted-foreground sm:block">
+                تجارب • محاكاة • أسئلة • ألعاب
               </p>
             </div>
           </Link>
 
-          <nav className="hidden items-center gap-1 lg:flex">
+          <nav className="hidden items-center gap-1 lg:flex" aria-label="القائمة الرئيسية">
             {NAV.map((item) => {
               const active = isActive(item.href);
               return (
                 <Link
                   key={item.href}
                   href={item.href}
+                  aria-current={active ? 'page' : undefined}
                   className={cn(
-                    'group relative flex items-center rounded-full px-4 py-2 font-gov text-[14.5px] font-semibold transition-all duration-300',
+                    'relative px-3 py-2 font-gov text-[15px] font-semibold transition-colors duration-200',
+                    // خط سفلي يلامس حدّ الترويسة للرابط الحالي، ويظهر رفيعًا عند المرور
+                    'after:absolute after:inset-x-3 after:-bottom-[15px] after:h-[3px] after:origin-center after:bg-[color:var(--maroon)] after:transition-transform after:duration-300',
                     active
-                      ? 'bg-[color:var(--surface)] text-[color:var(--maroon)] shadow-[var(--shadow-sm)] ring-1 ring-[color:var(--hairline)]'
-                      : 'text-foreground/65 hover:text-[color:var(--maroon)]'
+                      ? 'text-[color:var(--maroon)] after:scale-x-100'
+                      : 'text-foreground/70 after:scale-x-0 hover:text-[color:var(--maroon)] hover:after:scale-x-50'
                   )}
                 >
                   {item.label}
-                  {active && (
-                    <span className="absolute inset-x-4 -bottom-0.5 h-0.5 rounded-full bg-gradient-to-l from-[color:var(--maroon)] to-[color:var(--gold)]" />
-                  )}
                 </Link>
               );
             })}
@@ -94,15 +101,14 @@ export function SiteHeader() {
           <div className="flex shrink-0 items-center gap-2">
             <ThemeToggle />
             <Link
-              href="/admin"
+              href={UPLOAD.href}
               className="btn-primary btn-sm hidden px-4 py-2 font-gov text-sm font-semibold sm:inline-flex"
             >
               <UploadCloud className="h-4 w-4" />
-              رفع نشاط
+              {UPLOAD.label}
             </Link>
             <button
-              className="icon-3d icon-3d-lift h-10 w-10 rounded-xl lg:hidden"
-              style={{ ['--i3d' as string]: 'var(--maroon)' }}
+              className="header-icon-btn lg:hidden"
               onClick={() => setOpen((v) => !v)}
               aria-label="القائمة"
               aria-expanded={open}
@@ -113,31 +119,40 @@ export function SiteHeader() {
         </div>
 
         {open && (
-          <nav className="glass border-t border-[color:var(--hairline)] lg:hidden">
-            <div className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-3">
-              {[...NAV, UPLOAD].map(
-                (item) => {
-                  const active = isActive(item.href);
-                  return (
+          <nav
+            className="border-t border-[color:var(--hairline)] bg-[color:var(--paper)] lg:hidden"
+            aria-label="القائمة الرئيسية"
+          >
+            <ul className="mx-auto flex max-w-7xl flex-col divide-y divide-[color:var(--hairline)] px-4 py-1">
+              {[...NAV, UPLOAD].map((item) => {
+                const active = isActive(item.href);
+                return (
+                  <li key={item.href}>
                     <Link
-                      key={item.href}
                       href={item.href}
+                      aria-current={active ? 'page' : undefined}
                       className={cn(
-                        'group flex items-center rounded-xl px-3 py-2.5 font-gov text-[15px] font-semibold transition',
+                        'flex items-center justify-between px-2 py-3.5 font-gov text-[16px] font-semibold transition-colors',
                         active
-                          ? 'bg-[color:var(--surface-2)] text-[color:var(--maroon)] ring-1 ring-[rgba(176,137,46,0.4)]'
-                          : 'text-foreground/80 hover:bg-[color:var(--surface-2)]'
+                          ? 'text-[color:var(--maroon)]'
+                          : 'text-foreground/80 hover:text-[color:var(--maroon)]'
                       )}
                     >
                       {item.label}
+                      {active && (
+                        <span
+                          className="h-2 w-2 rotate-45 bg-[color:var(--maroon)]"
+                          aria-hidden
+                        />
+                      )}
                     </Link>
-                  );
-                }
-              )}
-            </div>
+                  </li>
+                );
+              })}
+            </ul>
           </nav>
         )}
-      </div>
-    </header>
+      </header>
+    </>
   );
 }
