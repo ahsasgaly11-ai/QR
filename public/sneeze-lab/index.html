@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes">
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="مختبر العطسة"><meta name="theme-color" content="#0a0911"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>مختبر العطسة</title>
 <style>
 /* Layout: one-screen dark "high-speed photo studio". A 3D stage is the hero; a compact dock holds the variables. */
@@ -154,6 +154,7 @@ h1,h2{font-weight:800;text-wrap:balance;line-height:1.25}
 .hero h1{font-size:clamp(28px,min(7vw,11vh),68px)}
 .hero h1 em{font-style:normal;color:var(--germ)}
 .hero p{max-width:34em;font-size:clamp(19px,2.6vw,24px);color:var(--muted)}
+#btnInstall{min-height:48px;padding:0 16px;border-radius:14px;border:1.5px solid var(--line);background:#1d1929cc;color:var(--mint);font-weight:800;font-size:17px}
 .cta{min-height:66px;padding:0 34px;border-radius:20px;font-size:24px;font-weight:800;color:#141b05;background:linear-gradient(#d6f771,#a9d42f);box-shadow:0 5px 0 #6f8c1d}
 .cta:active{transform:translateY(3px);box-shadow:0 2px 0 #6f8c1d}
 .cta:disabled{filter:grayscale(.8);opacity:.5}
@@ -248,6 +249,7 @@ th{color:var(--muted);font-size:15px}td.n{font-variant-numeric:tabular-nums;font
       <h1>لماذا نُصاب أنا وزملائي بالمرض في <em>أوقات متقاربة</em>؟</h1>
       <p>سنصوّر العطسة بالتصوير البطيء، ونعدّ قطرات الرذاذ، ونكتشف كيف نحمي زملاءنا.</p>
       <button class="cta" id="btnStart">ابدأ التحقيق</button>
+      <button id="btnInstall" hidden>📲 ثبّت المختبر كتطبيق يعمل دون إنترنت</button>
     </div></section>
 
     <section class="screen" id="s-observe"><div class="wrap">
@@ -82932,6 +82934,13 @@ function renderDone(){
 }
 function confetti(){ if(reduce)return; const c=$('#fx'),x=c.getContext('2d');c.width=innerWidth;c.height=innerHeight;const cols=['#c4ee4a','#86e6cf','#d9a3e0','#ffb85c','#ffffff'];const ps=[];for(let i=0;i<140;i++)ps.push({x:rnd(0,c.width),y:rnd(-c.height*.4,0),vx:rnd(-60,60),vy:rnd(140,360),s:rnd(6,13),r:rnd(0,6),c:cols[i%5]});let t0=performance.now(),lt=t0;(function f(n){const dt=Math.min((n-lt)/1000,.05);lt=n;x.clearRect(0,0,c.width,c.height);ps.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.r+=dt*5;x.save();x.translate(p.x,p.y);x.rotate(p.r);x.fillStyle=p.c;x.fillRect(-p.s/2,-p.s/3,p.s,p.s*.66);x.restore()});if(n-t0<3600)requestAnimationFrame(f);else x.clearRect(0,0,c.width,c.height)})(t0)}
 
+/* installable app (only where the manifest and service worker sit next to the page) */
+(function(){const b=$('#btnInstall'),alone=(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;let dp=null;
+  try{ if('serviceWorker' in navigator&&document.querySelector('link[rel=manifest]')&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('./sw.js').then(()=>{if(!alone)b.hidden=false}).catch(function(){}) }catch(e){}
+  window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();dp=e});
+  window.addEventListener('appinstalled',()=>{b.hidden=true});
+  b.addEventListener('click',()=>{if(dp){dp.prompt();dp=null}else toast('في Safari: اضغط زر المشاركة ⬆️ ثم «إضافة إلى الشاشة الرئيسية». في Chrome: القائمة ⋮ ثم «تثبيت التطبيق».',9000)});
+})();
 /* boot */
 function boot(){
   try{ if(!T)throw new Error('no three');init3D();setupLabels();arGestures() }catch(e){glOK=false;console.warn('3D init failed',e)}
