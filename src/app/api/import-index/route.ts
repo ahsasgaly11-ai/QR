@@ -25,6 +25,26 @@ const PROMPT = `هذه صفحات فهرس (جدول محتويات) من كتا
 - لا تضف أي شرح أو تعليق أو ترقيم من عندك.
 أخرج النص فقط.`;
 
+/** وضع «وحدة واحدة»: صورة صفحة افتتاح الوحدة أو جزء الفهرس الخاص بها. */
+const UNIT_PROMPT = `هذه صورة (أو صور) لوحدة دراسية واحدة من كتاب مدرسي عربي —
+قد تكون صفحة افتتاح الوحدة، أو جزء الفهرس الخاص بها، أو صفحة «محتويات الوحدة».
+استخرج منها:
+- title: عنوان الوحدة كما هو مكتوب، مع رقمها إن وُجد (مثل: الوحدة 3: الطاقة).
+- summary: جملة أو جملتان تصفان الوحدة إن ظهر لها وصف أو مقدّمة في الصورة، وإلا فاتركه فارغًا. لا تخترع وصفًا.
+- lessons: عناوين الدروس بالترتيب نفسه، كما هي تمامًا مع ترقيمها (مثل: 3.1 ما الطاقة؟). أدرِج دروس المراجعة مثل «ماذا أستطيع أن أفعل؟» إن وُجدت.
+اكتب النص العربي كما هو بما في ذلك التشكيل، واحذف نقاط الفهرس وأرقام الصفحات.
+لا تضف دروسًا غير موجودة في الصورة.`;
+
+const UNIT_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    title: { type: 'STRING' },
+    summary: { type: 'STRING' },
+    lessons: { type: 'ARRAY', items: { type: 'STRING' } },
+  },
+  required: ['title', 'lessons'],
+};
+
 
 export async function POST(req: Request) {
   const key = process.env.GEMINI_API_KEY;
@@ -46,6 +66,8 @@ export async function POST(req: Request) {
     /** عدّة ملفات: صور فهرس متعدّدة الصفحات أو ملف PDF */
     files?: FilePart[];
     idToken?: string;
+    /** 'index' (الافتراضي): نص الفهرس كاملًا · 'unit': وحدة واحدة منظّمة */
+    mode?: 'index' | 'unit';
   };
   try {
     body = await req.json();
@@ -106,6 +128,8 @@ export async function POST(req: Request) {
     );
   }
 
+  const unitMode = body.mode === 'unit';
+
   try {
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${key}`,
@@ -116,14 +140,20 @@ export async function POST(req: Request) {
           contents: [
             {
               parts: [
-                { text: PROMPT },
+                { text: unitMode ? UNIT_PROMPT : PROMPT },
                 ...parts.map((p) => ({
                   inline_data: { mime_type: p.mimeType, data: p.data },
                 })),
               ],
             },
           ],
-          generationConfig: { temperature: 0 },
+          generationConfig: unitMode
+            ? {
+                temperature: 0,
+                responseMimeType: 'application/json',
+                responseSchema: UNIT_SCHEMA,
+              }
+            : { temperature: 0 },
         }),
       }
     );
@@ -147,6 +177,36 @@ export async function POST(req: Request) {
         { error: 'لم يُستخرج نص من الصورة. جرّب صورة أوضح أو الصق النص يدويًا.' },
         { status: 422 }
       );
+    }
+
+    if (unitMode) {
+      try {
+        const parsed = JSON.parse(text) as {
+          title?: unknown;
+          summary?: unknown;
+          lessons?: unknown;
+        };
+        const unit = {
+          title: typeof parsed.title === 'string' ? parsed.title.trim() : '',
+          summary: typeof parsed.summary === 'string' ? parsed.summary.trim() : '',
+          lessons: Array.isArray(parsed.lessons)
+            ? parsed.lessons
+                .filter((l): l is string => typeof l === 'string')
+                .map((l) => l.trim())
+                .filter(Boolean)
+            : [],
+        };
+        if (!unit.title && unit.lessons.length === 0) {
+          return NextResponse.json(
+            { error: 'لم نتعرّف على وحدة أو دروس في الصورة. جرّب صورة أوضح.' },
+            { status: 422 }
+          );
+        }
+        return NextResponse.json({ unit });
+      } catch {
+        // لم يلتزم النموذج بالصيغة — أعِد النص الخام ليحلّله المتصفّح
+        return NextResponse.json({ text });
+      }
     }
 
     return NextResponse.json({ text });

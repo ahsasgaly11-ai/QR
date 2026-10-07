@@ -144,7 +144,7 @@ export function AdminShell({
           </div>
         </div>
       )}
-      {tab === 'content' && <ContentManager initial={structure} />}
+      {tab === 'content' && <ContentManager initial={structure} activities={activities} />}
       {tab === 'ticker' && <TickerManager />}
       {tab === 'downloads' && <DownloadsManager structure={structure} />}
     </AuthGate>
