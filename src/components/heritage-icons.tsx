@@ -133,7 +133,7 @@ export function HeritageIconSprite() {
           <ellipse cx="60" cy="112" rx="34" ry="6" fill="#231a17" opacity=".16" />
           <path d="M20 28a14 14 0 0 1 14-14h56a14 14 0 0 1 14 14v40a14 14 0 0 1-14 14H56l-20 18v-18h-2a14 14 0 0 1-14-14z" fill="url(#hi-gold-side)" transform="translate(0 8)" />
           <path d="M20 28a14 14 0 0 1 14-14h56a14 14 0 0 1 14 14v40a14 14 0 0 1-14 14H56l-20 18v-18h-2a14 14 0 0 1-14-14z" fill="url(#hi-gold-top)" />
-          <text x="62" y="70" textAnchor="middle" fontFamily="'Noto Kufi Arabic', sans-serif" fontWeight="900" fontSize="54" fill="#8a1538">؟</text>
+          <text x="62" y="70" textAnchor="middle" fontFamily="'Readex Pro', sans-serif" fontWeight="700" fontSize="54" fill="#8a1538">؟</text>
           <path d="M30 26a8 8 0 0 1 8-6h30" stroke="#fff" strokeWidth="5" strokeLinecap="round" opacity=".55" fill="none" />
         </symbol>
 

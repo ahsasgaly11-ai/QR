@@ -44,7 +44,7 @@ function Emblem({ kind, letter }: { kind: DoorEmblem; letter: string }) {
       );
     case 'english':
       return (
-        <text x="50" y="66" textAnchor="middle" fontSize="42" fontWeight="700" fill="currentColor" fontFamily="'IBM Plex Sans Arabic', sans-serif">
+        <text x="50" y="66" textAnchor="middle" fontSize="42" fontWeight="700" fill="currentColor" fontFamily="'Readex Pro', sans-serif">
           Aa
         </text>
       );
@@ -57,7 +57,7 @@ function Emblem({ kind, letter }: { kind: DoorEmblem; letter: string }) {
       );
     default:
       return (
-        <text x="50" y="72" textAnchor="middle" fontSize="56" fontWeight="900" fill="currentColor" fontFamily="'Noto Kufi Arabic', sans-serif">
+        <text x="50" y="72" textAnchor="middle" fontSize="56" fontWeight="700" fill="currentColor" fontFamily="'Readex Pro', sans-serif">
           {kind === 'arabic' ? 'ض' : letter}
         </text>
       );

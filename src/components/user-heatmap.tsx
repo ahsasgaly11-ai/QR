@@ -264,7 +264,7 @@ export function UserHeatmap({ className = '' }: { className?: string }) {
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'center';
     ctx.direction = 'rtl';
-    ctx.font = '800 10px "IBM Plex Sans Arabic", "Noto Kufi Arabic", sans-serif';
+    ctx.font = '700 10px "Readex Pro", sans-serif';
     for (const m of MUNICIPALITIES) {
       const shp = SHAPE_BY_ID[m.id];
       const cx = shp ? shp.centroid[0] : m.lng;
