@@ -165,7 +165,7 @@ export function HeritageDoor({
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
     await wait(250);
     curtain.classList.add('is-out');
-    await wait(800);
+    await wait(950);
     curtain.remove();
   };
 
