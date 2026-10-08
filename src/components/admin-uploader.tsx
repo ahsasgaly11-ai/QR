@@ -433,16 +433,16 @@ export function AdminUploader({
       {!smartOnly && (
         <div className="grid gap-5 sm:grid-cols-2">
           <div>
-            <label className={labelCls}>المادة</label>
-            <select className={inputCls} value={subjectId} onChange={(e) => pickSubject(e.target.value)}>
+            <label htmlFor="up-subject" className={labelCls}>المادة</label>
+            <select id="up-subject" className={inputCls} value={subjectId} onChange={(e) => pickSubject(e.target.value)}>
               {available.map((s) => (
                 <option key={s.id} value={s.id}>{s.title}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className={labelCls}>المستوى</label>
-            <select className={inputCls} value={gradeId} onChange={(e) => pickGrade(e.target.value)}>
+            <label htmlFor="up-grade" className={labelCls}>المستوى</label>
+            <select id="up-grade" className={inputCls} value={gradeId} onChange={(e) => pickGrade(e.target.value)}>
               {subject?.grades.map((g) => (
                 <option key={g.id} value={g.id}>{g.title}</option>
               ))}
@@ -451,9 +451,9 @@ export function AdminUploader({
   
           {/* Unit: existing or new */}
           <div>
-            <label className={labelCls}>الوحدة</label>
+            <label htmlFor="up-unit" className={labelCls}>الوحدة</label>
             {hasUnits && (
-              <select className={inputCls} value={unitId} onChange={(e) => pickUnit(e.target.value)}>
+              <select id="up-unit" className={inputCls} value={unitId} onChange={(e) => pickUnit(e.target.value)}>
                 {grade?.units.map((u) => (
                   <option key={u.id} value={u.id}>{u.title}</option>
                 ))}
@@ -480,9 +480,9 @@ export function AdminUploader({
           {/* Lesson: existing or new */}
           {!reviewOnly && (
           <div>
-            <label className={labelCls}>الدرس</label>
+            <label htmlFor="up-lesson" className={labelCls}>الدرس</label>
             {!unitIsNew && hasLessons && (
-              <select className={inputCls} value={lessonId} onChange={(e) => setLessonId(e.target.value)}>
+              <select id="up-lesson" className={inputCls} value={lessonId} onChange={(e) => setLessonId(e.target.value)}>
                 {unit?.lessons.map((l) => (
                   <option key={l.id} value={l.id}>{l.title}</option>
                 ))}

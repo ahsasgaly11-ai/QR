@@ -174,6 +174,33 @@ export function htmlToFrameUrl(html: string): string {
   return htmlToBlobUrl(withStorageShim(html));
 }
 
+function escapeAttr(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+}
+
+/**
+ * صفحة كاملة لـ«فتح في نافذة»: لا تُفتح اللعبة المرفوعة مباشرة (رابط Blob يرث
+ * أصل الموقع فتعمل بصلاحياته)، بل داخل iframe معزول بالصلاحيات نفسها التي
+ * تعمل بها في المشغّل. المحتوى مضمَّن في srcdoc فلا تعتمد النافذة على بقاء
+ * الصفحة التي فتحتها.
+ */
+export function htmlToSandboxPageUrl(html: string, title = 'نشاط'): string {
+  return htmlToBlobUrl(sandboxPageHtml(html, title));
+}
+
+/** نص صفحة «فتح في نافذة» (دالّة خالصة، تُختبر بمعزل عن المتصفّح). */
+export function sandboxPageHtml(html: string, title = 'نشاط'): string {
+  return (
+    '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8">' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+    `<title>${escapeAttr(title).replace(/</g, '&lt;')}</title>` +
+    '<style>html,body{margin:0;height:100%;background:#fff}iframe{display:block;border:0;width:100%;height:100%}</style>' +
+    `</head><body><iframe sandbox="${GAME_SANDBOX}" allow="fullscreen" title="${escapeAttr(title)}" srcdoc="${escapeAttr(
+      withStorageShim(html)
+    )}"></iframe></body></html>`
+  );
+}
+
 // --- بنية المناهج المحلّية (وحدات/دروس أُنشئت في وضع العرض) ----------------
 
 export function getLocalStructure(): Subject[] | null {

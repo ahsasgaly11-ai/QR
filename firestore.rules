@@ -104,6 +104,57 @@ service cloud.firestore {
       allow write: if isOwner();
     }
 
+    // --- خرائط الأيام ({"YYYY-MM-DD": عدد}) ---------------------------------
+    // كل عملية تزيد يومًا واحدًا بمقدار 1 فقط؛ فلا يمكن استبدال الخريطة كلها
+    // ولا تضخيمها ببيانات عشوائية.
+    function dayKeyOk(k) {
+      return k is string && k.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+    }
+    // مفتاح يوم بصيغة YYYY-MM-DD من طابع زمني
+    function pad2(n) {
+      return n < 10 ? '0' + string(n) : string(n);
+    }
+    function dayOf(t) {
+      return string(t.year()) + '-' + pad2(t.month()) + '-' + pad2(t.day());
+    }
+    // يزيد يومًا واحدًا بمقدار 1. يُقبل اليوم الحالي بتوقيت UTC أو اليوم
+    // السابق أو التالي، لأن المتصفح يحسب اليوم بتوقيته المحلي.
+    function dayStepOk(before, after, k) {
+      return after.get(k, 0) is int
+        && after.get(k, 0) >= before.get(k, 0)
+        && after.get(k, 0) <= before.get(k, 0) + 1;
+    }
+    function dayMapUpdateOk(field) {
+      let before = resource.data.get(field, {});
+      let after = request.resource.data.get(field, {});
+      let today = dayOf(request.time);
+      let yesterday = dayOf(request.time - duration.value(1, 'd'));
+      let tomorrow = dayOf(request.time + duration.value(1, 'd'));
+      return after is map
+        && after.diff(before).affectedKeys().hasOnly([yesterday, today, tomorrow])
+        && after.diff(before).affectedKeys().size() <= 1
+        && dayStepOk(before, after, yesterday)
+        && dayStepOk(before, after, today)
+        && dayStepOk(before, after, tomorrow);
+    }
+    function dayMapCreateOk(field) {
+      let m = request.resource.data.get(field, {});
+      return m is map
+        && m.size() <= 1
+        && (m.size() == 0 || (
+          dayKeyOk(m.keys()[0])
+          && m[m.keys()[0]] is int
+          && m[m.keys()[0]] >= 0
+          && m[m.keys()[0]] <= 1
+        ));
+    }
+    // عدّاد ابتدائي عند الإنشاء: عدد صحيح بين 0 و1
+    function startCount(field) {
+      return request.resource.data.get(field, 0) is int
+        && request.resource.data.get(field, 0) >= 0
+        && request.resource.data.get(field, 0) <= 1;
+    }
+
     // --- العدّادات: زيادة فقط، بمقدار 1 كحدّ أقصى لكل عملية ---------------
     function incrementsOnly(fields) {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields)
@@ -120,9 +171,9 @@ service cloud.firestore {
       allow read: if true;
       allow create: if request.resource.data.keys()
                       .hasOnly(['visitors', 'views', 'downloads'])
-                    && request.resource.data.get('visitors', 0) <= 1
-                    && request.resource.data.get('views', 0) <= 1
-                    && request.resource.data.get('downloads', 0) <= 1;
+                    && startCount('visitors')
+                    && startCount('views')
+                    && startCount('downloads');
       allow update: if isOwner()
                     || incrementsOnly(['visitors', 'views', 'downloads']);
       allow delete: if isOwner();
@@ -132,8 +183,8 @@ service cloud.firestore {
     match /activityStats/{activityId} {
       allow read: if true;
       allow create: if request.resource.data.keys().hasOnly(['views', 'downloads'])
-                    && request.resource.data.get('views', 0) <= 1
-                    && request.resource.data.get('downloads', 0) <= 1;
+                    && startCount('views')
+                    && startCount('downloads');
       allow update: if isOwner() || incrementsOnly(['views', 'downloads']);
       allow delete: if isOwner();
     }
@@ -151,19 +202,19 @@ service cloud.firestore {
         && request.resource.data.get('plays', 0) >= resource.data.get('plays', 0)
         && request.resource.data.get('plays', 0) <= resource.data.get('plays', 0) + 1
         && request.resource.data.get('downloads', 0) >= resource.data.get('downloads', 0)
-        && request.resource.data.get('downloads', 0) <= resource.data.get('downloads', 0) + 1;
+        && request.resource.data.get('downloads', 0) <= resource.data.get('downloads', 0) + 1
+        && dayMapUpdateOk('days');
     }
 
     match /schoolStats/{schoolId} {
       allow read: if true;
       allow create: if request.resource.data.keys()
                       .hasOnly(['users', 'plays', 'downloads', 'days'])
-                    && request.resource.data.get('users', 0) >= 0
-                    && request.resource.data.get('users', 0) <= 1
-                    && request.resource.data.get('plays', 0) >= 0
-                    && request.resource.data.get('plays', 0) <= 1
-                    && request.resource.data.get('downloads', 0) >= 0
-                    && request.resource.data.get('downloads', 0) <= 1;
+                    && schoolId.size() <= 128
+                    && startCount('users')
+                    && startCount('plays')
+                    && startCount('downloads')
+                    && dayMapCreateOk('days');
       allow update: if isOwner() || schoolFieldsOk();
       allow delete: if isOwner();
     }
@@ -184,7 +235,10 @@ service cloud.firestore {
         && request.resource.data.get('plays', 0) <= resource.data.get('plays', 0) + 1
         && request.resource.data.get('downloads', 0) >= resource.data.get('downloads', 0)
         && request.resource.data.get('downloads', 0) <= resource.data.get('downloads', 0) + 1
-        && request.resource.data.get('lastActiveAt', 0) >= resource.data.get('lastActiveAt', 0);
+        && request.resource.data.get('lastActiveAt', 0) >= resource.data.get('lastActiveAt', 0)
+        && request.resource.data.get('lastActiveAt', 0) <= request.time.toMillis() + 86400000
+        && dayMapUpdateOk('playsByDay')
+        && dayMapUpdateOk('downloadsByDay');
     }
 
     match /schoolActivityStats/{docId} {
@@ -194,16 +248,24 @@ service cloud.firestore {
                         'schoolId', 'activityId', 'subjectId', 'gradeId', 'unitId',
                         'plays', 'downloads', 'playsByDay', 'downloadsByDay', 'lastActiveAt'
                       ])
+                    && docId.size() <= 300
                     && request.resource.data.schoolId is string
+                    && request.resource.data.schoolId.size() <= 128
                     && request.resource.data.activityId is string
+                    && request.resource.data.activityId.size() <= 128
                     && request.resource.data.subjectId is string
+                    && request.resource.data.subjectId.size() <= 64
                     && request.resource.data.gradeId is string
+                    && request.resource.data.gradeId.size() <= 64
                     && request.resource.data.unitId is string
-                    && request.resource.data.get('plays', 0) >= 0
-                    && request.resource.data.get('plays', 0) <= 1
-                    && request.resource.data.get('downloads', 0) >= 0
-                    && request.resource.data.get('downloads', 0) <= 1
-                    && request.resource.data.get('lastActiveAt', 0) >= 0;
+                    && request.resource.data.unitId.size() <= 64
+                    && startCount('plays')
+                    && startCount('downloads')
+                    && request.resource.data.get('lastActiveAt', 0) is number
+                    && request.resource.data.get('lastActiveAt', 0) >= 0
+                    && request.resource.data.get('lastActiveAt', 0) <= request.time.toMillis() + 86400000
+                    && dayMapCreateOk('playsByDay')
+                    && dayMapCreateOk('downloadsByDay');
       allow update: if isOwner() || schoolActivityFieldsOk();
       allow delete: if isOwner();
     }

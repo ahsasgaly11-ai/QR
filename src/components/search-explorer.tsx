@@ -164,9 +164,9 @@ export function SearchExplorer({
       ) : (
         <div className="explorer-empty mt-2">
           <HeritageIcon kind="question" className="mx-auto h-20 w-20" />
-          <h3 className="mt-3 font-calli text-2xl text-foreground">
+          <h2 className="mt-3 font-calli text-2xl text-foreground">
             {rows.length === 0 ? 'لا توجد أنشطة بعد' : 'لا توجد نتائج مطابقة'}
-          </h3>
+          </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {rows.length === 0
               ? 'ستظهر الأنشطة هنا عند إضافتها من لوحة الإدارة.'

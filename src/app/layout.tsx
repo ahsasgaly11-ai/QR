@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import './fonts.css';
 import './globals.css';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
@@ -73,16 +74,10 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=El+Messiri:wght@500;600;700&family=Readex+Pro:wght@300;400;500;600;700&family=Baloo+Bhaijaan+2:wght@600;700;800&display=swap"
-          rel="stylesheet"
-        />
+        {/* الخطوط مستضافة محليًا (src/app/fonts.css)؛ نحمّل مسبقًا الملفين
+            العربيين للنصوص والعناوين لأنهما يظهران في أول شاشة. */}
+        <link rel="preload" href="/fonts/readex-pro-arabic-982df5.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        <link rel="preload" href="/fonts/el-messiri-arabic-26956f.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <script
           dangerouslySetInnerHTML={{
             // يُطبَّق قبل الرسم لمنع الوميض: الوضع الليلي + إعدادات إمكانية

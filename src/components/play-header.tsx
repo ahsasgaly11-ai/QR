@@ -17,7 +17,7 @@ export function PlayHeader({ activity, context }: { activity: Activity; context?
           {activity.title}
         </h1>
         <p className="short-hide mt-1 text-sm text-muted-foreground">
-          <span className="font-semibold" style={{ color: meta.color }}>{meta.label}</span>
+          <span className="font-semibold" style={{ color: `color-mix(in srgb, ${meta.color} 60%, var(--ink))` }}>{meta.label}</span>
           {context && <> • {context}</>}
         </p>
       </div>

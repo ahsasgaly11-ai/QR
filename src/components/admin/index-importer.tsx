@@ -80,8 +80,8 @@ export function IndexImporter({
     const idToken = await getIdToken();
     const res = await fetch('/api/import-index', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ files: payload, idToken }),
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+      body: JSON.stringify({ files: payload }),
     });
     const data = (await res.json()) as { text?: string; error?: string };
     if (!res.ok) throw new Error(data.error || 'تعذّر تحليل الملفات.');

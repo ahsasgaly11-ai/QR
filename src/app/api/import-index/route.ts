@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { verifyOwnerToken } from '@/lib/server-auth';
+import { bearerToken, verifyOwnerToken } from '@/lib/server-auth';
 
 // ---------------------------------------------------------------------------
 // قراءة صورة فهرس الكتاب وتحويلها إلى نص (OCR بصري عبر Gemini).
@@ -47,11 +47,13 @@ const UNIT_SCHEMA = {
 
 
 export async function POST(req: Request) {
-  const key = process.env.GEMINI_API_KEY;
-  if (!key) {
+  // الهوية أولًا، قبل قراءة جسم الطلب (حتى 15 ميجابايت) وقبل كشف أي إعداد.
+  // الرمز في ترويسة Authorization؛ ويُقبل في الجسم توافقًا مع النسخ السابقة.
+  const headerToken = bearerToken(req);
+  if (headerToken && !(await verifyOwnerToken(headerToken))) {
     return NextResponse.json(
-      { error: 'لم يُضبط GEMINI_API_KEY على الخادم. استخدم خيار لصق النص بدلًا من ذلك.' },
-      { status: 501 }
+      { error: 'غير مصرّح — هذه الخاصية متاحة لمالك المنصّة فقط.' },
+      { status: 403 }
     );
   }
 
@@ -75,11 +77,29 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'طلب غير صالح.' }, { status: 400 });
   }
 
-  if (!(await verifyOwnerToken(body.idToken ?? ''))) {
+  if (!headerToken && !(await verifyOwnerToken(body.idToken ?? ''))) {
     return NextResponse.json(
       { error: 'غير مصرّح — هذه الخاصية متاحة لمالك المنصّة فقط.' },
       { status: 403 }
     );
+  }
+
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) {
+    return NextResponse.json(
+      { error: 'لم يُضبط GEMINI_API_KEY على الخادم. استخدم خيار لصق النص بدلًا من ذلك.' },
+      { status: 501 }
+    );
+  }
+
+  if (
+    (body.mode !== undefined && body.mode !== 'index' && body.mode !== 'unit') ||
+    (body.files !== undefined && !Array.isArray(body.files)) ||
+    (body.image !== undefined && typeof body.image !== 'string') ||
+    (Array.isArray(body.files) &&
+      body.files.some((f) => !f || typeof f.data !== 'string' || (f.mimeType !== undefined && typeof f.mimeType !== 'string')))
+  ) {
+    return NextResponse.json({ error: 'طلب غير صالح.' }, { status: 400 });
   }
 
   // وحّد المدخلات: ملف واحد أو عدّة ملفات
@@ -132,10 +152,11 @@ export async function POST(req: Request) {
 
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${key}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        // المفتاح في ترويسة لا في الرابط، فلا يظهر في سجلّات الطلبات
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
         body: JSON.stringify({
           contents: [
             {
@@ -159,11 +180,9 @@ export async function POST(req: Request) {
     );
 
     if (!res.ok) {
-      const detail = await res.text();
-      return NextResponse.json(
-        { error: 'تعذّر تحليل الصورة.', detail: detail.slice(0, 300) },
-        { status: 502 }
-      );
+      // التفاصيل للسجلّ فقط، لا تُعاد للمتصفّح
+      console.error('import-index: upstream', res.status, (await res.text()).slice(0, 300));
+      return NextResponse.json({ error: 'تعذّر تحليل الصورة.' }, { status: 502 });
     }
 
     const data = (await res.json()) as {
