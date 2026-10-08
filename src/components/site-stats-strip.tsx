@@ -1,11 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Users, Eye, Download, Sparkles } from 'lucide-react';
 import { subscribeSiteStats } from '@/lib/stats';
 import { CountUp } from './count-up';
-import { Icon3D } from '@/components/icon-3d';
 
+// صفّ أرقام حيّة بفواصل رفيعة — أرقام تُقرأ لا بطاقات تُزيَّن.
 export function SiteStatsStrip({ activities }: { activities: number }) {
   const [s, setS] = useState({ visitors: 0, views: 0, downloads: 0 });
 
@@ -13,30 +12,25 @@ export function SiteStatsStrip({ activities }: { activities: number }) {
   useEffect(() => subscribeSiteStats(setS), []);
 
   const items = [
-    { icon: Users, label: 'الزوّار', value: s.visitors, color: 'var(--maroon)' },
-    { icon: Eye, label: 'المشاهدات', value: s.views, color: 'var(--maroon-700)' },
-    { icon: Download, label: 'التنزيلات', value: s.downloads, color: 'var(--gold)' },
-    { icon: Sparkles, label: 'الأنشطة التفاعلية', value: activities, color: 'var(--maroon-300)' },
+    { label: 'نشاطًا تفاعليًا', value: activities },
+    { label: 'زائرًا', value: s.visitors },
+    { label: 'مشاهدة', value: s.views },
+    { label: 'تنزيلًا', value: s.downloads },
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+    <dl className="stats-facts">
       {items.map((it) => (
-        <div
-          key={it.label}
-          className="card-premium glass flex items-center gap-3 rounded-2xl p-4"
-        >
-          <Icon3D icon={it.icon} color={it.color} size="md" />
-          <div className="leading-tight">
-            <div className="font-display text-2xl font-black text-foreground">
-              <CountUp value={it.value} />
-            </div>
-            <div className="text-xs font-bold text-muted-foreground">
+        <div key={it.label} className="stats-fact">
+          <dt className="sr-only">{it.label}</dt>
+          <dd>
+            <CountUp value={it.value} className="stats-fact-n" />
+            <span className="stats-fact-l" aria-hidden>
               {it.label}
-            </div>
-          </div>
+            </span>
+          </dd>
         </div>
       ))}
-    </div>
+    </dl>
   );
 }
