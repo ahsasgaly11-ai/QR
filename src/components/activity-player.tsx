@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils';
 import {
   htmlToBlobUrl,
   htmlToFrameUrl,
+  htmlToSandboxPageUrl,
   GAME_SANDBOX,
   FS_REQUEST_KEY,
   FS_STATE_KEY,
@@ -63,6 +64,9 @@ function PlayerInner({ activity, localHtml, next }: PlayerProps) {
   // نسخة التشغيل داخل الـiframe المعزول (مع بديل التخزين)؛ blobUrl يبقى
   // للتحميل وفتح النافذة فيصل الملف للمستخدم كما رُفع تمامًا.
   const [frameBlobUrl, setFrameBlobUrl] = useState<string | null>(null);
+  // «فتح في نافذة» للأنشطة المرفوعة: صفحة تغلّف اللعبة بإطار معزول، لا الملف
+  // نفسه — فتحه مباشرة يشغّله بأصل الموقع وصلاحيات جلسة المشرف.
+  const [openBlobUrl, setOpenBlobUrl] = useState<string | null>(null);
   const [fetchFailed, setFetchFailed] = useState(false);
   // الأنشطة المرفوعة تُخزَّن مقسّمة داخل Firestore وتُجمَّع هنا قبل التشغيل
   const remote = !localHtml && activity.stored === 'firestore';
@@ -70,13 +74,16 @@ function PlayerInner({ activity, localHtml, next }: PlayerProps) {
   useEffect(() => {
     let revoke: string | null = null;
     let revokeFrame: string | null = null;
+    let revokeOpen: string | null = null;
     let alive = true;
 
     if (localHtml) {
       revoke = htmlToBlobUrl(localHtml);
       revokeFrame = htmlToFrameUrl(localHtml);
+      revokeOpen = htmlToSandboxPageUrl(localHtml, activity.title);
       setBlobUrl(revoke);
       setFrameBlobUrl(revokeFrame);
+      setOpenBlobUrl(revokeOpen);
     } else if (remote) {
       setFetchFailed(false);
       (async () => {
@@ -86,8 +93,10 @@ function PlayerInner({ activity, localHtml, next }: PlayerProps) {
         if (!html) return setFetchFailed(true);
         revoke = htmlToBlobUrl(html);
         revokeFrame = htmlToFrameUrl(html);
+        revokeOpen = htmlToSandboxPageUrl(html, activity.title);
         setBlobUrl(revoke);
         setFrameBlobUrl(revokeFrame);
+        setOpenBlobUrl(revokeOpen);
       })();
     }
 
@@ -95,7 +104,9 @@ function PlayerInner({ activity, localHtml, next }: PlayerProps) {
       alive = false;
       if (revoke) URL.revokeObjectURL(revoke);
       if (revokeFrame) URL.revokeObjectURL(revokeFrame);
+      if (revokeOpen) URL.revokeObjectURL(revokeOpen);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- العنوان للعرض فقط
   }, [localHtml, remote, activity.id]);
 
   const uploaded = Boolean(localHtml || remote);
@@ -103,6 +114,7 @@ function PlayerInner({ activity, localHtml, next }: PlayerProps) {
   // الألعاب المرفوعة تُشغَّل معزولة؛ ملفات /games المرفقة بالموقع والروابط
   // الخارجية تبقى كما هي.
   const frameUrl = uploaded ? frameBlobUrl ?? '' : url;
+  const openUrl = uploaded ? openBlobUrl ?? '' : url;
   const frameRef = useRef<HTMLIFrameElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   // يوقف المشرف التنزيل من لوحة التحكّم ← تُستخدم اللعبة داخل الموقع فقط
@@ -428,7 +440,7 @@ function PlayerInner({ activity, localHtml, next }: PlayerProps) {
           {/* «فتح في نافذة» يعرض ملف اللعبة خارج الموقع فيُمكن حفظه، لذا يُخفى
               مع زرّ التحميل عند قصر الاستخدام على داخل الموقع. */}
           {canDownload && (
-            <a href={url} target="_blank" rel="noopener noreferrer" className="tool-btn">
+            <a href={openUrl} target="_blank" rel="noopener noreferrer" className="tool-btn">
               <ExternalLink className="h-4 w-4" aria-hidden /> فتح في نافذة
             </a>
           )}

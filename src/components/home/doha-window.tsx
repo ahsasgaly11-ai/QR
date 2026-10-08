@@ -45,10 +45,25 @@ export function DohaWindow() {
     // الوضع الخفيف: المشهد ثابت بلا تتبّع للمؤشّر أو الميلان
     if (!motionAllowed() || isLite()) return;
 
-    let tx = 0, ty = 0, cx = 0, cy = 0, scroll = 0;
+    // الأداء: نكتب التحويل مباشرة على العناصر المتحرّكة بدل متغيّرات CSS على
+    // الأب — تغيير متغيّر موروث يجبر المتصفح على إعادة حساب أنماط المشهد كله
+    // (مئات عناصر SVG) في كل إطار. وتتوقّف الحلقة حين يستقرّ المشهد، وتعود
+    // مع حركة المؤشّر أو التمرير أو ميلان الجهاز.
+    const layers = Array.from(w.querySelectorAll<HTMLElement>('.hw-layer')).map((node, i) => ({
+      node,
+      z: LAYERS[i].z,
+      s: (PERSPECTIVE - LAYERS[i].z) / PERSPECTIVE,
+      drift: LAYERS[i].drift,
+    }));
+    const gleam = el.querySelector<HTMLElement>('.hw-gleam');
+
+    let tx = 0, ty = 0, cx = 0, cy = 0, scroll = 0, drawnScroll = -1;
     let visible = true;
     let raf = 0;
-    const start = performance.now();
+
+    const kick = () => {
+      if (visible && !raf) raf = requestAnimationFrame(frame);
+    };
 
     const host = el.closest('[data-hero]') ?? el;
     const onPointer = (e: PointerEvent) => {
@@ -56,41 +71,55 @@ export function DohaWindow() {
       const r = el.getBoundingClientRect();
       tx = Math.max(-1, Math.min(1, ((e.clientX - r.left) / r.width - 0.5) * 2));
       ty = Math.max(-1, Math.min(1, ((e.clientY - r.top) / r.height - 0.5) * 2));
+      kick();
     };
     const onLeave = () => {
       tx = 0;
       ty = 0;
+      kick();
     };
     // ميلان الجهاز: يعمل دون إذن على أندرويد، ويُتجاهل حيث يتطلّب إذنًا
     const onTilt = (e: DeviceOrientationEvent) => {
       if (e.gamma == null || e.beta == null) return;
       tx = Math.max(-1, Math.min(1, e.gamma / 25));
       ty = Math.max(-1, Math.min(1, (e.beta - 40) / 30));
+      kick();
     };
     const onScroll = () => {
       const r = el.getBoundingClientRect();
       scroll = Math.max(0, Math.min(1, -r.top / Math.max(1, r.height)));
+      kick();
     };
 
-    const frame = (t: number) => {
+    function frame() {
       raf = 0;
       if (!visible) return;
-      // تمايل خفيف حين يكون المؤشّر خارج المشهد، حتى لا يبدو جامدًا
-      const idle = tx === 0 && ty === 0 ? Math.sin((t - start) / 2800) * 0.18 : 0;
-      cx += (tx + idle - cx) * 0.06;
-      cy += (ty - cy) * 0.06;
-      w.style.setProperty('--rx', `${(-cy * 5).toFixed(3)}deg`);
-      w.style.setProperty('--ry', `${(cx * 9).toFixed(3)}deg`);
-      w.style.setProperty('--sp', scroll.toFixed(4));
-      el.style.setProperty('--lx', `${(50 + cx * 30).toFixed(2)}%`);
-      el.style.setProperty('--ly', `${(32 + cy * 24).toFixed(2)}%`);
-      raf = requestAnimationFrame(frame);
-    };
+      cx += (tx - cx) * 0.08;
+      cy += (ty - cy) * 0.08;
+      const settled = Math.abs(tx - cx) < 0.002 && Math.abs(ty - cy) < 0.002;
+      if (settled) {
+        cx = tx;
+        cy = ty;
+      }
+      w!.style.transform = `rotateX(${(-cy * 5).toFixed(3)}deg) rotateY(${(cx * 9).toFixed(3)}deg)`;
+      if (gleam) {
+        gleam.style.setProperty('--lx', `${(50 + cx * 30).toFixed(2)}%`);
+        gleam.style.setProperty('--ly', `${(32 + cy * 24).toFixed(2)}%`);
+      }
+      const sp = Math.round(scroll * 1000) / 1000;
+      if (sp !== drawnScroll) {
+        drawnScroll = sp;
+        for (const l of layers) {
+          l.node.style.transform = `translateZ(${l.z}px) scale(${l.s.toFixed(4)}) translateY(${(sp * l.drift * 180).toFixed(2)}px)`;
+        }
+      }
+      if (!settled) raf = requestAnimationFrame(frame);
+    }
 
     const io = new IntersectionObserver(([entry]) => {
       visible = entry.isIntersecting;
       el.classList.toggle('hw--paused', !visible);
-      if (visible && !raf) raf = requestAnimationFrame(frame);
+      kick();
     });
     io.observe(el);
 
@@ -99,7 +128,6 @@ export function DohaWindow() {
     window.addEventListener('deviceorientation', onTilt, { passive: true });
     window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();
-    raf = requestAnimationFrame(frame);
 
     return () => {
       io.disconnect();

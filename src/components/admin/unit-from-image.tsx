@@ -137,8 +137,8 @@ export function UnitFromImage({
       const idToken = await getIdToken();
       const res = await fetch('/api/import-index', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ files: payload, idToken, mode: 'unit' }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+        body: JSON.stringify({ files: payload, mode: 'unit' }),
       });
       const data = (await res.json()) as {
         unit?: DraftUnit;

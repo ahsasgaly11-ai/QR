@@ -1900,7 +1900,8 @@ body { padding-bottom: var(--ticker-h); }
   padding: 0.15rem 0.6rem;
   border-radius: 0.4rem;
   background: rgba(255, 252, 246, 0.94);
-  color: var(--tc);
+  /* الخلفية فاتحة دائمًا، فيُمزج اللون بحبر داكن ثابت لتباين ≥ 5:1 */
+  color: color-mix(in srgb, var(--tc) 60%, #231a17);
   font-size: 0.75rem;
   font-weight: 600;
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.08);
@@ -1961,7 +1962,8 @@ body { padding-bottom: var(--ticker-h); }
   padding: 0.15rem 0.6rem 0.15rem 0.35rem;
   border-radius: 0.45rem;
   background: color-mix(in srgb, var(--tc) 11%, var(--surface));
-  color: var(--tc);
+  /* لون النوع ممزوجًا بلون النص: تباين ≥ 5:1 في الوضعين (WCAG 1.4.3) */
+  color: color-mix(in srgb, var(--tc) 60%, var(--ink));
   font-size: 0.78rem;
   font-weight: 600;
 }
@@ -2243,6 +2245,7 @@ a.ledger-row:hover .ledger-go { transform: translateX(-4px); }
   color: var(--ink-2);
 }
 .search-type.is-on .search-type-n { background: var(--maroon); color: #fff; }
+.dark .search-type.is-on .search-type-n { background: #8a1538; }
 
 /* صفحة 404: باب مغلق ولوحة نحاسية */
 .nf-door { pointer-events: none; width: clamp(160px, 42vw, 220px); }

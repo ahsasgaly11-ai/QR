@@ -130,9 +130,9 @@ export function SiteFooter() {
           </div>
 
           <div>
-            <h3 className="mb-4 font-display text-sm font-extrabold text-[#ecd9a6]">
+            <h2 className="mb-4 font-display text-sm font-extrabold text-[#ecd9a6]">
               روابط سريعة
-            </h3>
+            </h2>
             <ul className="space-y-2 text-sm text-white/80">
               {LINKS.map((l) => (
                 <li key={l.href}>
@@ -148,9 +148,9 @@ export function SiteFooter() {
           </div>
 
           <div>
-            <h3 className="mb-4 font-display text-sm font-extrabold text-[#ecd9a6]">
+            <h2 className="mb-4 font-display text-sm font-extrabold text-[#ecd9a6]">
               رؤية قطر الوطنية 2030
-            </h3>
+            </h2>
             <p className="text-sm leading-7 text-white/75">
               نُسهم في بناء التنمية البشرية من خلال تعليم رقمي إبداعي يواكب أحدث
               التقنيات ويعزّز حبّ الاستكشاف لدى المتعلّمين.

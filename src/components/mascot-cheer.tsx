@@ -94,8 +94,8 @@ export function MascotCheer({
  */
 export function FloatingMascot() {
   return (
-    <div
-      aria-hidden={false}
+    <aside
+      aria-label="المها تشجّعك"
       className="short-hide pointer-events-none fixed bottom-[calc(var(--ticker-h)+0.75rem)] left-3 z-40 hidden sm:block"
     >
       <MascotCheer
@@ -103,7 +103,7 @@ export function FloatingMascot() {
         mascotClassName="h-20 w-auto drop-shadow-xl lg:h-24"
         className="items-end"
       />
-    </div>
+    </aside>
   );
 }
 

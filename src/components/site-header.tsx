@@ -41,12 +41,12 @@ export function SiteHeader() {
   return (
     <>
       {/* شريط العلم: يمرّ مع الصفحة ولا يثبت، فيبقى الشريط المثبّت نحيفًا */}
-      <div className="qatar-flag-bar">
+      <aside className="qatar-flag-bar" aria-label="عن المنصّة">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 py-1.5 pl-16 pr-4 font-gov text-[12px] leading-5">
           <span>منصة تعليمية لطلبة مدارس دولة قطر</span>
           <span className="hidden sm:inline">وزارة التربية والتعليم والتعليم العالي</span>
         </div>
-      </div>
+      </aside>
 
       <header
         className={cn(

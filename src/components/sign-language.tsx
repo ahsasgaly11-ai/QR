@@ -19,9 +19,9 @@ function toEmbed(url: string): { kind: 'video' | 'iframe'; src: string } {
   const yt = u.match(
     /(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{11})/
   );
-  if (yt) return { kind: 'iframe', src: `https://www.youtube.com/embed/${yt[1]}` };
+  if (yt) return { kind: 'iframe', src: `https://www.youtube-nocookie.com/embed/${yt[1]}` };
   const vimeo = u.match(/vimeo\.com\/(\d+)/);
-  if (vimeo) return { kind: 'iframe', src: `https://player.vimeo.com/video/${vimeo[1]}` };
+  if (vimeo) return { kind: 'iframe', src: `https://player.vimeo.com/video/${vimeo[1]}?dnt=1` };
   return { kind: 'video', src: u };
 }
 

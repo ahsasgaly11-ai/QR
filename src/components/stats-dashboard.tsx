@@ -157,9 +157,9 @@ export function StatsDashboard({ activities: serverActivities }: { activities: R
       {activities.length === 0 ? (
         <div className="explorer-empty">
           <HeritageIcon kind="chart" className="mx-auto" />
-          <h3 className="mt-3 font-calli text-2xl text-foreground">
+          <h2 className="mt-3 font-calli text-2xl text-foreground">
             لا توجد بيانات بعد
-          </h3>
+          </h2>
           <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
             ستظهر إحصاءات المشاهدات والتنزيلات هنا تلقائيًا بمجرّد رفع الأنشطة
             وبدء الزوّار بتجربتها.
@@ -376,7 +376,7 @@ export function StatsDashboard({ activities: serverActivities }: { activities: R
                 <th className="p-4 font-bold">النوع</th>
                 <th className="p-4 font-bold">المشاهدات</th>
                 <th className="p-4 font-bold">التنزيلات</th>
-                <th className="p-4 font-bold"></th>
+                <th className="p-4 font-bold"><span className="sr-only">تشغيل</span></th>
               </tr>
             </thead>
             <tbody>
