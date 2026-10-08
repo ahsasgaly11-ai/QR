@@ -74,8 +74,8 @@
   --radius: 0.75rem;
 
   /* --- Type ------------------------------------------------------------- */
-  --font-display: 'Noto Kufi Arabic', 'IBM Plex Sans Arabic', Tahoma, sans-serif;
-  --font-body: 'IBM Plex Sans Arabic', Tahoma, sans-serif;
+  --font-display: 'Readex Pro', Tahoma, sans-serif;
+  --font-body: 'Readex Pro', Tahoma, sans-serif;
 }
 
 :root[data-theme='dark'],
@@ -139,6 +139,7 @@ body {
   color: var(--ink);
   font-family: var(--font-body);
   font-weight: 400;
+  line-height: 1.85;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
@@ -171,11 +172,11 @@ body::after {
 /* =========================================================================
    Typography
    ========================================================================= */
-/* عناوين واجهة المستخدم: كوفي هندسي قريب من خط شعار الوزارة.
-   الحروف الكوفية أطول رأسيًا من حروف النصوص، فتحتاج سطرًا أرحب. */
+/* عناوين واجهة المستخدم: الخط نفسه بوزن أثقل — فرق الوزن لا فرق العائلة
+   هو ما يميّز العنوان عن النص، فتبقى الصفحة هادئة ومتّسقة. */
 .font-display {
   font-family: var(--font-display);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0;
   line-height: 1.5;
 }
@@ -326,17 +327,18 @@ body::after {
 
 .font-calli {
   font-family: var(--font-display);
-  font-weight: 900;
-  line-height: 1.55;
+  font-weight: 700;
+  line-height: 1.5;
   letter-spacing: 0;
 }
 
-/* العناوين الكبرى بالكوفي الثقيل. أدوات Tailwind (text-3xl وأخواتها) تضبط
-   ارتفاع السطر أيضًا وتأتي بعد الفئات في الأسبقية فتُلغي القيمة أعلاه،
-   والكوفي يحتاج سطرًا أرحب حتى لا تتلامس النقاط والهمزات بين الأسطر —
+/* العناوين الكبرى. أدوات Tailwind (text-3xl وأخواتها) تضبط ارتفاع السطر
+   أيضًا وتأتي بعد الفئات في الأسبقية فتُلغي القيمة أعلاه، والعناوين العربية
+   الكبيرة تحتاج سطرًا أرحب حتى لا تتلامس النقاط والهمزات بين الأسطر —
    لذا نرفع الأسبقية بضمّ اسم الوسم إلى الفئة، دون اللجوء إلى !important. */
 :is(h1, h2, h3, h4, h5, h6, p, span, div, a, button).font-calli {
-  line-height: 1.6;
+  line-height: 1.5;
+  letter-spacing: -0.005em;
   padding-bottom: 0.08em;
 }
 .font-playful {
@@ -868,7 +870,7 @@ body { padding-bottom: var(--ticker-h); }
   align-items: center;
   padding-inline: 0.9rem 1.35rem;
   font-size: 0.8rem;
-  font-weight: 800;
+  font-weight: 700;
   white-space: nowrap;
   color: #4d0a21;
   background: linear-gradient(180deg, #f0d77f, #c9a227 60%, #a88419);
@@ -901,7 +903,7 @@ body { padding-bottom: var(--ticker-h); }
   will-change: transform;
 }
 .vision-ticker-msg strong {
-  font-weight: 800;
+  font-weight: 700;
   color: #fff;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
@@ -1058,7 +1060,7 @@ body { padding-bottom: var(--ticker-h); }
 .stat-body { margin: 0; display: flex; flex-direction: column; min-width: 0; }
 .stat-n {
   font-family: var(--font-display);
-  font-weight: 800;
+  font-weight: 700;
   font-size: 1.45rem;
   line-height: 1.25;
   color: var(--ink);
@@ -1442,7 +1444,7 @@ body { padding-bottom: var(--ticker-h); }
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 .hd-caption { display: flex; flex-direction: column; gap: 0.15rem; }
-.hd-title { font-family: var(--font-display); font-weight: 800; font-size: 1.15rem; line-height: 1.5; color: var(--ink); }
+.hd-title { font-family: var(--font-display); font-weight: 600; font-size: 1.15rem; line-height: 1.5; color: var(--ink); }
 .hd-meta { font-size: 0.8rem; color: var(--muted); }
 
 /* المرور: ينفرج الباب قليلًا ويتسرّب الضوء */
@@ -1510,12 +1512,12 @@ body { padding-bottom: var(--ticker-h); }
   background: var(--maroon);
   color: #fff;
   font-family: var(--font-display);
-  font-weight: 800;
+  font-weight: 700;
   font-size: 1.35rem;
   box-shadow: 0 0 0 5px var(--paper), 0 0 0 6px color-mix(in srgb, var(--gold-500) 70%, transparent);
 }
 .dark .steps-n { background: #8a1538; }
-.steps h3 { font-family: var(--font-display); font-weight: 800; font-size: 1.2rem; color: var(--ink); }
+.steps h3 { font-family: var(--font-display); font-weight: 600; font-size: 1.2rem; color: var(--ink); }
 .steps p { margin-top: 0.4rem; color: var(--ink-2); line-height: 1.85; }
 @media (max-width: 767px) {
   .steps { grid-template-columns: 1fr; gap: 1.75rem; }
@@ -1542,7 +1544,7 @@ body { padding-bottom: var(--ticker-h); }
   border: 1px solid var(--hairline-strong);
   border-radius: 0.5rem;
 }
-.type-tile h3 { margin-top: 0.6rem; font-family: var(--font-display); font-weight: 800; font-size: 1.1rem; color: var(--ink); }
+.type-tile h3 { margin-top: 0.6rem; font-family: var(--font-display); font-weight: 600; font-size: 1.1rem; color: var(--ink); }
 .type-tile p { margin-top: 0.35rem; font-size: 0.92rem; line-height: 1.8; color: var(--ink-2); }
 .type-icon { display: block; width: 5.2rem; animation: hi-float 5s ease-in-out infinite; animation-delay: var(--d, 0s); }
 .type-icon svg, .heritage-icon { display: block; width: 100%; height: auto; }

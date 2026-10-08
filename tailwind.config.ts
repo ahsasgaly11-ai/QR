@@ -10,13 +10,13 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        // هوية الخطوط: كوفي هندسي للعناوين (قريب من خط شعار الوزارة)
-        // وخط نصوص واضح مفتوح الحروف يناسب قراءة طلبة الابتدائي.
-        body: ['"IBM Plex Sans Arabic"', 'Tahoma', 'sans-serif'],
-        headline: ['"Noto Kufi Arabic"', '"IBM Plex Sans Arabic"', 'sans-serif'],
-        display: ['"Noto Kufi Arabic"', '"IBM Plex Sans Arabic"', 'sans-serif'],
-        playful: ['"Baloo Bhaijaan 2"', '"IBM Plex Sans Arabic"', 'sans-serif'],
-        gov: ['"IBM Plex Sans Arabic"', 'Tahoma', 'sans-serif'],
+        // هوية الخطوط: Readex Pro للعناوين والنصوص — حروف عربية واضحة مفتوحة
+        // تناسب قراءة طلبة الابتدائي، بأوزان تفرّق العنوان عن النص.
+        body: ['"Readex Pro"', 'Tahoma', 'sans-serif'],
+        headline: ['"Readex Pro"', 'Tahoma', 'sans-serif'],
+        display: ['"Readex Pro"', 'Tahoma', 'sans-serif'],
+        playful: ['"Baloo Bhaijaan 2"', '"Readex Pro"', 'sans-serif'],
+        gov: ['"Readex Pro"', 'Tahoma', 'sans-serif'],
         code: ['"Source Code Pro"', 'monospace'],
       },
       colors: {
