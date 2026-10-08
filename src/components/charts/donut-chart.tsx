@@ -220,12 +220,16 @@ export function DonutChart({
         />
       </svg>
 
-      <div className="pointer-events-none absolute inset-0 grid place-items-center px-2 text-center">
+      {/* داخل الحلقة فقط حتى لا يتجاوز النص سماكتها */}
+      <div
+        className="pointer-events-none absolute grid place-items-center overflow-hidden text-center"
+        style={{ inset: thickness + 8 }}
+      >
         <div>
-          <div className="font-display text-2xl font-black leading-none text-foreground tabular-nums sm:text-3xl">
+          <div className="font-display text-2xl font-semibold leading-none text-foreground tabular-nums sm:text-[1.7rem]">
             {centerValue}
           </div>
-          <p className="mt-1 text-[11px] font-bold leading-tight text-muted-foreground sm:text-xs">
+          <p className="mt-1 text-[10px] font-semibold leading-tight text-muted-foreground sm:text-[11px]">
             {centerLabel}
           </p>
         </div>

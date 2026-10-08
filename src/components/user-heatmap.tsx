@@ -310,31 +310,30 @@ export function UserHeatmap({ className = '' }: { className?: string }) {
     { icon: Gauge, label: 'انتشار المدارس', value: QATAR_SCHOOLS.length ? Math.round((activeSchoolsCount / QATAR_SCHOOLS.length) * 100) + '%' : '0%', isNum: false },
   ];
   const seg = (active: boolean) =>
-    'rounded-lg px-2.5 py-1.5 text-xs font-black transition ' +
-    (active ? 'bg-[color:var(--maroon)] text-white shadow-sm' : 'text-[color:var(--maroon)] hover:bg-[color:var(--surface-2)]');
+    'seg-btn ' + (active ? 'is-on' : '');
 
   return (
-    <figure className={`card-premium rounded-2xl p-4 sm:rounded-3xl sm:p-7 ${className}`}>
+    <figure className={`panel p-4 sm:p-7 ${className}`}>
       <figcaption className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <span className="flex items-center gap-2">
-          <Flame className="h-5 w-5 text-[color:var(--maroon)]" />
-          <h2 className="font-display text-lg font-bold text-[color:var(--maroon)]">
+          <Flame className="h-5 w-5 text-[color:var(--gold)]" />
+          <h2 className="panel-title">
             الخريطة الحرارية لمستخدمي الألعاب حسب المدرسة
           </h2>
         </span>
-        <button onClick={() => setExplore(true)} className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[color:var(--maroon)] px-3.5 py-2 text-sm font-black text-white shadow-sm transition hover:bg-[color:var(--maroon-700)]">
+        <button onClick={() => setExplore(true)} className="btn-primary min-h-[44px] shrink-0 px-4 py-2 text-sm">
           <Maximize2 className="h-4 w-4" /> فتح بملء الشاشة
         </button>
       </figcaption>
 
       {/* أدوات: المقياس + الوضع + آخر تحديث */}
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <div className="flex items-center gap-0.5 rounded-xl bg-[color:var(--surface-2)]/70 p-0.5 ring-1 ring-[color:var(--hairline)]">
+        <div className="seg-group">
           {(['users', 'plays', 'downloads'] as MetricKey[]).map((k) => (
             <button key={k} onClick={() => setMetric(k)} className={seg(metric === k)}>{METRIC_LABEL[k]}</button>
           ))}
         </div>
-        <div className="flex items-center gap-0.5 rounded-xl bg-[color:var(--surface-2)]/70 p-0.5 ring-1 ring-[color:var(--hairline)]">
+        <div className="seg-group">
           <button onClick={() => setMode('heat')} className={seg(mode === 'heat')}><span className="flex items-center gap-1"><Flame className="h-3.5 w-3.5" /> حرارة</span></button>
           <button onClick={() => setMode('regions')} className={seg(mode === 'regions')}><span className="flex items-center gap-1"><LayoutGrid className="h-3.5 w-3.5" /> مناطق</span></button>
         </div>
@@ -348,9 +347,9 @@ export function UserHeatmap({ className = '' }: { className?: string }) {
       {/* بطاقات المؤشّرات */}
       <div className="mb-6 grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
         {tiles.map((t) => (
-          <div key={t.label} className="rounded-2xl border border-[color:var(--hairline)] bg-[color:var(--surface-2)]/60 p-3 sm:p-4">
+          <div key={t.label} className="mini-tile">
             <t.icon className="h-4 w-4 text-[color:var(--gold)]" />
-            <div className="mt-1.5 truncate font-display text-lg font-black text-foreground tabular-nums sm:text-xl">
+            <div className="mt-1.5 truncate font-display text-xl font-semibold text-foreground tabular-nums sm:text-2xl">
               {t.isNum ? <CountUp value={t.value as number} /> : t.value}
             </div>
             <p className="text-[11px] font-bold leading-tight text-muted-foreground sm:text-xs">{t.label}</p>
@@ -361,7 +360,7 @@ export function UserHeatmap({ className = '' }: { className?: string }) {
       <div className="grid gap-6 lg:grid-cols-[minmax(0,340px)_1fr] lg:items-start">
         {/* الخريطة */}
         <div ref={containerRef} className="mx-auto w-full max-w-[340px]">
-          <div className="relative rounded-3xl border border-[color:var(--hairline)] bg-gradient-to-b from-[color:var(--surface)] to-[color:var(--surface-2)]/50 p-3">
+          <div className="map-well relative p-3">
             {/* أسهم التكبير على طرف الخريطة — طريقة إضافية لفتحها بكامل الصفحة */}
             <button
               type="button"
@@ -386,7 +385,7 @@ export function UserHeatmap({ className = '' }: { className?: string }) {
                 return (
                   <button key={m.id}
                     onClick={(e) => { e.stopPropagation(); setSelMuni(m.id); setTab('schools'); }}
-                    className="group absolute grid -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-2 border-white/80 text-[10px] font-black text-white shadow-[0_2px_8px_rgba(106,15,46,0.4)] outline-none transition hover:scale-110"
+                    className="group absolute grid -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-2 border-white/80 text-[10px] font-semibold text-white shadow-[0_2px_8px_rgba(106,15,46,0.4)] outline-none transition hover:scale-110"
                     style={{ left: `${normX(cx) * 100}%`, top: `${normY(cy) * 100}%`, width: r, height: r, background: 'radial-gradient(circle at 35% 30%, var(--maroon), var(--maroon-700))' }}
                     title={`${m.name}: ${formatFull(m.users)} ${METRIC_UNIT[metric]}`}
                     aria-label={`${m.name}: ${formatFull(m.users)}`}>
@@ -440,7 +439,7 @@ export function UserHeatmap({ className = '' }: { className?: string }) {
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-[color:var(--surface-2)]">
-                          <div className="h-full rounded-full transition-[width] duration-[900ms] ease-out" style={{ width: loaded ? `${(m.users / maxMuni) * 100}%` : '0%', background: 'linear-gradient(90deg, var(--gold), var(--maroon))' }} />
+                          <div className="h-full rounded-full transition-[width] duration-[900ms] ease-out" style={{ width: loaded ? `${(m.users / maxMuni) * 100}%` : '0%', background: 'var(--maroon)' }} />
                         </div>
                         <ChevronRight className="h-4 w-4 shrink-0 rotate-180 text-muted-foreground opacity-0 transition group-hover:opacity-100" />
                       </div>
@@ -468,7 +467,7 @@ export function UserHeatmap({ className = '' }: { className?: string }) {
                         <span className="shrink-0 text-xs font-bold tabular-nums text-muted-foreground">{formatFull(v)} {METRIC_UNIT[metric]}</span>
                       </div>
                       <div className="h-2 w-full overflow-hidden rounded-full bg-[color:var(--surface-2)]">
-                        <div className="h-full rounded-full" style={{ width: `${(v / maxSchoolTop) * 100}%`, background: 'linear-gradient(90deg, var(--gold), var(--maroon))' }} />
+                        <div className="h-full rounded-full" style={{ width: `${(v / maxSchoolTop) * 100}%`, background: 'var(--maroon)' }} />
                       </div>
                     </li>
                   ))}

@@ -1,4 +1,3 @@
-import { Settings2 } from 'lucide-react';
 import {
   getSubjects,
   getStructure,
@@ -7,8 +6,7 @@ import {
   locateActivity,
 } from '@/lib/content';
 import { AdminShell } from '@/components/admin/admin-shell';
-import { BackButton } from '@/components/back-button';
-import { Icon3D } from '@/components/icon-3d';
+import { PageCourt } from '@/components/page-court';
 import { SITE_NAME } from '@/lib/site';
 
 // لوحة المالك تُقرأ حيّة دائمًا حتى يرى ما رفعه فورًا بلا انتظار.
@@ -33,26 +31,24 @@ export default async function AdminPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-12">
-      <div className="mb-6 flex">
-        <BackButton fallback="/" />
-      </div>
-      <div className="mb-8 text-center">
-        <Icon3D icon={Settings2} size="lg" className="mx-auto" />
-        <h1 className="mt-4 font-calli text-3xl font-bold text-[color:var(--maroon)] sm:text-4xl">
-          لوحة الإدارة
-        </h1>
-        <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-          ارفع الأنشطة ونظّمها، وأدِر بنية المناهج والمواد والوحدات والدروس.
-        </p>
-      </div>
-      <AdminShell
-        subjects={subjects}
-        structure={structure}
-        activities={activities}
-        uploadedIds={[...uploadedIds]}
-        labels={labels}
+    <>
+      <PageCourt
+        crumbs={[{ href: '/', label: 'الرئيسية' }, { label: 'لوحة الإدارة' }]}
+        kicker="للمشرفين"
+        title="لوحة الإدارة"
+        icon="key"
+        color="#5b3a22"
+        lead="ارفع الأنشطة ونظّمها، وأدِر بنية المناهج والمواد والوحدات والدروس، ورسائل الشريط وإعدادات التنزيل."
       />
-    </div>
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
+        <AdminShell
+          subjects={subjects}
+          structure={structure}
+          activities={activities}
+          uploadedIds={[...uploadedIds]}
+          labels={labels}
+        />
+      </div>
+    </>
   );
 }

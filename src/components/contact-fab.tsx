@@ -63,7 +63,7 @@ export function ContactFab() {
           className="absolute bottom-[72px] right-0 w-[min(86vw,20rem)] origin-bottom-right animate-[contact-pop_.22s_cubic-bezier(.22,1,.36,1)] overflow-hidden rounded-2xl border border-[color:var(--gold)]/40 bg-[color:var(--surface)] shadow-2xl"
         >
           <div className="flex items-center justify-between gap-2 bg-[color:var(--maroon)] px-4 py-3 text-white">
-            <p className="font-display text-sm font-black">تواصل معنا</p>
+            <p className="font-display text-base font-semibold">تواصل معنا</p>
             <button
               onClick={() => setOpen(false)}
               aria-label="إغلاق"
@@ -129,10 +129,10 @@ export function ContactFab() {
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-label="التواصل"
-        className="group flex items-center gap-2 rounded-full border border-[color:var(--gold)]/50 bg-[color:var(--maroon)] py-3 pe-4 ps-3.5 text-white shadow-xl shadow-[color:var(--maroon)]/25 transition hover:bg-[color:var(--maroon-700)] active:scale-95"
+        className="fab-pill"
       >
         <MessageCircleMore className="h-6 w-6" />
-        <span className="font-display text-sm font-black">التواصل</span>
+        <span className="font-display text-[0.95rem] font-semibold">التواصل</span>
       </button>
     </div>
   );

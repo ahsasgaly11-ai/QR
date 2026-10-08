@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { usePearlTimer } from '@/components/pearls/use-pearl-timer';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -131,6 +132,9 @@ function PlayerInner({ activity, localHtml, next }: PlayerProps) {
   // حتى لا يُنهيها التمرير على الجوال، وتعمل على iOS الذي لا يدعم ملء شاشة
   // العناصر. نطلب ملء الشاشة الأصلي إضافةً إليها عند توفّره فقط.
   const [immersive, setImmersive] = useState(false);
+
+  // لؤلؤة عن كل نشاط يُجرَّب دقيقة كاملة
+  usePearlTimer(activity.id, activity.title);
 
   useEffect(() => {
     trackSchoolPlay(activity); // ينسب اللعب للمدرسة + النشاط/الوحدة

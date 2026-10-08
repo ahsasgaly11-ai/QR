@@ -130,10 +130,10 @@ export function IndexImporter({
 
   return (
     <div className="fixed inset-0 z-[90] flex items-start justify-center overflow-y-auto bg-black/50 p-4 backdrop-blur-sm">
-      <div className="card-premium my-8 w-full max-w-3xl rounded-3xl p-6 sm:p-8">
+      <div className="panel my-8 w-full max-w-3xl rounded-2xl p-6 sm:p-8">
         <div className="mb-5 flex items-start justify-between gap-3">
           <div>
-            <h3 className="font-display text-xl font-bold text-[color:var(--maroon)]">
+            <h3 className="font-display text-xl font-semibold text-foreground">
               استيراد الوحدات والدروس من الفهرس
             </h3>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -152,7 +152,7 @@ export function IndexImporter({
         {/* وجهة الاستيراد */}
         <div className="mb-5 grid gap-3 sm:grid-cols-2">
           <div>
-            <label className="mb-1.5 block text-sm font-black text-[color:var(--maroon)]">
+            <label className="mb-1.5 block text-sm font-semibold text-[color:var(--maroon)]">
               المادة
             </label>
             <select
@@ -170,7 +170,7 @@ export function IndexImporter({
             </select>
           </div>
           <div>
-            <label className="mb-1.5 block text-sm font-black text-[color:var(--maroon)]">
+            <label className="mb-1.5 block text-sm font-semibold text-[color:var(--maroon)]">
               المستوى
             </label>
             <select className={input} value={gradeId} onChange={(e) => setGradeId(e.target.value)}>

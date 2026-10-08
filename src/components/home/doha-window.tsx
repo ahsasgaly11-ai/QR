@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { isLite } from '@/lib/perf';
 
 // ---------------------------------------------------------------------------
 // نافذة الدوحة: مشهد تراثي من ست طبقات على أعماق مختلفة داخل قوس.
@@ -41,7 +42,8 @@ export function DohaWindow() {
     const w = world.current;
     if (!el || !w) return;
 
-    if (!motionAllowed()) return;
+    // الوضع الخفيف: المشهد ثابت بلا تتبّع للمؤشّر أو الميلان
+    if (!motionAllowed() || isLite()) return;
 
     let tx = 0, ty = 0, cx = 0, cy = 0, scroll = 0;
     let visible = true;

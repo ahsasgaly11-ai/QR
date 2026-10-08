@@ -1,8 +1,10 @@
 import Link from 'next/link';
-import { ArrowLeft, Layers } from 'lucide-react';
-import { getSubjects, countActivities } from '@/lib/content';
-import { Reveal } from '@/components/reveal';
-import { BackButton } from '@/components/back-button';
+import { ArrowLeft } from 'lucide-react';
+import { getAllActivities, getSubjects } from '@/lib/content';
+import { HeritageDoor } from '@/components/home/heritage-door';
+import { DOOR_PAINT, emblemFor } from '@/components/home/door-emblem';
+import { SectionHead } from '@/components/home/section-head';
+import { PageCourt } from '@/components/page-court';
 import { SITE_NAME } from '@/lib/site';
 
 // المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
@@ -15,68 +17,100 @@ export const metadata = {
 };
 
 export default async function BrowsePage() {
-  const subjects = await getSubjects();
+  const [subjects, activities] = await Promise.all([getSubjects(), getAllActivities()]);
+
+  const rows = subjects.map((s, i) => {
+    const units = s.grades.reduce((n, g) => n + g.units.length, 0);
+    const lessons = s.grades.reduce((n, g) => n + g.units.reduce((m, u) => m + u.lessons.length, 0), 0);
+    const count = activities.filter((a) => a.subjectId === s.id && !a.smartReinforcement).length;
+    return { s, units, lessons, count, available: s.grades.length > 0, color: DOOR_PAINT[i % DOOR_PAINT.length] };
+  });
+  const smartGames = activities.filter((a) => a.smartReinforcement).length;
+  const open = rows.filter((r) => r.available);
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-14">
-      <div className="mb-6 flex">
-        <BackButton fallback="/" />
-      </div>
-      <Reveal className="mb-10 text-center">
-        <p className="diamond-divider mx-auto max-w-xs text-sm font-black">
-          المكتبة التعليمية
-        </p>
-        <h1 className="mt-3 font-calli text-4xl font-bold text-[color:var(--maroon)] sm:text-5xl">
-          تصفّح المناهج الدراسية
-        </h1>
-        <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-          اختر المادة للوصول إلى المستويات والوحدات والدروس والأنشطة التفاعلية.
-        </p>
-      </Reveal>
+    <>
+      <PageCourt
+        crumbs={[{ href: '/', label: 'الرئيسية' }, { label: 'المناهج' }]}
+        kicker="المكتبة التعليمية"
+        title="تصفّح المناهج"
+        icon="globe"
+        color="#2d5f7c"
+        lead="كل مادة باب. اختر الباب لتصل إلى مستوياتها ووحداتها ودروسها، ثم إلى أنشطتها التفاعلية."
+        chips={[
+          { n: open.length, label: open.length === 1 ? 'مادة متاحة' : 'مواد متاحة' },
+          { n: open.reduce((n, r) => n + r.units, 0), label: 'وحدات' },
+          { n: open.reduce((n, r) => n + r.count, 0), label: 'نشاطًا' },
+        ]}
+      />
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {subjects.map((s, i) => {
-          const available = s.grades.length > 0;
-          const count = countActivities([s]);
-          const units = s.grades.reduce((n, g) => n + g.units.length, 0);
-          const card = (
-            <div
-              className="card-premium relative flex h-64 flex-col justify-between overflow-hidden rounded-3xl p-7 text-white shadow-xl"
-              style={{ background: `linear-gradient(135deg, ${s.color}, ${s.accent})` }}
-            >
-              <div className="absolute -left-10 -top-10 h-36 w-36 rounded-full bg-white/10" />
-              <div className="absolute bottom-1 left-3 text-8xl opacity-20">{s.emoji}</div>
-              <div className="relative">
-                <span className="text-5xl">{s.emoji}</span>
-                <h2 className="mt-3 font-display text-2xl font-black">{s.title}</h2>
-                <p className="text-sm text-white/80">{s.titleEn}</p>
-              </div>
-              <div className="relative flex items-center justify-between">
-                {available ? (
-                  <span className="flex items-center gap-2 text-sm font-bold text-white/90">
-                    <Layers className="h-4 w-4" />
-                    {units} وحدة • {count} نشاط
+      <section className="door-wall border-t-0">
+        <div className="relative mx-auto max-w-7xl px-5 py-14 sm:px-6 lg:py-16">
+          <div className="door-row">
+            {rows.map(({ s, count, available, color }) => (
+              <HeritageDoor
+                key={s.id}
+                href={`/subject/${s.id}`}
+                title={s.title}
+                meta={
+                  available
+                    ? [s.grades.map((g) => g.title).join(' • '), count > 0 && `${count} نشاطًا`]
+                        .filter(Boolean)
+                        .join(' • ')
+                    : 'قريبًا'
+                }
+                color={color}
+                emblem={emblemFor(s.id)}
+                locked={!available}
+              />
+            ))}
+            <HeritageDoor
+              href="/smart-games"
+              title="ألعاب التعزيز الذكية"
+              meta={smartGames > 0 ? `${smartGames} لعبة` : 'تعلّم • العب • عزّز'}
+              color="#2d5f7c"
+              emblem="games"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* دليل مختصر يقرأ أرقام كل مادة دفعة واحدة */}
+      <section className="mx-auto max-w-7xl px-5 py-14 sm:px-6">
+        <SectionHead kicker="دليل المواد" title="ما في كل مادة" />
+        <ol className="subject-ledger">
+          {rows.map(({ s, units, lessons, count, available, color }) => {
+            const body = (
+              <>
+                <span className="ledger-swatch" style={{ background: color }} aria-hidden />
+                <span className="min-w-0 flex-1">
+                  <span className="ledger-title">{s.title}</span>
+                  <span className="ledger-sub">
+                    {available ? s.grades.map((g) => g.title).join(' • ') : 'تُضاف قريبًا'}
                   </span>
-                ) : (
-                  <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold">
-                    قريبًا
+                </span>
+                {available && (
+                  <span className="ledger-nums">
+                    <span><b>{units}</b> وحدات</span>
+                    <span><b>{lessons}</b> درسًا</span>
+                    <span><b>{count}</b> نشاطًا</span>
                   </span>
                 )}
-                {available && <ArrowLeft className="h-6 w-6" />}
-              </div>
-            </div>
-          );
-          return (
-            <Reveal key={s.id} delay={i * 90}>
-              {available ? (
-                <Link href={`/subject/${s.id}`}>{card}</Link>
-              ) : (
-                <div className="cursor-not-allowed opacity-70">{card}</div>
-              )}
-            </Reveal>
-          );
-        })}
-      </div>
-    </div>
+                {available && <ArrowLeft className="ledger-go h-5 w-5" aria-hidden />}
+              </>
+            );
+            return (
+              <li key={s.id}>
+                {available ? (
+                  <Link href={`/subject/${s.id}`} className="ledger-row">{body}</Link>
+                ) : (
+                  <div className="ledger-row is-soon" aria-disabled>{body}</div>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+      </section>
+    </>
   );
 }

@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { Menu, X, UploadCloud } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from './theme-toggle';
+import { PearlChest } from './pearls/pearl-chest';
 import { SITE_NAME } from '@/lib/site';
 
 // روابط التنقّل نصّية فقط — بلا أيقونات.
@@ -99,6 +100,7 @@ export function SiteHeader() {
           </nav>
 
           <div className="flex shrink-0 items-center gap-2">
+            <PearlChest />
             <ThemeToggle />
             <Link
               href={UPLOAD.href}

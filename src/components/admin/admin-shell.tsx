@@ -41,34 +41,30 @@ export function AdminShell({
 
   return (
     <AuthGate>
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex w-full flex-wrap gap-1 rounded-2xl border border-[color:var(--hairline)] bg-[color:var(--surface)] p-1 shadow-[var(--shadow-sm)] sm:w-auto">
+      <div className="admin-layout">
+        {/* شريط جانبي على الحاسوب، وشريط أفقي قابل للتمرير على الجوال */}
+        <nav className="admin-rail" aria-label="أقسام لوحة الإدارة">
           {tabs.map((t) => (
             <button
               key={t.id}
+              type="button"
               onClick={() => setTab(t.id)}
-              className={cn(
-                'flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-bold transition sm:flex-none sm:px-4',
-                tab === t.id
-                  ? 'bg-[color:var(--maroon)] text-white shadow-[var(--shadow-sm)]'
-                  : 'text-foreground/70 hover:text-[color:var(--maroon)]'
-              )}
+              aria-current={tab === t.id ? 'page' : undefined}
+              className={cn('admin-tab', tab === t.id && 'is-on')}
             >
-              <t.icon className="h-4 w-4" />
+              <t.icon className="h-[1.1rem] w-[1.1rem] shrink-0" />
               {t.label}
             </button>
           ))}
-        </div>
-        {isFirebaseConfigured && (
-          <button
-            onClick={() => signOutAdmin()}
-            className="btn-ghost btn-sm px-4 py-2 text-sm"
-          >
-            <LogOut className="h-4 w-4" /> خروج
-          </button>
-        )}
-      </div>
+          {isFirebaseConfigured && (
+            <button type="button" onClick={() => signOutAdmin()} className="admin-tab admin-tab--out">
+              <LogOut className="h-[1.1rem] w-[1.1rem] shrink-0" /> خروج
+            </button>
+          )}
+        </nav>
 
+        <div className="min-w-0">
+          <h2 className="admin-section-title">{tabs.find((t) => t.id === tab)?.label}</h2>
       {tab === 'upload' && <AdminUploader subjects={subjects} />}
       {tab === 'activities' && (
         <ActivitiesManager
@@ -83,7 +79,7 @@ export function AdminShell({
         <div className="space-y-10">
           <div>
             <div className="mb-4">
-              <h2 className="font-display text-xl font-black text-[color:var(--maroon)]">
+              <h2 className="font-display text-xl font-semibold text-foreground">
                 رفع لعبة تعزيز ذكية
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -94,7 +90,7 @@ export function AdminShell({
           </div>
           <div>
             <div className="mb-4">
-              <h2 className="font-display text-xl font-black text-[color:var(--maroon)]">
+              <h2 className="font-display text-xl font-semibold text-foreground">
                 إدارة ألعاب التعزيز
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -115,7 +111,7 @@ export function AdminShell({
         <div className="space-y-10">
           <div>
             <div className="mb-4">
-              <h2 className="font-display text-xl font-black text-[color:var(--maroon)]">
+              <h2 className="font-display text-xl font-semibold text-foreground">
                 رفع مراجعة وحدة
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -127,7 +123,7 @@ export function AdminShell({
           </div>
           <div>
             <div className="mb-4">
-              <h2 className="font-display text-xl font-black text-[color:var(--maroon)]">
+              <h2 className="font-display text-xl font-semibold text-foreground">
                 إدارة المراجعات
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -147,6 +143,8 @@ export function AdminShell({
       {tab === 'content' && <ContentManager initial={structure} activities={activities} />}
       {tab === 'ticker' && <TickerManager />}
       {tab === 'downloads' && <DownloadsManager structure={structure} />}
+        </div>
+      </div>
     </AuthGate>
   );
 }

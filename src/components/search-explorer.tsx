@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Search, X, SlidersHorizontal } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import type { Activity, ActivityType } from '@/lib/types';
 import { ACTIVITY_META } from '@/lib/types';
 import { ActivityCard } from './activity-card';
+import { ACTIVITY_ICON, HeritageIcon } from './heritage-icons';
 import { cn, normalizeAr } from '@/lib/utils';
 
 export interface SearchRow {
@@ -77,66 +78,65 @@ export function SearchExplorer({
     });
   }, [rows, q, type, subject]);
 
-  const chip = (active: boolean) =>
-    cn(
-      'rounded-full px-4 py-1.5 text-sm font-bold transition-all',
-      active
-        ? 'text-white shadow-[var(--shadow-sm)]'
-        : 'bg-[color:var(--surface)] text-foreground/70 hover:text-[color:var(--maroon)] border border-[color:var(--hairline)]'
-    );
+  const counts = useMemo(() => {
+    const c: Record<string, number> = {};
+    for (const r of rows) c[r.activity.type] = (c[r.activity.type] ?? 0) + 1;
+    return c;
+  }, [rows]);
 
   return (
     <div>
-      {/* search bar */}
-      <div className="relative mx-auto max-w-2xl">
-        <Search className="pointer-events-none absolute right-5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+      {/* بئر البحث: حقل كبير بحافّة سفلية بارزة */}
+      <label className="search-well">
+        <Search className="h-6 w-6 shrink-0 text-[color:var(--gold)]" aria-hidden />
+        <span className="sr-only">ابحث في الأنشطة</span>
         <input
-          autoFocus
+          type="search"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="ابحث عن نشاط، درس، أو موضوع…"
-          className="w-full rounded-2xl border border-[color:var(--hairline-strong)] bg-[color:var(--surface)] py-4 pr-14 pl-12 text-lg font-bold text-foreground shadow-[var(--shadow-md)] outline-none transition focus:border-[color:var(--maroon)] focus:ring-4 focus:ring-[color:var(--maroon)]/15"
+          placeholder="اكتب كلمة: المغناطيس، النبات، الكسور…"
         />
         {q && (
-          <button
-            onClick={() => setQ('')}
-            className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:text-[color:var(--maroon)]"
-            aria-label="مسح"
-          >
+          <button type="button" onClick={() => setQ('')} aria-label="مسح البحث" className="search-clear">
             <X className="h-5 w-5" />
           </button>
         )}
-      </div>
+      </label>
 
-      {/* filters */}
-      <div className="mt-6 space-y-3">
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
-          <button onClick={() => setType('all')} className={chip(type === 'all')} style={type === 'all' ? { background: 'var(--maroon)' } : {}}>
-            كل الأنواع
+      {/* أنواع الأنشطة بأيقوناتها، ثم المواد */}
+      <div className="mt-6 grid gap-3">
+        <div className="search-types" role="group" aria-label="نوع النشاط">
+          <button type="button" onClick={() => setType('all')} className={cn('search-type', type === 'all' && 'is-on')} aria-pressed={type === 'all'}>
+            <span className="search-type-n">{rows.length}</span>
+            الكل
           </button>
           {TYPES.map((t) => (
             <button
               key={t}
+              type="button"
               onClick={() => setType(t)}
-              className={chip(type === t)}
-              style={type === t ? { background: ACTIVITY_META[t].color } : {}}
+              className={cn('search-type', type === t && 'is-on')}
+              aria-pressed={type === t}
             >
+              <HeritageIcon kind={ACTIVITY_ICON[t]} className="h-8 w-8" />
               {ACTIVITY_META[t].label}
+              <span className="search-type-n">{counts[t] ?? 0}</span>
             </button>
           ))}
         </div>
+
         {subjects.length > 1 && (
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            <button onClick={() => setSubject('all')} className={chip(subject === 'all')} style={subject === 'all' ? { background: 'var(--gold)' } : {}}>
+          <div className="flex flex-wrap items-center justify-center gap-2" role="group" aria-label="المادة">
+            <button type="button" onClick={() => setSubject('all')} className={cn('level-tab', subject === 'all' && 'is-on')} aria-pressed={subject === 'all'}>
               كل المواد
             </button>
             {subjects.map((s) => (
               <button
                 key={s.id}
+                type="button"
                 onClick={() => setSubject(s.id)}
-                className={chip(subject === s.id)}
-                style={subject === s.id ? { background: 'var(--gold)' } : {}}
+                className={cn('level-tab', subject === s.id && 'is-on')}
+                aria-pressed={subject === s.id}
               >
                 {s.title}
               </button>
@@ -145,18 +145,35 @@ export function SearchExplorer({
         )}
       </div>
 
-      {/* results */}
-      <p className="mt-8 text-center text-sm font-bold text-muted-foreground">
-        {results.length > 0
-          ? `${results.length} نتيجة`
-          : 'لا توجد نتائج مطابقة — جرّب كلمة أخرى.'}
+      {/* النتائج */}
+      <p className="mt-10 text-sm font-semibold text-muted-foreground" aria-live="polite">
+        {results.length > 0 ? (
+          <>
+            <b className="text-lg text-foreground">{results.length}</b> {results.length === 1 ? 'نتيجة' : 'نتائج'}
+            {q && <> لـ «{q}»</>}
+          </>
+        ) : null}
       </p>
 
-      <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {results.map((r, i) => (
-          <ActivityCard key={r.activity.id} activity={r.activity} index={i} />
-        ))}
-      </div>
+      {results.length > 0 ? (
+        <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {results.map((r, i) => (
+            <ActivityCard key={r.activity.id} activity={r.activity} index={i} />
+          ))}
+        </div>
+      ) : (
+        <div className="explorer-empty mt-2">
+          <HeritageIcon kind="question" className="mx-auto h-20 w-20" />
+          <h3 className="mt-3 font-calli text-2xl text-foreground">
+            {rows.length === 0 ? 'لا توجد أنشطة بعد' : 'لا توجد نتائج مطابقة'}
+          </h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {rows.length === 0
+              ? 'ستظهر الأنشطة هنا عند إضافتها من لوحة الإدارة.'
+              : 'جرّب كلمة أخرى، أو اختر «الكل» من الأنواع والمواد.'}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

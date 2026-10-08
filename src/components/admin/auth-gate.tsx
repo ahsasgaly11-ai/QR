@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Lock, LogIn, Loader2, ShieldCheck, Info, ShieldX } from 'lucide-react';
+import { LogIn, Loader2, ShieldCheck, Info, ShieldX } from 'lucide-react';
+import { HeritageIcon } from '@/components/heritage-icons';
 import {
   isFirebaseConfigured,
   signInAdmin,
@@ -108,11 +109,11 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     if (owner === false) {
       return (
         <div className="mx-auto max-w-md">
-          <div className="card-premium rounded-3xl p-8 text-center">
+          <div className="panel gate-card-top p-8 text-center">
             <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-[color:var(--coral)] text-white shadow-[var(--shadow-md)]">
               <ShieldX className="h-8 w-8" />
             </span>
-            <h2 className="mt-4 font-display text-2xl font-bold text-[color:var(--maroon)]">
+            <h2 className="mt-4 font-display text-2xl font-semibold text-foreground">
               غير مصرّح لك بالدخول
             </h2>
             <p className="mt-2 text-sm leading-7 text-muted-foreground">
@@ -165,8 +166,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   }
   return (
     <div>
-      <div className="mb-6 flex items-start gap-3 rounded-2xl border border-[color:var(--sky)]/30 bg-[color:var(--sky)]/10 p-4 text-sm">
-        <Info className="mt-0.5 h-5 w-5 shrink-0 text-[color:var(--sky)]" />
+      <div className="sync-notice mb-6 flex items-start gap-3 p-4 text-sm">
+        <Info className="mt-0.5 h-5 w-5 shrink-0" />
         <p>
           <b>وضع العرض:</b> لم يُفعّل Firebase، لذا لا تُحفظ التغييرات فعليًا —
           تُعرض التعليمات وكائنات البيانات الجاهزة فقط. بعد إعداد Firebase تُصبح
@@ -180,7 +181,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
 function AdminBadge({ email }: { email: string | null }) {
   return (
-    <div className="mb-6 flex items-center gap-2 rounded-2xl border border-[color:var(--teal)]/30 bg-[color:var(--teal)]/10 px-4 py-3 text-sm font-bold text-[color:var(--teal)]">
+    <div className="owner-note mb-6">
       <ShieldCheck className="h-5 w-5" />
       مسجّل الدخول كمشرف{email ? ` — ${email}` : ''}
     </div>
@@ -206,12 +207,10 @@ function LoginCard({
     <div className="mx-auto max-w-md">
       <form
         onSubmit={onSubmit}
-        className="card-premium rounded-3xl p-8 text-center"
+        className="panel gate-card-top p-8 text-center"
       >
-        <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-[color:var(--maroon)] text-white shadow-[var(--shadow-md)]">
-          <Lock className="h-8 w-8" />
-        </span>
-        <h2 className="mt-4 font-display text-2xl font-bold text-[color:var(--maroon)]">
+        <HeritageIcon kind="key" className="mx-auto !h-24 !w-24" />
+        <h2 className="mt-4 font-display text-2xl font-semibold text-foreground">
           {title}
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">{subtitle}</p>

@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Gamepad2, ShieldCheck } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 import type { Activity } from '@/lib/types';
 import { ActivityCard } from '@/components/activity-card';
 import { Reveal } from '@/components/reveal';
 import { SchoolGate } from '@/components/school-gate';
 import { QursFeaturedCard } from '@/components/qurs-featured-card';
+import { SectionHead } from '@/components/home/section-head';
+import { HeritageIcon } from '@/components/heritage-icons';
 import {
   isFirebaseConfigured,
   isOwnerUid,
@@ -49,30 +51,21 @@ export function SmartGamesGrid({ initialGames }: { initialGames: Activity[] }) {
     <SchoolGate>
       <QursFeaturedCard />
 
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-sm font-black text-[color:var(--gold)]">
-            مكتبة الألعاب
-          </p>
-          <h2 className="mt-1 font-calli text-3xl font-bold text-[color:var(--maroon)]">
-            اختر لعبة وابدأ
-          </h2>
-        </div>
-        <div className="inline-flex items-center gap-2 rounded-2xl border border-[color:var(--gold)]/25 bg-[color:var(--surface)] px-4 py-2 text-sm font-black text-[color:var(--maroon)] shadow-sm">
-          <Gamepad2 className="h-4 w-4" />
-          {games.length} {games.length === 1 ? 'لعبة' : 'ألعاب'}
-        </div>
-      </div>
+      <SectionHead
+        kicker="مكتبة الألعاب"
+        title="اختر لعبة وابدأ"
+        lead={games.length > 0 ? `${games.length} ${games.length === 1 ? 'لعبة' : games.length <= 10 ? 'ألعاب' : 'لعبة'} للتعزيز، تعمل مباشرة في المتصفّح.` : undefined}
+      />
 
       {isOwner && (
-        <div className="mb-6 flex items-center gap-2 rounded-2xl border border-[color:var(--teal)]/30 bg-[color:var(--teal)]/10 px-4 py-3 text-sm font-bold text-[color:var(--teal)]">
+        <div className="owner-note mb-6">
           <ShieldCheck className="h-5 w-5" />
           وضع المشرف مفعّل — يمكنك تعديل عنوان اللعبة ووصفها أو حذفها مباشرة.
         </div>
       )}
 
       {games.length > 0 ? (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {games.map((game, i) => (
             <Reveal key={game.id} delay={i * 70}>
               <ActivityCard
@@ -86,14 +79,10 @@ export function SmartGamesGrid({ initialGames }: { initialGames: Activity[] }) {
         </div>
       ) : (
         <Reveal>
-          <div className="rounded-3xl border border-dashed border-[color:var(--gold)]/45 bg-[color:var(--surface)] p-10 text-center shadow-sm">
-            <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-[color:var(--gold)]/12 text-[color:var(--maroon)]">
-              <Gamepad2 className="h-8 w-8" />
-            </div>
-            <h2 className="mt-4 font-display text-2xl font-black text-[color:var(--maroon)]">
-              لا توجد ألعاب مضافة بعد
-            </h2>
-            <p className="mx-auto mt-2 max-w-xl text-sm leading-7 text-muted-foreground">
+          <div className="explorer-empty">
+            <HeritageIcon kind="oyster" className="mx-auto h-20 w-20" />
+            <h3 className="mt-3 font-calli text-2xl text-foreground">لا توجد ألعاب مضافة بعد</h3>
+            <p className="mx-auto mt-1 max-w-xl text-sm leading-7 text-muted-foreground">
               ستظهر ألعاب التعزيز هنا تلقائيًا عند إضافتها من لوحة الإدارة.
             </p>
           </div>

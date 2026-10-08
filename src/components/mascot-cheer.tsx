@@ -121,8 +121,7 @@ function Bubble({
       // aria-live يجعل قارئ الشاشة يعلن العبارة الجديدة دون نقل التركيز
       aria-live="polite"
       className={cn(
-        'relative mb-6 max-w-[15rem] rounded-2xl border-2 border-[color:var(--gold)]/50 bg-white px-4 py-2.5',
-        'text-sm font-black leading-6 text-[color:var(--maroon)] shadow-lg',
+        'mascot-bubble relative mb-6 max-w-[15rem] px-4 py-2.5 text-sm font-semibold leading-6',
         'transition-all duration-400',
         shown ? 'translate-y-0 opacity-100' : 'translate-y-1 opacity-0'
       )}
@@ -130,7 +129,7 @@ function Bubble({
       {text}
       <span
         className={cn(
-          'absolute bottom-[-9px] h-4 w-4 rotate-45 border-b-2 border-l-2 border-[color:var(--gold)]/50 bg-white',
+          'mascot-bubble-tail absolute bottom-[-8px] h-4 w-4 rotate-45',
           tail === 'right' ? 'left-6' : 'right-6'
         )}
       />

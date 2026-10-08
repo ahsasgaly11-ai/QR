@@ -36,12 +36,12 @@ export function SchoolGate({ children }: { children: React.ReactNode }) {
   // لا مدرسة مختارة → بوّابة الاختيار.
   if (!school) {
     return (
-      <div className="card-premium mx-auto max-w-2xl rounded-3xl p-6 text-center sm:p-9">
+      <div className="gate-card">
         <OryxMascot className="mx-auto h-24 w-auto float-mid" />
-        <h2 className="mt-4 font-calli text-2xl font-bold text-[color:var(--maroon)] sm:text-3xl">
+        <h2 className="mt-3 font-calli text-[1.9rem] leading-[1.5] text-foreground">
           اختر مدرستك أولًا
         </h2>
-        <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+        <p className="mx-auto mt-2 max-w-md text-[0.95rem] leading-7 text-[color:var(--ink-2)]">
           قبل تشغيل اللعبة أو تحميلها، اختر اسم مدرستك من القائمة — يساعدنا هذا
           على رسم خريطة حرارية لانتشار المستخدمين في مناطق قطر.
         </p>
@@ -62,8 +62,8 @@ export function SchoolGate({ children }: { children: React.ReactNode }) {
   // مدرسة مختارة، ووضع التغيير مفعّل.
   if (editing) {
     return (
-      <div className="card-premium mx-auto max-w-2xl rounded-3xl p-6 text-center sm:p-9">
-        <h2 className="font-calli text-2xl font-bold text-[color:var(--maroon)]">
+      <div className="gate-card">
+        <h2 className="font-calli text-[1.9rem] leading-[1.5] text-foreground">
           غيّر مدرستك
         </h2>
         <div className="mt-5">
@@ -88,8 +88,8 @@ export function SchoolGate({ children }: { children: React.ReactNode }) {
   // مدرسة مختارة → شريط صغير + المحتوى.
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[color:var(--gold)]/35 bg-[color:var(--gold)]/10 px-4 py-2.5">
-        <span className="flex min-w-0 items-center gap-2 text-sm font-bold text-foreground">
+      <div className="gate-bar">
+        <span className="flex min-w-0 items-center gap-2 text-sm font-semibold text-foreground">
           <GraduationCap className="h-4 w-4 shrink-0 text-[color:var(--maroon)]" />
           <span className="truncate">{school.name}</span>
           {munName && (
@@ -101,7 +101,7 @@ export function SchoolGate({ children }: { children: React.ReactNode }) {
         </span>
         <button
           onClick={() => setEditing(true)}
-          className="flex shrink-0 items-center gap-1.5 rounded-xl border border-[color:var(--gold)]/40 bg-[color:var(--surface)]/70 px-3 py-1.5 text-xs font-bold text-[color:var(--maroon)] transition hover:bg-[color:var(--gold)]/10"
+          className="gate-change"
         >
           <Pencil className="h-3.5 w-3.5" /> تغيير المدرسة
         </button>

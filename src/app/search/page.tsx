@@ -1,8 +1,6 @@
-import { Search } from 'lucide-react';
 import { getAllActivities, getSubjects, locateActivity } from '@/lib/content';
 import { SearchExplorer, type SearchRow } from '@/components/search-explorer';
-import { BackButton } from '@/components/back-button';
-import { Icon3D } from '@/components/icon-3d';
+import { PageCourt } from '@/components/page-court';
 import { SITE_NAME } from '@/lib/site';
 
 // المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
@@ -36,21 +34,18 @@ export default async function SearchPage() {
     .map((s) => ({ id: s.id, title: s.title }));
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-14">
-      <div className="mb-6 flex">
-        <BackButton fallback="/" />
-      </div>
-      <div className="mb-10 text-center">
-        <Icon3D icon={Search} size="lg" className="mx-auto" />
-        <h1 className="mt-4 font-calli text-4xl font-bold text-[color:var(--maroon)] sm:text-5xl">
-          ابحث في المنصّة
-        </h1>
-        <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-          اعثر على أي تجربة أو محاكاة أو لعبة أو سؤال عبر الكلمات المفتاحية،
-          وصفِّ النتائج حسب النوع أو المادة.
-        </p>
-      </div>
-      <SearchExplorer rows={rows} subjects={subjectOpts} />
-    </div>
+    <>
+      <PageCourt
+        crumbs={[{ href: '/', label: 'الرئيسية' }, { label: 'بحث' }]}
+        kicker="الفهرس"
+        title="ابحث في المنصّة"
+        icon="question"
+        color="#b0862a"
+        lead="اعثر على أي تجربة أو محاكاة أو لعبة أو سؤال بكلمة من عنوانه أو درسه، وصفِّ النتائج حسب النوع أو المادة."
+      />
+      <section className="mx-auto max-w-6xl px-5 py-10 sm:px-6">
+        <SearchExplorer rows={rows} subjects={subjectOpts} />
+      </section>
+    </>
   );
 }

@@ -314,12 +314,12 @@ export function AdminUploader({
 
   const inputCls =
     'w-full rounded-xl border border-[color:var(--hairline-strong)] bg-[color:var(--surface)] px-4 py-2.5 text-sm font-bold text-foreground outline-none transition focus:border-[color:var(--maroon)] focus:ring-2 focus:ring-[color:var(--maroon)]/20';
-  const labelCls = 'mb-1.5 block text-sm font-black text-[color:var(--maroon)]';
+  const labelCls = 'mb-1.5 block text-sm font-semibold text-[color:var(--maroon)]';
 
   // ---- success / result screen ----
   if (result) {
     return (
-      <div className="card-premium rounded-3xl p-8">
+      <div className="panel rounded-2xl p-8">
         <div className="mb-4 flex items-center gap-3 text-[color:var(--teal)]">
           <CheckCircle2 className="h-9 w-9" />
           <h3 className="font-display text-2xl font-bold">
@@ -418,7 +418,7 @@ export function AdminUploader({
   const hasLessons = (unit?.lessons.length ?? 0) > 0;
 
   return (
-    <form onSubmit={onSubmit} className="card-premium rounded-3xl p-6 sm:p-8">
+    <form onSubmit={onSubmit} className="panel rounded-2xl p-6 sm:p-8">
       {!isFirebaseConfigured && (
         <div className="mb-6 flex items-start gap-3 rounded-2xl border border-[color:var(--sky)]/30 bg-[color:var(--sky)]/10 p-4 text-sm">
           <Info className="mt-0.5 h-5 w-5 shrink-0 text-[color:var(--sky)]" />
@@ -568,7 +568,7 @@ export function AdminUploader({
 
       {reviewOnly && (
         <div className="mt-5 rounded-2xl border border-[color:var(--gold)]/30 bg-[color:var(--gold)]/5 p-4">
-          <p className="text-sm font-black text-[color:var(--maroon)]">
+          <p className="text-sm font-semibold text-[color:var(--maroon)]">
             ستظهر المراجعة أعلى الصفحة الرئيسية في قسم «مراجعات الوحدات».
           </p>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
@@ -591,7 +591,7 @@ export function AdminUploader({
 
       {smartOnly && (
         <div className="mt-5 rounded-2xl border border-[color:var(--gold)]/30 bg-[color:var(--gold)]/5 p-4">
-          <p className="text-sm font-black text-[color:var(--maroon)]">
+          <p className="text-sm font-semibold text-[color:var(--maroon)]">
             هذه اللعبة ستُنشر في قسم «ألعاب التعزيز الذكية» فقط.
           </p>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">

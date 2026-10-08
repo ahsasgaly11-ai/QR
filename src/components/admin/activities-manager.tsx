@@ -304,7 +304,7 @@ export function ActivitiesManager({
         const isUp = uploaded.has(a.id);
         const isEditing = editing === a.id;
         return (
-          <div key={a.id} className="card-premium rounded-2xl p-4">
+          <div key={a.id} className="panel rounded-2xl p-4">
             {isEditing ? (
               <div className="space-y-3">
                 <input
@@ -340,7 +340,7 @@ export function ActivitiesManager({
                 </div>
                 {/* مقطع لغة الإشارة القطرية (اختياري) */}
                 <div className="rounded-xl border border-[color:var(--hairline)] p-3">
-                  <label className="mb-2 flex items-center gap-1.5 text-xs font-black text-[color:var(--maroon)]">
+                  <label className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-[color:var(--maroon)]">
                     <Hand className="h-4 w-4" /> مقطع لغة الإشارة القطرية
                   </label>
                   <input
@@ -361,7 +361,7 @@ export function ActivitiesManager({
 
                 {!a.smartReinforcement && !a.unitReview && (
                   <div className="rounded-xl border border-[color:var(--hairline)] p-3">
-                    <p className="mb-2 flex items-center gap-1.5 text-xs font-black text-[color:var(--maroon)]">
+                    <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-[color:var(--maroon)]">
                       <FolderInput className="h-4 w-4" /> موقع النشاط
                     </p>
                     <div className="grid gap-2 sm:grid-cols-2">
@@ -420,7 +420,7 @@ export function ActivitiesManager({
                         <Sparkles className="h-3 w-3" /> تعزيز ذكي
                       </span>
                     )}
-                    <h4 className="truncate font-display text-base font-bold text-[color:var(--maroon)]">
+                    <h4 className="truncate font-display text-base font-semibold text-foreground">
                       {a.title}
                     </h4>
                     {!isUp && (

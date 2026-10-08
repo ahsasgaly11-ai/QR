@@ -150,11 +150,11 @@ export function TickerManager() {
               className="rounded-2xl border border-[color:var(--hairline)] bg-[color:var(--surface-2)]/50 p-4"
             >
               <div className="mb-3 flex items-center gap-2">
-                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-[color:var(--maroon)] text-xs font-black text-white">
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-[color:var(--maroon)] text-xs font-semibold text-white">
                   {i + 1}
                 </span>
                 {/* معاينة الشارة كما تظهر في الشريط */}
-                <span className="flex min-w-0 items-center gap-1.5 truncate rounded-md bg-gradient-to-b from-[#f0d77f] to-[#c9a227] px-2.5 py-1 text-xs font-black text-[#4d0a21]">
+                <span className="flex min-w-0 items-center gap-1.5 truncate rounded-md border border-[color:var(--hairline-strong)] bg-[#fbf7f0] px-2.5 py-1 text-xs font-semibold text-[#6b0f2b]">
                   <Icon className="h-3.5 w-3.5 shrink-0" />
                   <span className="truncate">{m.badge || 'بلا عنوان'}</span>
                 </span>
