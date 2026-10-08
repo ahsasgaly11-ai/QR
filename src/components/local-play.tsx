@@ -6,6 +6,7 @@ import { Loader2, Home, ChevronLeft, HardDrive } from 'lucide-react';
 import type { Activity } from '@/lib/types';
 import { getLocalRecord } from '@/lib/local-store';
 import { ActivityPlayer } from './activity-player';
+import { PlayHeader } from './play-header';
 import { OryxMascot } from './oryx-mascot';
 import { BackButton } from './back-button';
 
@@ -116,11 +117,9 @@ export function LocalPlay({ activityId }: { activityId: string }) {
         <span className="font-bold text-foreground">{activity.title}</span>
       </nav>
 
-      <h1 className="short-title mb-1 font-calli text-3xl font-bold text-[color:var(--maroon)] sm:text-4xl">
-        {activity.title}
-      </h1>
+      <PlayHeader activity={activity} />
       {activity.description && (
-        <p className="short-hide mb-4 max-w-3xl text-muted-foreground">{activity.description}</p>
+        <p className="short-hide -mt-2 mb-5 max-w-3xl text-muted-foreground">{activity.description}</p>
       )}
 
       {source === 'local' && (

@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ChevronDown, BookMarked, FolderOpen, Inbox, UploadCloud } from 'lucide-react';
+import { ChevronDown, BookMarked, Inbox, UploadCloud, Search } from 'lucide-react';
 import type { Subject, Activity } from '@/lib/types';
 import { ActivityCard } from './activity-card';
-import { cn } from '@/lib/utils';
+import { cn, normalizeAr } from '@/lib/utils';
 import {
   listLocalActivities,
   getLocalStructure,
@@ -89,30 +89,64 @@ export function CurriculumExplorer({ subject: serverSubject }: { subject: Subjec
   // عند دخول الصفحة تُعرض عناوين الوحدات فقط (كلّها مطويّة)، ولا تنسدل دروس
   // أي وحدة إلا عند نقر الزائر عليها.
   const [open, setOpen] = useState<Record<string, boolean>>({});
+  // البحث داخل المادة: يطابق عنوان الدرس أو عنوان أحد أنشطته، بلا تشكيل
+  const [query, setQuery] = useState('');
+  const q = normalizeAr(query);
 
   if (!grade) {
     return (
-      <div className="rounded-3xl border border-dashed border-[color:var(--gold)]/40 p-12 text-center text-muted-foreground">
-        لا توجد مستويات متاحة لهذه المادة بعد.
+      <div className="explorer-empty">
+        <BookMarked className="mx-auto h-11 w-11 text-[color:var(--gold)]" aria-hidden />
+        <p className="mt-3">لا توجد مستويات متاحة لهذه المادة بعد.</p>
       </div>
     );
   }
 
+  const units = grade.units
+    .map((unit) => {
+      const lessons = q
+        ? unit.lessons.filter(
+            (l) =>
+              normalizeAr(l.title).includes(q) ||
+              l.activities.some((a) => normalizeAr(a.title).includes(q))
+          )
+        : unit.lessons;
+      return { unit, lessons };
+    })
+    .filter(({ unit, lessons }) => !q || lessons.length > 0 || normalizeAr(unit.title).includes(q));
+
   return (
     <div>
-      {/* grade selector */}
+      <div className="section-head">
+        <div className="min-w-0">
+          <p className="kicker">بترتيب الكتاب المدرسي</p>
+          <h2 className="mt-2 font-calli text-[1.9rem] leading-[1.5] text-foreground sm:text-[2.2rem]">
+            وحدات المنهج
+          </h2>
+        </div>
+        <label className="explorer-search">
+          <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+          <span className="sr-only">ابحث في دروس {subject.title}</span>
+          <input
+            id="explorer-search"
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={`ابحث في دروس ${subject.title}`}
+          />
+        </label>
+      </div>
+
+      {/* المستويات */}
       {subject.grades.length > 1 && (
-        <div className="mb-8 flex flex-wrap gap-2">
+        <div className="mb-7 flex flex-wrap gap-2" role="tablist" aria-label="المستويات">
           {subject.grades.map((g) => (
             <button
               key={g.id}
+              role="tab"
+              aria-selected={g.id === grade.id}
               onClick={() => setGradeId(g.id)}
-              className={cn(
-                'rounded-full px-5 py-2 text-sm font-black transition-all',
-                g.id === grade.id
-                  ? 'bg-[color:var(--maroon)] text-white shadow-md'
-                  : 'bg-[color:var(--surface)]/75 text-[color:var(--maroon)] hover:bg-[color:var(--maroon)]/10'
-              )}
+              className={cn('level-tab', g.id === grade.id && 'is-on')}
             >
               {g.title}
             </button>
@@ -121,11 +155,9 @@ export function CurriculumExplorer({ subject: serverSubject }: { subject: Subjec
       )}
 
       {grade.units.length === 0 && (
-        <div className="rounded-3xl border border-dashed border-[color:var(--gold)]/40 bg-[color:var(--surface)] p-12 text-center">
-          <BookMarked className="mx-auto h-12 w-12 text-[color:var(--gold)]" />
-          <h3 className="mt-4 font-display text-xl font-bold text-[color:var(--maroon)]">
-            لا توجد وحدات بعد
-          </h3>
+        <div className="explorer-empty">
+          <BookMarked className="mx-auto h-11 w-11 text-[color:var(--gold)]" aria-hidden />
+          <h3 className="mt-3 font-display text-xl text-foreground">لا توجد وحدات بعد</h3>
           <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
             ابدأ بإضافة الوحدات والدروس ورفع أنشطتك (تجارب، محاكاة، أسئلة، ألعاب)
             من لوحة الإدارة.
@@ -136,88 +168,90 @@ export function CurriculumExplorer({ subject: serverSubject }: { subject: Subjec
         </div>
       )}
 
-      <div className="space-y-5">
-        {grade.units.map((unit, ui) => {
-          const isOpen = !!open[unit.id];
-          const count = unit.lessons.reduce(
-            (n, l) => n + l.activities.length,
-            0
-          );
+      {q && units.length === 0 && (
+        <div className="explorer-empty">
+          <p>لا توجد دروس تطابق «{query}».</p>
+        </div>
+      )}
+
+      <div className="space-y-4">
+        {units.map(({ unit, lessons }) => {
+          const ui = grade.units.indexOf(unit);
+          // نتائج البحث تُفتح تلقائيًا
+          const isOpen = q ? true : !!open[unit.id];
+          const count = unit.lessons.reduce((n, l) => n + l.activities.length, 0);
+          const covered = unit.lessons.filter((l) => l.activities.length > 0).length;
+          const color = unit.color ?? 'var(--maroon)';
+          const panelId = `unit-panel-${unit.id}`;
           return (
-            <div
-              key={unit.id}
-              className="overflow-hidden rounded-3xl border border-[color:var(--gold)]/25 bg-[color:var(--surface)] shadow-md"
-            >
+            <div key={unit.id} className="unit-card" style={{ '--c': color } as React.CSSProperties}>
               <button
-                onClick={() =>
-                  setOpen((o) => ({ ...o, [unit.id]: !o[unit.id] }))
-                }
-                className="flex w-full items-center gap-4 p-5 text-right transition-colors hover:bg-black/[0.02]"
+                onClick={() => setOpen((o) => ({ ...o, [unit.id]: !o[unit.id] }))}
+                aria-expanded={isOpen}
+                aria-controls={panelId}
+                className="unit-head"
               >
-                <span
-                  className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-white shadow"
-                  style={{ background: unit.color ?? 'var(--maroon)' }}
-                >
-                  <BookMarked className="h-6 w-6" />
+                <span className="unit-medal" aria-hidden>{ui + 1}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="unit-title">{unit.title}</span>
+                  {unit.summary && <span className="unit-summary">{unit.summary}</span>}
                 </span>
-                <span className="flex-1">
-                  <span className="block font-display text-lg font-black text-[color:var(--maroon)]">
-                    {unit.title}
-                  </span>
-                  {unit.summary && (
-                    <span className="mt-0.5 block text-sm text-muted-foreground">
-                      {unit.summary}
+                <span className="unit-count">
+                  <span><b>{unit.lessons.length}</b> دروس</span>
+                  <span><b>{count}</b> نشاطًا</span>
+                  {unit.lessons.length > 0 && (
+                    <span
+                      className="unit-bar"
+                      title={`${covered} من ${unit.lessons.length} دروس لها أنشطة`}
+                      aria-label={`${covered} من ${unit.lessons.length} دروس لها أنشطة`}
+                    >
+                      <i style={{ width: `${(covered / unit.lessons.length) * 100}%` }} />
                     </span>
                   )}
                 </span>
-                <span className="hidden shrink-0 rounded-full bg-[color:var(--maroon)]/10 px-3 py-1 text-xs font-black text-[color:var(--maroon)] sm:block">
-                  {count} نشاط
-                </span>
-                <ChevronDown
-                  className={cn(
-                    'h-6 w-6 shrink-0 text-[color:var(--maroon)] transition-transform',
-                    isOpen && 'rotate-180'
-                  )}
-                />
+                <ChevronDown className={cn('unit-chev', isOpen && 'rotate-180')} aria-hidden />
               </button>
 
               {isOpen && (
-                <div className="border-t border-[color:var(--gold)]/20 bg-black/[0.015] p-5">
-                  <div className="space-y-6">
-                    {unit.lessons.map((lesson) => (
-                      <div key={lesson.id}>
-                        <div className="mb-3 flex items-center gap-2 text-[color:var(--maroon)]">
-                          <FolderOpen className="h-5 w-5 text-[color:var(--gold)]" />
-                          <h4 className="font-display text-base font-black">
-                            {lesson.title}
-                          </h4>
-                          <span className="text-xs font-bold text-muted-foreground">
-                            ({lesson.activities.length})
-                          </span>
-                        </div>
-                        {lesson.activities.length > 0 ? (
-                          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                            {lesson.activities.map((a, i) => (
-                              <ActivityCard
-                                key={a.id}
-                                activity={a}
-                                index={i}
-                                isOwner={isOwner}
-                                onChanged={(id, patch) =>
-                                  setPatched((m) => ({ ...m, [id]: patch }))
-                                }
-                              />
-                            ))}
+                <div id={panelId} className="unit-body">
+                  <ol className="lesson-list">
+                    {lessons.map((lesson, li) => {
+                      const m = lesson.title.match(/^\s*([\d٠-٩]+(?:[.,٫][\d٠-٩]+)?)\s+(.*)$/);
+                      const num = m ? m[1] : String(li + 1);
+                      const title = m ? m[2] : lesson.title;
+                      return (
+                        <li key={lesson.id} className="lesson-item">
+                          <span className="lesson-num" aria-hidden>{num}</span>
+                          <div className="min-w-0">
+                            <h3 className="lesson-title">
+                              <span className="sr-only">{num} </span>
+                              {title}
+                            </h3>
+                            {lesson.activities.length > 0 ? (
+                              <div className="mt-3 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                                {lesson.activities.map((a, i) => (
+                                  <ActivityCard
+                                    key={a.id}
+                                    activity={a}
+                                    index={i}
+                                    isOwner={isOwner}
+                                    onChanged={(id, patch) =>
+                                      setPatched((p) => ({ ...p, [id]: patch }))
+                                    }
+                                  />
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="lesson-empty">
+                                <Inbox className="h-3.5 w-3.5" aria-hidden />
+                                لا توجد أنشطة بعد
+                              </p>
+                            )}
                           </div>
-                        ) : (
-                          <p className="flex items-center gap-1.5 pr-7 text-xs text-muted-foreground/70">
-                            <Inbox className="h-3.5 w-3.5" />
-                            لا توجد أنشطة بعد
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                        </li>
+                      );
+                    })}
+                  </ol>
                 </div>
               )}
             </div>

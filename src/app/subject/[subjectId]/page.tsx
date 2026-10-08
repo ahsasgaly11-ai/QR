@@ -1,13 +1,9 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ChevronLeft, Home } from 'lucide-react';
 import { getSubject } from '@/lib/content';
 import { SUBJECTS } from '@/data/curriculum';
 import { CurriculumExplorer } from '@/components/curriculum-explorer';
-import { OryxMascot } from '@/components/oryx-mascot';
-import { BackButton } from '@/components/back-button';
-import { DownloadsSwitch } from '@/components/downloads-switch';
+import { SubjectCourt } from '@/components/subject/subject-court';
 import { SITE_NAME } from '@/lib/site';
 
 // المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
@@ -47,45 +43,8 @@ export default async function SubjectPage({
 
   return (
     <div className="relative">
-      {/* subject hero */}
-      <section
-        className="relative overflow-hidden py-14 text-white"
-        style={{
-          background: `linear-gradient(135deg, ${subject.color}, ${subject.accent})`,
-        }}
-      >
-        <div className="pointer-events-none absolute inset-0 girih-light" />
-        <div className="pointer-events-none absolute -left-10 top-6 h-52 w-52 rounded-full bg-white/10 blur-2xl float-slow" />
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6">
-          <div>
-            <div className="mb-4 flex">
-              <BackButton
-                fallback="/browse"
-                className="border-white/40 bg-white/15 text-white shadow-none backdrop-blur hover:border-white hover:bg-white/25"
-              />
-            </div>
-            <nav className="mb-4 flex items-center gap-2 text-sm text-white/80">
-              <Link href="/" className="flex items-center gap-1 hover:text-white">
-                <Home className="h-4 w-4" /> الرئيسية
-              </Link>
-              <ChevronLeft className="h-4 w-4" />
-              <Link href="/browse" className="hover:text-white">المناهج</Link>
-              <ChevronLeft className="h-4 w-4" />
-              <span className="font-bold text-white">{subject.title}</span>
-            </nav>
-            <h1 className="font-calli text-4xl font-bold sm:text-5xl">
-              {subject.title}
-            </h1>
-            <p className="mt-2 max-w-lg text-white/85">
-              استكشف وحدات المنهج ودروسه، وشغّل الأنشطة التفاعلية مباشرة
-              <DownloadsSwitch on=" أو حمّلها للعمل دون اتصال" off="" />.
-            </p>
-          </div>
-          <OryxMascot priority className="hidden h-40 w-auto float-mid drop-shadow-2xl md:block" />
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-6 py-12">
+      <SubjectCourt subject={subject} />
+      <section className="mx-auto max-w-7xl px-5 py-10 sm:px-6 lg:py-14">
         <CurriculumExplorer subject={subject} />
       </section>
     </div>

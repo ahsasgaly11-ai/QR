@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { LocalPlay } from '@/components/local-play';
-import { ChevronLeft, Home } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import {
   getActivity,
   getSubjects,
@@ -10,7 +10,8 @@ import {
 } from '@/lib/content';
 import { SEED_ACTIVITIES } from '@/data/curriculum';
 import { ActivityPlayer } from '@/components/activity-player';
-import { ActivityCard } from '@/components/activity-card';
+import { PlayHeader } from '@/components/play-header';
+import { HeritageIcon, ACTIVITY_ICON } from '@/components/heritage-icons';
 import { BackButton } from '@/components/back-button';
 import { SITE_NAME } from '@/lib/site';
 import { ACTIVITY_META } from '@/lib/types';
@@ -58,18 +59,25 @@ export default async function PlayPage({
   const { subject, unit, lesson } = locateActivity(subjects, activity);
 
   const all = await getAllActivities();
-  const related = all.filter((a) =>
+  // أنشطة المجموعة نفسها (الدرس، أو ألعاب التعزيز، أو المراجعات) بما فيها الحالي
+  const siblings = all.filter((a) =>
     activity.smartReinforcement
-      ? a.smartReinforcement && a.id !== activity.id
+      ? a.smartReinforcement
       : activity.unitReview
-        ? a.unitReview && a.id !== activity.id
-        : a.lessonId === activity.lessonId && a.id !== activity.id
+        ? a.unitReview
+        : a.lessonId === activity.lessonId && !a.smartReinforcement && !a.unitReview
   );
+  if (!siblings.some((a) => a.id === activity.id)) siblings.unshift(activity);
+  const at = siblings.findIndex((a) => a.id === activity.id);
+  const nextActivity = siblings.length > 1 ? siblings[(at + 1) % siblings.length] : undefined;
+
+  const context = activity.smartReinforcement
+    ? 'ألعاب التعزيز الذكية'
+    : [subject?.title, activity.unitReview ? unit?.title : lesson?.title].filter(Boolean).join(' • ');
 
   return (
-    <div className="short-tight mx-auto max-w-6xl px-4 py-10 sm:px-6">
-      {/* breadcrumb */}
-      <div className="mb-5 flex items-center gap-3">
+    <div className="short-tight mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:py-8">
+      <div className="short-hide mb-5 flex flex-wrap items-center gap-x-4 gap-y-2">
         <BackButton
           fallback={
             activity.smartReinforcement
@@ -79,68 +87,88 @@ export default async function PlayPage({
                 : `/subject/${activity.subjectId}`
           }
         />
+        <nav aria-label="مسار الصفحة" className="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">
+          <Link href="/" className="hover:text-[color:var(--maroon)]">الرئيسية</Link>
+          <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
+          {activity.smartReinforcement ? (
+            <Link href="/smart-games" className="hover:text-[color:var(--maroon)]">ألعاب التعزيز الذكية</Link>
+          ) : (
+            <>
+              {subject && (
+                <>
+                  <Link href={`/subject/${subject.id}`} className="hover:text-[color:var(--maroon)]">
+                    {subject.title}
+                  </Link>
+                  <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
+                </>
+              )}
+              {unit && (
+                <>
+                  <span>{unit.title}</span>
+                  {!activity.unitReview && lesson && <ChevronLeft className="h-3.5 w-3.5" aria-hidden />}
+                </>
+              )}
+              {!activity.unitReview && lesson && (
+                <span className="font-semibold text-foreground">{lesson.title}</span>
+              )}
+            </>
+          )}
+        </nav>
       </div>
 
-      <nav className="short-hide mb-5 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-        <Link href="/" className="flex items-center gap-1 hover:text-[color:var(--maroon)]">
-          <Home className="h-4 w-4" /> الرئيسية
-        </Link>
-        <ChevronLeft className="h-4 w-4" />
-        {activity.smartReinforcement ? (
-          <span className="font-bold text-foreground">ألعاب التعزيز الذكية</span>
-        ) : (
-          <>
-            {subject && (
-              <>
-                <Link
-                  href={`/subject/${subject.id}`}
-                  className="hover:text-[color:var(--maroon)]"
-                >
-                  {subject.title}
-                </Link>
-                <ChevronLeft className="h-4 w-4" />
-              </>
-            )}
-            {unit && (
-              <>
-                <span>{unit.title}</span>
-                <ChevronLeft className="h-4 w-4" />
-              </>
-            )}
-            {activity.unitReview ? (
-              <span className="font-bold text-foreground">مراجعة الوحدة</span>
-            ) : (
-              lesson && <span className="font-bold text-foreground">{lesson.title}</span>
-            )}
-          </>
-        )}
-      </nav>
+      <PlayHeader activity={activity} context={context} />
 
-      <h1 className="short-title mb-1 font-display text-3xl font-black text-[color:var(--maroon)] sm:text-4xl">
-        {activity.title}
-      </h1>
-      {activity.description && (
-        <p className="short-hide mb-6 max-w-3xl text-muted-foreground">{activity.description}</p>
-      )}
+      <ActivityPlayer
+        activity={activity}
+        next={nextActivity ? { href: `/play/${nextActivity.id}`, title: nextActivity.title } : undefined}
+      />
 
-      <ActivityPlayer activity={activity} />
-
-      {related.length > 0 && (
-        <section className="mt-14">
-          <h2 className="mb-5 font-display text-2xl font-black text-[color:var(--maroon)]">
-            {activity.smartReinforcement
-              ? 'ألعاب تعزيز أخرى'
-              : activity.unitReview
-                ? 'مراجعات أخرى'
-                : 'أنشطة أخرى في الدرس نفسه'}
-          </h2>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {related.map((a, i) => (
-              <ActivityCard key={a.id} activity={a} index={i} />
-            ))}
-          </div>
+      <div className="play-below short-hide">
+        <section>
+          <h2 className="play-below-title">عن النشاط</h2>
+          <p className="leading-8 text-[color:var(--ink-2)]">
+            {activity.description?.trim() ||
+              `${ACTIVITY_META[activity.type].label}${lesson ? ` من درس «${lesson.title}»` : ''} — شغّله داخل الموقع، أو بملء الشاشة على السبورة.`}
+          </p>
         </section>
-      )}
+        {siblings.length > 1 && (
+          <section className="min-w-0">
+            <h2 className="play-below-title">
+              {activity.smartReinforcement
+                ? 'ألعاب التعزيز الذكية'
+                : activity.unitReview
+                  ? 'مراجعات الوحدات'
+                  : 'أنشطة الدرس نفسه'}
+            </h2>
+            <ul className="sibling-strip">
+              {siblings.map((a) => {
+                const current = a.id === activity.id;
+                const inner = (
+                  <>
+                    <HeritageIcon kind={ACTIVITY_ICON[a.type]} className="sibling-icon" />
+                    <span className="min-w-0">
+                      <span className="sibling-title">{a.title}</span>
+                      <span className="sibling-type">
+                        {ACTIVITY_META[a.type].label}
+                        {current && ' • تشاهده الآن'}
+                      </span>
+                    </span>
+                  </>
+                );
+                return (
+                  <li key={a.id}>
+                    {current ? (
+                      <span className="sibling is-current" aria-current="page">{inner}</span>
+                    ) : (
+                      <Link href={`/play/${a.id}`} className="sibling">{inner}</Link>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
+      </div>
     </div>
   );
 }

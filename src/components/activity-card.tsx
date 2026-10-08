@@ -4,14 +4,23 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Play, Download, Eye, Pencil, Trash2, Check, X, Loader2 } from 'lucide-react';
-import type { Activity, ActivityStats } from '@/lib/types';
+import { ACTIVITY_META } from '@/lib/types';
+import type { Activity, ActivityStats, ActivityType } from '@/lib/types';
 import { subscribeActivityStats, trackDownload } from '@/lib/stats';
-import { ActivityTypeBadge } from './activity-type-badge';
-import { formatNumber, cn } from '@/lib/utils';
+import { HeritageIcon, ACTIVITY_ICON } from './heritage-icons';
+import { formatNumber } from '@/lib/utils';
 import { getLocalRecord, htmlToBlobUrl, dropCachedPreview } from '@/lib/local-store';
 import { ActivityPreview } from './activity-preview';
 import { trackSchoolDownload, getSelectedSchool } from '@/lib/school-store';
 import { useActivityDownloadEnabled, downloadsAllowedNow } from '@/lib/site-settings';
+
+// فعل زرّ التشغيل بحسب نوع النشاط
+const PLAY_LABEL: Record<ActivityType, string> = {
+  experiment: 'ابدأ التجربة',
+  simulation: 'شغّل المحاكاة',
+  quiz: 'ابدأ الأسئلة',
+  game: 'العب الآن',
+};
 
 function fileUrl(a: Activity) {
   return a.external ? a.file : `/games/${a.file}`;
@@ -139,21 +148,40 @@ export function ActivityCard({
 
   if (gone) return null;
 
+  const meta = ACTIVITY_META[activity.type];
+
+  // ميل خفيف مع المؤشّر ولمعة ضوء تتبعه (لا على اللمس، ولا لمن طلب تقليل الحركة)
+  const onTilt = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== 'mouse') return;
+    const el = e.currentTarget;
+    const r = el.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width;
+    const y = (e.clientY - r.top) / r.height;
+    el.style.setProperty('--ry', `${((x - 0.5) * 8).toFixed(2)}deg`);
+    el.style.setProperty('--rx', `${((0.5 - y) * 6).toFixed(2)}deg`);
+    el.style.setProperty('--gx', `${(x * 100).toFixed(1)}%`);
+    el.style.setProperty('--gy', `${(y * 100).toFixed(1)}%`);
+  };
+  const onTiltEnd = (e: React.PointerEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    el.style.setProperty('--rx', '0deg');
+    el.style.setProperty('--ry', '0deg');
+  };
+
   return (
     <div
       data-vt-scope
-      className="card-premium group relative flex flex-col overflow-hidden rounded-3xl border border-[color:var(--gold)]/20 bg-[color:var(--surface)] p-5 shadow-lg shadow-black/5"
-      style={{ animationDelay: `${index * 60}ms` }}
+      className="act-card group"
+      style={{ '--tc': meta.color } as React.CSSProperties}
+      onPointerMove={onTilt}
+      onPointerLeave={onTiltEnd}
     >
-      {/* top accent ribbon */}
-      <div className="absolute inset-x-0 top-0 h-1.5 flag-strip opacity-80" />
-
       {/* أدوات المالك — لا تظهر للزوّار إطلاقًا */}
       {canManage && !editing && (
-        <div className="absolute left-3 top-4 z-10 flex gap-1.5">
+        <div className="absolute left-3 top-3 z-20 flex gap-1.5">
           <button
             onClick={() => setEditing(true)}
-            className="grid h-9 w-9 place-items-center rounded-xl bg-white/95 text-[color:var(--maroon)] shadow-md backdrop-blur transition hover:scale-105"
+            className="act-owner-btn text-[color:var(--maroon)]"
             title="تعديل اللعبة"
             aria-label="تعديل اللعبة"
           >
@@ -162,7 +190,7 @@ export function ActivityCard({
           <button
             onClick={() => void removeActivity()}
             disabled={busy}
-            className="grid h-9 w-9 place-items-center rounded-xl bg-white/95 text-[color:var(--coral)] shadow-md backdrop-blur transition hover:scale-105 disabled:opacity-50"
+            className="act-owner-btn text-[color:var(--coral)] disabled:opacity-50"
             title="حذف اللعبة"
             aria-label="حذف اللعبة"
           >
@@ -171,124 +199,123 @@ export function ActivityCard({
         </div>
       )}
 
-      {/* معاينة حيّة لشكل اللعبة */}
+      {/* معاينة حيّة لشكل اللعبة، وأيقونة نوعها ثلاثية الأبعاد في الزاوية */}
       <Link
         href={`/play/${activity.id}`}
         data-vt-morph="[data-vt-preview]"
-        className="group/prev relative mb-4 block overflow-hidden rounded-2xl"
+        className="act-thumb group/prev"
         aria-label={`تشغيل ${activity.title}`}
       >
         <span data-vt-preview className="block">
-          <ActivityPreview activity={activity} />
+          <ActivityPreview activity={activity} className="act-preview h-44" />
         </span>
-        <span className="pointer-events-none absolute inset-0 grid place-items-center bg-[color:var(--maroon)]/0 transition-colors duration-300 group-hover/prev:bg-[color:var(--maroon)]/35">
-          <span className="grid h-12 w-12 scale-75 place-items-center rounded-full bg-white/95 text-[color:var(--maroon)] opacity-0 shadow-lg transition-all duration-300 group-hover/prev:scale-100 group-hover/prev:opacity-100">
-            <Play className="h-5 w-5 fill-current" />
-          </span>
+        <span className="act-type-icon" aria-hidden>
+          <HeritageIcon kind={ACTIVITY_ICON[activity.type]} />
+        </span>
+        <span className="act-type-chip">{meta.label}</span>
+        <span className="act-play-hint" aria-hidden>
+          <Play className="h-5 w-5 fill-current" />
         </span>
       </Link>
 
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <ActivityTypeBadge type={activity.type} />
-          {activity.local && (
-            <span
-              className="pill bg-[color:var(--gold)]/20 text-[color:var(--gold)]"
-              title="محفوظ في هذا المتصفّح فقط (وضع العرض)"
-            >
-              محلي
+      <div className="act-body">
+        {activity.local && (
+          <span
+            className="mb-2 inline-block rounded-md bg-[color:var(--gold)]/15 px-2 py-0.5 text-xs font-semibold text-[color:var(--gold)]"
+            title="محفوظ في هذا المتصفّح فقط (وضع العرض)"
+          >
+            محلي
+          </span>
+        )}
+
+        {editing ? (
+          <div className="space-y-2">
+            <input
+              autoFocus
+              className="w-full rounded-lg border border-[color:var(--maroon)] bg-[color:var(--surface)] px-3 py-2 text-base font-semibold text-[color:var(--maroon)] outline-none"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="عنوان اللعبة"
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  setTitle(activity.title);
+                  setDescription(activity.description ?? '');
+                  setEditing(false);
+                }
+              }}
+            />
+            <textarea
+              className="w-full resize-none rounded-lg border border-[color:var(--hairline-strong)] bg-[color:var(--surface)] px-3 py-2 text-sm leading-6 outline-none focus:border-[color:var(--maroon)]"
+              rows={3}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="وصف اللعبة"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => void saveDetails()}
+                disabled={busy || !title.trim()}
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[color:var(--maroon)] px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                title="حفظ التعديلات"
+              >
+                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                حفظ
+              </button>
+              <button
+                onClick={() => {
+                  setTitle(activity.title);
+                  setDescription(activity.description ?? '');
+                  setEditing(false);
+                }}
+                className="flex items-center justify-center gap-1 rounded-lg bg-[color:var(--surface-2)] px-3 py-2 text-sm font-semibold text-[color:var(--maroon)]"
+                title="إلغاء"
+              >
+                <X className="h-4 w-4" /> إلغاء
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <h3 className="act-title">{activity.title}</h3>
+            {activity.description && <p className="act-desc">{activity.description}</p>}
+          </>
+        )}
+
+        <div className="act-meta">
+          <span>
+            <Eye className="h-3.5 w-3.5" aria-hidden /> {formatNumber(stats.views)} مشاهدة
+          </span>
+          {canDownload && (
+            <span>
+              <Download className="h-3.5 w-3.5" aria-hidden /> {formatNumber(stats.downloads)} تنزيلًا
             </span>
           )}
         </div>
-        <div className="flex items-center gap-1 text-xs font-bold text-muted-foreground">
-          <Eye className="h-3.5 w-3.5" />
-          {formatNumber(stats.views)}
-        </div>
-      </div>
 
-      {editing ? (
-        <div className="space-y-2">
-          <input
-            autoFocus
-            className="w-full rounded-xl border border-[color:var(--maroon)] bg-[color:var(--surface)] px-3 py-2 text-base font-black text-[color:var(--maroon)] outline-none"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="عنوان اللعبة"
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') {
-                setTitle(activity.title);
-                setDescription(activity.description ?? '');
-                setEditing(false);
-              }
-            }}
-          />
-          <textarea
-            className="w-full resize-none rounded-xl border border-[color:var(--hairline-strong)] bg-[color:var(--surface)] px-3 py-2 text-sm leading-6 outline-none focus:border-[color:var(--maroon)]"
-            rows={3}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="وصف اللعبة"
-          />
-          <div className="flex gap-2">
-            <button
-              onClick={() => void saveDetails()}
-              disabled={busy || !title.trim()}
-              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[color:var(--maroon)] px-3 py-2 text-sm font-black text-white disabled:opacity-50"
-              title="حفظ التعديلات"
-            >
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-              حفظ
-            </button>
-            <button
-              onClick={() => {
-                setTitle(activity.title);
-                setDescription(activity.description ?? '');
-                setEditing(false);
-              }}
-              className="flex items-center justify-center gap-1 rounded-lg bg-[color:var(--surface-2)] px-3 py-2 text-sm font-bold text-[color:var(--maroon)]"
-              title="إلغاء"
-            >
-              <X className="h-4 w-4" /> إلغاء
-            </button>
-          </div>
-        </div>
-      ) : (
-        <>
-          <h3 className="font-display text-lg font-black leading-snug text-[color:var(--maroon)]">
-            {activity.title}
-          </h3>
-          {activity.description && (
-            <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted-foreground">
-              {activity.description}
-            </p>
-          )}
-        </>
-      )}
-
-      <div className="mt-5 flex items-center gap-2">
-        <Link
-          href={`/play/${activity.id}`}
-          data-vt-morph="[data-vt-preview]"
-          className="group/btn flex flex-1 items-center justify-center gap-2 rounded-xl bg-[color:var(--maroon)] px-4 py-2.5 text-sm font-black text-white shadow-md shadow-[color:var(--maroon)]/25 transition-all hover:-translate-y-0.5 hover:bg-[color:var(--maroon-700)]"
-        >
-          <Play className="h-4 w-4 fill-current transition-transform group-hover/btn:scale-110" />
-          جرّب الآن
-        </Link>
-        {canDownload && (
-          <a
-            href={fileUrl(activity)}
-            download
-            onClick={onDownload}
-            className={cn(
-              'flex items-center justify-center gap-2 rounded-xl border-2 border-[color:var(--gold)] px-4 py-2.5 text-sm font-black text-[color:var(--maroon)] transition-all hover:-translate-y-0.5 hover:bg-[color:var(--gold)]/15'
-            )}
-            title="تحميل النشاط للعمل دون اتصال"
+        <div className="act-actions">
+          <Link
+            href={`/play/${activity.id}`}
+            data-vt-morph="[data-vt-preview]"
+            className="act-play"
           >
-            <Download className="h-4 w-4" />
-            {formatNumber(stats.downloads)}
-          </a>
-        )}
+            <Play className="h-4 w-4 fill-current" aria-hidden />
+            {PLAY_LABEL[activity.type]}
+          </Link>
+          {canDownload && (
+            <a
+              href={fileUrl(activity)}
+              download
+              onClick={onDownload}
+              className="act-download"
+              title="تحميل النشاط للعمل دون اتصال"
+              aria-label={`تحميل ${activity.title} للعمل دون اتصال`}
+            >
+              <Download className="h-5 w-5" />
+            </a>
+          )}
+        </div>
       </div>
+      <span className="act-glare" aria-hidden />
     </div>
   );
 }

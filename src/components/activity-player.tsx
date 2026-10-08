@@ -1,24 +1,24 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import {
+  ArrowLeft,
   Download,
-  Eye,
   Maximize2,
   Minimize2,
   ExternalLink,
   RefreshCw,
   Loader2,
 } from 'lucide-react';
-import type { Activity, ActivityStats } from '@/lib/types';
-import { subscribeActivityStats, trackView, trackDownload } from '@/lib/stats';
+import type { Activity } from '@/lib/types';
+import { trackView, trackDownload } from '@/lib/stats';
 import { trackSchoolPlay, trackSchoolDownload } from '@/lib/school-store';
 import { useActivityDownloadEnabled, downloadsAllowedNow } from '@/lib/site-settings';
-import { ActivityTypeBadge } from './activity-type-badge';
 import { SchoolGate } from './school-gate';
 import { SignLanguageButton, SignLanguagePanel } from './sign-language';
 import { resolveSignLanguageSrc, isSignLanguageOn, SIGN_LANG_ATTR } from '@/lib/sign-language';
-import { formatFull, cn } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import {
   htmlToBlobUrl,
   htmlToFrameUrl,
@@ -40,6 +40,8 @@ type PlayerProps = {
   activity: Activity;
   /** محتوى الملف عند تشغيل نشاط محفوظ محليًا (وضع العرض) */
   localHtml?: string;
+  /** النشاط التالي في الدرس نفسه — يظهر زرّه في شريط الأدوات */
+  next?: { href: string; title: string };
 };
 
 /**
@@ -55,7 +57,7 @@ export function ActivityPlayer(props: PlayerProps) {
   );
 }
 
-function PlayerInner({ activity, localHtml }: PlayerProps) {
+function PlayerInner({ activity, localHtml, next }: PlayerProps) {
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   // نسخة التشغيل داخل الـiframe المعزول (مع بديل التخزين)؛ blobUrl يبقى
   // للتحميل وفتح النافذة فيصل الملف للمستخدم كما رُفع تمامًا.
@@ -102,7 +104,6 @@ function PlayerInner({ activity, localHtml }: PlayerProps) {
   const frameUrl = uploaded ? frameBlobUrl ?? '' : url;
   const frameRef = useRef<HTMLIFrameElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
-  const [stats, setStats] = useState<ActivityStats>({ views: 0, downloads: 0 });
   // يوقف المشرف التنزيل من لوحة التحكّم ← تُستخدم اللعبة داخل الموقع فقط
   const canDownload = useActivityDownloadEnabled(activity);
   const [loading, setLoading] = useState(true);
@@ -136,8 +137,6 @@ function PlayerInner({ activity, localHtml }: PlayerProps) {
     void trackView(activity.id);
   }, [activity.id]);
 
-  // العدّادات حيّة: تتغيّر فور احتساب أي مشاهدة/تنزيل من أي مستخدم.
-  useEffect(() => subscribeActivityStats(activity.id, setStats), [activity.id]);
 
   const onDownload = async (e: React.MouseEvent<HTMLAnchorElement>) => {
     // احتياط: قد يُوقف المشرف التنزيل والصفحة مفتوحة
@@ -325,64 +324,8 @@ function PlayerInner({ activity, localHtml }: PlayerProps) {
   }, [immersive]);
   useEffect(syncFrameFullscreen, [syncFrameFullscreen]);
 
-  const toolbarBtn =
-    'flex items-center gap-1.5 rounded-xl border border-[color:var(--gold)]/40 bg-[color:var(--surface)]/70 px-3 py-2 text-sm font-bold text-[color:var(--maroon)] transition hover:bg-[color:var(--gold)]/10';
-
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="short-hide flex flex-wrap items-center gap-x-3 gap-y-1.5">
-          <ActivityTypeBadge type={activity.type} />
-          <span className="flex items-center gap-1.5 text-sm font-bold text-muted-foreground">
-            <Eye className="h-4 w-4" /> {formatFull(stats.views)} مشاهدة
-          </span>
-          {canDownload && (
-            <span className="flex items-center gap-1.5 text-sm font-bold text-muted-foreground">
-              <Download className="h-4 w-4" /> {formatFull(stats.downloads)} تنزيل
-            </span>
-          )}
-        </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <button
-            onClick={() => {
-              setLoading(true);
-              setKey((k) => k + 1);
-            }}
-            className={toolbarBtn}
-            title="إعادة تشغيل"
-          >
-            <RefreshCw className="h-4 w-4" />
-          </button>
-          <SignLanguageButton active={signPref} onClick={() => setSignOpen(true)} />
-          {/* «فتح في نافذة» يعرض ملف اللعبة خارج الموقع فيُمكن حفظه، لذا يُخفى
-              مع زرّ التحميل عند قصر الاستخدام على داخل الموقع. */}
-          {canDownload && (
-            <a href={url} target="_blank" rel="noopener noreferrer" className={toolbarBtn}>
-              <ExternalLink className="h-4 w-4" /> فتح في نافذة
-            </a>
-          )}
-          <button
-            onClick={() => {
-              gameOwnedRef.current = false;
-              enterImmersive();
-            }}
-            className={toolbarBtn}
-          >
-            <Maximize2 className="h-4 w-4" /> ملء الشاشة
-          </button>
-          {canDownload && (
-            <a
-              href={url}
-              download={activity.file || 'activity.html'}
-              onClick={onDownload}
-              className="flex items-center gap-1.5 rounded-xl bg-[color:var(--maroon)] px-4 py-2 text-sm font-black text-white shadow-md transition hover:bg-[color:var(--maroon-700)]"
-            >
-              <Download className="h-4 w-4" /> تحميل
-            </a>
-          )}
-        </div>
-      </div>
-
       {/* رفيق لغة الإشارة: على الجوّال ضمن التدفّق (فوق اللعبة، بلا تغطية)،
           وعلى الشاشات الكبيرة لوحة عائمة. لا يظهر أثناء ملء الشاشة. */}
       {!immersive && (
@@ -404,7 +347,7 @@ function PlayerInner({ activity, localHtml }: PlayerProps) {
           'vt-game-stage relative overflow-hidden bg-white',
           immersive
             ? 'fixed inset-0 z-[100] rounded-none border-0'
-            : 'rounded-3xl border-2 border-[color:var(--gold)]/30 shadow-2xl'
+            : 'player-frame'
         )}
         style={immersive ? { overscrollBehavior: 'contain' } : undefined}
       >
@@ -465,6 +408,63 @@ function PlayerInner({ activity, localHtml }: PlayerProps) {
           />
         )}
       </div>
+
+      {/* شريط الأدوات تحت المسرح: ملء الشاشة أولًا لأنه أكثر ما يحتاجه المعلّم */}
+      {!immersive && (
+        <div className="player-toolbar">
+          <button
+            onClick={() => {
+              gameOwnedRef.current = false;
+              enterImmersive();
+            }}
+            className="tool-btn tool-btn--primary"
+          >
+            <Maximize2 className="h-4 w-4" aria-hidden /> ملء الشاشة
+          </button>
+          {/* «فتح في نافذة» يعرض ملف اللعبة خارج الموقع فيُمكن حفظه، لذا يُخفى
+              مع زرّ التحميل عند قصر الاستخدام على داخل الموقع. */}
+          {canDownload && (
+            <a href={url} target="_blank" rel="noopener noreferrer" className="tool-btn">
+              <ExternalLink className="h-4 w-4" aria-hidden /> فتح في نافذة
+            </a>
+          )}
+          <SignLanguageButton
+            active={signPref}
+            onClick={() => setSignOpen(true)}
+            className="tool-btn"
+          />
+          <button
+            onClick={() => {
+              setLoading(true);
+              setKey((k) => k + 1);
+            }}
+            className="tool-btn"
+            title="إعادة تشغيل"
+            aria-label="إعادة تشغيل النشاط"
+          >
+            <RefreshCw className="h-4 w-4" aria-hidden />
+            <span className="hidden sm:inline">إعادة</span>
+          </button>
+          {canDownload && (
+            <a
+              href={url}
+              download={activity.file || 'activity.html'}
+              onClick={onDownload}
+              className="tool-btn"
+              title="تحميل للعمل دون إنترنت"
+            >
+              <Download className="h-4 w-4" aria-hidden />
+              <span className="hidden sm:inline">تحميل</span>
+            </a>
+          )}
+          {next && (
+            <Link href={next.href} className="tool-btn tool-btn--next" title={next.title}>
+              النشاط التالي
+              <ArrowLeft className="h-4 w-4" aria-hidden />
+            </Link>
+          )}
+        </div>
+      )}
     </div>
   );
 }

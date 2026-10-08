@@ -10,11 +10,11 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        // هوية الخطوط: Readex Pro للعناوين والنصوص — حروف عربية واضحة مفتوحة
-        // تناسب قراءة طلبة الابتدائي، بأوزان تفرّق العنوان عن النص.
+        // هوية الخطوط: El Messiri للعناوين (طابع عربي أنيق بانحناءات ليّنة)،
+        // وReadex Pro للنصوص — حروف واضحة مفتوحة تناسب قراءة طلبة الابتدائي.
         body: ['"Readex Pro"', 'Tahoma', 'sans-serif'],
-        headline: ['"Readex Pro"', 'Tahoma', 'sans-serif'],
-        display: ['"Readex Pro"', 'Tahoma', 'sans-serif'],
+        headline: ['"El Messiri"', '"Readex Pro"', 'Tahoma', 'sans-serif'],
+        display: ['"El Messiri"', '"Readex Pro"', 'Tahoma', 'sans-serif'],
         playful: ['"Baloo Bhaijaan 2"', '"Readex Pro"', 'sans-serif'],
         gov: ['"Readex Pro"', 'Tahoma', 'sans-serif'],
         code: ['"Source Code Pro"', 'monospace'],
