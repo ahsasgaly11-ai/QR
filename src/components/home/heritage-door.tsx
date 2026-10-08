@@ -73,13 +73,37 @@ function motionAllowed() {
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** ستارة ضوء خارج شجرة React حتى تبقى أثناء تبدّل الصفحة. */
+const LOGO = '/images/moehe-logo-hd.png';
+let logoReady: Promise<void> | null = null;
+
+/** يحمّل الشعار عالي الدقّة مسبقًا (عند المرور على الباب) حتى يظهر فورًا. */
+function preloadLogo() {
+  if (!logoReady) {
+    logoReady = new Promise((resolve) => {
+      const img = new Image();
+      img.onload = img.onerror = () => resolve();
+      img.src = LOGO;
+      img.decode?.().then(resolve, resolve);
+    });
+  }
+  return logoReady;
+}
+
+/** ستارة ضوء خارج شجرة React حتى تبقى أثناء تبدّل الصفحة، يتوسّطها شعار
+ *  الوزارة بدقّة عالية يتّضح من الضوء ثم يتلاشى مع الستارة. */
 function lightCurtain(x: number, y: number, tint: string) {
   const el = document.createElement('div');
   el.className = 'door-curtain';
   el.style.setProperty('--x', `${x}px`);
   el.style.setProperty('--y', `${y}px`);
   el.style.setProperty('--tint', tint);
+  el.setAttribute('role', 'status');
+  const logo = document.createElement('img');
+  logo.className = 'door-curtain-logo';
+  logo.src = LOGO;
+  logo.alt = 'وزارة التربية والتعليم والتعليم العالي — دولة قطر';
+  logo.decoding = 'async';
+  el.appendChild(logo);
   document.body.appendChild(el);
   void el.offsetWidth;
   el.classList.add('is-in');
@@ -118,14 +142,17 @@ export function HeritageDoor({
     if (open) return;
 
     router.prefetch(href);
+    const logo = preloadLogo();
     setOpen(true);
     await wait(620);
+    await logo;
 
     const r = frame.current?.getBoundingClientRect();
     const x = r ? r.left + r.width / 2 : innerWidth / 2;
     const y = r ? r.top + r.height * 0.62 : innerHeight / 2;
     const curtain = lightCurtain(x, y, color);
-    await wait(820);
+    // يغمر الضوء الشاشة ثم يتّضح الشعار ويبقى لحظة قبل الانتقال
+    await wait(1250);
 
     const target = new URL(href, location.href).pathname;
     router.push(href);
@@ -136,9 +163,9 @@ export function HeritageDoor({
       await wait(50);
     }
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-    await wait(120);
+    await wait(250);
     curtain.classList.add('is-out');
-    await wait(750);
+    await wait(800);
     curtain.remove();
   };
 
@@ -148,8 +175,16 @@ export function HeritageDoor({
       prefetch={false}
       data-no-vt
       onClick={onClick}
-      onMouseEnter={() => !locked && router.prefetch(href)}
-      onFocus={() => !locked && router.prefetch(href)}
+      onMouseEnter={() => {
+        if (locked) return;
+        router.prefetch(href);
+        preloadLogo();
+      }}
+      onFocus={() => {
+        if (locked) return;
+        router.prefetch(href);
+        preloadLogo();
+      }}
       aria-disabled={locked || undefined}
       aria-label={locked ? `${title} — قريبًا` : `افتح باب ${title}`}
       className={cn('heritage-door', open && 'is-open', locked && 'is-locked')}
