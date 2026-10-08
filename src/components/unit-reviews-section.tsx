@@ -38,7 +38,7 @@ export function UnitReviewsSection({
               <span className="review-icon" aria-hidden>
                 <HeritageIcon kind="oyster" />
               </span>
-              <span className="min-w-0 flex-1">
+              <span className="min-w-0 flex-[1_1_16rem]">
                 <span className="review-tag">لعبة مراجعة شاملة</span>
                 <span className="mt-2 block font-calli text-2xl leading-[1.5] sm:text-3xl">{r.title}</span>
                 {r.description && (

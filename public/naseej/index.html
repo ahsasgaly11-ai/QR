@@ -64,6 +64,8 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 #tMain{font-weight:700;line-height:1.35;text-wrap:balance;flex:1;min-width:0}
 #tSub{font-size:.78em;color:var(--muted);line-height:1.4;margin-top:.15em}
 #pips{display:flex;gap:6px;flex:none}
+/* الشاشات الضيّقة: نقاط التقدّم في سطر تحت النص حتى يأخذ النص عرض اللوحة */
+@media (max-width:480px){#task .row{flex-wrap:wrap}#pips{order:3;flex-basis:100%;justify-content:center}}
 #pips i{width:.85em;height:.85em;border-radius:50%;border:2px solid var(--gold);transition:.3s}
 #pips i.on{background:var(--gold);box-shadow:0 0 10px var(--gold)}
 #choices{display:flex;gap:8px;margin-top:.5em;flex-wrap:wrap}
@@ -172,7 +174,9 @@ p{margin:.4em 0;line-height:1.6}
 #toast.ok{background:var(--ok);color:#06281a}
 #credit{font-size:.62em;color:var(--muted);margin-top:.8em;line-height:1.5}
 @media (max-width:600px){.brand{display:none}#threads{margin-inline-end:auto}#lab .tg button{min-height:44px;font-size:.78em;padding:.1em .6em}#lab .cta,#lab .ghost{min-height:48px;font-size:.9em}}
-@media (max-height:480px){
+/* الهاتف أفقيًا فقط: الإطار القصير والعريض. الإطار القصير والضيّق (العرض داخل الصفحة
+   الرئيسية على هاتف عمودي) يبقى بالتخطيط العمودي وإلا انضغط نصّ المهمة كلمةً في كل سطر */
+@media (max-height:480px) and (min-aspect-ratio:1/1){
   #lab{width:min(46%,420px);left:auto;right:12px;margin:0;font-size:.85em}
   #lab .tg button{min-height:40px}#lab .cta,#lab .ghost{min-height:44px}
   :root{--fs:clamp(15px,3.6vh + 3px,20px)}

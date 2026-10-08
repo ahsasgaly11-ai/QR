@@ -1601,6 +1601,13 @@ body { padding-bottom: var(--ticker-h); }
   .type-tile { padding: 1rem; }
   .type-icon { width: 4rem; }
 }
+/* الهواتف الضيّقة: عمود واحد والأيقونة بجانب النص بدل عمودين ضيّقين */
+@media (max-width: 420px) {
+  .types-grid { grid-template-columns: 1fr; }
+  .type-tile { display: grid; grid-template-columns: 4rem minmax(0, 1fr); column-gap: 1rem; align-items: start; }
+  .type-icon { grid-row: span 2; width: 4rem; }
+  .type-tile h3 { margin-top: 0.25rem; }
+}
 
 /* --- مراجعات الوحدات ------------------------------------------------------ */
 .review-band {
@@ -1620,6 +1627,8 @@ body { padding-bottom: var(--ticker-h); }
 }
 .review-band:hover { transform: translateY(-2px); box-shadow: 0 26px 40px -24px rgba(15, 40, 36, 0.9); }
 .review-icon { display: block; width: 6.5rem; flex: none; animation: hi-float 5s ease-in-out infinite; animation-delay: var(--d, 0s); }
+/* الهاتف: الصدفة فوق النص لا بجانبه حتى يأخذ العنوان العرض كلّه */
+@media (max-width: 639px) { .review-icon { width: 4.5rem; } .review-cta { flex: 1 1 100%; justify-content: center; } }
 .review-tag { display: inline-block; padding: 0.15rem 0.7rem; border-radius: 3px; background: #d4a843; color: #231a17; font-size: 0.8rem; font-weight: 700; }
 .review-cta {
   display: inline-flex;
@@ -1806,6 +1815,12 @@ body { padding-bottom: var(--ticker-h); }
 .court-door--mini .court-keystone { width: 10px; height: 10px; top: -5px; }
 .court-door--mini .court-icon { width: 78px; top: 52%; }
 .court-door--mini .court-floor { display: none; }
+/* الهواتف الضيّقة: باب أصغر حتى لا ينضغط العنوان كلمةً في كل سطر */
+@media (max-width: 420px) {
+  .court-door--mini, .court-door--mini .court-niche { width: 84px; height: 112px; }
+  .court-door--mini .court-inside { inset: 12px 10px 0; }
+  .court-door--mini .court-icon { width: 56px; }
+}
 
 /* البحث والمستويات والحالات الفارغة */
 .explorer-search {
