@@ -1093,6 +1093,9 @@ body { padding-bottom: var(--ticker-h); }
 .hw-arch-line {
   z-index: 2;
   pointer-events: none;
+  /* الحلقتان الخارجيتان تحيطان بالقوس من الجانبين والأعلى فقط، ولا تتجاوزان
+     حدّ الإطار السفلي */
+  clip-path: inset(-12px -12px 0 -12px);
   box-shadow: inset 0 0 0 3px var(--gold-500), 0 0 0 7px var(--maroon), 0 0 0 8px color-mix(in srgb, var(--gold-500) 70%, transparent);
 }
 .dark .hw-arch-line { box-shadow: inset 0 0 0 3px var(--gold-500), 0 0 0 7px #5c0e26, 0 0 0 8px color-mix(in srgb, var(--gold-500) 60%, transparent); }
@@ -1117,11 +1120,11 @@ body { padding-bottom: var(--ticker-h); }
 .hw-layer svg { display: block; width: 100%; height: 100%; overflow: visible; }
 
 /* افتتاح المشهد: تنفتح النافذة من شقّ ضوء ثم تصعد الطبقات بعمقها
-   (مرّة واحدة في الجلسة — data-hero-seen يُضبط بعد العرض الأول) */
-:root:not([data-hero-seen]) .hw .hw-stage { animation: hw-open 1.5s cubic-bezier(0.7, 0, 0.2, 1) both; }
-:root:not([data-hero-seen]) .hw .hw-layer { animation: hw-rise 1.5s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: calc(0.3s + var(--i) * 0.11s); }
-:root:not([data-hero-seen]) .hw .hw-arch-line { animation: hw-fade 1.2s ease 0.2s both; }
-:root:not([data-hero-seen]) .hero-rise > * { animation: hw-text 0.9s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: calc(0.75s + var(--i, 0) * 0.1s); }
+   في كل مرّة تُفتح فيها الصفحة، ومنها العودة إليها من صفحة أخرى) */
+.hw .hw-stage { animation: hw-open 1.5s cubic-bezier(0.7, 0, 0.2, 1) both; }
+.hw .hw-layer { animation: hw-rise 1.5s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: calc(0.3s + var(--i) * 0.11s); }
+.hw .hw-arch-line { animation: hw-fade 1.2s ease 0.2s both; }
+.hero-rise > * { animation: hw-text 0.9s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: calc(0.75s + var(--i, 0) * 0.1s); }
 @keyframes hw-open { from { clip-path: inset(0 47% 0 47%); } to { clip-path: inset(0 0 0 0); } }
 @keyframes hw-rise { from { translate: 0 14%; opacity: 0; } to { translate: 0 0; opacity: 1; } }
 @keyframes hw-fade { from { opacity: 0; } }

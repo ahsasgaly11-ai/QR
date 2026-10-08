@@ -41,17 +41,7 @@ export function DohaWindow() {
     const w = world.current;
     if (!el || !w) return;
 
-    // بعد انتهاء مشهد الافتتاح لا يُعاد في نفس الجلسة
-    const introTimer = window.setTimeout(() => {
-      try {
-        sessionStorage.setItem('qa-hero-intro', '1');
-      } catch {
-        /* ignore */
-      }
-      document.documentElement.setAttribute('data-hero-seen', '1');
-    }, 2600);
-
-    if (!motionAllowed()) return () => window.clearTimeout(introTimer);
+    if (!motionAllowed()) return;
 
     let tx = 0, ty = 0, cx = 0, cy = 0, scroll = 0;
     let visible = true;
@@ -110,7 +100,6 @@ export function DohaWindow() {
     raf = requestAnimationFrame(frame);
 
     return () => {
-      window.clearTimeout(introTimer);
       io.disconnect();
       cancelAnimationFrame(raf);
       host.removeEventListener('pointermove', onPointer as EventListener);
