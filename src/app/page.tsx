@@ -80,9 +80,24 @@ export default async function HomePage() {
                 <ArrowLeft className="h-5 w-5" />
               </a>
               {latestReview ? (
-                <Link href={`/play/${latestReview.id}`} className="btn-ghost px-6">
-                  <Gamepad2 className="h-5 w-5 text-[color:var(--maroon)]" />
-                  {latestReview.title}
+                <Link
+                  href={`/play/${latestReview.id}`}
+                  className="review-ticket"
+                  aria-label={`العب ${latestReview.title}`}
+                >
+                  <span className="review-ticket-icon" aria-hidden>
+                    <HeritageIcon kind="oyster" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="review-ticket-kicker">
+                      <Gamepad2 className="h-3.5 w-3.5" aria-hidden />
+                      مراجعة الوحدة • لعبة
+                    </span>
+                    <span className="review-ticket-title">{latestReview.title}</span>
+                  </span>
+                  <span className="review-ticket-go" aria-hidden>
+                    <ArrowLeft className="h-5 w-5" />
+                  </span>
                 </Link>
               ) : (
                 <Link href="/dashboard" className="btn-ghost px-6">
