@@ -15,3 +15,6 @@ const KNOWN: Record<string, DoorEmblem> = {
 export function emblemFor(subjectId: string): DoorEmblem {
   return KNOWN[subjectId] ?? 'letter';
 }
+
+/** ألوان الأبواب بالتناوب: عنابي، فيروزي، أزرق بحري، أخضر نخيل، ساج. */
+export const DOOR_PAINT = ['#8a1538', '#2b6b62', '#2d5f7c', '#3f6b3a', '#5b3a22'];

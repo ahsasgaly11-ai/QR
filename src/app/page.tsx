@@ -8,7 +8,7 @@ import { DownloadsSwitch } from '@/components/downloads-switch';
 import { UnitReviewsSection } from '@/components/unit-reviews-section';
 import { DohaWindow } from '@/components/home/doha-window';
 import { HeritageDoor } from '@/components/home/heritage-door';
-import { emblemFor } from '@/components/home/door-emblem';
+import { DOOR_PAINT, emblemFor } from '@/components/home/door-emblem';
 import { SectionHead } from '@/components/home/section-head';
 import { HeritageIcon } from '@/components/heritage-icons';
 import type { HeritageIconKind } from '@/components/heritage-icons';
@@ -22,7 +22,6 @@ export const revalidate = 60;
 export const metadata = { alternates: { canonical: '/' } };
 
 // ألوان الأبواب القطرية القديمة: خشب مطليّ بالأزرق والأخضر والعنّابي أو ساج طبيعي
-const DOOR_PAINT = ['#8a1538', '#2b6b62', '#2d5f7c', '#3f6b3a', '#5b3a22'];
 
 const TYPES: { icon: HeritageIconKind; label: string; desc: string }[] = [
   { icon: 'flask', label: 'تجارب عملية', desc: 'يجرّب الطالب بيده ويرى النتيجة كما في المختبر.' },

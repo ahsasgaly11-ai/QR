@@ -158,7 +158,7 @@ export function AccessibilityPanel() {
     <div
       role="group"
       aria-labelledby={labelId}
-      className="grid grid-cols-3 gap-1.5 rounded-2xl border border-[color:var(--hairline-strong)] bg-[color:var(--surface-2)] p-1.5"
+      className="grid grid-cols-3 gap-1.5 rounded-xl border border-[color:var(--hairline-strong)] bg-[color:var(--surface-2)] p-1.5"
     >
       {options.map((o) => {
         const active = state[attr] === o.value;
@@ -169,7 +169,7 @@ export function AccessibilityPanel() {
             aria-pressed={active}
             onClick={() => set(attr, o.value, `${o.label}`)}
             className={cn(
-              'rounded-xl px-2 py-2 text-sm font-bold transition',
+              'rounded-lg px-2 py-2 text-sm font-semibold transition',
               active
                 ? 'bg-[color:var(--maroon)] text-white shadow-[var(--shadow-sm)]'
                 : 'text-foreground/75 hover:bg-[color:var(--surface)]'
@@ -206,7 +206,7 @@ export function AccessibilityPanel() {
           set(attr, on ? offValue : onValue, `${label}: ${on ? 'مُعطَّل' : 'مُفعَّل'}`)
         }
         className={cn(
-          'flex w-full items-center gap-3 rounded-2xl border p-3 text-right transition',
+          'flex w-full items-center gap-3 rounded-xl border p-3 text-right transition',
           on
             ? 'border-[color:var(--maroon)] bg-[color:var(--maroon-100)]'
             : 'border-[color:var(--hairline-strong)] bg-[color:var(--surface-2)] hover:border-[color:var(--gold)]'
@@ -221,7 +221,7 @@ export function AccessibilityPanel() {
           <Icon className="h-5 w-5" />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-black text-[color:var(--ink)]">{label}</span>
+          <span className="block text-sm font-semibold text-[color:var(--ink)]">{label}</span>
           <span className="block text-xs font-medium text-muted-foreground">{desc}</span>
         </span>
         <span
@@ -254,7 +254,7 @@ export function AccessibilityPanel() {
         aria-label="إعدادات إمكانية الوصول"
         aria-expanded={open}
         aria-haspopup="dialog"
-        className="fixed left-0 top-1/2 z-[95] grid -translate-y-1/2 place-items-center rounded-l-none rounded-r-2xl border-2 border-l-0 border-[color:var(--gold)] bg-[color:var(--maroon)] text-white shadow-[var(--shadow-lg)] transition hover:pr-4 focus-visible:pr-4 print:hidden"
+        className="a11y-tab print:hidden"
         style={{ height: 56, width: 48 }}
       >
         <Accessibility className="h-6 w-6" />
@@ -272,10 +272,10 @@ export function AccessibilityPanel() {
             role="dialog"
             aria-modal="true"
             aria-label="إعدادات إمكانية الوصول"
-            className="fixed left-1/2 top-1/2 z-[97] max-h-[88vh] w-[min(94vw,23rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-3xl border-2 border-[color:var(--gold)]/50 bg-[color:var(--surface)] p-4 shadow-[var(--shadow-lg)]"
+            className="a11y-dialog fixed left-1/2 top-1/2 z-[97] max-h-[88vh] w-[min(94vw,23rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto p-4 pt-5"
           >
             <div className="mb-3 flex items-center justify-between gap-2">
-              <h2 className="flex items-center gap-2 font-display text-lg font-black text-[color:var(--maroon)]">
+              <h2 className="flex items-center gap-2 font-display text-xl font-semibold text-foreground">
                 <Accessibility className="h-5 w-5" />
                 إمكانية الوصول
               </h2>
@@ -295,7 +295,7 @@ export function AccessibilityPanel() {
             <div className="mb-4">
               <p
                 id="a11y-text-label"
-                className="mb-1.5 flex items-center gap-1.5 text-sm font-black text-[color:var(--ink)]"
+                className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-[color:var(--ink)]"
               >
                 <Type className="h-4 w-4 text-[color:var(--gold)]" /> حجم الخط
               </p>
