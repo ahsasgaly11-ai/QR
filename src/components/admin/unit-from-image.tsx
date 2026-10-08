@@ -201,10 +201,10 @@ export function UnitFromImage({
       aria-modal="true"
       aria-label="إضافة وحدة من صورة"
     >
-      <div className="card-premium my-8 w-full max-w-3xl rounded-3xl p-6 sm:p-8">
+      <div className="panel my-8 w-full max-w-3xl rounded-2xl p-6 sm:p-8">
         <div className="mb-5 flex items-start justify-between gap-3">
           <div>
-            <h3 className="font-display text-xl font-bold text-[color:var(--maroon)]">
+            <h3 className="font-display text-xl font-semibold text-foreground">
               إضافة وحدة جديدة من صورة
             </h3>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -310,7 +310,7 @@ export function UnitFromImage({
         {mode === 'review' && (
           <div className={cn('grid gap-5', previews.length > 0 && 'md:grid-cols-[1fr_200px]')}>
             <div className="min-w-0">
-              <label className="mb-1.5 block text-sm font-black text-[color:var(--maroon)]">
+              <label className="mb-1.5 block text-sm font-semibold text-[color:var(--maroon)]">
                 عنوان الوحدة
               </label>
               <div className="flex items-center gap-2">
@@ -329,7 +329,7 @@ export function UnitFromImage({
                 </p>
               )}
 
-              <label className="mb-1.5 mt-4 block text-sm font-black text-[color:var(--maroon)]">
+              <label className="mb-1.5 mt-4 block text-sm font-semibold text-[color:var(--maroon)]">
                 وصف مختصر <span className="font-bold text-muted-foreground">(اختياري)</span>
               </label>
               <textarea
@@ -340,14 +340,14 @@ export function UnitFromImage({
               />
 
               <div className="mb-1.5 mt-4 flex items-center justify-between">
-                <span className="text-sm font-black text-[color:var(--maroon)]">
+                <span className="text-sm font-semibold text-[color:var(--maroon)]">
                   الدروس ({lessons.length})
                 </span>
               </div>
               <div className="max-h-[40vh] space-y-1.5 overflow-y-auto border-r-2 border-[color:var(--hairline)] pr-3">
                 {draft.lessons.map((l, i) => (
                   <div key={i} className="flex items-center gap-1.5">
-                    <span className="w-5 shrink-0 text-center text-xs font-black text-muted-foreground">
+                    <span className="w-5 shrink-0 text-center text-xs font-semibold text-muted-foreground">
                       {i + 1}
                     </span>
                     <input
@@ -392,7 +392,7 @@ export function UnitFromImage({
 
             {previews.length > 0 && (
               <div className="order-first space-y-2 md:order-none">
-                <span className="block text-xs font-black text-muted-foreground">
+                <span className="block text-xs font-semibold text-muted-foreground">
                   الصورة الأصلية للمقارنة
                 </span>
                 <div className="flex gap-2 overflow-x-auto md:max-h-[60vh] md:flex-col md:overflow-y-auto">

@@ -140,9 +140,9 @@ export function DownloadsManager({ structure }: { structure: Subject[] }) {
 
   return (
     <div className="max-w-3xl space-y-5">
-      <div className="card-premium rounded-3xl p-6">
+      <div className="panel rounded-2xl p-6">
         <div className="mb-5">
-          <h3 className="font-display text-xl font-black text-[color:var(--maroon)]">
+          <h3 className="font-display text-xl font-semibold text-foreground">
             صلاحيات تنزيل الألعاب
           </h3>
           <p className="mt-1 text-sm leading-7 text-muted-foreground">
@@ -179,7 +179,7 @@ export function DownloadsManager({ structure }: { structure: Subject[] }) {
           <div className="mt-6 border-t border-[color:var(--hairline)] pt-5">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <div>
-                <h4 className="font-black text-foreground">اختر الوحدات المسموح تنزيل ألعابها</h4>
+                <h4 className="font-semibold text-foreground">اختر الوحدات المسموح تنزيل ألعابها</h4>
                 <p className="mt-1 text-sm text-muted-foreground">
                   المحدد حاليًا: {selectedCount} من {units.length} وحدة.
                 </p>
@@ -249,7 +249,7 @@ export function DownloadsManager({ structure }: { structure: Subject[] }) {
                         className="mt-1 h-5 w-5 accent-[color:var(--maroon)]"
                       />
                       <span className="min-w-0">
-                        <span className="block font-black text-[color:var(--maroon)]">
+                        <span className="block font-semibold text-[color:var(--maroon)]">
                           {unit.unitTitle}
                         </span>
                         <span className="mt-1 block text-xs font-bold text-muted-foreground">
@@ -282,7 +282,7 @@ export function DownloadsManager({ structure }: { structure: Subject[] }) {
             type="button"
             onClick={() => void save()}
             disabled={!dirty || busy}
-            className="flex items-center gap-2 rounded-xl bg-[color:var(--maroon)] px-5 py-2.5 text-sm font-black text-white shadow-md transition disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex items-center gap-2 rounded-xl bg-[color:var(--maroon)] px-5 py-2.5 text-sm font-semibold text-white shadow-md transition disabled:cursor-not-allowed disabled:opacity-40"
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             حفظ إعدادات التنزيل
@@ -346,7 +346,7 @@ function ModeCard({
       >
         <Icon className="h-5 w-5" />
       </span>
-      <span className="block font-black text-[color:var(--maroon)]">{title}</span>
+      <span className="block font-semibold text-[color:var(--maroon)]">{title}</span>
       <span className="mt-1 block text-xs leading-5 text-muted-foreground">{description}</span>
     </button>
   );

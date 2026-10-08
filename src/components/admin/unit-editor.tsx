@@ -51,7 +51,7 @@ function Modal({
       aria-label={label}
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className={cn('card-premium my-8 w-full rounded-3xl p-6 sm:p-8', className)}>
+      <div className={cn('panel my-8 w-full rounded-2xl p-6 sm:p-8', className)}>
         {children}
       </div>
     </div>,
@@ -129,7 +129,7 @@ export function UnitEditor({
     <Modal label="تعديل الوحدة" onClose={onClose} className="max-w-2xl">
       <div className="mb-5 flex items-start justify-between gap-3">
         <div>
-          <h3 className="font-display text-xl font-bold text-[color:var(--maroon)]">
+          <h3 className="font-display text-xl font-semibold text-foreground">
             تعديل الوحدة
           </h3>
           <p className="mt-1 text-sm text-muted-foreground">{context}</p>
@@ -143,7 +143,7 @@ export function UnitEditor({
         </button>
       </div>
 
-      <label className="mb-1.5 block text-sm font-black text-[color:var(--maroon)]">
+      <label className="mb-1.5 block text-sm font-semibold text-[color:var(--maroon)]">
         عنوان الوحدة
       </label>
       <div className="flex items-center gap-2">
@@ -151,7 +151,7 @@ export function UnitEditor({
         <input className={input + ' text-base'} value={title} onChange={(e) => setTitle(e.target.value)} />
       </div>
 
-      <label className="mb-1.5 mt-4 block text-sm font-black text-[color:var(--maroon)]">
+      <label className="mb-1.5 mt-4 block text-sm font-semibold text-[color:var(--maroon)]">
         وصف مختصر <span className="font-bold text-muted-foreground">(اختياري)</span>
       </label>
       <textarea
@@ -161,7 +161,7 @@ export function UnitEditor({
         placeholder="يظهر تحت عنوان الوحدة في صفحة المادة"
       />
 
-      <span className="mb-1.5 mt-4 block text-sm font-black text-[color:var(--maroon)]">
+      <span className="mb-1.5 mt-4 block text-sm font-semibold text-[color:var(--maroon)]">
         الدروس ({lessons.filter((l) => l.title.trim()).length})
       </span>
       <div className="max-h-[45vh] space-y-1.5 overflow-y-auto border-r-2 border-[color:var(--hairline)] pr-3">
@@ -170,7 +170,7 @@ export function UnitEditor({
           return (
             <div key={l.id}>
               <div className="flex items-center gap-1.5">
-                <span className="w-5 shrink-0 text-center text-xs font-black text-muted-foreground">
+                <span className="w-5 shrink-0 text-center text-xs font-semibold text-muted-foreground">
                   {i + 1}
                 </span>
                 <input
@@ -181,7 +181,7 @@ export function UnitEditor({
                 />
                 {count > 0 && (
                   <span
-                    className="shrink-0 rounded-full bg-[color:var(--teal)]/15 px-2 py-0.5 text-[11px] font-black text-[color:var(--teal)]"
+                    className="shrink-0 rounded-full bg-[color:var(--teal)]/15 px-2 py-0.5 text-[11px] font-semibold text-[color:var(--teal)]"
                     title="أنشطة مرفوعة في هذا الدرس"
                   >
                     {count} نشاط
@@ -207,7 +207,7 @@ export function UnitEditor({
                   className={cn(
                     iconBtn,
                     arming === l.id
-                      ? 'w-auto bg-[color:var(--coral)] px-2 text-[11px] font-black text-white'
+                      ? 'w-auto bg-[color:var(--coral)] px-2 text-[11px] font-semibold text-white'
                       : 'bg-[color:var(--coral)]/15 text-[color:var(--coral)]'
                   )}
                   onClick={() => removeLesson(i)}
@@ -283,12 +283,12 @@ export function ConfirmDeleteUnit({
         <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[color:var(--coral)]/15 text-[color:var(--coral)]">
           <Trash2 className="h-5 w-5" />
         </span>
-        <h3 className="font-display text-lg font-bold text-[color:var(--maroon)]">
+        <h3 className="font-display text-lg font-semibold text-foreground">
           حذف الوحدة؟
         </h3>
       </div>
       <p className="text-sm leading-7">
-        ستُحذف <span className="font-black">«{unit.title}»</span> مع دروسها (
+        ستُحذف <span className="font-semibold">«{unit.title}»</span> مع دروسها (
         {unit.lessons.length} درس).
       </p>
       {activities > 0 && (

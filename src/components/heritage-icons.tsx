@@ -8,7 +8,7 @@ import type { ActivityType } from '@/lib/types';
 // فلا تتكرّر التدرّجات في الصفحة ولا تتعارض معرّفاتها.
 // ---------------------------------------------------------------------------
 
-export type HeritageIconKind = 'flask' | 'globe' | 'question' | 'oyster' | 'pearl' | 'chart';
+export type HeritageIconKind = 'flask' | 'globe' | 'question' | 'oyster' | 'pearl' | 'chart' | 'key';
 
 export const ACTIVITY_ICON: Record<ActivityType, HeritageIconKind> = {
   experiment: 'flask',
@@ -169,6 +169,22 @@ export function HeritageIconSprite() {
           <path d="M86 96V66l12-4v30z" fill="#2d5f7c" />
           <path d="M72 62l12-4 14 4-12 4z" fill="#86bad8" />
           <path d="M50 38v40" stroke="#fff" strokeWidth="3" strokeLinecap="round" opacity=".45" />
+        </symbol>
+
+        {/* مفتاح نحاسي قديم بمقبض مثمّن — للوحة الإدارة */}
+        <symbol id="hi-key" viewBox="0 0 120 120">
+          <ellipse cx="60" cy="110" rx="40" ry="5" fill="#231a17" opacity=".16" />
+          <g transform="rotate(-35 60 60)">
+            <rect x="46" y="54" width="62" height="12" rx="4" fill="url(#hi-gold-side)" transform="translate(0 4)" />
+            <rect x="46" y="54" width="62" height="12" rx="4" fill="url(#hi-brass)" />
+            <path d="M84 66h8v14h-8zM98 66h8v20h-8z" fill="url(#hi-gold-side)" />
+            <path d="M84 66h8v12h-8zM98 66h8v18h-8z" fill="url(#hi-brass)" />
+            <path d="M30 32l9 4 9-4 4 9 9 4-4 9 4 9-9 4-4 9-9-4-9 4-4-9-9-4 4-9-4-9 9-4z" fill="url(#hi-gold-side)" transform="translate(0 4)" />
+            <path d="M30 32l9 4 9-4 4 9 9 4-4 9 4 9-9 4-4 9-9-4-9 4-4-9-9-4 4-9-4-9 9-4z" fill="url(#hi-brass)" />
+            <circle cx="39" cy="60" r="10" fill="#8a1538" />
+            <circle cx="39" cy="60" r="5" fill="#5c0e26" />
+            <path d="M52 57h50" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" opacity=".5" />
+          </g>
         </symbol>
 
         <symbol id="hi-pearl" viewBox="0 0 120 120">

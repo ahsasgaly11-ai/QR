@@ -254,7 +254,7 @@ export function ContentManager({
       )}
 
       {tree.map((s, si) => (
-        <div key={s.id} className="card-premium rounded-2xl p-4">
+        <div key={s.id} className="panel rounded-2xl p-4">
           <div className="flex items-center gap-2">
             <button
               className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-lg"
@@ -348,7 +348,7 @@ export function ContentManager({
                         />
                         {(unitCounts.get(posKey(s.id, g.id, u.id)) ?? 0) > 0 && (
                           <span
-                            className="hidden shrink-0 rounded-full bg-[color:var(--teal)]/15 px-2 py-0.5 text-[11px] font-black text-[color:var(--teal)] sm:inline"
+                            className="hidden shrink-0 rounded-full bg-[color:var(--teal)]/15 px-2 py-0.5 text-[11px] font-semibold text-[color:var(--teal)] sm:inline"
                             title="أنشطة ومراجعات مرتبطة بالوحدة"
                           >
                             {unitCounts.get(posKey(s.id, g.id, u.id))} نشاط
