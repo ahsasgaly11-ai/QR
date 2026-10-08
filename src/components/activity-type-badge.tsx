@@ -1,14 +1,8 @@
-import { FlaskConical, Atom, HelpCircle, Gamepad2 } from 'lucide-react';
 import { ACTIVITY_META, type ActivityType } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { HeritageIcon, ACTIVITY_ICON } from './heritage-icons';
 
-const ICONS = {
-  flask: FlaskConical,
-  atom: Atom,
-  help: HelpCircle,
-  gamepad: Gamepad2,
-} as const;
-
+/** شارة نوع النشاط: أيقونته ثلاثية الأبعاد صغيرة واسمه بلونه. */
 export function ActivityTypeBadge({
   type,
   className,
@@ -17,16 +11,12 @@ export function ActivityTypeBadge({
   className?: string;
 }) {
   const meta = ACTIVITY_META[type];
-  const Icon = ICONS[meta.icon as keyof typeof ICONS];
   return (
     <span
-      className={cn(
-        'icon-3d inline-flex !place-items-stretch items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold text-white',
-        className
-      )}
-      style={{ ['--i3d' as string]: meta.color }}
+      className={cn('type-badge', className)}
+      style={{ '--tc': meta.color } as React.CSSProperties}
     >
-      <Icon className="h-3.5 w-3.5" />
+      <HeritageIcon kind={ACTIVITY_ICON[type]} className="h-5 w-5" />
       {meta.label}
     </span>
   );
