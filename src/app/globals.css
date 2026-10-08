@@ -1485,7 +1485,6 @@ body { padding-bottom: var(--ticker-h); }
   background: radial-gradient(circle at var(--x) var(--y), #fff8e6 0, #f7dc96 20%, #e9b64e 44%, color-mix(in srgb, var(--tint) 80%, #000) 100%);
   clip-path: circle(0 at var(--x) var(--y));
   transition: clip-path 0.85s cubic-bezier(0.7, 0, 0.2, 1), opacity 0.7s ease;
-  will-change: opacity;
 }
 .door-curtain.is-in { clip-path: circle(150% at var(--x) var(--y)); }
 /* عند التلاشي: الضوء يغطّي الشاشة كلّها فلا حاجة للقصّ، وإبقاؤه مع تغيّر الشفافية
@@ -1514,7 +1513,11 @@ body { padding-bottom: var(--ticker-h); }
   opacity: 0;
   scale: 0.92;
   /* بلا filter: مرشّحات الصورة (blur/drop-shadow) تظهر في سفاري مستطيلًا أبيض
-     حين تتلاشى الستارة */
+     حين تتلاشى الستارة. لكن الشعار يحتاج طبقة رسم مستقلّة وإلا لا يعيد سفاري
+     رسمه داخل الستارة المقصوصة فيبقى مخفيًا */
+  will-change: opacity, scale;
+  transform: translateZ(0);
+  backface-visibility: hidden;
   transition: opacity 0.7s ease 0.4s, scale 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.4s;
 }
 .door-curtain.is-in::before { opacity: 1; }
