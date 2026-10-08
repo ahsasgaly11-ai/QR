@@ -10,6 +10,7 @@ import { DohaWindow } from '@/components/home/doha-window';
 import { HeritageDoor } from '@/components/home/heritage-door';
 import { DOOR_PAINT, emblemFor } from '@/components/home/door-emblem';
 import { SectionHead } from '@/components/home/section-head';
+import { NaseejShow } from '@/components/home/naseej-show';
 import { HeritageIcon } from '@/components/heritage-icons';
 import type { HeritageIconKind } from '@/components/heritage-icons';
 
@@ -116,6 +117,16 @@ export default async function HomePage() {
       </section>
 
       <div className="sadu-band" aria-hidden />
+
+      {/* ===================== عرض نسيج المجتمع القطري ===================== */}
+      <section id="naseej" className="mx-auto max-w-7xl scroll-mt-24 px-5 py-12 sm:px-6 lg:py-16">
+        <SectionHead
+          kicker="عرض تلقائي متواصل • أنا ومجتمعي"
+          title="نسيج المجتمع القطري"
+          lead="خمسة مشاهد بالترتيب: تُنجز الشخصيات مهامّ كل مشهد، ثم تظهر القيمة المستفادة، وينتقل العرض إلى المشهد التالي، ويتكرر باستمرار."
+        />
+        <NaseejShow />
+      </section>
 
       {/* ===================== مراجعات الوحدات ===================== */}
       <UnitReviewsSection reviews={reviews} subjects={subjects} />
