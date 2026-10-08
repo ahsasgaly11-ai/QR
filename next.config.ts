@@ -36,6 +36,9 @@ const nextConfig: NextConfig = {
       // «مختبر العطسة» (ملف واحد ثابت داخل public/sneeze-lab)
       { source: '/sneeze-lab', destination: '/sneeze-lab/index.html', permanent: false },
       { source: '/sneeze-lab/', destination: '/sneeze-lab/index.html', permanent: false },
+      // عرض «نسيج المجتمع القطري» (ملف واحد ثابت داخل public/naseej، يُضمَّن في الرئيسية)
+      { source: '/naseej', destination: '/naseej/index.html', permanent: false },
+      { source: '/naseej/', destination: '/naseej/index.html', permanent: false },
     ];
   },
   images: {

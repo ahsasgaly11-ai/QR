@@ -1645,6 +1645,50 @@ body { padding-bottom: var(--ticker-h); }
 .closing-cta:hover { transform: translateY(-1px); }
 .closing-cta:active { transform: translateY(3px); box-shadow: 0 1px 0 #8a6418; }
 
+/* --- عرض «نسيج المجتمع القطري» ------------------------------------------- */
+.naseej-show { margin-top: 1.75rem; }
+.naseej-stage {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  max-height: 86vh;
+  min-height: 380px;
+  border-radius: 0.75rem;
+  background: #0b1622;
+  border: 2px solid color-mix(in srgb, var(--gold-500) 70%, transparent);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--gold-500) 14%, transparent), 0 30px 60px -30px rgba(11, 22, 34, 0.75);
+}
+@media (min-width: 640px) { .naseej-stage { aspect-ratio: 16 / 10; } }
+@media (min-width: 1024px) { .naseej-stage { aspect-ratio: 16 / 9; } }
+.naseej-stage:fullscreen { aspect-ratio: auto; max-height: none; border: 0; border-radius: 0; box-shadow: none; }
+.naseej-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+.naseej-placeholder {
+  background: radial-gradient(120% 90% at 50% 0%, rgba(23, 58, 84, 0.55), #0b1622);
+}
+.naseej-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 1rem;
+  translate: -50% 0;
+  white-space: nowrap;
+  max-width: calc(100% - 1.5rem);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 48px;
+  padding-inline: 1.2rem;
+  font-size: clamp(0.85rem, 3.4vw, 1rem);
+  border-radius: 999px;
+  background: #d4a843;
+  color: #231a17;
+  font-weight: 700;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  animation: hi-float 3s ease-in-out infinite;
+}
+.naseej-bar { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; margin-top: 1rem; }
+.naseej-bar button:disabled { opacity: 0.5; cursor: default; }
+
 /* تقليل الحركة: لا مشهد افتتاح أصلًا (المدد تُصفَّر عامًّا، لكن التأخير يبقى
    فيُخفي الطبقات لحظة قبل ظهورها) */
 @media (prefers-reduced-motion: reduce) {
