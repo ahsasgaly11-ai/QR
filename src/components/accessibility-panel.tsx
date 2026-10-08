@@ -13,6 +13,7 @@ import {
   RotateCcw,
   Check,
   Hand,
+  Gauge,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -28,9 +29,10 @@ import { cn } from '@/lib/utils';
 //   data-text     = base | lg | xl      (حجم الخط)
 //   data-motion   = auto | reduce       (تقليل الحركة)
 //   data-signlang = on | off            (رفيق لغة الإشارة القطرية)
+//   data-perf     = auto | lite | full  (الوضع الخفيف لأجهزة المدرسة)
 // ---------------------------------------------------------------------------
 
-type Attr = 'theme' | 'contrast' | 'reading' | 'text' | 'motion' | 'signlang';
+type Attr = 'theme' | 'contrast' | 'reading' | 'text' | 'motion' | 'signlang' | 'perf';
 
 const STORE: Record<Attr, string> = {
   theme: 'qa-theme',
@@ -39,6 +41,7 @@ const STORE: Record<Attr, string> = {
   text: 'qa-a11y-text',
   motion: 'qa-a11y-motion',
   signlang: 'qa-a11y-signlang',
+  perf: 'qa-a11y-perf',
 };
 
 const DEFAULTS: Record<Attr, string> = {
@@ -48,6 +51,7 @@ const DEFAULTS: Record<Attr, string> = {
   text: 'base',
   motion: 'auto',
   signlang: 'off',
+  perf: 'auto',
 };
 
 function readAttr(a: Attr): string {
@@ -83,6 +87,7 @@ export function AccessibilityPanel() {
       text: readAttr('text'),
       motion: readAttr('motion'),
       signlang: readAttr('signlang'),
+      perf: readAttr('perf'),
     });
     // زامن اللوحة مع زر الهيدر إن غيّر الوضع الليلي
     const obs = new MutationObserver(() =>
@@ -351,6 +356,29 @@ export function AccessibilityPanel() {
                 label="لغة الإشارة القطرية"
                 desc="يفتح رفيق لغة الإشارة تلقائيًا في كل نشاط"
                 icon={Hand}
+              />
+            </div>
+
+            {/* الوضع الخفيف */}
+            <div className="mt-4">
+              <p
+                id="a11y-perf-label"
+                className="mb-1 flex items-center gap-1.5 text-sm font-semibold text-[color:var(--ink)]"
+              >
+                <Gauge className="h-4 w-4 text-[color:var(--gold)]" /> أداء الجهاز
+              </p>
+              <p className="mb-1.5 text-xs text-muted-foreground">
+                «خفيف» يوقف الحركات المتكرّرة والمؤثرات الثقيلة لأجهزة المدرسة البطيئة،
+                و«تلقائي» يختاره وحده عند الحاجة.
+              </p>
+              <Segment
+                attr="perf"
+                labelId="a11y-perf-label"
+                options={[
+                  { value: 'auto', label: 'تلقائي' },
+                  { value: 'lite', label: 'خفيف' },
+                  { value: 'full', label: 'كامل' },
+                ]}
               />
             </div>
 

@@ -2498,3 +2498,132 @@ a.ledger-row:hover .ledger-go { transform: translateX(-4px); }
 .admin-section-title::before { content: ''; width: 0.6rem; height: 0.6rem; transform: rotate(45deg); background: var(--gold-500); }
 .gate-card-top { position: relative; overflow: hidden; }
 .gate-card-top::before { content: ''; position: absolute; inset: 0 0 auto; height: 6px; background: var(--maroon); }
+
+/* =========================================================================
+   الوضع الخفيف (أجهزة المدارس البطيئة)
+   تبقى حركات الدخول التي تُشغَّل مرّة واحدة، وتتوقّف الحلقات المتكرّرة
+   (الأشعّة، الطفو، الأمواج، الفوانيس) بعد دورتها الأولى، وتُلغى المؤثرات
+   المكلفة في الرسم كضبابية الخلفية والظلال المرشّحة. مؤشّرات التحميل
+   (animate-spin) مستثناة لأنها تخبر المستخدم أن شيئًا يجري.
+   ========================================================================= */
+:root:is([data-perf='lite'], [data-perf='auto'][data-perf-auto='lite']) *:not(.animate-spin),
+:root:is([data-perf='lite'], [data-perf='auto'][data-perf-auto='lite']) *::before,
+:root:is([data-perf='lite'], [data-perf='auto'][data-perf-auto='lite']) *::after {
+  animation-iteration-count: 1 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+:root:is([data-perf='lite'], [data-perf='auto'][data-perf-auto='lite']) :is(.court-icon, .hw-glow, .stat-medal, .qurs-disc, .nf-oryx, .act-thumb .heritage-icon) {
+  filter: none !important;
+}
+:root:is([data-perf='lite'], [data-perf='auto'][data-perf-auto='lite']) :is(.court-rays, .qurs-sea, .act-glare) {
+  animation: none !important;
+}
+:root:is([data-perf='lite'], [data-perf='auto'][data-perf-auto='lite']) :is(.door-wall, .subject-court)::before { display: none; }
+
+/* =========================================================================
+   لآلئي — زرّ الهيدر، الصندوق، الإشعار
+   ========================================================================= */
+.pearl-btn { display: inline-flex; align-items: center; gap: 0.35rem; width: auto; padding-inline: 0.55rem 0.7rem; }
+.pearl-dot {
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff 0 18%, #f0e8da 45%, #ad9c82 100%);
+  box-shadow: 0 2px 3px rgba(35, 26, 23, 0.35);
+}
+.pearl-n { font-weight: 600; font-size: 0.9rem; font-variant-numeric: tabular-nums; color: var(--ink); }
+.pearl-btn.is-bump .pearl-dot { animation: pearl-bump 0.9s cubic-bezier(0.22, 1, 0.36, 1); }
+@keyframes pearl-bump { 30% { transform: scale(1.5) translateY(-3px); } 60% { transform: scale(0.9); } }
+
+.pearl-chest {
+  position: absolute;
+  top: calc(100% + 0.6rem);
+  inset-inline-end: 0;
+  z-index: 60;
+  width: min(88vw, 21rem);
+  padding: 1.1rem 1.1rem 1rem;
+  border-radius: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--hairline-strong);
+  box-shadow: 0 6px 0 var(--hairline-strong), 0 30px 50px -20px rgba(35, 26, 23, 0.5);
+  animation: contact-pop 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  transform-origin: top left;
+}
+.pearl-chest::before { content: ''; position: absolute; inset: 0 0 auto; height: 5px; border-radius: 1rem 1rem 0 0; background: var(--maroon); }
+/* عقد اللآلئ على خيط ذهبي مقوّس */
+.pearl-string {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.2rem;
+  min-height: 3.2rem;
+  margin: 0.9rem 0;
+  padding: 0.7rem 0.6rem;
+  border-radius: 0.75rem;
+  background: radial-gradient(ellipse at 50% 0, color-mix(in srgb, var(--sea) 22%, var(--surface-2)), var(--surface-2));
+  border: 1px solid var(--hairline);
+}
+.pearl-string::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0.8rem;
+  top: 50%;
+  border-top: 1.5px solid var(--gold-500);
+  opacity: 0.6;
+}
+.pearl-bead {
+  position: relative;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff 0 18%, #f0e8da 45%, #ad9c82 100%);
+  box-shadow: 0 2px 3px rgba(35, 26, 23, 0.3);
+  animation: pearl-in 0.5s calc(var(--i) * 40ms) both cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes pearl-in { from { opacity: 0; transform: translateY(-8px) scale(0.6); } }
+.pearl-empty { position: relative; align-self: center; font-size: 0.85rem; color: var(--muted); background: var(--surface-2); padding: 0 0.5rem; }
+.pearl-ranks { display: grid; gap: 0.25rem; margin: 0.9rem 0 0; padding: 0; list-style: none; }
+.pearl-ranks li {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.3rem 0.6rem;
+  border-radius: 0.45rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  background: var(--surface-2);
+}
+.pearl-ranks li.is-on { color: var(--ink); font-weight: 600; background: color-mix(in srgb, var(--gold-500) 16%, var(--surface)); }
+
+.pearl-toast-host {
+  position: fixed;
+  top: 5.5rem;
+  left: 50%;
+  translate: -50% 0;
+  z-index: 120;
+  pointer-events: none;
+  width: min(92vw, 26rem);
+}
+.pearl-toast {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.7rem 1rem 0.7rem 0.8rem;
+  border-radius: 1rem;
+  color: #f3e8d6;
+  background: linear-gradient(160deg, #123247, #0b1f2d 70%);
+  border: 2px solid #b0862a;
+  box-shadow: 0 5px 0 #6d4e12, 0 24px 40px -18px rgba(11, 31, 45, 0.8);
+  animation: pearl-toast 5.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.pearl-toast-icon { width: 3.2rem; flex: none; animation: pearl-rise 1.2s 0.15s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes pearl-toast {
+  0% { opacity: 0; transform: translateY(-24px) scale(0.95); }
+  8%, 88% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: translateY(-12px); }
+}
+@keyframes pearl-rise { from { transform: translateY(10px) scale(0.7) rotate(-12deg); } 60% { transform: translateY(-4px) scale(1.1); } }
+@media (prefers-reduced-motion: reduce) {
+  .pearl-toast, .pearl-toast-icon, .pearl-bead, .pearl-btn.is-bump .pearl-dot { animation: none; }
+}
