@@ -1,10 +1,8 @@
-import { BarChart3 } from 'lucide-react';
 import { getAllActivities, getSubjects, locateActivity } from '@/lib/content';
 import { StatsDashboard } from '@/components/stats-dashboard';
 import { UserHeatmap } from '@/components/user-heatmap';
-import { BackButton } from '@/components/back-button';
 import { StatsSyncNotice } from '@/components/stats-sync-notice';
-import { Icon3D } from '@/components/icon-3d';
+import { PageCourt } from '@/components/page-court';
 import { SITE_NAME } from '@/lib/site';
 
 // المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
@@ -31,27 +29,23 @@ export default async function DashboardPage() {
   });
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-14">
-      <div className="mb-6 flex">
-        <BackButton fallback="/" />
-      </div>
-      <div className="mb-10 flex items-center gap-4">
-        <Icon3D icon={BarChart3} size="lg" />
-        <div>
-          <h1 className="font-calli text-3xl font-bold text-[color:var(--maroon)] sm:text-4xl">
-            لوحة الإحصاءات
-          </h1>
-          <p className="text-muted-foreground">
-            متابعة حيّة للزوّار والمشاهدات والتنزيلات عبر المنصّة.
-          </p>
+    <>
+      <PageCourt
+        crumbs={[{ href: '/', label: 'الرئيسية' }, { label: 'الإحصاءات' }]}
+        kicker="متابعة حيّة"
+        title="لوحة الإحصاءات"
+        icon="chart"
+        color="#b0862a"
+        lead="الزوّار والمشاهدات والتنزيلات عبر المنصّة لحظة بلحظة، وأكثر الأنشطة إقبالًا، وانتشار المستخدمين في مناطق قطر."
+      />
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+        <StatsSyncNotice />
+        <StatsDashboard activities={rows} />
+
+        <div className="mt-5 sm:mt-8">
+          <UserHeatmap />
         </div>
       </div>
-      <StatsSyncNotice />
-      <StatsDashboard activities={rows} />
-
-      <div className="mt-5 sm:mt-8">
-        <UserHeatmap />
-      </div>
-    </div>
+    </>
   );
 }

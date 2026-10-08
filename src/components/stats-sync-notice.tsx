@@ -42,11 +42,11 @@ export function StatsSyncNotice() {
   return (
     <div
       role="alert"
-      className="mb-6 flex gap-3 rounded-2xl border border-amber-400/50 bg-amber-50 p-4 text-amber-900 dark:bg-amber-950/40 dark:text-amber-100"
+      className="sync-notice mb-6 flex gap-3 p-4"
     >
       <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
       <div className="space-y-1 text-sm leading-relaxed">
-        <p className="font-bold">{title}</p>
+        <p className="font-semibold">{title}</p>
         <p>{body}</p>
       </div>
     </div>

@@ -8,7 +8,7 @@ import type { ActivityType } from '@/lib/types';
 // فلا تتكرّر التدرّجات في الصفحة ولا تتعارض معرّفاتها.
 // ---------------------------------------------------------------------------
 
-export type HeritageIconKind = 'flask' | 'globe' | 'question' | 'oyster' | 'pearl';
+export type HeritageIconKind = 'flask' | 'globe' | 'question' | 'oyster' | 'pearl' | 'chart';
 
 export const ACTIVITY_ICON: Record<ActivityType, HeritageIconKind> = {
   experiment: 'flask',
@@ -148,6 +148,27 @@ export function HeritageIconSprite() {
           </g>
           <circle cx="60" cy="78" r="15" fill="url(#hi-pearl-g)" />
           <circle cx="55" cy="73" r="4" fill="#fff" />
+        </symbol>
+
+        {/* لوحة أعمدة مجسّمة على قاعدة من الساج — للإحصاءات */}
+        <symbol id="hi-chart" viewBox="0 0 120 120">
+          <ellipse cx="60" cy="110" rx="44" ry="6" fill="#231a17" opacity=".16" />
+          <path d="M12 92l48 14 48-14-48-12z" fill="url(#hi-cork)" />
+          <path d="M12 92v6l48 14v-6z" fill="#5b3a22" />
+          <path d="M108 92v6l-48 14v-6z" fill="#3f2816" />
+          {/* عمود عنابي */}
+          <path d="M22 88V52l14 4v36z" fill="#5c0e26" />
+          <path d="M36 92V56l12-4v36z" fill="#8a1538" />
+          <path d="M22 52l12-4 14 4-12 4z" fill="#c2456b" />
+          {/* عمود ذهبي (الأطول) */}
+          <path d="M46 94V30l14 4v64z" fill="url(#hi-gold-side)" />
+          <path d="M60 98V34l12-4v64z" fill="#d4a843" />
+          <path d="M46 30l12-4 14 4-12 4z" fill="url(#hi-gold-top)" />
+          {/* عمود بحري */}
+          <path d="M72 92V62l14 4v26z" fill="#163a4f" />
+          <path d="M86 96V66l12-4v30z" fill="#2d5f7c" />
+          <path d="M72 62l12-4 14 4-12 4z" fill="#86bad8" />
+          <path d="M50 38v40" stroke="#fff" strokeWidth="3" strokeLinecap="round" opacity=".45" />
         </symbol>
 
         <symbol id="hi-pearl" viewBox="0 0 120 120">

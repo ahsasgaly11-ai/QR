@@ -20,7 +20,7 @@ import { ACTIVITY_META } from '@/lib/types';
 import { CountUp } from './count-up';
 import { ActivityTypeBadge } from './activity-type-badge';
 import { formatFull, formatPercent } from '@/lib/utils';
-import { Icon3D } from './icon-3d';
+import { HeritageIcon } from './heritage-icons';
 import { DonutChart, type DonutSlice } from './charts/donut-chart';
 
 interface Row {
@@ -126,40 +126,38 @@ export function StatsDashboard({ activities: serverActivities }: { activities: R
   const maxSubjectViews = Math.max(1, ...bySubject.map((s) => s.views));
 
   const cards = [
-    { icon: Users, label: 'إجمالي الزوّار', value: site.visitors, color: 'var(--maroon)' },
-    { icon: Eye, label: 'إجمالي المشاهدات', value: site.views, color: 'var(--maroon-700)' },
-    { icon: Download, label: 'إجمالي التنزيلات', value: site.downloads, color: 'var(--gold)' },
-    { icon: Sparkles, label: 'عدد الأنشطة', value: activities.length, color: 'var(--maroon-300)' },
+    { icon: Users, label: 'زائرًا', value: site.visitors, tone: '#2b6b62' },
+    { icon: Eye, label: 'مشاهدة', value: site.views, tone: '#2d5f7c' },
+    { icon: Download, label: 'تنزيلًا', value: site.downloads, tone: '#b0862a' },
+    { icon: Sparkles, label: 'نشاطًا', value: activities.length, tone: '#8a1538' },
   ];
 
   return (
     <div className="space-y-5 sm:space-y-8">
-      {/* stat tiles */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        {cards.map((c) => (
+      {/* لوحات الأرقام: الوسام نفسه في الصفحة الرئيسية */}
+      <dl className="stat-tiles stat-tiles--page">
+        {cards.map(({ icon: Icon, label, value, tone }, i) => (
           <div
-            key={c.label}
-            className="card-premium relative overflow-hidden rounded-2xl p-4 sm:rounded-3xl sm:p-6"
+            key={label}
+            className="stat-tile"
+            style={{ '--tone': tone, '--d': `${-i * 0.9}s` } as React.CSSProperties}
           >
-            <div
-              className="absolute -left-6 -top-6 h-24 w-24 rounded-full opacity-[0.08]"
-              style={{ background: c.color }}
-            />
-            <Icon3D icon={c.icon} color={c.color} size="sm" className="sm:h-12 sm:w-12" />
-            <div className="mt-3 font-display text-2xl font-bold leading-none text-foreground tabular-nums sm:mt-4 sm:text-4xl">
-              <CountUp value={c.value} />
-            </div>
-            <p className="mt-1.5 text-xs font-bold leading-snug text-muted-foreground sm:text-sm">
-              {c.label}
-            </p>
+            <span className="stat-medal" aria-hidden>
+              <Icon className="h-5 w-5" strokeWidth={2.4} />
+            </span>
+            <dt className="sr-only">{label}</dt>
+            <dd className="stat-body">
+              <CountUp value={value} className="stat-n" />
+              <span className="stat-l" aria-hidden>{label}</span>
+            </dd>
           </div>
         ))}
-      </div>
+      </dl>
 
       {activities.length === 0 ? (
-        <div className="card-premium rounded-3xl p-12 text-center">
-          <TrendingUp className="mx-auto h-12 w-12 text-[color:var(--gold)]" />
-          <h3 className="mt-4 font-display text-xl font-bold text-[color:var(--maroon)]">
+        <div className="explorer-empty">
+          <HeritageIcon kind="chart" className="mx-auto" />
+          <h3 className="mt-3 font-calli text-2xl text-foreground">
             لا توجد بيانات بعد
           </h3>
           <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
@@ -173,10 +171,10 @@ export function StatsDashboard({ activities: serverActivities }: { activities: R
           حلقتان تشتركان في مفتاح واحد: نفس الفئات وقياسان مختلفان،
           فتُقارَن «حصّة النوع من المكتبة» بـ«حصّته من الاهتمام».
          --------------------------------------------------------------- */}
-      <figure className="card-premium rounded-2xl p-4 sm:rounded-3xl sm:p-7">
+      <figure className="panel p-4 sm:p-7">
         <figcaption className="mb-5 flex items-center gap-2 sm:mb-7">
-          <PieChart className="h-5 w-5 text-[color:var(--maroon)]" />
-          <h2 className="font-display text-lg font-bold text-[color:var(--maroon)]">
+          <PieChart className="h-5 w-5 text-[color:var(--gold)]" />
+          <h2 className="panel-title">
             التوزيع حسب نوع النشاط
           </h2>
         </figcaption>
@@ -196,7 +194,7 @@ export function StatsDashboard({ activities: serverActivities }: { activities: R
                 }
                 centerLabel={hot ? hot.label : 'إجمالي الأنشطة'}
               />
-              <p className="mt-3 text-center text-xs font-black text-[color:var(--maroon)] sm:text-sm">
+              <p className="mt-3 text-center text-sm font-semibold text-[color:var(--ink-2)]">
                 عدد الأنشطة
               </p>
             </div>
@@ -213,7 +211,7 @@ export function StatsDashboard({ activities: serverActivities }: { activities: R
                 }
                 centerLabel={hot ? hot.label : 'إجمالي المشاهدات'}
               />
-              <p className="mt-3 text-center text-xs font-black text-[color:var(--maroon)] sm:text-sm">
+              <p className="mt-3 text-center text-sm font-semibold text-[color:var(--ink-2)]">
                 المشاهدات
               </p>
             </div>
@@ -255,10 +253,10 @@ export function StatsDashboard({ activities: serverActivities }: { activities: R
 
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-5">
         {/* ranking: most viewed (single-hue magnitude; identity via type badge) */}
-        <figure className="card-premium min-w-0 rounded-2xl p-4 sm:rounded-3xl sm:p-7 lg:col-span-3">
+        <figure className="panel min-w-0 p-4 sm:p-7 lg:col-span-3">
           <figcaption className="mb-4 flex items-center gap-2 sm:mb-6">
-            <TrendingUp className="h-5 w-5 text-[color:var(--maroon)]" />
-            <h2 className="font-display text-lg font-bold text-[color:var(--maroon)]">
+            <TrendingUp className="h-5 w-5 text-[color:var(--gold)]" />
+            <h2 className="panel-title">
               الأنشطة الأكثر مشاهدة
             </h2>
           </figcaption>
@@ -281,17 +279,17 @@ export function StatsDashboard({ activities: serverActivities }: { activities: R
                     </span>
                     <ActivityTypeBadge type={r.type} className="hidden shrink-0 md:inline-flex" />
                   </Link>
-                  <span className="shrink-0 text-sm font-black tabular-nums text-muted-foreground">
+                  <span className="shrink-0 text-sm font-semibold tabular-nums text-muted-foreground">
                     {formatFull(r.views)}
                   </span>
                 </div>
                 {/* track + bar */}
-                <div className="h-2.5 w-full overflow-hidden rounded-full bg-[color:var(--surface-2)]">
+                <div className="bar-track">
                   <div
                     className="h-full rounded-full transition-[width] duration-[900ms] ease-out group-hover:brightness-110"
                     style={{
                       width: loaded ? `${(r.views / maxViews) * 100}%` : '0%',
-                      background: 'linear-gradient(90deg, var(--maroon-300), var(--maroon))',
+                      background: 'var(--maroon)',
                     }}
                   />
                 </div>
@@ -301,10 +299,10 @@ export function StatsDashboard({ activities: serverActivities }: { activities: R
         </figure>
 
         {/* subjects: مقدار بدرجة واحدة — الترتيب هو الرسالة، لا اللون */}
-        <figure className="card-premium min-w-0 rounded-2xl p-4 sm:rounded-3xl sm:p-7 lg:col-span-2">
+        <figure className="panel min-w-0 p-4 sm:p-7 lg:col-span-2">
           <figcaption className="mb-4 flex items-center gap-2 sm:mb-6">
-            <Library className="h-5 w-5 text-[color:var(--maroon)]" />
-            <h2 className="font-display text-lg font-bold text-[color:var(--maroon)]">
+            <Library className="h-5 w-5 text-[color:var(--gold)]" />
+            <h2 className="panel-title">
               المشاهدات حسب المادة
             </h2>
           </figcaption>
@@ -321,12 +319,12 @@ export function StatsDashboard({ activities: serverActivities }: { activities: R
                     <span className="tabular-nums">{formatFull(s.count)} نشاط</span>
                   </span>
                 </div>
-                <div className="h-2.5 w-full overflow-hidden rounded-full bg-[color:var(--surface-2)]">
+                <div className="bar-track">
                   <div
                     className="h-full rounded-full transition-[width] duration-[900ms] ease-out"
                     style={{
                       width: loaded ? `${(s.views / maxSubjectViews) * 100}%` : '0%',
-                      background: 'linear-gradient(90deg, var(--gold), var(--maroon))',
+                      background: 'var(--gold-500)',
                     }}
                   />
                 </div>
@@ -337,10 +335,10 @@ export function StatsDashboard({ activities: serverActivities }: { activities: R
       </div>
 
       {/* full table (the accessible data view) */}
-      <div className="card-premium overflow-hidden rounded-3xl">
+      <div className="panel overflow-hidden">
         <div className="flex items-center gap-2 border-b border-[color:var(--hairline)] p-5">
-          <Table2 className="h-5 w-5 text-[color:var(--maroon)]" />
-          <h2 className="font-display text-lg font-bold text-[color:var(--maroon)]">
+          <Table2 className="h-5 w-5 text-[color:var(--gold)]" />
+          <h2 className="panel-title">
             كل الأنشطة
           </h2>
         </div>
@@ -352,7 +350,7 @@ export function StatsDashboard({ activities: serverActivities }: { activities: R
                 <p className="font-bold text-foreground">{r.title}</p>
                 <Link
                   href={`/play/${r.id}`}
-                  className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-[color:var(--maroon)] px-3 py-1.5 text-xs font-black text-white"
+                  className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-[color:var(--maroon)] px-3 py-1.5 text-xs font-semibold text-white"
                 >
                   <Play className="h-3 w-3 fill-current" /> تشغيل
                 </Link>
@@ -373,7 +371,7 @@ export function StatsDashboard({ activities: serverActivities }: { activities: R
         <div className="hidden overflow-x-auto sm:block">
           <table className="w-full text-right text-sm">
             <thead>
-              <tr className="border-b border-[color:var(--hairline)] bg-[color:var(--surface-2)] text-[color:var(--maroon)]">
+              <tr className="border-b border-[color:var(--hairline)] bg-[color:var(--plaster)] text-[color:var(--ink)]">
                 <th className="p-4 font-bold">النشاط</th>
                 <th className="p-4 font-bold">النوع</th>
                 <th className="p-4 font-bold">المشاهدات</th>
@@ -389,7 +387,7 @@ export function StatsDashboard({ activities: serverActivities }: { activities: R
                   <td className="p-4 font-bold tabular-nums text-muted-foreground">{formatFull(r.views)}</td>
                   <td className="p-4 font-bold tabular-nums text-muted-foreground">{formatFull(r.downloads)}</td>
                   <td className="p-4">
-                    <Link href={`/play/${r.id}`} className="inline-flex items-center gap-1 rounded-lg bg-[color:var(--maroon)] px-3 py-1.5 text-xs font-black text-white transition hover:bg-[color:var(--maroon-700)]">
+                    <Link href={`/play/${r.id}`} className="inline-flex items-center gap-1 rounded-lg bg-[color:var(--maroon)] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[color:var(--maroon-700)]">
                       <Play className="h-3 w-3 fill-current" /> تشغيل
                     </Link>
                   </td>
