@@ -1939,6 +1939,13 @@ body { padding-bottom: var(--ticker-h); }
   .lesson-num { width: 2.25rem; height: 2.25rem; font-size: 0.7rem; }
   .lesson-item::before { inset-inline-start: 1.07rem; top: 3.45rem; }
 }
+/* أضيق الهواتف: ميدالية وسهم أصغر حتى يتّسع عنوان الوحدة لكلماته */
+@media (max-width: 380px) {
+  .unit-head { padding: 0.7rem 0.65rem; gap: 0.55rem; }
+  .unit-medal { width: 2.3rem; height: 2.3rem; font-size: 0.95rem; box-shadow: 0 0 0 2px #d4a843, inset 0 -4px 6px rgba(0, 0, 0, 0.28); }
+  .unit-chev { width: 1.9rem; height: 1.9rem; padding: 0.35rem; }
+  .unit-title { font-size: 0.98rem; }
+}
 
 /* =========================================================================
    بطاقة النشاط
