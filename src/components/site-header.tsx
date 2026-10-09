@@ -54,8 +54,8 @@ export function SiteHeader() {
           scrolled && 'shadow-[var(--shadow-sm)]'
         )}
       >
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
-          <Link href="/" className="group flex min-w-0 flex-1 items-center gap-3">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-3 sm:gap-3 sm:px-4">
+          <Link href="/" className="group flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
             <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-[color:var(--hairline-strong)] bg-white p-1">
               <Image
                 src="/images/moehe-mark.png"
@@ -67,7 +67,7 @@ export function SiteHeader() {
               />
             </div>
             <div className="min-w-0 leading-tight">
-              <p className="truncate font-display text-[15px] font-extrabold leading-snug text-[color:var(--maroon)] sm:text-[17px]">
+              <p className="line-clamp-2 font-display text-[13.5px] font-extrabold leading-[1.3] text-[color:var(--maroon)] sm:truncate sm:text-[17px] sm:leading-snug">
                 {SITE_NAME}
               </p>
               <p className="hidden truncate font-gov text-[12px] text-muted-foreground sm:block">
@@ -99,9 +99,13 @@ export function SiteHeader() {
             })}
           </nav>
 
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             <PearlChest />
-            <ThemeToggle />
+            {/* على الجوال يكفي مفتاح «الوضع الليلي» في لوحة إمكانية الوصول،
+                فيتّسع اسم المنصّة بدل أن يُبتر. */}
+            <div className="hidden sm:block">
+              <ThemeToggle />
+            </div>
             <Link
               href={UPLOAD.href}
               className="btn-primary btn-sm hidden px-4 py-2 font-gov text-sm font-semibold sm:inline-flex"

@@ -636,9 +636,11 @@ body::after {
 /* شاشات قصيرة (الجوال عرضيًا): اضغط واجهة الصفحة لتظهر اللعبة فورًا
    دون الحاجة للتمرير، واستغلّ أقصى ارتفاع متاح. */
 @media (max-height: 520px) {
+  /* الجوال عرضيًا: يملأ المسرح الشاشة تحت الترويسة المثبّتة (≈ 70px) بعد
+     التمرير إليه، بدل تصغيره إلى شريط لا تُلعب فيه اللعبة. */
   .game-stage {
-    height: calc(100svh - 118px);
-    min-height: 180px;
+    height: calc(100svh - 84px);
+    min-height: 240px;
   }
   .short-hide { display: none !important; }
   .short-tight {
@@ -1597,9 +1599,13 @@ body { padding-bottom: var(--ticker-h); }
 @keyframes hi-float { 50% { transform: translateY(-6px) rotate(-2deg); } }
 @media (max-width: 1023px) { .types-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 520px) {
-  .types-grid { gap: 0.75rem; }
-  .type-tile { padding: 1rem; }
-  .type-icon { width: 4rem; }
+  /* عمود واحد والأيقونة إلى جانب النص: عمودان هنا يضيّقان النص حتى تتكسّر
+     الجملة كلمةً في كل سطر. */
+  .types-grid { grid-template-columns: minmax(0, 1fr); gap: 0.75rem; }
+  .type-tile { display: grid; grid-template-columns: 4rem minmax(0, 1fr); column-gap: 1rem; align-items: center; padding: 1rem 1.1rem; }
+  .type-icon { width: 4rem; grid-row: span 2; align-self: center; }
+  .type-tile h3 { margin-top: 0; }
+  .type-tile p { margin-top: 0.25rem; }
 }
 
 /* --- مراجعات الوحدات ------------------------------------------------------ */
@@ -1632,6 +1638,21 @@ body { padding-bottom: var(--ticker-h); }
   color: #231a17;
   font-weight: 700;
   box-shadow: 0 4px 0 #b99a6f;
+}
+/* على الجوال: الأيقونة مع الشارة في سطر، ثم العنوان بكامل العرض، ثم الزرّ
+   بكامل العرض — بدل عمود نصّ ضيّق تتكسّر فيه الكلمات كلمةً في كل سطر. */
+@media (max-width: 1023px) {
+  /* اللوحي: الزرّ في سطر مستقلّ تحت النص بدل مزاحمته على العرض */
+  .review-body { flex-basis: calc(100% - 8.5rem); }
+  .review-cta { margin-inline-start: 8.5rem; }
+}
+@media (max-width: 640px) {
+  .review-band { gap: 0.9rem 1rem; padding: 1.25rem 1.1rem 1.35rem; }
+  .review-cta { margin-inline-start: 0; }
+  .review-icon { width: 4.25rem; }
+  .review-body { flex-basis: 100%; }
+  .review-body .review-title { font-size: 1.45rem; }
+  .review-cta { width: 100%; justify-content: center; }
 }
 
 /* --- الخاتمة -------------------------------------------------------------- */
@@ -1702,6 +1723,10 @@ body { padding-bottom: var(--ticker-h); }
   animation: hi-float 3s ease-in-out infinite;
 }
 .naseej-bar { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; margin-top: 1rem; }
+@media (max-width: 640px) {
+  .naseej-bar { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.6rem; }
+  .naseej-bar > * { width: 100%; justify-content: center; }
+}
 .naseej-bar button:disabled { opacity: 0.5; cursor: default; }
 
 /* تقليل الحركة: لا مشهد افتتاح أصلًا (المدد تُصفَّر عامًّا، لكن التأخير يبقى
@@ -2089,8 +2114,10 @@ body { padding-bottom: var(--ticker-h); }
 .player-toolbar .tool-btn--next { margin-inline-start: auto; background: #8a1538; border-color: #8a1538; color: #fff; font-weight: 600; box-shadow: 0 3px 0 #4d0a20; }
 .player-toolbar .tool-btn--next:hover { background: #a01a43; }
 @media (max-width: 640px) {
-  .player-toolbar .tool-btn--primary { flex: 1; justify-content: center; }
-  .player-toolbar .tool-btn--next { flex-basis: 100%; justify-content: center; margin-inline-start: 0; }
+  /* «ملء الشاشة» سطرًا كاملًا، وبقيّة الأزرار تتقاسم العرض دون أن يلتفّ نصّها */
+  .player-toolbar .tool-btn { flex: 1 1 auto; justify-content: center; white-space: nowrap; padding-inline: 0.6rem; }
+  .player-toolbar .tool-btn--primary { flex-basis: 100%; }
+  .player-toolbar .tool-btn--next { flex-basis: 100%; margin-inline-start: 0; }
 }
 /* تحت اللعبة: عن النشاط + أنشطة الدرس نفسه */
 .play-below { display: grid; gap: 2rem; margin-top: 2.4rem; }
@@ -2487,6 +2514,12 @@ a.ledger-row:hover .ledger-go { transform: translateX(-4px); }
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 .seg-btn:hover { color: var(--maroon); }
+@media (max-width: 640px) {
+  /* على الجوال: المجموعة بكامل العرض وأزرارها متساوية ولا يلتفّ نصّها */
+  .seg-group { display: flex; width: 100%; }
+  .seg-btn { flex: 1 1 0; min-height: 40px; padding-inline: 0.5rem; white-space: nowrap; text-align: center; }
+  .seg-btn > span { justify-content: center; }
+}
 .seg-btn.is-on { background: var(--maroon); color: #fff; box-shadow: 0 2px 0 var(--maroon-800); }
 .dark .seg-btn.is-on { background: #8a1538; box-shadow: 0 2px 0 #4d0a20; }
 .mini-tile {

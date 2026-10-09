@@ -164,7 +164,9 @@ function PlayerInner({ activity, localHtml, next }: PlayerProps) {
     trackSchoolDownload(activity); // ينسب التحميل لمدرسة المستخدم المختارة
   };
 
-  // على الشاشات القصيرة نقيس المساحة المتبقية فعليًا ونملأها
+  // على الشاشات القصيرة (الجوال عرضيًا) يملأ المسرح الشاشة كلّها تحت الترويسة
+  // المثبّتة بعد التمرير إليه — لا المساحة المتبقية تحت العنوان فقط، فتلك
+  // تنكمش إلى شريط بارتفاع أصابع لا تُلعب فيه اللعبة.
   const [fitH, setFitH] = useState<number | null>(null);
   useEffect(() => {
     const compute = () => {
@@ -175,10 +177,11 @@ function PlayerInner({ activity, localHtml, next }: PlayerProps) {
         setFitH(null);
         return;
       }
-      const docTop = el.getBoundingClientRect().top + window.scrollY;
-      const STRIP = 6;
-      const GAP = 10;
-      setFitH(Math.max(170, window.innerHeight - docTop - STRIP - GAP));
+      const header = document.querySelector<HTMLElement>('header.sticky');
+      const headerH = header ? header.getBoundingClientRect().height : 70;
+      const STRIP = 14;
+      const GAP = 8;
+      setFitH(Math.max(240, window.innerHeight - headerH - STRIP - GAP));
     };
     compute();
     const t = setTimeout(compute, 300);
