@@ -1701,14 +1701,96 @@ body { padding-bottom: var(--ticker-h); }
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
   animation: hi-float 3s ease-in-out infinite;
 }
-.naseej-bar { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; margin-top: 1rem; }
-.naseej-bar button:disabled { opacity: 0.5; cursor: default; }
+/* شريط تحكّم موحّد ملاصق للعرض: ثلاثة أزرار متساوية في صفّ واحد على كل الشاشات */
+.naseej-dock {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 0.85rem;
+  padding: 0.35rem;
+  gap: 0.35rem;
+  border-radius: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--hairline-strong);
+  box-shadow: var(--shadow-md);
+}
+.naseej-ctl {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 72px;
+  padding: 0.55rem 0.4rem;
+  border-radius: 0.75rem;
+  color: var(--ink);
+  text-align: center;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+.naseej-ctl:hover { background: var(--surface-2); color: var(--maroon); }
+.naseej-ctl:active { transform: scale(0.97); }
+.naseej-ctl:focus-visible { outline: 2px solid var(--gold-500); outline-offset: 2px; }
+.naseej-ctl:disabled { opacity: 0.5; cursor: default; }
+.naseej-ctl:disabled:hover { background: transparent; color: var(--ink); }
+.naseej-ctl + .naseej-ctl { position: relative; }
+.naseej-ctl + .naseej-ctl::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: -0.2rem;
+  top: 22%;
+  bottom: 22%;
+  width: 1px;
+  background: var(--hairline-strong);
+}
+.naseej-ctl-icon {
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  flex: none;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--gold-500) 18%, transparent);
+  color: var(--maroon);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+:root[data-theme='dark'] .naseej-ctl-icon,
+.dark .naseej-ctl-icon { color: var(--gold-500); }
+.naseej-ctl-text { display: flex; flex-direction: column; align-items: center; gap: 0.1rem; min-width: 0; }
+.naseej-ctl-label { font-size: 0.85rem; font-weight: 700; line-height: 1.3; white-space: nowrap; }
+.naseej-ctl-sub {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--muted);
+}
+/* حالة الموسيقى تعمل: الزرّ عنّابي مع مؤشّر موجات */
+.naseej-ctl.is-on { background: var(--maroon); color: #fff; }
+.naseej-ctl.is-on:hover { background: var(--maroon-700); color: #fff; }
+.naseej-ctl.is-on::before { display: none; }
+.naseej-ctl.is-on + .naseej-ctl::before { display: none; }
+.naseej-ctl.is-on .naseej-ctl-icon { background: #d4a843; color: #231a17; }
+.naseej-ctl.is-on .naseej-ctl-sub { color: #f3e8d6; }
+.naseej-eq { display: inline-flex; align-items: flex-end; gap: 2px; height: 0.7rem; }
+.naseej-eq i { display: block; width: 3px; height: 100%; border-radius: 2px; background: #d4a843; transform-origin: bottom; animation: naseej-eq 0.9s ease-in-out infinite; }
+.naseej-eq i:nth-child(2) { animation-delay: -0.3s; }
+.naseej-eq i:nth-child(3) { animation-delay: -0.6s; }
+@keyframes naseej-eq { 0%, 100% { transform: scaleY(0.35); } 50% { transform: scaleY(1); } }
+@media (min-width: 640px) {
+  .naseej-ctl { flex-direction: row; gap: 0.7rem; min-height: 64px; padding-inline: 0.9rem; }
+  .naseej-ctl-text { align-items: flex-start; text-align: start; }
+  .naseej-ctl-label { font-size: 0.95rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .naseej-ctl, .naseej-ctl-icon { transition: none; }
+  .naseej-eq i { animation: none; transform: scaleY(0.7); }
+}
 
 /* --- شبكة العرض: النسيج في العمود العريض، فيديو الإطلاق العمودي بجانبه ---- */
 .showcase-grid { display: grid; gap: 2.5rem; align-items: start; }
 .showcase-main, .showcase-side { min-width: 0; }
-/* على الشاشات الصغيرة يأتي الفيديو القصير أولًا ثم العرض الطويل */
-.showcase-side { order: -1; }
+/* على الشاشات الصغيرة يأتي عرض النسيج أولًا (تحت العنوان مباشرة) ثم فيديو الإطلاق */
 .showcase-label {
   display: inline-flex;
   align-items: center;
@@ -1729,7 +1811,6 @@ body { padding-bottom: var(--ticker-h); }
 .showcase-grid .naseej-show { margin-top: 0; }
 @media (min-width: 1024px) {
   .showcase-grid { grid-template-columns: minmax(0, 1fr) 320px; gap: 2.75rem; align-items: stretch; }
-  .showcase-side { order: 0; }
   /* يمتدّ عرض النسيج بارتفاع عمود الفيديو فيتساوى العمودان */
   .showcase-main { display: flex; flex-direction: column; }
   .showcase-grid .naseej-show { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; }
