@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ExternalLink, Maximize2, Volume2, VolumeX } from 'lucide-react';
 import { isLite } from '@/lib/perf';
+import { SOUND_FOCUS_EVENT, claimSound, type SoundOwner } from '@/components/home/sound-focus';
 
 // ---------------------------------------------------------------------------
 // عرض «نسيج المجتمع القطري» في الصفحة الرئيسية.
@@ -15,6 +16,8 @@ import { isLite } from '@/lib/perf';
 //   تُشغَّل الموسيقى عند أول نقرة أو لمسة أو ضغطة مفتاح في أي مكان من الصفحة.
 // • يتوقّف الرسم ثلاثي الأبعاد مؤقتًا حين يخرج العرض من الشاشة توفيرًا
 //   لأجهزة المدارس، ويُكمل من حيث توقّف عند العودة إليه.
+// • يُكتم تلقائيًا حين يشغّل الزائر صوت فيديو الإطلاق المجاور، والعكس
+//   (sound-focus)، حتى لا تتداخل الموسيقيان.
 // ---------------------------------------------------------------------------
 
 type AudioState = { muted: boolean; playing: boolean };
@@ -26,6 +29,7 @@ type NaseejApi = {
 };
 
 const SRC = '/naseej/index.html';
+const OWNER: SoundOwner = 'naseej';
 
 export function NaseejShow() {
   const box = useRef<HTMLDivElement>(null);
@@ -98,6 +102,19 @@ export function NaseejShow() {
     return () => io.disconnect();
   }, [src]);
 
+  // عنصر آخر في الصفحة (فيديو الإطلاق) شغّل صوته: نكتم الموسيقى
+  useEffect(() => {
+    const onFocus = (e: Event) => {
+      if ((e as CustomEvent<SoundOwner>).detail === OWNER) return;
+      const a = api();
+      if (!a) return;
+      a.setMute(true);
+      setAudio(a.state());
+    };
+    window.addEventListener(SOUND_FOCUS_EVENT, onFocus);
+    return () => window.removeEventListener(SOUND_FOCUS_EVENT, onFocus);
+  }, [api]);
+
   const toggleSound = () => {
     const a = api();
     if (!a) return;
@@ -105,7 +122,9 @@ export function NaseejShow() {
     if (s.muted) a.setMute(false);
     else if (!s.playing) a.play();
     else a.setMute(true);
-    setAudio(a.state());
+    const next = a.state();
+    if (next.playing && !next.muted) claimSound(OWNER);
+    setAudio(next);
   };
 
   const fullscreen = () => {

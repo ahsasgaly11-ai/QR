@@ -11,6 +11,7 @@ import { HeritageDoor } from '@/components/home/heritage-door';
 import { DOOR_PAINT, emblemFor } from '@/components/home/door-emblem';
 import { SectionHead } from '@/components/home/section-head';
 import { NaseejShow } from '@/components/home/naseej-show';
+import { LaunchVideo } from '@/components/home/launch-video';
 import { HeritageIcon } from '@/components/heritage-icons';
 import type { HeritageIconKind } from '@/components/heritage-icons';
 
@@ -118,13 +119,29 @@ export default async function HomePage() {
 
       <div className="sadu-band" aria-hidden />
 
-      {/* ===================== عرض نسيج المجتمع القطري ===================== */}
+      {/* ============ فيديو الإطلاق + عرض نسيج المجتمع القطري ============ */}
       <section id="naseej" className="mx-auto max-w-7xl scroll-mt-24 px-5 py-12 sm:px-6 lg:py-16">
         <SectionHead
-          kicker="عرض تلقائي متواصل • أنا ومجتمعي"
-          title="نسيج المجتمع القطري"
+          kicker="شاهد قبل أن تبدأ"
+          title="نسيج المجتمع القطري وفيديو الإطلاق"
+          lead="عرض تفاعلي يعمل تلقائيًا من درس «أنا ومجتمعي»، وإلى جانبه فيديو قصير يعرّفك بالمنصّة. الفيديو يبدأ بلا صوت حين تصل إليه، وتشغّل صوته متى شئت."
         />
-        <NaseejShow />
+        <div className="showcase-grid">
+          <div className="showcase-main">
+            <p className="showcase-label">
+              <span className="showcase-dot" aria-hidden />
+              عرض تلقائي متواصل • أنا ومجتمعي
+            </p>
+            <NaseejShow />
+          </div>
+          <div className="showcase-side">
+            <p className="showcase-label">
+              <span className="showcase-dot" aria-hidden />
+              فيديو الإطلاق • يعمل عند الوصول إليه
+            </p>
+            <LaunchVideo />
+          </div>
+        </div>
       </section>
 
       {/* ===================== مراجعات الوحدات ===================== */}
