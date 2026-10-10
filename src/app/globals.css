@@ -1633,6 +1633,14 @@ body { padding-bottom: var(--ticker-h); }
   font-weight: 700;
   box-shadow: 0 4px 0 #b99a6f;
 }
+/* الجوال: المحارة فوق النص بدل أن تزاحمه، فيأخذ العنوان عرض البطاقة كاملًا */
+@media (max-width: 639px) {
+  .review-band { flex-direction: column; align-items: stretch; gap: 1rem; padding: 1.25rem 1.25rem 1.4rem; }
+  .review-icon { width: 4.5rem; align-self: flex-start; }
+  .review-body { flex: none; width: 100%; }
+  .review-title { font-size: 1.4rem; line-height: 1.6; text-wrap: balance; }
+  .review-cta { justify-content: center; width: 100%; }
+}
 
 /* --- الخاتمة -------------------------------------------------------------- */
 .closing-band { overflow: hidden; border-radius: 0.6rem; background: #5c0e26; }
