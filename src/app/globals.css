@@ -1704,6 +1704,143 @@ body { padding-bottom: var(--ticker-h); }
 .naseej-bar { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; margin-top: 1rem; }
 .naseej-bar button:disabled { opacity: 0.5; cursor: default; }
 
+/* --- شبكة العرض: النسيج في العمود العريض، فيديو الإطلاق العمودي بجانبه ---- */
+.showcase-grid { display: grid; gap: 2.5rem; align-items: start; }
+.showcase-main, .showcase-side { min-width: 0; }
+/* على الشاشات الصغيرة يأتي الفيديو القصير أولًا ثم العرض الطويل */
+.showcase-side { order: -1; }
+.showcase-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.9rem;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.showcase-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  transform: rotate(45deg);
+  background: var(--gold-500);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold-500) 25%, transparent);
+}
+.showcase-grid .naseej-show { margin-top: 0; }
+@media (min-width: 1024px) {
+  .showcase-grid { grid-template-columns: minmax(0, 1fr) 320px; gap: 2.75rem; align-items: stretch; }
+  .showcase-side { order: 0; }
+  /* يمتدّ عرض النسيج بارتفاع عمود الفيديو فيتساوى العمودان */
+  .showcase-main { display: flex; flex-direction: column; }
+  .showcase-grid .naseej-show { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; }
+  .showcase-grid .naseej-stage { flex: 1 1 auto; aspect-ratio: auto; min-height: 460px; max-height: none; }
+  .showcase-grid .naseej-stage:fullscreen { min-height: 0; }
+}
+@media (min-width: 1280px) {
+  .showcase-grid { grid-template-columns: minmax(0, 1fr) 340px; gap: 3rem; }
+}
+
+/* --- فيديو الإطلاق (عمودي 9:16 في إطار يشبه الهاتف) ---------------------- */
+.launch-video { width: 100%; max-width: 340px; margin: 0 auto; }
+@media (min-width: 1024px) { .launch-video { max-width: none; } }
+.launch-stage {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  border-radius: 1.4rem;
+  background: #1a0b10;
+  border: 2px solid color-mix(in srgb, var(--gold-500) 70%, transparent);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--gold-500) 14%, transparent), 0 30px 60px -30px rgba(26, 11, 16, 0.75);
+}
+.launch-stage video {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  cursor: pointer;
+  background: #1a0b10;
+}
+/* تدرّج خفيف أسفل الفيديو ليبرز زرّا التحكّم فوقه */
+.launch-stage::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 7rem;
+  pointer-events: none;
+  background: linear-gradient(to top, rgba(26, 11, 16, 0.55), transparent);
+}
+.launch-play {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 4.5rem;
+  height: 4.5rem;
+  translate: -50% -50%;
+  border-radius: 999px;
+  background: #d4a843;
+  color: #231a17;
+  box-shadow: 0 0 0 8px color-mix(in srgb, #d4a843 25%, transparent), 0 12px 30px rgba(0, 0, 0, 0.45);
+  transition: transform 0.2s ease;
+}
+.launch-play:hover { transform: scale(1.06); }
+.launch-play svg { margin-inline-start: 0.2rem; }
+.launch-chip {
+  position: absolute;
+  top: 0.9rem;
+  left: 50%;
+  z-index: 2;
+  translate: -50% 0;
+  white-space: nowrap;
+  max-width: calc(100% - 1.5rem);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 36px;
+  padding-inline: 0.9rem;
+  border-radius: 999px;
+  background: rgba(35, 26, 23, 0.82);
+  color: #f3e8d6;
+  font-size: 0.8rem;
+  font-weight: 700;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+.launch-controls {
+  position: absolute;
+  bottom: 0.9rem;
+  inset-inline: 0.9rem;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.launch-ctl {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: rgba(243, 232, 214, 0.92);
+  color: #231a17;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s ease, background 0.2s ease;
+}
+.launch-ctl:hover { transform: translateY(-1px); }
+.launch-ctl.is-on { background: #d4a843; box-shadow: 0 0 0 4px color-mix(in srgb, #d4a843 30%, transparent), 0 6px 18px rgba(0, 0, 0, 0.35); }
+.launch-caption { margin-top: 0.9rem; text-align: center; font-size: 0.9rem; color: var(--ink-2); }
+.launch-caption strong { color: var(--maroon); }
+@media (prefers-reduced-motion: reduce) {
+  .launch-play, .launch-ctl { transition: none; }
+}
+
 /* تقليل الحركة: لا مشهد افتتاح أصلًا (المدد تُصفَّر عامًّا، لكن التأخير يبقى
    فيُخفي الطبقات لحظة قبل ظهورها) */
 @media (prefers-reduced-motion: reduce) {
