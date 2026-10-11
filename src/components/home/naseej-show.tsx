@@ -162,24 +162,53 @@ export function NaseejShow() {
         )}
       </div>
 
-      <div className="naseej-bar">
+      <div className="naseej-dock" role="toolbar" aria-label="التحكّم في عرض النسيج">
         <button
           type="button"
           onClick={toggleSound}
-          className={soundOn ? 'btn-primary px-5' : 'btn-ghost px-5'}
+          className={`naseej-ctl${soundOn ? ' is-on' : ''}`}
           aria-pressed={soundOn}
+          aria-label={soundOn ? 'إيقاف الموسيقى' : 'تشغيل الموسيقى'}
           disabled={!src}
         >
-          {soundOn ? <Volume2 className="h-5 w-5" aria-hidden /> : <VolumeX className="h-5 w-5" aria-hidden />}
-          {soundOn ? 'إيقاف الموسيقى' : 'تشغيل الموسيقى'}
+          <span className="naseej-ctl-icon" aria-hidden>
+            {soundOn ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
+          </span>
+          <span className="naseej-ctl-text">
+            <span className="naseej-ctl-label">الموسيقى</span>
+            <span className="naseej-ctl-sub">
+              {soundOn ? (
+                <>
+                  <span className="naseej-eq" aria-hidden>
+                    <i />
+                    <i />
+                    <i />
+                  </span>
+                  تعمل الآن
+                </>
+              ) : (
+                'متوقفة'
+              )}
+            </span>
+          </span>
         </button>
-        <button type="button" onClick={fullscreen} className="btn-ghost px-5" disabled={!src}>
-          <Maximize2 className="h-5 w-5" aria-hidden />
-          ملء الشاشة
+        <button type="button" onClick={fullscreen} className="naseej-ctl" disabled={!src}>
+          <span className="naseej-ctl-icon" aria-hidden>
+            <Maximize2 className="h-5 w-5" />
+          </span>
+          <span className="naseej-ctl-text">
+            <span className="naseej-ctl-label">ملء الشاشة</span>
+            <span className="naseej-ctl-sub">عرض أكبر</span>
+          </span>
         </button>
-        <a href={SRC} target="_blank" rel="noopener" className="btn-ghost px-5">
-          <ExternalLink className="h-5 w-5" aria-hidden />
-          افتح في صفحة مستقلة
+        <a href={SRC} target="_blank" rel="noopener" className="naseej-ctl">
+          <span className="naseej-ctl-icon" aria-hidden>
+            <ExternalLink className="h-5 w-5" />
+          </span>
+          <span className="naseej-ctl-text">
+            <span className="naseej-ctl-label">صفحة مستقلة</span>
+            <span className="naseej-ctl-sub">في نافذة جديدة</span>
+          </span>
         </a>
       </div>
     </div>

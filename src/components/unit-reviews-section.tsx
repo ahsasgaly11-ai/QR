@@ -38,9 +38,9 @@ export function UnitReviewsSection({
               <span className="review-icon" aria-hidden>
                 <HeritageIcon kind="oyster" />
               </span>
-              <span className="min-w-0 flex-1">
+              <span className="review-body min-w-0 flex-1">
                 <span className="review-tag">لعبة مراجعة شاملة</span>
-                <span className="mt-2 block font-calli text-2xl leading-[1.5] sm:text-3xl">{r.title}</span>
+                <span className="review-title mt-2 block font-calli text-2xl leading-[1.5] sm:text-3xl">{r.title}</span>
                 {r.description && (
                   <span className="mt-1 block max-w-2xl text-white/80">{r.description}</span>
                 )}
