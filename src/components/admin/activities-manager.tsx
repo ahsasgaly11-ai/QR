@@ -340,10 +340,11 @@ export function ActivitiesManager({
                 </div>
                 {/* مقطع لغة الإشارة القطرية (اختياري) */}
                 <div className="rounded-xl border border-[color:var(--hairline)] p-3">
-                  <label className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-[color:var(--maroon)]">
+                  <label htmlFor="activity-signlang" className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-[color:var(--maroon)]">
                     <Hand className="h-4 w-4" /> مقطع لغة الإشارة القطرية
                   </label>
                   <input
+                    id="activity-signlang"
                     className={inp}
                     value={draft.signLang ?? ''}
                     onChange={(e) =>

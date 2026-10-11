@@ -505,10 +505,11 @@ export function AdminUploader({
       )}
 
       <div className="mt-5">
-        <label className={labelCls}>
+        <label htmlFor="uploader-title" className={labelCls}>
           {smartOnly ? 'عنوان لعبة التعزيز' : reviewOnly ? 'عنوان المراجعة' : 'عنوان النشاط / اللعبة'}
         </label>
         <input
+          id="uploader-title"
           className={inputCls}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -523,8 +524,9 @@ export function AdminUploader({
       </div>
 
       <div className="mt-5">
-        <label className={labelCls}>وصف مختصر (اختياري)</label>
+        <label htmlFor="uploader-description" className={labelCls}>وصف مختصر (اختياري)</label>
         <textarea
+          id="uploader-description"
           className={inputCls}
           rows={2}
           value={description}
@@ -534,8 +536,9 @@ export function AdminUploader({
       </div>
 
       <div className="mt-5">
-        <label className={labelCls}>رابط شرح بلغة الإشارة (اختياري)</label>
+        <label htmlFor="uploader-signlang" className={labelCls}>رابط شرح بلغة الإشارة (اختياري)</label>
         <input
+          id="uploader-signlang"
           className={inputCls}
           value={signLang}
           onChange={(e) => setSignLang(e.target.value)}
@@ -548,8 +551,8 @@ export function AdminUploader({
       </div>
 
       <div className="mt-5">
-        <label className={labelCls}>نوع النشاط</label>
-        <div className="flex flex-wrap gap-2">
+        <p id="uploader-type-label" className={labelCls}>نوع النشاط</p>
+        <div className="flex flex-wrap gap-2" role="group" aria-labelledby="uploader-type-label">
           {TYPES.map((t) => (
             <button
               type="button"

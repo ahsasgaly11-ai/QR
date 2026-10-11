@@ -1,0 +1,103 @@
+import Link from 'next/link';
+import { BackButton } from '@/components/back-button';
+import { SITE_NAME } from '@/lib/site';
+
+export const metadata = {
+  title: `بيان إمكانية الوصول | ${SITE_NAME}`,
+  description:
+    'التزام المنصّة بمعايير WCAG 2.2 (المستوى AA)، والميزات المتاحة لذوي الإعاقة، وكيفية الإبلاغ عن أي عائق.',
+  alternates: { canonical: '/accessibility' },
+};
+
+// ---------------------------------------------------------------------------
+// بيان إمكانية الوصول — يشرح للزوّار (ولجهات الاعتماد مثل مركز مدى) ما الذي
+// توفّره المنصّة ومستوى التوافق المستهدف. يُحدَّث عند إضافة ميزات جديدة.
+// ---------------------------------------------------------------------------
+
+const FEATURES: { title: string; body: string }[] = [
+  {
+    title: 'لوحة إمكانية الوصول',
+    body: 'لسان ثابت على حافّة الشاشة يفتح لوحة تضبط حجم الخط (ثلاث درجات)، والتباين العالي، والقراءة الميسّرة لعُسر القراءة، وتقليل الحركة، والوضع الليلي، ووضعًا خفيفًا للأجهزة البطيئة. تُحفَظ الاختيارات في المتصفّح وتُطبَّق على كل الصفحات.',
+  },
+  {
+    title: 'لغة الإشارة القطرية',
+    body: 'كل نشاط يحمل زرًّا للغة الإشارة يعرض مقطعًا بلغة الإشارة القطرية إن وُجد، أو رفيقًا يُشير إلى نصّ النشاط كلمةً كلمة. وعند تفعيل خيار «لغة الإشارة القطرية» من اللوحة يُفتح الرفيق تلقائيًّا مع كل نشاط.',
+  },
+  {
+    title: 'لوحة المفاتيح وقارئ الشاشة',
+    body: 'يمكن الوصول إلى كل الروابط والأزرار والحقول بمفتاح Tab، مع مؤشّر تركيز واضح بلون ذهبي، ورابط «تخطَّ إلى المحتوى» في بداية كل صفحة. الصفحة مُعلَنة بالعربية واتجاه من اليمين إلى اليسار، والمعالم (الرأس والتنقّل والمحتوى والتذييل) مسمّاة، والصور تحمل بدائل نصّية، وتُعلَن تغييرات الإعدادات عبر منطقة حيّة.',
+  },
+  {
+    title: 'التكبير وإعادة التدفّق',
+    body: 'يعمل الموقع عند تكبير المتصفّح حتى 400% وعلى شاشات الهاتف بلا تمرير أفقي، وحجم الخط الأساسي 18 بكسل وفق معيار الصفوف الابتدائية.',
+  },
+  {
+    title: 'الحركة والمؤثرات',
+    body: 'تحترم المنصّة إعداد النظام لتقليل الحركة (prefers-reduced-motion)، وتتيح إيقاف الحركات يدويًّا من اللوحة. لا تُشغَّل الأصوات إلا بطلب المستخدم.',
+  },
+];
+
+const KNOWN: string[] = [
+  'الأنشطة والألعاب المرفوعة من المعلّمين تعمل داخل إطار معزول، وإمكانية وصولها تعتمد على كيفية بنائها؛ نراجع المرفوع تدريجيًّا ونوفّر لكلٍّ منها بديل لغة الإشارة والوصف النصّي.',
+  'بعض مقاطع الفيديو الخارجية (YouTube/Vimeo) قد لا تتضمّن ترجمة نصّية؛ ونعمل على إرفاق نصّ مكتوب مع كل مقطع.',
+];
+
+export default function AccessibilityPage() {
+  return (
+    <div className="mx-auto max-w-3xl px-6 py-14">
+      <div className="mb-6 flex">
+        <BackButton fallback="/" />
+      </div>
+      <h1 className="font-calli text-4xl font-bold text-[color:var(--maroon)] sm:text-5xl">
+        بيان إمكانية الوصول
+      </h1>
+      <p className="mt-3 leading-8 text-muted-foreground">
+        تلتزم {SITE_NAME} بأن يكون محتواها متاحًا لكل الطلبة، بمن فيهم ذوو الإعاقة، ونستهدف
+        التوافق مع إرشادات الوصول إلى محتوى الويب{' '}
+        <span lang="en" dir="ltr">WCAG 2.2</span> في المستوى <span lang="en" dir="ltr">AA</span>، وسياسة
+        النفاذ الرقمي في دولة قطر.
+      </p>
+
+      <div className="mt-10 space-y-8">
+        <section aria-labelledby="a11y-features">
+          <h2 id="a11y-features" className="font-display text-xl font-black text-[color:var(--maroon)]">
+            ما الذي توفّره المنصّة
+          </h2>
+          <dl className="mt-3 space-y-4">
+            {FEATURES.map((f) => (
+              <div key={f.title}>
+                <dt className="font-bold text-[color:var(--ink)]">{f.title}</dt>
+                <dd className="mt-1 leading-8 text-foreground/85">{f.body}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+
+        <section aria-labelledby="a11y-known">
+          <h2 id="a11y-known" className="font-display text-xl font-black text-[color:var(--maroon)]">
+            حدود نعمل على معالجتها
+          </h2>
+          <ul className="mt-3 list-disc space-y-2 pr-5 leading-8 text-foreground/85">
+            {KNOWN.map((k) => (
+              <li key={k}>{k}</li>
+            ))}
+          </ul>
+        </section>
+
+        <section aria-labelledby="a11y-feedback">
+          <h2 id="a11y-feedback" className="font-display text-xl font-black text-[color:var(--maroon)]">
+            أبلغنا عن أي عائق
+          </h2>
+          <p className="mt-3 leading-8 text-foreground/85">
+            إن واجهت صعوبة في استخدام أي جزء من المنصّة، أو احتجت المحتوى بصيغة بديلة، فتواصل معنا
+            عبر زر «تواصل» أسفل الصفحة، وسنعالج البلاغ في أقرب وقت. نرحّب أيضًا بملاحظات أولياء الأمور
+            والمعلّمين ومعلّمي التربية الخاصة.
+          </p>
+          <p className="mt-3 leading-8 text-foreground/85">
+            راجع أيضًا <Link href="/privacy" className="font-bold text-[color:var(--maroon)] underline underline-offset-4">سياسة الخصوصية</Link>.
+          </p>
+        </section>
+      </div>
+    </div>
+  );
+}

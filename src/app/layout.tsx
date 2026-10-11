@@ -97,7 +97,7 @@ export default function RootLayout({
         <HeritageIconSprite />
         <VisitTracker />
         <SiteHeader />
-        <main id="main" className="relative">
+        <main id="main" tabIndex={-1} className="relative outline-none">
           <RouteTransitions>{children}</RouteTransitions>
         </main>
         <SiteFooter />
