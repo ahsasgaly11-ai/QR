@@ -310,12 +310,13 @@ export function UnitFromImage({
         {mode === 'review' && (
           <div className={cn('grid gap-5', previews.length > 0 && 'md:grid-cols-[1fr_200px]')}>
             <div className="min-w-0">
-              <label className="mb-1.5 block text-sm font-semibold text-[color:var(--maroon)]">
+              <label htmlFor="unit-image-title" className="mb-1.5 block text-sm font-semibold text-[color:var(--maroon)]">
                 عنوان الوحدة
               </label>
               <div className="flex items-center gap-2">
                 <BookMarked className="h-5 w-5 shrink-0 text-[color:var(--gold)]" />
                 <input
+                  id="unit-image-title"
                   className={input + ' text-base'}
                   value={draft.title}
                   placeholder="مثال: الوحدة 4: الضوء والظلال"
@@ -329,10 +330,11 @@ export function UnitFromImage({
                 </p>
               )}
 
-              <label className="mb-1.5 mt-4 block text-sm font-semibold text-[color:var(--maroon)]">
+              <label htmlFor="unit-image-summary" className="mb-1.5 mt-4 block text-sm font-semibold text-[color:var(--maroon)]">
                 وصف مختصر <span className="font-bold text-muted-foreground">(اختياري)</span>
               </label>
               <textarea
+                id="unit-image-summary"
                 className={input + ' min-h-[64px] font-medium'}
                 value={draft.summary}
                 onChange={(e) => setDraft((d) => ({ ...d, summary: e.target.value }))}

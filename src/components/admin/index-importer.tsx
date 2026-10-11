@@ -152,10 +152,11 @@ export function IndexImporter({
         {/* وجهة الاستيراد */}
         <div className="mb-5 grid gap-3 sm:grid-cols-2">
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-[color:var(--maroon)]">
+            <label htmlFor="importer-subject" className="mb-1.5 block text-sm font-semibold text-[color:var(--maroon)]">
               المادة
             </label>
             <select
+              id="importer-subject"
               className={input}
               value={subjectId}
               onChange={(e) => {
@@ -170,10 +171,10 @@ export function IndexImporter({
             </select>
           </div>
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-[color:var(--maroon)]">
+            <label htmlFor="importer-grade" className="mb-1.5 block text-sm font-semibold text-[color:var(--maroon)]">
               المستوى
             </label>
-            <select className={input} value={gradeId} onChange={(e) => setGradeId(e.target.value)}>
+            <select id="importer-grade" className={input} value={gradeId} onChange={(e) => setGradeId(e.target.value)}>
               {subject?.grades.map((g) => (
                 <option key={g.id} value={g.id}>{g.title}</option>
               ))}

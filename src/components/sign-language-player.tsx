@@ -225,8 +225,11 @@ export function SignLanguagePlayer({ text }: { text: string }) {
       {/* النصّ المقروء مع إبراز الكلمة الجارية */}
       <p className="max-h-16 overflow-y-auto px-3 py-2 text-center text-sm font-bold leading-7">
         {words.map((w, wi) => (
-          <span
+          <button
             key={wi}
+            type="button"
+            aria-label={`الانتقال إلى إشارة كلمة «${w}»`}
+            aria-current={step.word === wi ? 'true' : undefined}
             onClick={() => {
               const first = steps.findIndex((s) => s.word === wi);
               if (first >= 0) {
@@ -235,14 +238,14 @@ export function SignLanguagePlayer({ text }: { text: string }) {
               }
             }}
             className={cn(
-              'mx-0.5 cursor-pointer rounded px-1 transition',
+              'mx-0.5 cursor-pointer rounded px-1 font-bold transition',
               step.word === wi
                 ? 'bg-[color:var(--gold)]/40 text-[color:var(--ink)]'
                 : 'text-muted-foreground hover:bg-[color:var(--surface-2)]'
             )}
           >
             {w}
-          </span>
+          </button>
         ))}
       </p>
 

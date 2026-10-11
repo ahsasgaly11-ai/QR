@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   X,
@@ -37,21 +37,43 @@ function Modal({
   children: React.ReactNode;
   className?: string;
 }) {
+  const panelRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
+  // انقل التركيز إلى أول حقل داخل النافذة عند فتحها، وأعِده لمن فتحها عند
+  // الإغلاق — حتى لا يضيع مستخدم لوحة المفاتيح أو قارئ الشاشة خلف الطبقة.
+  useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null;
+    const t = setTimeout(() => {
+      panelRef.current
+        ?.querySelector<HTMLElement>('input, textarea, select, button:not([aria-label="إغلاق"])')
+        ?.focus();
+    }, 30);
+    return () => {
+      clearTimeout(t);
+      opener?.focus?.();
+    };
+  }, []);
+
   return createPortal(
+    // الطبقة الخلفية تُغلق النافذة بالنقر (للفأرة فقط)؛ لوحة المفاتيح لها Esc.
     <div
       className="fixed inset-0 z-[90] flex items-start justify-center overflow-y-auto bg-black/50 p-4 backdrop-blur-sm"
-      role="dialog"
-      aria-modal="true"
-      aria-label={label}
+      role="presentation"
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className={cn('panel my-8 w-full rounded-2xl p-6 sm:p-8', className)}>
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={label}
+        className={cn('panel my-8 w-full rounded-2xl p-6 sm:p-8', className)}
+      >
         {children}
       </div>
     </div>,
@@ -143,18 +165,19 @@ export function UnitEditor({
         </button>
       </div>
 
-      <label className="mb-1.5 block text-sm font-semibold text-[color:var(--maroon)]">
+      <label htmlFor="unit-editor-title" className="mb-1.5 block text-sm font-semibold text-[color:var(--maroon)]">
         عنوان الوحدة
       </label>
       <div className="flex items-center gap-2">
         <BookMarked className="h-5 w-5 shrink-0 text-[color:var(--gold)]" />
-        <input className={input + ' text-base'} value={title} onChange={(e) => setTitle(e.target.value)} />
+        <input id="unit-editor-title" className={input + ' text-base'} value={title} onChange={(e) => setTitle(e.target.value)} />
       </div>
 
-      <label className="mb-1.5 mt-4 block text-sm font-semibold text-[color:var(--maroon)]">
+      <label htmlFor="unit-editor-summary" className="mb-1.5 mt-4 block text-sm font-semibold text-[color:var(--maroon)]">
         وصف مختصر <span className="font-bold text-muted-foreground">(اختياري)</span>
       </label>
       <textarea
+        id="unit-editor-summary"
         className={input + ' min-h-[64px] font-medium'}
         value={summary}
         onChange={(e) => setSummary(e.target.value)}

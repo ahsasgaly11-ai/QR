@@ -372,6 +372,8 @@ export function UserHeatmap({ className = '' }: { className?: string }) {
             >
               <Expand className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
             </button>
+            {/* النقر على الخريطة اختصار للفأرة فقط؛ لوحة المفاتيح تصل إلى البلديات
+                عبر أزرار الفقاعات التالية (قابلة للتركيز ومسمّاة). */}
             <div ref={wrapRef} onClick={onMapClick} className="relative mx-auto cursor-pointer" style={{ width: size.w, height: size.h }}>
               <canvas ref={canvasRef} style={{ width: size.w, height: size.h }} className="block"
                 role="img" aria-label="خريطة قطر الحرارية لتركيز مستخدمي الألعاب حسب المدرسة" />

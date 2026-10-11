@@ -9,6 +9,7 @@ const LINKS = [
   { href: '/dashboard', label: 'لوحة الإحصاءات' },
   { href: '/admin', label: 'رفع نشاط جديد' },
   { href: '/privacy', label: 'سياسة الخصوصية' },
+  { href: '/accessibility', label: 'إمكانية الوصول' },
 ];
 
 // نخلة بسيطة: جذع مائل وسعفات — تُرسم بلون خط الأفق نفسه
