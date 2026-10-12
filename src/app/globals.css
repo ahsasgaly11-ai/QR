@@ -2807,6 +2807,11 @@ a.ledger-row:hover .ledger-go { transform: translateX(-4px); }
   animation: none !important;
 }
 :root:is([data-perf='lite'], [data-perf='auto'][data-perf-auto='lite']) :is(.door-wall, .subject-court)::before { display: none; }
+/* موج البحر في نافذة الدوحة يبقى متحرّكًا حتى في الوضع الخفيف: ثلاثة خطوط
+   وانعكاس صغير، وتتوقّف تلقائيًا حين تخرج النافذة من الشاشة (hw--paused) */
+:root:is([data-perf='lite'], [data-perf='auto'][data-perf-auto='lite']) :is(.hw-wave, .hw-shimmer) {
+  animation-iteration-count: infinite !important;
+}
 
 /* =========================================================================
    لآلئي — زرّ الهيدر، الصندوق، الإشعار
