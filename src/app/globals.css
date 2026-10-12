@@ -1210,7 +1210,7 @@ body { padding-bottom: var(--ticker-h); }
   inset: 6% 10% 0 4%;
   border-radius: 50% 50% 0 0 / 36% 36% 0 0;
 }
-.hw-stage { overflow: hidden; perspective: 900px; background: #f3dfbb; }
+.hw-stage { overflow: hidden; background: #f3dfbb; }
 .dark .hw-stage { background: #0f1a2c; }
 .hw-arch-line {
   z-index: 2;
@@ -1230,14 +1230,13 @@ body { padding-bottom: var(--ticker-h); }
 .hw-world {
   position: absolute;
   inset: 0;
-  transform-style: preserve-3d;
-  transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
-  will-change: transform;
 }
+/* العمق إزاحة ثنائية الأبعاد فقط (لا translateZ): سفاري يسطّح المشهد ثلاثي
+   الأبعاد داخل القوس المقصوص فيبقى التكبير التعويضي وحده ويتشوّه المشهد */
 .hw-layer {
   position: absolute;
   inset: -8%;
-  transform: translateZ(var(--z)) scale(var(--s)) translateY(calc(var(--sp, 0) * var(--drift) * 180px));
+  will-change: transform;
 }
 .hw-layer svg { display: block; width: 100%; height: 100%; overflow: visible; }
 

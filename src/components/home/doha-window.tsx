@@ -8,23 +8,26 @@ import { isLite } from '@/lib/perf';
 //   السماء ← أبراج الخليج الغربي ← متحف الفن الإسلامي ← سوق واقف ← البحر
 //   والسفينة ← النخيل والمها في المقدّمة.
 //
-// • يميل المشهد مع المؤشّر (وميلان الجهاز على الجوال حيث يُسمح)، وتنزلق
+// • تنزاح الطبقات مع المؤشّر (وميلان الجهاز على الجوال حيث يُسمح)، وتنزلق
 //   الطبقات بسرعات مختلفة مع التمرير فيظهر العمق.
 // • نهاري في الوضع الفاتح، وليلي في الوضع الداكن: قمر ونجوم ونوافذ مضاءة
 //   وفانوس على السفينة — المشهد نفسه يتبع زرّ الوضع الليلي.
 // • لا حلقة رسم إلا والمشهد ظاهر، ولا حركة لمن طلب تقليلها.
 // ---------------------------------------------------------------------------
 
+// depth: مقدار انزياح الطبقة مع المؤشّر (سالب = خلف مستوى البحر)
 const LAYERS = [
-  { key: 'sky', z: -260, drift: 0.05 },
-  { key: 'far', z: -170, drift: 0.12 },
-  { key: 'mia', z: -110, drift: 0.18 },
-  { key: 'souq', z: -50, drift: 0.26 },
-  { key: 'sea', z: 0, drift: 0.32 },
-  { key: 'front', z: 70, drift: 0.44 },
+  { key: 'sky', depth: -1, drift: 0.05 },
+  { key: 'far', depth: -0.65, drift: 0.12 },
+  { key: 'mia', depth: -0.42, drift: 0.18 },
+  { key: 'souq', depth: -0.2, drift: 0.26 },
+  { key: 'sea', depth: 0, drift: 0.32 },
+  { key: 'front', depth: 0.3, drift: 0.44 },
 ] as const;
 
-const PERSPECTIVE = 900;
+// أقصى إزاحة أفقية/رأسية (px) لطبقة عمقها 1
+const SHIFT_X = 16;
+const SHIFT_Y = 9;
 
 function motionAllowed() {
   return (
@@ -51,13 +54,12 @@ export function DohaWindow() {
     // مع حركة المؤشّر أو التمرير أو ميلان الجهاز.
     const layers = Array.from(w.querySelectorAll<HTMLElement>('.hw-layer')).map((node, i) => ({
       node,
-      z: LAYERS[i].z,
-      s: (PERSPECTIVE - LAYERS[i].z) / PERSPECTIVE,
+      depth: LAYERS[i].depth,
       drift: LAYERS[i].drift,
     }));
     const gleam = el.querySelector<HTMLElement>('.hw-gleam');
 
-    let tx = 0, ty = 0, cx = 0, cy = 0, scroll = 0, drawnScroll = -1;
+    let tx = 0, ty = 0, cx = 0, cy = 0, scroll = 0;
     let visible = true;
     let raf = 0;
 
@@ -101,17 +103,15 @@ export function DohaWindow() {
         cx = tx;
         cy = ty;
       }
-      w!.style.transform = `rotateX(${(-cy * 5).toFixed(3)}deg) rotateY(${(cx * 9).toFixed(3)}deg)`;
       if (gleam) {
         gleam.style.setProperty('--lx', `${(50 + cx * 30).toFixed(2)}%`);
         gleam.style.setProperty('--ly', `${(32 + cy * 24).toFixed(2)}%`);
       }
       const sp = Math.round(scroll * 1000) / 1000;
-      if (sp !== drawnScroll) {
-        drawnScroll = sp;
-        for (const l of layers) {
-          l.node.style.transform = `translateZ(${l.z}px) scale(${l.s.toFixed(4)}) translateY(${(sp * l.drift * 180).toFixed(2)}px)`;
-        }
+      for (const l of layers) {
+        const x = cx * l.depth * SHIFT_X;
+        const y = cy * l.depth * SHIFT_Y + sp * l.drift * 180;
+        l.node.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0)`;
       }
       if (!settled) raf = requestAnimationFrame(frame);
     }
@@ -150,14 +150,7 @@ export function DohaWindow() {
             <div
               key={l.key}
               className="hw-layer"
-              style={
-                {
-                  '--i': i,
-                  '--z': `${l.z}px`,
-                  '--s': ((PERSPECTIVE - l.z) / PERSPECTIVE).toFixed(4),
-                  '--drift': l.drift,
-                } as React.CSSProperties
-              }
+              style={{ '--i': i } as React.CSSProperties}
             >
               <LayerArt name={l.key} />
             </div>
@@ -447,7 +440,7 @@ function LayerArt({ name }: { name: (typeof LAYERS)[number]['key'] }) {
         <>
           <Palm x={330} y={458} s={1.15} />
           <Palm x={46} y={460} s={0.95} delay={-2} />
-          <Oryx x={218} y={372} s={1} />
+          <Oryx x={200} y={372} s={1} />
         </>
       );
   }
