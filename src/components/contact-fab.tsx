@@ -2,12 +2,13 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { Check, Copy, MessageCircleMore, Phone, X } from 'lucide-react';
+import { Check, Copy, Mail, MessageCircleMore, Phone, X } from 'lucide-react';
+import { CONTACT_EMAIL, CONTACT_PHONE_E164, CONTACT_PHONE_PRETTY } from '@/lib/site';
 
-/** رقم التواصل — مصدر واحد تُشتقّ منه كل الروابط. */
-const PHONE_E164 = '+97470776067';
+/** رقم التواصل والبريد — مصدر واحد (src/lib/site.ts) تُشتقّ منه كل الروابط. */
+const PHONE_E164 = CONTACT_PHONE_E164;
 const PHONE_DIGITS = PHONE_E164.replace(/\D/g, '');
-const PHONE_PRETTY = '+974 7077 6067';
+const PHONE_PRETTY = CONTACT_PHONE_PRETTY;
 
 /** شعار واتساب الرسمي (مسار واحد، 24×24) — يبقى بلونه الأخضر المعروف. */
 function WhatsAppGlyph({ className }: { className?: string }) {
@@ -126,6 +127,15 @@ export function ContactFab() {
                   )}
                 </button>
               </div>
+              <a
+                href={`mailto:${CONTACT_EMAIL}`}
+                className="flex items-center justify-center gap-2 rounded-xl border border-[color:var(--gold)]/40 px-3 py-2.5 text-sm font-black text-[color:var(--maroon)] transition hover:bg-[color:var(--gold)]/10"
+              >
+                <Mail className="h-4 w-4 shrink-0" />
+                <span dir="ltr" className="truncate">
+                  {CONTACT_EMAIL}
+                </span>
+              </a>
             </div>
           </div>
         </div>

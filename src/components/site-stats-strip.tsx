@@ -3,16 +3,44 @@
 import { useEffect, useState } from 'react';
 import { Sparkles, Users, Eye, Download } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { subscribeSiteStats } from '@/lib/stats';
+import { getFeedState, subscribeSiteStats } from '@/lib/stats';
+import type { SiteTotals } from '@/lib/stats-server';
 import { CountUp } from './count-up';
+
+const ZERO: SiteTotals = { visitors: 0, views: 0, downloads: 0 };
 
 // أربع لوحات بارزة، على كل منها وسام نحاسي/ملوّن محفور بأيقونته — أرقام حيّة
 // تُقرأ بسرعة، بعمق وحافّة سفلية كقطع الجصّ المرفوعة.
-export function SiteStatsStrip({ activities }: { activities: number }) {
-  const [s, setS] = useState({ visitors: 0, views: 0, downloads: 0 });
+//
+// `initial`: الأرقام المشتركة كما قرأها الخادم وقت توليد الصفحة، فتظهر القيم
+// الفعلية في أوّل رسم (وفي HTML نفسه) بدل أصفار تنتظر المتصفّح.
+export function SiteStatsStrip({
+  activities,
+  initial,
+}: {
+  activities: number;
+  initial?: SiteTotals | null;
+}) {
+  const [s, setS] = useState<SiteTotals>(initial ?? ZERO);
 
   // اشتراك حيّ: آخر أرقام مشتركة معروفة فورًا، ثم كل تحديث من الخادم.
-  useEffect(() => subscribeSiteStats(setS), []);
+  useEffect(
+    () =>
+      subscribeSiteStats((next) =>
+        setS((prev) => {
+          // اللقطة المؤكَّدة من الخادم هي المرجع. أمّا النسخة المخزَّنة في هذا
+          // المتصفّح (قد تكون أقدم من أرقام الخادم المضمَّنة في الصفحة) فلا
+          // تُنزِل رقمًا ظاهرًا: العدّادات لا تنقص.
+          if (getFeedState().status === 'live') return next;
+          return {
+            visitors: Math.max(prev.visitors, next.visitors),
+            views: Math.max(prev.views, next.views),
+            downloads: Math.max(prev.downloads, next.downloads),
+          };
+        })
+      ),
+    []
+  );
 
   const items: { label: string; value: number; icon: LucideIcon; tone: string }[] = [
     { label: 'نشاطًا تفاعليًا', value: activities, icon: Sparkles, tone: '#8a1538' },

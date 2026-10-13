@@ -12,6 +12,9 @@ import { DOOR_PAINT, emblemFor } from '@/components/home/door-emblem';
 import { SectionHead } from '@/components/home/section-head';
 import { NaseejShow } from '@/components/home/naseej-show';
 import { LaunchVideo } from '@/components/home/launch-video';
+import { ImpactSection } from '@/components/home/impact-section';
+import { getReachServer, getSiteStatsServer } from '@/lib/stats-server';
+import { fetchImpactServer } from '@/lib/impact';
 import { HeritageIcon } from '@/components/heritage-icons';
 import type { HeritageIconKind } from '@/components/heritage-icons';
 
@@ -33,8 +36,15 @@ const TYPES: { icon: HeritageIconKind; label: string; desc: string }[] = [
 ];
 
 export default async function HomePage() {
-  const subjects = await getSubjects();
-  const activities = await getAllActivities();
+  // المحتوى والعدّادات المشتركة وآراء «أثر التعلّم» تُقرأ معًا في الخادم،
+  // فتصل الأرقام الفعلية مضمَّنة في HTML بدل أصفار تنتظر المتصفّح.
+  const [subjects, activities, siteStats, reach, impact] = await Promise.all([
+    getSubjects(),
+    getAllActivities(),
+    getSiteStatsServer(),
+    getReachServer(),
+    fetchImpactServer(),
+  ]);
   // العدد نفسه الذي تعرضه لوحة الإحصاءات (كل الأنشطة المنشورة).
   const total = activities.length;
   const featured = activities
@@ -107,7 +117,7 @@ export default async function HomePage() {
               )}
             </div>
             <div className="mt-10" style={{ '--i': 4 } as React.CSSProperties}>
-              <SiteStatsStrip activities={total} />
+              <SiteStatsStrip activities={total} initial={siteStats} />
             </div>
           </div>
 
@@ -242,6 +252,9 @@ export default async function HomePage() {
           </ul>
         </div>
       </section>
+
+      {/* ===================== أثر التعلّم ===================== */}
+      <ImpactSection activities={total} totals={siteStats} reach={reach} voices={impact} />
 
       {/* ===================== أنشطة مميّزة (عند وجود محتوى) ========= */}
       {featured.length > 0 && (

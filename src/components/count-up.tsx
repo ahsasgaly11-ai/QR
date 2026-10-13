@@ -4,8 +4,11 @@ import { useEffect, useRef, useState } from 'react';
 import { formatFull } from '@/lib/utils';
 
 /**
- * Counts up to `value`. Starts once scrolled into view, and re-animates
- * whenever `value` changes afterwards (e.g. async stats arriving after mount).
+ * يعرض القيمة الحقيقية فورًا — في HTML القادم من الخادم وفي أوّل رسم — ولا
+ * يحرّك العدّ إلا حين تتغيّر القيمة لاحقًا (وصول رقم حيّ أحدث من الخادم).
+ *
+ * كان يبدأ من الصفر ويعدّ صعودًا عند الظهور، فبدت العدّادات أصفارًا لمن يفتح
+ * الصفحة أو يلتقط لها صورة أو يقرؤها بأداة بلا JavaScript قبل انتهاء الحركة.
  */
 export function CountUp({
   value,
@@ -16,10 +19,8 @@ export function CountUp({
   duration?: number;
   className?: string;
 }) {
-  const ref = useRef<HTMLSpanElement | null>(null);
-  const [display, setDisplay] = useState(0);
-  const displayRef = useRef(0);
-  const [visible, setVisible] = useState(false);
+  const [display, setDisplay] = useState(value);
+  const displayRef = useRef(value);
   const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -27,23 +28,16 @@ export function CountUp({
   }, [display]);
 
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const io = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) {
-        setVisible(true);
-        io.disconnect();
-      }
-    });
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
-  useEffect(() => {
-    if (!visible) return;
     const from = displayRef.current;
     const to = value;
     if (from === to) return;
+    const reduce =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) {
+      setDisplay(to);
+      return;
+    }
     const start = performance.now();
     const step = (now: number) => {
       const p = Math.min((now - start) / duration, 1);
@@ -55,11 +49,7 @@ export function CountUp({
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [visible, value, duration]);
+  }, [value, duration]);
 
-  return (
-    <span ref={ref} className={className}>
-      {formatFull(display)}
-    </span>
-  );
+  return <span className={className}>{formatFull(display)}</span>;
 }
