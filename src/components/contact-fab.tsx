@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { Check, Copy, MessageCircleMore, Phone, X } from 'lucide-react';
 
 /** رقم التواصل — مصدر واحد تُشتقّ منه كل الروابط. */
@@ -18,11 +19,14 @@ function WhatsAppGlyph({ className }: { className?: string }) {
 }
 
 /**
- * زرّ «التواصل» العائم أسفل الصفحة.
+ * زرّ «التواصل» العائم أسفل الصفحة الرئيسية فقط.
  * بالنقر تنفتح بطاقة فيها شعار واتساب ورقم الهاتف مع روابط مباشرة
  * (فتح واتساب، اتصال، نسخ الرقم). موضعه على اليمين لأن التميمة على اليسار.
+ * لا يظهر في بقيّة الصفحات حتى لا يزاحم الألعاب وشريط أدواتها، ولا سيّما على
+ * الجوال.
  */
 export function ContactFab() {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const wrapRef = useRef<HTMLDivElement | null>(null);
@@ -53,6 +57,8 @@ export function ContactFab() {
       /* بعض المتصفحات تمنع الحافظة دون تفاعل مباشر */
     }
   };
+
+  if (pathname !== '/') return null;
 
   return (
     <div ref={wrapRef} className="contact-fab fixed bottom-[calc(var(--ticker-h)+1rem)] right-4 z-50 print:hidden">
