@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Activity, Database, Loader2, WifiOff, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Activity, Database, WifiOff, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { firebaseProjectId, isFirebaseConfigured } from '@/lib/firebase';
 import {
   getFeedState,
@@ -9,13 +9,18 @@ import {
   subscribeSiteStats,
   type FeedState,
 } from '@/lib/stats';
+import { useIsOwner } from '@/components/dashboard/use-dashboard-data';
 
 /**
  * حالة التتبّع في لوحة الإحصاءات: من أين تأتي الأرقام، وهل وصل ردّ مؤكَّد
  * من الخادم، ومتى. وجودها يمنع الالتباس الشائع: أصفار على الشاشة لا تعني
  * بالضرورة أن التتبّع معطّل — فقد تكون الشبكة محجوبة أو القواعد غير منشورة.
+ *
+ * أداة تشخيص للمشرف وحده: لا تظهر للزوّار إطلاقًا، ولا تظهر للمشرف حين يكون
+ * كل شيء سليمًا (متّصل وتصل الأرقام)، بل عند وجود مشكلة تستدعي تدخّله فقط.
  */
 export function TrackingStatus() {
+  const owner = useIsOwner();
   const [feed, setFeed] = useState<FeedState | null>(null);
   const [totals, setTotals] = useState<number | null>(null);
 
@@ -31,26 +36,25 @@ export function TrackingStatus() {
     };
   }, []);
 
-  if (!feed) return null;
+  if (!feed || owner !== true) return null;
+  // متّصل والأرقام تصل: لا شيء يستدعي العرض (ولا أثناء الاتصال الأوّل)
+  if (feed.status === 'connecting') return null;
+  if (feed.status === 'live' && totals !== 0) return null;
 
   const source = isFirebaseConfigured
     ? `Firestore — مشروع ${firebaseProjectId}`
     : 'هذا المتصفّح فقط (وضع العرض)';
 
-  let Icon = Loader2;
+  let Icon = Database;
   let tone = 'var(--muted)';
-  let label = 'يجري الاتصال بقاعدة البيانات…';
+  let label = '';
   let detail: string | null = null;
-  let spin = false;
 
   switch (feed.status) {
     case 'local':
       Icon = Database;
       label = 'العدّادات محلية';
       detail = 'لا توجد إحصاءات مشتركة بين الزوّار في هذا النشر.';
-      break;
-    case 'connecting':
-      spin = true;
       break;
     case 'live': {
       Icon = CheckCircle2;
@@ -100,7 +104,7 @@ export function TrackingStatus() {
         </span>
       </span>
       <span className="flex items-center gap-2 font-semibold" style={{ color: tone }}>
-        <Icon className={'h-4 w-4 ' + (spin ? 'animate-spin' : '')} aria-hidden />
+        <Icon className="h-4 w-4" aria-hidden />
         {label}
       </span>
       {detail && (
