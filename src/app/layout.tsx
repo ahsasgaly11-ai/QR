@@ -12,6 +12,7 @@ import { PearlToast } from '@/components/pearls/pearl-toast';
 import { VisitTracker } from '@/components/visit-tracker';
 import { VisionTicker } from '@/components/vision-ticker';
 import { Analytics } from '@/components/analytics';
+import { IosDocumentsNotice } from '@/components/ios-documents-notice';
 import { HeritageIconSprite } from '@/components/heritage-icons';
 import { SITE_URL, SITE_NAME, GOOGLE_SITE_VERIFICATION } from '@/lib/site';
 
@@ -107,6 +108,7 @@ export default function RootLayout({
         <AccessibilityPanel />
         <PerfProbe />
         <PearlToast />
+        <IosDocumentsNotice />
         <Analytics />
       </body>
     </html>
