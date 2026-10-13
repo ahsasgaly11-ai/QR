@@ -24,6 +24,11 @@ export const isFirebaseConfigured = Boolean(
   firebaseConfig.apiKey && firebaseConfig.projectId
 );
 
+/** معرّف مشروع Firebase المضبوط في هذا النشر (للتشخيص في لوحة الإحصاءات). */
+export const firebaseProjectId: string = isFirebaseConfigured
+  ? String(firebaseConfig.projectId)
+  : '';
+
 let app: FirebaseApp | null = null;
 let dbInstance: Firestore | null = null;
 let storageInstance: FirebaseStorage | null = null;

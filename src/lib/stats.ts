@@ -49,6 +49,59 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   });
 }
 
+// --- حالة الاتصال بمصدر الإحصاءات ------------------------------------------
+//  الأرقام وحدها لا تكفي: «0» قد يعني «لا بيانات بعد» أو «لم يصل ردّ من
+//  الخادم» أو «رفضت القواعد الكتابة». هنا نسجّل ما حصل فعلًا في آخر اشتراك
+//  حيّ ليعرضه مكوّن حالة التتبّع في لوحة الإحصاءات بدل أصفار صامتة.
+export type FeedStatus =
+  /** وضع العرض: العدّادات في هذا المتصفّح فقط. */
+  | 'local'
+  /** لم يبدأ الاشتراك بعد أو ينتظر أوّل لقطة مؤكَّدة من الخادم. */
+  | 'connecting'
+  /** وصلت لقطة مؤكَّدة من الخادم (قد تكون أصفارًا حقيقية). */
+  | 'live'
+  /** مضت المهلة دون أي لقطة مؤكَّدة — شبكة محجوبة أو بطيئة. */
+  | 'timeout'
+  /** أبلغ Firestore عن خطأ (مثل permission-denied). */
+  | 'error';
+
+export interface FeedState {
+  status: FeedStatus;
+  /** طابع آخر لقطة مؤكَّدة من الخادم (ms). */
+  lastServerAt: number | null;
+  /** رمز الخطأ عند status === 'error'. */
+  code?: string;
+}
+
+const FEED_EVENT = 'qa-stats-feed-state';
+let feedState: FeedState = {
+  status: isFirebaseConfigured ? 'connecting' : 'local',
+  lastServerAt: null,
+};
+
+function setFeedState(patch: Partial<FeedState>) {
+  feedState = { ...feedState, ...patch };
+  if (typeof window === 'undefined') return;
+  try {
+    window.dispatchEvent(new Event(FEED_EVENT));
+  } catch {
+    /* ignore */
+  }
+}
+
+/** الحالة الحالية لاتصال الإحصاءات الحيّة. */
+export function getFeedState(): FeedState {
+  return feedState;
+}
+
+/** اشتراك في تغيّر حالة الاتصال؛ يُعيد دالة إلغاء الاشتراك. */
+export function onFeedState(cb: (s: FeedState) => void): () => void {
+  if (typeof window === 'undefined') return () => {};
+  const h = () => cb(feedState);
+  window.addEventListener(FEED_EVENT, h);
+  return () => window.removeEventListener(FEED_EVENT, h);
+}
+
 /** آخر أرقام مشتركة معروفة في هذا المتصفّح (أو null). */
 export function getCachedSiteStats(): SiteStats | null {
   if (typeof window === 'undefined') return null;
@@ -268,22 +321,41 @@ export function subscribeSiteStats(cb: (s: SiteStats) => void): () => void {
   let alive = true;
   let unsub: (() => void) | null = null;
 
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  const clearFeedTimeout = () => {
+    if (timeoutId) clearTimeout(timeoutId);
+    timeoutId = null;
+  };
+
   (async () => {
     await settleVisit();
     if (!alive) return;
     if (!isFirebaseConfigured) {
+      setFeedState({ status: 'local' });
       cb(readLocal().site);
       return;
     }
     const db = getDb();
-    if (!db) return;
+    if (!db) {
+      setFeedState({ status: 'error', code: 'init-failed' });
+      return;
+    }
+    if (feedState.status !== 'live') setFeedState({ status: 'connecting' });
     const { doc, onSnapshot } = await import('firebase/firestore');
     if (!alive) return;
+    // وعود Firestore قد لا تُحسم على الشبكات المحجوبة: إن لم تصل لقطة مؤكَّدة
+    // خلال المهلة نعلن «انتهاء المهلة» ليظهر السبب بدل أصفار صامتة، مع
+    // إبقاء المستمع حيًّا فتتحوّل الحالة إلى «متّصل» حين يصل الردّ.
+    timeoutId = setTimeout(() => {
+      timeoutId = null;
+      if (alive && feedState.status === 'connecting') setFeedState({ status: 'timeout' });
+    }, READ_TIMEOUT_MS);
     unsub = onSnapshot(
       doc(db, 'stats', 'site'),
       { includeMetadataChanges: true },
       (snap) => {
         if (snap.metadata.hasPendingWrites || snap.metadata.fromCache) return;
+        clearFeedTimeout();
         const d = (snap.exists() ? snap.data() : {}) as Partial<SiteStats>;
         const out = {
           visitors: d.visitors ?? 0,
@@ -291,16 +363,31 @@ export function subscribeSiteStats(cb: (s: SiteStats) => void): () => void {
           downloads: d.downloads ?? 0,
         };
         writeCachedSiteStats(out);
+        setFeedState({ status: 'live', lastServerAt: Date.now(), code: undefined });
         cb(out);
       },
-      (e) => reportSyncError(e, 'قراءة إحصاءات الموقع')
+      (e) => {
+        clearFeedTimeout();
+        setFeedState({ status: 'error', code: errorCodeOf(e) });
+        reportSyncError(e, 'قراءة إحصاءات الموقع');
+      }
     );
-  })().catch((e) => reportSyncError(e, 'قراءة إحصاءات الموقع'));
+  })().catch((e) => {
+    clearFeedTimeout();
+    setFeedState({ status: 'error', code: errorCodeOf(e) });
+    reportSyncError(e, 'قراءة إحصاءات الموقع');
+  });
 
   return () => {
     alive = false;
+    clearFeedTimeout();
     unsub?.();
   };
+}
+
+function errorCodeOf(e: unknown): string {
+  const code = (e as { code?: unknown })?.code;
+  return typeof code === 'string' && code ? code : 'unknown';
 }
 
 export async function getActivityStats(id: string): Promise<ActivityStats> {

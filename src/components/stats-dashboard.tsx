@@ -77,6 +77,8 @@ export function StatsDashboard({ activities: serverActivities }: { activities: R
     .sort((a, b) => b.views - a.views);
 
   const maxViews = Math.max(1, ...rows.map((r) => r.views));
+  /** لا مشاهدات بعد: ترتيب «الأكثر مشاهدة» بلا معنى فنعرض حالة فارغة صريحة. */
+  const noViewsYet = loaded && rows.every((r) => r.views === 0);
 
   // توزيع حسب النوع: عدد الأنشطة + مجموع المشاهدات
   const types = Object.keys(ACTIVITY_META) as ActivityType[];
@@ -260,6 +262,11 @@ export function StatsDashboard({ activities: serverActivities }: { activities: R
               الأنشطة الأكثر مشاهدة
             </h2>
           </figcaption>
+          {noViewsYet ? (
+            <p className="rounded-xl border border-dashed border-[color:var(--hairline-strong)] px-4 py-6 text-center text-sm text-muted-foreground">
+              لا توجد مشاهدات مسجَّلة بعد. يظهر الترتيب تلقائيًا مع أوّل تشغيل للأنشطة.
+            </p>
+          ) : (
           <div className="space-y-4 sm:space-y-5">
             {rows.slice(0, 8).map((r, i) => (
               <div key={r.id} className="group" title={`${r.title} — ${formatFull(r.views)} مشاهدة`}>
@@ -296,6 +303,7 @@ export function StatsDashboard({ activities: serverActivities }: { activities: R
               </div>
             ))}
           </div>
+          )}
         </figure>
 
         {/* subjects: مقدار بدرجة واحدة — الترتيب هو الرسالة، لا اللون */}

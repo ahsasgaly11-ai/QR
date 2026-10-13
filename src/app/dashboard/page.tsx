@@ -2,6 +2,7 @@ import { getAllActivities, getSubjects, locateActivity } from '@/lib/content';
 import { StatsDashboard } from '@/components/stats-dashboard';
 import { UserHeatmap } from '@/components/user-heatmap';
 import { StatsSyncNotice } from '@/components/stats-sync-notice';
+import { TrackingStatus } from '@/components/tracking-status';
 import { PageCourt } from '@/components/page-court';
 import { SITE_NAME } from '@/lib/site';
 
@@ -40,6 +41,7 @@ export default async function DashboardPage() {
       />
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
         <StatsSyncNotice />
+        <TrackingStatus />
         <StatsDashboard activities={rows} />
 
         <div className="mt-5 sm:mt-8">
