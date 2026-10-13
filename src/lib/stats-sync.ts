@@ -10,10 +10,17 @@
 const SYNC_KEY = 'qa-stats-sync-v1';
 export const SYNC_EVENT = 'qa-stats-sync-change';
 
+/**
+ * نطاق المشكلة: «core» = العدّادات الأساسية (الإجمالي والمدارس)،
+ * «daily» = التوزيع اليومي وحده (الإجمالي يُحفظ لكن الاتجاهات لا).
+ */
+export type SyncScope = 'core' | 'daily';
+
 export interface SyncProblem {
   /** رمز خطأ Firestore، مثل permission-denied أو unavailable. */
   code: string;
   at: number;
+  scope?: SyncScope;
 }
 
 function errorCode(e: unknown): string {
@@ -35,7 +42,7 @@ function write(value: SyncProblem | null) {
 }
 
 /** يُستدعى عند فشل كتابة/قراءة عدّاد في Firestore. */
-export function reportSyncError(e: unknown, what: string): void {
+export function reportSyncError(e: unknown, what: string, scope: SyncScope = 'core'): void {
   const code = errorCode(e);
   if (code === 'permission-denied') {
     console.error(
@@ -46,11 +53,20 @@ export function reportSyncError(e: unknown, what: string): void {
   } else {
     console.error(`[stats] تعذّر ${what} في Firestore:`, e);
   }
-  write({ code, at: Date.now() });
+  // مشكلة أساسية لا تُستبدل بمشكلة يومية أخفّ منها.
+  const cur = getSyncProblem();
+  if (scope === 'daily' && cur && (cur.scope ?? 'core') === 'core') return;
+  write({ code, at: Date.now(), scope });
 }
 
-/** يُستدعى عند نجاح كتابة عدّاد في Firestore. */
-export function reportSyncOk(): void {
+/**
+ * يُستدعى عند نجاح كتابة في Firestore. نجاح الإجمالي لا يمحو مشكلة التوزيع
+ * اليومي (تبقى ظاهرة حتى تنجح كتابة يومية)، والعكس صحيح.
+ */
+export function reportSyncOk(scope: SyncScope = 'core'): void {
+  const cur = getSyncProblem();
+  if (!cur) return;
+  if ((cur.scope ?? 'core') !== scope) return;
   write(null);
 }
 

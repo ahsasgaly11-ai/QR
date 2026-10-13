@@ -28,6 +28,10 @@ export function StatsSyncNotice() {
     title = 'الإحصاءات تعمل في وضع العرض المحلي';
     body =
       'متغيّرات Firebase غير مضبوطة في هذا النشر، لذا تُحتسب المشاهدات والتنزيلات والخريطة الحرارية في هذا المتصفّح فقط. أضِف متغيّرات NEXT_PUBLIC_FIREBASE_* في إعدادات الاستضافة ثم أعد النشر.';
+  } else if (problem?.code === 'permission-denied' && problem.scope === 'daily') {
+    title = 'القواعد المنشورة قديمة: الاتجاهات اليومية لا تُحفظ';
+    body =
+      'الإجمالي (الزوّار والمشاهدات والتنزيلات) يُحفظ ويظهر طبيعيًا، لكن قواعد Firestore المنشورة لا تعرف التوزيع اليومي الجديد، فتبقى المخطّطات ونسب التغيّر فارغة. انشر ملف firestore.rules من هذا الإصدار: firebase deploy --only firestore:rules، أو انسخ محتواه كاملًا إلى Firebase Console ← Firestore Database ← Rules ثم Publish.';
   } else if (problem?.code === 'permission-denied') {
     title = 'قواعد Firestore ترفض حفظ الإحصاءات';
     body =
