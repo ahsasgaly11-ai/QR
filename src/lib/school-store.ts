@@ -11,7 +11,7 @@
 // ---------------------------------------------------------------------------
 
 import { getDb, isFirebaseConfigured } from '@/lib/firebase';
-import { type QatarSchool } from '@/data/qatar-schools';
+import { SCHOOL_BY_ID, resolveSchoolByName, type QatarSchool } from '@/data/qatar-schools';
 import type { Activity } from '@/lib/types';
 import { emptyMetric, type SchoolMetric } from '@/lib/heatmap-shared';
 import { localDateKey, type SchoolActivityMetric } from '@/lib/heatmap-analytics';
@@ -38,12 +38,77 @@ export function getSelectedSchool(): StoredSchool | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as StoredSchool;
     // نحتفظ بالاسم والبلدية المخزّنَين حتى لو تغيّرت معرّفات القائمة في تحديث
-    // لاحق، فلا يُعاد حجب المستخدم؛ ومؤشّر «مدرستك» على الخريطة يُحلّ بأمان
-    // (يغيب إن لم يعُد المعرّف موجودًا) بدل إسقاط الاختيار كلّه.
-    return parsed?.id && parsed?.name ? parsed : null;
+    // لاحق، فلا يُعاد حجب المستخدم.
+    if (!parsed?.id || !parsed?.name) return null;
+    return migrateSelection(parsed);
   } catch {
     return null;
   }
+}
+
+/**
+ * معرّف مدرسة من قائمة سابقة لم يعد موجودًا → نجد المدرسة الحالية بالاسم
+ * المخزّن ونحدّث الاختيار، وإلا بقي اللعب يُنسب لمعرّف قديم يظهر في اللوحة
+ * «مدرسة غير معروفة» منفصلًا عن المدرسة نفسها. ننقل علامة «احتُسب» معه حتى لا
+ * يُعدّ المستخدم مرّتين.
+ */
+function migrateSelection(stored: StoredSchool): StoredSchool {
+  if (SCHOOL_BY_ID[stored.id]) return stored;
+  const hit = resolveSchoolByName(stored.name, stored.municipalityId);
+  if (!hit) return stored;
+  const next: StoredSchool = { id: hit.id, name: hit.name, municipalityId: hit.municipalityId };
+  try {
+    localStorage.setItem(SEL_KEY, JSON.stringify(next));
+    const counted = readCounted();
+    if (counted.includes(stored.id) && !counted.includes(hit.id)) {
+      counted.push(hit.id);
+      localStorage.setItem(COUNTED_KEY, JSON.stringify(counted));
+    }
+  } catch {
+    /* ignore */
+  }
+  return next;
+}
+
+/** المعرّف الحالي لمعرّف مدرسة (قديمًا كان أو حاليًا). */
+async function canonicalizer(): Promise<(id: string) => string> {
+  const { LEGACY_SCHOOL_IDS } = await import('@/data/legacy-school-ids');
+  return (id: string) => (SCHOOL_BY_ID[id] ? id : LEGACY_SCHOOL_IDS[id]?.[0] || id);
+}
+
+/** اسم المدرسة وبلديتها لمعرّف قديم لم يُطابَق بيقين (للعرض فقط). */
+export async function getLegacySchoolNames(): Promise<
+  Record<string, { name: string; municipalityId: string }>
+> {
+  const { LEGACY_SCHOOL_IDS } = await import('@/data/legacy-school-ids');
+  const out: Record<string, { name: string; municipalityId: string }> = {};
+  for (const [id, [, name, mun]] of Object.entries(LEGACY_SCHOOL_IDS)) {
+    out[id] = { name, municipalityId: mun };
+  }
+  return out;
+}
+
+function mergeMetric(a: SchoolMetric | undefined, b: SchoolMetric): SchoolMetric {
+  if (!a) return { ...b, days: { ...b.days } };
+  const days = { ...a.days };
+  for (const [d, n] of Object.entries(b.days || {})) days[d] = (days[d] || 0) + (n || 0);
+  return {
+    users: a.users + b.users,
+    plays: a.plays + b.plays,
+    downloads: a.downloads + b.downloads,
+    days,
+  };
+}
+
+/** يدمج مقاييس المعرّفات القديمة في المدرسة الحالية المطابقة. */
+async function canonicalMetrics(m: MetricMap): Promise<MetricMap> {
+  const canon = await canonicalizer().catch(() => (id: string) => id);
+  const out: MetricMap = {};
+  for (const [id, metric] of Object.entries(m)) {
+    const key = canon(id);
+    out[key] = mergeMetric(out[key], metric);
+  }
+  return out;
 }
 
 export function setSelectedSchool(school: QatarSchool): void {
@@ -333,6 +398,10 @@ export function trackSchoolDownload(activity?: Activity): void {
 
 /** يقرأ مقاييس كل المدارس (Firestore عند التفعيل، وإلا محليًا). */
 export async function getSchoolMetrics(): Promise<MetricMap> {
+  return canonicalMetrics(await readSchoolMetrics());
+}
+
+async function readSchoolMetrics(): Promise<MetricMap> {
   const local = readLocalStats();
   if (!isFirebaseConfigured) return local;
   const db = getDb();
@@ -362,6 +431,12 @@ export async function getSchoolMetrics(): Promise<MetricMap> {
 
 /** يقرأ التفصيل مدرسة × نشاط المستخدم في فلاتر الوحدة/اللعبة والزمن. */
 export async function getSchoolActivityMetrics(): Promise<SchoolActivityMetric[]> {
+  const rows = await readSchoolActivityMetrics();
+  const canon = await canonicalizer().catch(() => (id: string) => id);
+  return rows.map((r) => ({ ...r, schoolId: canon(r.schoolId) }));
+}
+
+async function readSchoolActivityMetrics(): Promise<SchoolActivityMetric[]> {
   const local = Object.values(readLocalActivityStats());
   if (!isFirebaseConfigured) return local;
   const db = getDb();

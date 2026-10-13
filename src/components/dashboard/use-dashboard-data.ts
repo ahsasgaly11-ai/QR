@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { getAllActivityStats, getSiteDaily, subscribeSiteStats } from '@/lib/stats';
-import { getSchoolMetrics } from '@/lib/school-store';
+import { getLegacySchoolNames, getSchoolMetrics } from '@/lib/school-store';
 import { lastDays, MAX_LOOKBACK_DAYS, type DailySite, type SiteTotals } from '@/lib/dashboard-metrics';
 import type { ActivityStats } from '@/lib/types';
 import type { SchoolMetric } from '@/lib/heatmap-shared';
@@ -12,9 +12,13 @@ export interface DashboardData {
   daily: DailySite;
   stats: Record<string, ActivityStats>;
   schools: Record<string, SchoolMetric>;
+  /** أسماء مدارس بمعرّفات قديمة لم تُطابَق بمدرسة حالية (للعرض). */
+  legacyNames: LegacyNames;
   /** وصلت قراءة الأنشطة والتوزيع اليومي (الإجمالي حيّ ومستقلّ). */
   loaded: boolean;
 }
+
+export type LegacyNames = Record<string, { name: string; municipalityId: string }>;
 
 const ZERO: SiteTotals = { visitors: 0, views: 0, downloads: 0 };
 
@@ -24,6 +28,7 @@ export function useDashboardData(): DashboardData {
   const [daily, setDaily] = useState<DailySite>({});
   const [stats, setStats] = useState<Record<string, ActivityStats>>({});
   const [schools, setSchools] = useState<Record<string, SchoolMetric>>({});
+  const [legacyNames, setLegacyNames] = useState<LegacyNames>({});
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -34,11 +39,13 @@ export function useDashboardData(): DashboardData {
       getAllActivityStats(),
       getSiteDaily(days[0], days[days.length - 1]),
       getSchoolMetrics().catch(() => ({}) as Record<string, SchoolMetric>),
-    ]).then(([s, d, sc]) => {
+      getLegacySchoolNames().catch(() => ({}) as LegacyNames),
+    ]).then(([s, d, sc, ln]) => {
       if (!alive) return;
       setStats(s);
       setDaily(d);
       setSchools(sc);
+      setLegacyNames(ln);
       setLoaded(true);
     });
     return () => {
@@ -47,7 +54,7 @@ export function useDashboardData(): DashboardData {
     };
   }, []);
 
-  return { totals, daily, stats, schools, loaded };
+  return { totals, daily, stats, schools, legacyNames, loaded };
 }
 
 /** هل الزائر الحالي هو المالك؟ (في وضع العرض بلا Firebase: نعم). */

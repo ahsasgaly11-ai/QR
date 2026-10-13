@@ -54,7 +54,7 @@ import { ActivityTypeBadge } from '@/components/activity-type-badge';
 import { KpiCard } from './kpi-card';
 import { TrendChart } from './lazy-trend-chart';
 import { ActivitiesTable } from './activities-table';
-import { useDashboardData, useIsOwner } from './use-dashboard-data';
+import { useDashboardData, useIsOwner, type LegacyNames } from './use-dashboard-data';
 
 type TabKey = 'overview' | 'activities' | 'schools' | 'reports';
 const TABS: { key: TabKey; label: string; icon: typeof LayoutDashboard }[] = [
@@ -100,7 +100,7 @@ function writeUrl(tab: TabKey, period: Period) {
 }
 
 export function DashboardShell({ rows: serverRows }: { rows: DashboardRow[] }) {
-  const { totals, daily, stats, schools, loaded } = useDashboardData();
+  const { totals, daily, stats, schools, legacyNames, loaded } = useDashboardData();
 
   // أنشطة «وضع العرض» محفوظة في هذا المتصفّح وحده؛ مع Firestore لا نضمّها،
   // وإلا اختلف عدد الأنشطة من مستخدم لآخر.
@@ -412,6 +412,7 @@ export function DashboardShell({ rows: serverRows }: { rows: DashboardRow[] }) {
                 />
                 <TopSchools
                   schools={schools}
+                  legacy={legacyNames}
                   loaded={loaded}
                   onMore={canSee('schools') ? () => goTab('schools') : undefined}
                 />
@@ -441,7 +442,7 @@ export function DashboardShell({ rows: serverRows }: { rows: DashboardRow[] }) {
             <LockedPanel checking={owner === null} />
           ) : (
             <>
-              <SchoolsRanking schools={schools} loaded={loaded} />
+              <SchoolsRanking schools={schools} legacy={legacyNames} loaded={loaded} />
               <UserHeatmap />
             </>
           )}
@@ -690,23 +691,40 @@ function TopActivities({
   );
 }
 
-function rankSchools(schools: Record<string, { users: number; plays: number; downloads: number }>) {
+/**
+ * اسم المدرسة للعرض: من القائمة الحالية، وإلا الاسم القديم لمعرّف من قائمة
+ * سابقة لم يُطابَق بيقين (مع وسم «قائمة سابقة»)، وإلا «مدرسة غير معروفة».
+ */
+function schoolLabel(id: string, legacy: LegacyNames) {
+  const cur = SCHOOL_BY_ID[id];
+  if (cur) return { name: cur.name, municipalityId: cur.municipalityId as string, legacy: false };
+  const old = legacy[id];
+  if (old) return { name: old.name, municipalityId: old.municipalityId, legacy: true };
+  return null;
+}
+
+function rankSchools(
+  schools: Record<string, { users: number; plays: number; downloads: number }>,
+  legacy: LegacyNames
+) {
   return Object.entries(schools)
-    .map(([id, m]) => ({ id, ...m, school: SCHOOL_BY_ID[id] }))
+    .map(([id, m]) => ({ id, ...m, school: schoolLabel(id, legacy) }))
     .filter((s) => s.users + s.plays + s.downloads > 0)
     .sort((a, b) => b.plays - a.plays || b.users - a.users);
 }
 
 function TopSchools({
   schools,
+  legacy,
   loaded,
   onMore,
 }: {
   schools: Record<string, { users: number; plays: number; downloads: number }>;
+  legacy: LegacyNames;
   loaded: boolean;
   onMore?: () => void;
 }) {
-  const top = rankSchools(schools).slice(0, 5);
+  const top = rankSchools(schools, legacy).slice(0, 5);
   return (
     <figure className="panel min-w-0 p-4 sm:p-6">
       <CardHead icon={School} title="أنشط المدارس" onMore={onMore} />
@@ -728,7 +746,8 @@ function TopSchools({
                   </span>
                   {s.school && (
                     <span className="block text-[11px] text-muted-foreground">
-                      {MUNICIPALITY_BY_ID[s.school.municipalityId]?.name}
+                      {MUNICIPALITY_BY_ID[s.school.municipalityId as keyof typeof MUNICIPALITY_BY_ID]?.name}
+                      {s.school.legacy && ' · قائمة سابقة'}
                     </span>
                   )}
                 </span>
@@ -792,13 +811,15 @@ function Insights({
 
 function SchoolsRanking({
   schools,
+  legacy,
   loaded,
 }: {
   schools: Record<string, { users: number; plays: number; downloads: number }>;
+  legacy: LegacyNames;
   loaded: boolean;
 }) {
   const [all, setAll] = useState(false);
-  const ranked = rankSchools(schools);
+  const ranked = rankSchools(schools, legacy);
   const shown = all ? ranked : ranked.slice(0, 10);
   return (
     <div className="panel mb-5 overflow-hidden">
@@ -817,7 +838,9 @@ function SchoolsRanking({
                   ['المدرسة', 'البلدية', 'المستخدمون', 'مرّات اللعب', 'التنزيلات'],
                   ranked.map((s) => [
                     s.school?.name ?? s.id,
-                    s.school ? MUNICIPALITY_BY_ID[s.school.municipalityId]?.name ?? '' : '',
+                    s.school
+                      ? MUNICIPALITY_BY_ID[s.school.municipalityId as keyof typeof MUNICIPALITY_BY_ID]?.name ?? ''
+                      : '',
                     s.users,
                     s.plays,
                     s.downloads,
@@ -856,7 +879,8 @@ function SchoolsRanking({
                       <span className="font-bold text-foreground">{s.school?.name ?? s.id}</span>
                       {s.school && (
                         <span className="block text-[11px] text-muted-foreground">
-                          {MUNICIPALITY_BY_ID[s.school.municipalityId]?.name}
+                          {MUNICIPALITY_BY_ID[s.school.municipalityId as keyof typeof MUNICIPALITY_BY_ID]?.name}
+                          {s.school.legacy && ' · قائمة سابقة'}
                         </span>
                       )}
                     </td>

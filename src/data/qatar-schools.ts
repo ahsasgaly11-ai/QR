@@ -476,3 +476,57 @@ export function searchSchools(query: string, limit = 60): QatarSchool[] {
   scored.sort((a, b) => b.score - a.score || a.s.name.localeCompare(b.s.name));
   return scored.slice(0, limit).map((x) => x.s);
 }
+
+// --- مطابقة اسم مدرسة من قائمة سابقة بمدرسة في القائمة الحالية -------------
+//  تغيّرت معرّفات المدارس مع كل تحديث للقائمة (doha-3-… ← real-… ← off-… ←
+//  gis-…/ex-…)، فبقيت متصفّحات تحفظ معرّفًا قديمًا. نطابق بالاسم فقط حين تكون
+//  النتيجة واحدة بلا لبس، ونقبل الاحتواء الجزئي فقط إن كانت الكلمات الزائدة
+//  وصفًا عامًّا (للبنين/للبنات/روضة…) لا جزءًا من اسم مدرسة أخرى.
+const NAME_EXTRA_OK = new Set([
+  'للبنين', 'للبنات', 'بنين', 'بنات', 'روضه', 'مدرسه', 'و', 'النموذجيه', 'المستقله',
+]);
+
+function nameKey(s: string): string {
+  return normalizeArabic(s).replace(/^مدرسه\s+/, '').trim();
+}
+
+function onlyGenericExtra(a: string, b: string): boolean {
+  const [short, long] = a.length <= b.length ? [a, b] : [b, a];
+  if (short.length < 8 || !long.includes(short)) return false;
+  const extra = long.replace(short, ' ').split(/\s+/).filter(Boolean);
+  return extra.length > 0 && extra.every((w) => NAME_EXTRA_OK.has(w));
+}
+
+let nameIndex: Map<string, QatarSchool[]> | null = null;
+
+/**
+ * يجد المدرسة الحالية المطابقة لاسم (وبلدية اختيارية) من قائمة سابقة، أو null
+ * إن لم تُعرف بيقين. الترتيب: تطابق تام في البلدية نفسها ← تطابق تام في قطر
+ * كلّها ← احتواء بكلمات عامّة في البلدية ← احتواء بكلمات عامّة في قطر كلّها.
+ */
+export function resolveSchoolByName(name: string, municipalityId?: string): QatarSchool | null {
+  const key = nameKey(name);
+  if (!key) return null;
+  if (!nameIndex) {
+    nameIndex = new Map();
+    for (const s of QATAR_SCHOOLS) {
+      const k = nameKey(s.name);
+      nameIndex.set(k, [...(nameIndex.get(k) ?? []), s]);
+    }
+  }
+  const unique = (list: QatarSchool[]) => (list.length === 1 ? list[0] : null);
+  const exact = nameIndex.get(key) ?? [];
+  const inMun = (l: QatarSchool[]) => l.filter((s) => s.municipalityId === municipalityId);
+  if (municipalityId) {
+    const hit = unique(inMun(exact));
+    if (hit) return hit;
+  }
+  const anyExact = unique(exact);
+  if (anyExact) return anyExact;
+  const partial = QATAR_SCHOOLS.filter((s) => onlyGenericExtra(key, nameKey(s.name)));
+  if (municipalityId) {
+    const hit = unique(inMun(partial));
+    if (hit) return hit;
+  }
+  return unique(partial);
+}
