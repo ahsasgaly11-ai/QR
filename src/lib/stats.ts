@@ -1,6 +1,7 @@
 import { getDb, isFirebaseConfigured } from '@/lib/firebase';
 import type { ActivityStats } from '@/lib/types';
 import { reportSyncError, reportSyncOk } from '@/lib/stats-sync';
+import { localDateKey } from '@/lib/heatmap-analytics';
 
 // ---------------------------------------------------------------------------
 // Stats service — visitors, views, downloads.
@@ -11,7 +12,10 @@ import { reportSyncError, reportSyncOk } from '@/lib/stats-sync';
 // the same numbers, and write failures are surfaced via stats-sync.
 //   Firestore layout:
 //     stats/site               { visitors, views, downloads }
-//     activityStats/{id}       { views, downloads }
+//     activityStats/{id}       { views, downloads, viewsByDay, downloadsByDay }
+//     siteDaily/{YYYY-MM-DD}   { visitors, views, downloads }  (لكل يوم)
+//   التوزيع اليومي يُكتب في عملية مستقلّة بعد العدّاد التراكمي، فلا يتوقّف
+//   الإجمالي إن تأخّر نشر القواعد الجديدة الخاصّة به.
 // ---------------------------------------------------------------------------
 
 const LS_KEY = 'qa-curriculum-stats-v1';
@@ -154,6 +158,28 @@ function writeSharedActivityCache(patch: Record<string, ActivityStats>, replace 
 interface LocalStore {
   site: { visitors: number; views: number; downloads: number };
   activities: Record<string, ActivityStats>;
+  /** التوزيع اليومي لإجمالي الموقع في وضع العرض. */
+  daily?: Record<string, SiteStats>;
+}
+
+export type DailySiteStats = Record<string, SiteStats>;
+
+function bumpLocalDaily(local: LocalStore, field: keyof SiteStats, day: string) {
+  local.daily ??= {};
+  const d = (local.daily[day] ??= { visitors: 0, views: 0, downloads: 0 });
+  d[field] += 1;
+}
+
+/** يزيد عدّاد اليوم في siteDaily/{day} — مستقلّ عن العدّاد التراكمي. */
+async function bumpSiteDaily(field: keyof SiteStats, day: string): Promise<void> {
+  const db = getDb();
+  if (!db) return;
+  try {
+    const { doc, setDoc, increment } = await import('firebase/firestore');
+    await setDoc(doc(db, 'siteDaily', day), { [field]: increment(1) }, { merge: true });
+  } catch (e) {
+    reportSyncError(e, 'حفظ التوزيع اليومي للإحصاءات');
+  }
 }
 
 function readLocal(): LocalStore {
@@ -196,8 +222,10 @@ export function trackVisit(): Promise<void> {
 }
 
 async function recordVisit(): Promise<void> {
+  const day = localDateKey();
   const local = readLocal();
   local.site.visitors += 1;
+  bumpLocalDaily(local, 'visitors', day);
   writeLocal(local);
 
   if (!isFirebaseConfigured) return;
@@ -213,7 +241,9 @@ async function recordVisit(): Promise<void> {
     reportSyncOk();
   } catch (e) {
     reportSyncError(e, 'حفظ عدّاد الزوّار');
+    return;
   }
+  await bumpSiteDaily('visitors', day);
 }
 
 /** ينتظر احتساب زيارة هذا الدخول (إن بدأت) حتى تشمل القراءةُ الزائرَ الحالي. */
@@ -232,10 +262,15 @@ async function bumpActivity(
   activityId: string,
   field: 'views' | 'downloads'
 ): Promise<void> {
+  const day = localDateKey();
+  const dayField = field === 'views' ? 'viewsByDay' : 'downloadsByDay';
   const local = readLocal();
   const a = (local.activities[activityId] ??= { views: 0, downloads: 0 });
   a[field] += 1;
+  const byDay = (a[dayField] ??= {});
+  byDay[day] = (byDay[day] || 0) + 1;
   local.site[field] += 1;
+  bumpLocalDaily(local, field, day);
   writeLocal(local);
   if (!isFirebaseConfigured) notifyLocalActivityStats();
 
@@ -253,6 +288,81 @@ async function bumpActivity(
     reportSyncOk();
   } catch (e) {
     reportSyncError(e, field === 'views' ? 'حفظ عدّاد المشاهدات' : 'حفظ عدّاد التنزيلات');
+    return;
+  }
+
+  // التوزيع اليومي: كتابتان مستقلّتان بعد نجاح الإجمالي.
+  try {
+    const { doc, setDoc, increment } = await import('firebase/firestore');
+    await setDoc(
+      doc(db, 'activityStats', activityId),
+      { [dayField]: { [day]: increment(1) } },
+      { merge: true }
+    );
+  } catch (e) {
+    reportSyncError(e, 'حفظ التوزيع اليومي للنشاط');
+  }
+  await bumpSiteDaily(field, day);
+}
+
+/** يحوّل وثيقة activityStats إلى ActivityStats مع الخرائط اليومية. */
+function toActivityStats(data: Record<string, unknown>): ActivityStats {
+  const map = (v: unknown): Record<string, number> => {
+    if (!v || typeof v !== 'object') return {};
+    const out: Record<string, number> = {};
+    for (const [k, n] of Object.entries(v as Record<string, unknown>)) {
+      const x = Number(n);
+      if (x > 0) out[k] = x;
+    }
+    return out;
+  };
+  return {
+    views: Number(data.views) || 0,
+    downloads: Number(data.downloads) || 0,
+    viewsByDay: map(data.viewsByDay),
+    downloadsByDay: map(data.downloadsByDay),
+  };
+}
+
+/**
+ * التوزيع اليومي لإجمالي الموقع بين يومين (شاملين، YYYY-MM-DD).
+ * يُعيد خريطة بالأيام التي لها بيانات فقط؛ الأيام الغائبة = صفر.
+ */
+export async function getSiteDaily(from: string, to: string): Promise<DailySiteStats> {
+  if (typeof window === 'undefined') return {};
+  if (!isFirebaseConfigured) {
+    const all = readLocal().daily ?? {};
+    return Object.fromEntries(Object.entries(all).filter(([d]) => d >= from && d <= to));
+  }
+  const db = getDb();
+  if (!db) return {};
+  try {
+    const { collection, getDocs, query, where, documentId } = await import(
+      'firebase/firestore'
+    );
+    const snap = await withTimeout(
+      getDocs(
+        query(
+          collection(db, 'siteDaily'),
+          where(documentId(), '>=', from),
+          where(documentId(), '<=', to)
+        )
+      ),
+      READ_TIMEOUT_MS
+    );
+    const out: DailySiteStats = {};
+    snap.docs.forEach((d) => {
+      const x = d.data() as Partial<SiteStats>;
+      out[d.id] = {
+        visitors: Number(x.visitors) || 0,
+        views: Number(x.views) || 0,
+        downloads: Number(x.downloads) || 0,
+      };
+    });
+    return out;
+  } catch (e) {
+    reportSyncError(e, 'قراءة التوزيع اليومي للإحصاءات');
+    return {};
   }
 }
 
@@ -402,8 +512,7 @@ export async function getActivityStats(id: string): Promise<ActivityStats> {
       getDoc(doc(db, 'activityStats', id)),
       READ_TIMEOUT_MS
     );
-    const d = (snap.exists() ? snap.data() : {}) as Partial<ActivityStats>;
-    const out = { views: d.views ?? 0, downloads: d.downloads ?? 0 };
+    const out = toActivityStats(snap.exists() ? snap.data() : {});
     if (!snap.metadata.fromCache) writeSharedActivityCache({ [id]: out });
     return out;
   } catch (e) {
@@ -426,8 +535,7 @@ export async function getAllActivityStats(): Promise<
     );
     const out: Record<string, ActivityStats> = {};
     snap.docs.forEach((d) => {
-      const data = d.data() as Partial<ActivityStats>;
-      out[d.id] = { views: data.views ?? 0, downloads: data.downloads ?? 0 };
+      out[d.id] = toActivityStats(d.data());
     });
     if (!snap.metadata.fromCache) writeSharedActivityCache(out, true);
     return out;
@@ -495,8 +603,7 @@ async function startActivityFeed(): Promise<void> {
         if (snap.metadata.hasPendingWrites || snap.metadata.fromCache) return;
         const out: Record<string, ActivityStats> = {};
         snap.docs.forEach((d) => {
-          const data = d.data() as Partial<ActivityStats>;
-          out[d.id] = { views: data.views ?? 0, downloads: data.downloads ?? 0 };
+          out[d.id] = toActivityStats(d.data());
         });
         activityLatest = out;
         writeSharedActivityCache(out, true);

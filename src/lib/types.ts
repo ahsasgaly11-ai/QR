@@ -107,4 +107,8 @@ export interface Subject {
 export interface ActivityStats {
   views: number;
   downloads: number;
+  /** توزيع يومي للمشاهدات: { 'YYYY-MM-DD': n } (يبدأ من يوم تفعيله). */
+  viewsByDay?: Record<string, number>;
+  /** توزيع يومي للتنزيلات: { 'YYYY-MM-DD': n }. */
+  downloadsByDay?: Record<string, number>;
 }
