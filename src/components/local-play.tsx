@@ -7,6 +7,8 @@ import type { Activity } from '@/lib/types';
 import { getLocalRecord } from '@/lib/local-store';
 import { ActivityPlayer } from './activity-player';
 import { PlayHeader } from './play-header';
+import { PlayPageMode } from './play-page-mode';
+import { IosDocumentsNotice } from './ios-documents-notice';
 import { OryxMascot } from './oryx-mascot';
 import { BackButton } from './back-button';
 
@@ -101,11 +103,12 @@ export function LocalPlay({ activityId }: { activityId: string }) {
 
   return (
     <div className="short-tight mx-auto max-w-6xl px-4 py-10 sm:px-6">
+      <PlayPageMode />
       <div className="mb-5 flex items-center gap-3">
         <BackButton fallback={`/subject/${activity.subjectId}`} />
       </div>
 
-      <nav className="short-hide mb-5 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+      <nav className="play-crumbs short-hide mb-5 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         <Link href="/" className="flex items-center gap-1 hover:text-[color:var(--maroon)]">
           <Home className="h-4 w-4" /> الرئيسية
         </Link>
@@ -133,6 +136,7 @@ export function LocalPlay({ activityId }: { activityId: string }) {
       )}
 
       <ActivityPlayer activity={activity} localHtml={html} />
+      <IosDocumentsNotice variant="inline" />
     </div>
   );
 }

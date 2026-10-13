@@ -20,6 +20,7 @@ import { SchoolGate } from './school-gate';
 import { SignLanguageButton, SignLanguagePanel } from './sign-language';
 import { resolveSignLanguageSrc, isSignLanguageOn, SIGN_LANG_ATTR } from '@/lib/sign-language';
 import { cn } from '@/lib/utils';
+import { detectAppleDevice, shareHtmlFile, announceIosDownload } from '@/lib/apple-device';
 import {
   htmlToBlobUrl,
   htmlToFrameUrl,
@@ -70,14 +71,20 @@ function PlayerInner({ activity, localHtml, next }: PlayerProps) {
   const [fetchFailed, setFetchFailed] = useState(false);
   // الأنشطة المرفوعة تُخزَّن مقسّمة داخل Firestore وتُجمَّع هنا قبل التشغيل
   const remote = !localHtml && activity.stored === 'firestore';
+  // نصّ ملف اللعبة كما سيُنزَّل — يلزم على iPhone/iPad لعرضه في قائمة المشاركة
+  // (فتح مباشر في تطبيق Documents) بدل حفظه صامتًا في «الملفات».
+  const htmlRef = useRef<string | null>(null);
+  const [appleDevice] = useState(() => detectAppleDevice());
 
   useEffect(() => {
     let revoke: string | null = null;
     let revokeFrame: string | null = null;
     let revokeOpen: string | null = null;
     let alive = true;
+    htmlRef.current = null;
 
     if (localHtml) {
+      htmlRef.current = localHtml;
       revoke = htmlToBlobUrl(localHtml);
       revokeFrame = htmlToFrameUrl(localHtml);
       revokeOpen = htmlToSandboxPageUrl(localHtml, activity.title);
@@ -91,6 +98,7 @@ function PlayerInner({ activity, localHtml, next }: PlayerProps) {
         const html = await loadGameHtml(activity.id);
         if (!alive) return;
         if (!html) return setFetchFailed(true);
+        htmlRef.current = html;
         revoke = htmlToBlobUrl(html);
         revokeFrame = htmlToFrameUrl(html);
         revokeOpen = htmlToSandboxPageUrl(html, activity.title);
@@ -154,14 +162,66 @@ function PlayerInner({ activity, localHtml, next }: PlayerProps) {
   }, [activity.id]);
 
 
+  // على iPhone/iPad: الملفات المرفقة بالموقع تُقرأ مسبقًا حتى تكون جاهزة لحظة
+  // الضغط على «تحميل» (قائمة المشاركة تُفتح فقط ضمن مهلة نقرة المستخدم).
+  useEffect(() => {
+    if (!appleDevice || uploaded || activity.external) return;
+    let alive = true;
+    fetch(fileUrl(activity))
+      .then((r) => (r.ok ? r.text() : null))
+      .then((t) => {
+        if (alive && t) htmlRef.current = t;
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [appleDevice, uploaded, activity]);
+
+  const countDownload = async () => {
+    trackSchoolDownload(activity); // ينسب التحميل لمدرسة المستخدم المختارة
+    await trackDownload(activity.id);
+  };
+
+  const fileName = activity.file?.split('/').pop() || 'activity.html';
+
+  /** تنزيل تقليدي من نصّ الملف (بديل حين لا تتوفّر قائمة المشاركة). */
+  const saveHtml = (html: string) => {
+    const u = htmlToBlobUrl(html);
+    const a = document.createElement('a');
+    a.href = u;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(u), 2000);
+  };
+
   const onDownload = async (e: React.MouseEvent<HTMLAnchorElement>) => {
     // احتياط: قد يُوقف المشرف التنزيل والصفحة مفتوحة
     if (!downloadsAllowedNow(activity)) {
       e.preventDefault();
       return;
     }
-    await trackDownload(activity.id);
-    trackSchoolDownload(activity); // ينسب التحميل لمدرسة المستخدم المختارة
+    if (appleDevice) {
+      // iOS: قائمة المشاركة ومعها الملف → «Documents» أو «حفظ في الملفات».
+      // فتح الملف من «الملفات» لا يشغّل اللعبة، لذا يظهر بعدها إرشاد الفتح.
+      const html =
+        htmlRef.current ??
+        (activity.external ? null : await fetch(url).then((r) => (r.ok ? r.text() : null)).catch(() => null));
+      if (html) {
+        e.preventDefault();
+        const outcome = await shareHtmlFile(html, fileName, activity.title);
+        if (outcome === 'cancelled') return;
+        if (outcome === 'unsupported') saveHtml(html);
+        announceIosDownload(activity.title);
+        await countDownload();
+        return;
+      }
+      // تعذّرت قراءة الملف: يُترك للرابط نفسه، مع الإرشاد.
+      announceIosDownload(activity.title);
+    }
+    await countDownload();
   };
 
   // على الشاشات القصيرة نقيس المساحة المتبقية فعليًا ونملأها
@@ -340,8 +400,26 @@ function PlayerInner({ activity, localHtml, next }: PlayerProps) {
   }, [immersive]);
   useEffect(syncFrameFullscreen, [syncFrameFullscreen]);
 
+  // على الجوّال طوليًا تبدأ الصفحة بالعنوان والمسرح أسفله خارج الشاشة؛ عند
+  // اكتمال تحميل اللعبة (وقبل أن يمرّر الزائر) نُحضر المسرح إلى أعلى الشاشة.
+  const scrolledToStageRef = useRef(false);
+  const revealStage = useCallback(() => {
+    if (scrolledToStageRef.current || immersiveRef.current) return;
+    scrolledToStageRef.current = true;
+    const el = wrapRef.current;
+    if (!el) return;
+    const phone = window.matchMedia('(max-width: 640px) and (pointer: coarse)').matches;
+    if (!phone || window.scrollY > 40) return;
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    try {
+      el.scrollIntoView({ block: 'start', behavior: reduce ? 'auto' : 'smooth' });
+    } catch {
+      /* لا شيء */
+    }
+  }, []);
+
   return (
-    <div>
+    <div className="player-shell">
       {/* رفيق لغة الإشارة: على الجوّال ضمن التدفّق (فوق اللعبة، بلا تغطية)،
           وعلى الشاشات الكبيرة لوحة عائمة. لا يظهر أثناء ملء الشاشة. */}
       {!immersive && (
@@ -362,7 +440,7 @@ function PlayerInner({ activity, localHtml, next }: PlayerProps) {
         className={cn(
           'vt-game-stage relative overflow-hidden bg-white',
           immersive
-            ? 'fixed inset-0 z-[100] rounded-none border-0'
+            ? 'player-immersive fixed inset-0 z-[100] rounded-none border-0'
             : 'player-frame'
         )}
         style={immersive ? { overscrollBehavior: 'contain' } : undefined}
@@ -372,7 +450,7 @@ function PlayerInner({ activity, localHtml, next }: PlayerProps) {
         {immersive && (
           <button
             onClick={() => exitImmersive()}
-            className="absolute left-3 top-3 z-20 flex items-center gap-1.5 rounded-xl bg-[color:var(--maroon)]/90 px-3 py-2 text-sm font-black text-white shadow-lg backdrop-blur transition hover:bg-[color:var(--maroon)]"
+            className="player-exit absolute left-3 top-3 z-20 flex items-center gap-1.5 rounded-xl bg-[color:var(--maroon)]/90 px-3 py-2 text-sm font-black text-white shadow-lg backdrop-blur transition hover:bg-[color:var(--maroon)]"
             aria-label="إنهاء ملء الشاشة"
           >
             <Minimize2 className="h-4 w-4" /> خروج
@@ -415,6 +493,7 @@ function PlayerInner({ activity, localHtml, next }: PlayerProps) {
             onLoad={() => {
               setLoading(false);
               syncFrameFullscreen();
+              revealStage();
             }}
           />
         ) : (
@@ -464,10 +543,10 @@ function PlayerInner({ activity, localHtml, next }: PlayerProps) {
           {canDownload && (
             <a
               href={url}
-              download={activity.file || 'activity.html'}
+              download={fileName}
               onClick={onDownload}
               className="tool-btn"
-              title="تحميل للعمل دون إنترنت"
+              title={appleDevice ? 'تحميل — ثم افتحها من تطبيق Documents' : 'تحميل للعمل دون إنترنت'}
             >
               <Download className="h-4 w-4" aria-hidden />
               <span className="hidden sm:inline">تحميل</span>

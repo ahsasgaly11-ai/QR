@@ -96,7 +96,7 @@ export function FloatingMascot() {
   return (
     <aside
       aria-label="المها تشجّعك"
-      className="short-hide pointer-events-none fixed bottom-[calc(var(--ticker-h)+0.75rem)] left-3 z-40 hidden sm:block"
+      className="floating-mascot short-hide pointer-events-none fixed bottom-[calc(var(--ticker-h)+0.75rem)] left-3 z-40 hidden sm:block"
     >
       <MascotCheer
         side="right"

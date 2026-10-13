@@ -13,6 +13,7 @@ import { getLocalRecord, htmlToBlobUrl, dropCachedPreview } from '@/lib/local-st
 import { ActivityPreview } from './activity-preview';
 import { trackSchoolDownload, getSelectedSchool } from '@/lib/school-store';
 import { useActivityDownloadEnabled, downloadsAllowedNow } from '@/lib/site-settings';
+import { detectAppleDevice, shareHtmlFile, announceIosDownload } from '@/lib/apple-device';
 
 // فعل زرّ التشغيل بحسب نوع النشاط
 const PLAY_LABEL: Record<ActivityType, string> = {
@@ -125,23 +126,42 @@ export function ActivityCard({
       router.push(`/play/${activity.id}`);
       return;
     }
+    const apple = detectAppleDevice();
+    let html: string | null = null;
     // الأنشطة المحفوظة محليًا (وضع العرض) تُنزَّل من مخزن المتصفّح
     if (activity.local) {
       e.preventDefault();
       const rec = await getLocalRecord(activity.id);
       if (!rec?.html) return; // لم يُنزَّل شيء — لا نحتسبه
-      saveHtml(rec.html);
+      html = rec.html;
     } else if (activity.stored === 'firestore') {
       // الملف مقسّم داخل Firestore — يُجمَّع ثم يُنزَّل
       e.preventDefault();
       const { loadGameHtml } = await import('@/lib/game-store');
-      const html = await loadGameHtml(activity.id).catch(() => null);
+      html = await loadGameHtml(activity.id).catch(() => null);
       if (!html) {
         alert('تعذّر تنزيل الملف. تحقّق من اتصالك ثم أعد المحاولة.');
         return;
       }
-      saveHtml(html);
+    } else if (apple && !activity.external) {
+      // iPhone/iPad: نقرأ الملف المرفق بالموقع لعرضه في قائمة المشاركة
+      html = await fetch(fileUrl(activity))
+        .then((r) => (r.ok ? r.text() : null))
+        .catch(() => null);
+      if (html) e.preventDefault();
     }
+
+    if (html) {
+      if (apple) {
+        // iOS: قائمة المشاركة ومعها الملف → فتح مباشر في Documents أو حفظ في «الملفات»
+        const outcome = await shareHtmlFile(html, activity.file || 'activity.html', activity.title);
+        if (outcome === 'cancelled') return;
+        if (outcome === 'unsupported') saveHtml(html);
+      } else {
+        saveHtml(html);
+      }
+    }
+    if (apple) announceIosDownload(activity.title);
     trackSchoolDownload(activity); // ينسب التحميل لمدرسة المستخدم المختارة
     await trackDownload(activity.id);
   };

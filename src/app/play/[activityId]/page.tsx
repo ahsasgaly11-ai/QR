@@ -11,6 +11,8 @@ import {
 import { SEED_ACTIVITIES } from '@/data/curriculum';
 import { ActivityPlayer } from '@/components/activity-player';
 import { PlayHeader } from '@/components/play-header';
+import { PlayPageMode } from '@/components/play-page-mode';
+import { IosDocumentsNotice } from '@/components/ios-documents-notice';
 import { HeritageIcon, ACTIVITY_ICON } from '@/components/heritage-icons';
 import { BackButton } from '@/components/back-button';
 import { SITE_NAME } from '@/lib/site';
@@ -77,6 +79,7 @@ export default async function PlayPage({
 
   return (
     <div className="short-tight mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:py-8">
+      <PlayPageMode />
       <div className="short-hide mb-5 flex flex-wrap items-center gap-x-4 gap-y-2">
         <BackButton
           fallback={
@@ -87,7 +90,7 @@ export default async function PlayPage({
                 : `/subject/${activity.subjectId}`
           }
         />
-        <nav aria-label="مسار الصفحة" className="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">
+        <nav aria-label="مسار الصفحة" className="play-crumbs flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">
           <Link href="/" className="hover:text-[color:var(--maroon)]">الرئيسية</Link>
           <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
           {activity.smartReinforcement ? (
@@ -122,6 +125,9 @@ export default async function PlayPage({
         activity={activity}
         next={nextActivity ? { href: `/play/${nextActivity.id}`, title: nextActivity.title } : undefined}
       />
+
+      {/* لأصحاب iPhone/iPad: توصية بتطبيق Documents لتشغيل الألعاب المحمَّلة */}
+      <IosDocumentsNotice variant="inline" />
 
       <div className="play-below short-hide">
         <section>
