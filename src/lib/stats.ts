@@ -1,6 +1,7 @@
 import { getDb, isFirebaseConfigured } from '@/lib/firebase';
 import type { ActivityStats } from '@/lib/types';
 import { reportSyncError, reportSyncOk } from '@/lib/stats-sync';
+import { localDateKey } from '@/lib/heatmap-analytics';
 
 // ---------------------------------------------------------------------------
 // Stats service — visitors, views, downloads.
@@ -11,7 +12,10 @@ import { reportSyncError, reportSyncOk } from '@/lib/stats-sync';
 // the same numbers, and write failures are surfaced via stats-sync.
 //   Firestore layout:
 //     stats/site               { visitors, views, downloads }
-//     activityStats/{id}       { views, downloads }
+//     activityStats/{id}       { views, downloads, viewsByDay, downloadsByDay }
+//     siteDaily/{YYYY-MM-DD}   { visitors, views, downloads }  (لكل يوم)
+//   التوزيع اليومي يُكتب في عملية مستقلّة بعد العدّاد التراكمي، فلا يتوقّف
+//   الإجمالي إن تأخّر نشر القواعد الجديدة الخاصّة به.
 // ---------------------------------------------------------------------------
 
 const LS_KEY = 'qa-curriculum-stats-v1';
@@ -47,6 +51,59 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
       }
     );
   });
+}
+
+// --- حالة الاتصال بمصدر الإحصاءات ------------------------------------------
+//  الأرقام وحدها لا تكفي: «0» قد يعني «لا بيانات بعد» أو «لم يصل ردّ من
+//  الخادم» أو «رفضت القواعد الكتابة». هنا نسجّل ما حصل فعلًا في آخر اشتراك
+//  حيّ ليعرضه مكوّن حالة التتبّع في لوحة الإحصاءات بدل أصفار صامتة.
+export type FeedStatus =
+  /** وضع العرض: العدّادات في هذا المتصفّح فقط. */
+  | 'local'
+  /** لم يبدأ الاشتراك بعد أو ينتظر أوّل لقطة مؤكَّدة من الخادم. */
+  | 'connecting'
+  /** وصلت لقطة مؤكَّدة من الخادم (قد تكون أصفارًا حقيقية). */
+  | 'live'
+  /** مضت المهلة دون أي لقطة مؤكَّدة — شبكة محجوبة أو بطيئة. */
+  | 'timeout'
+  /** أبلغ Firestore عن خطأ (مثل permission-denied). */
+  | 'error';
+
+export interface FeedState {
+  status: FeedStatus;
+  /** طابع آخر لقطة مؤكَّدة من الخادم (ms). */
+  lastServerAt: number | null;
+  /** رمز الخطأ عند status === 'error'. */
+  code?: string;
+}
+
+const FEED_EVENT = 'qa-stats-feed-state';
+let feedState: FeedState = {
+  status: isFirebaseConfigured ? 'connecting' : 'local',
+  lastServerAt: null,
+};
+
+function setFeedState(patch: Partial<FeedState>) {
+  feedState = { ...feedState, ...patch };
+  if (typeof window === 'undefined') return;
+  try {
+    window.dispatchEvent(new Event(FEED_EVENT));
+  } catch {
+    /* ignore */
+  }
+}
+
+/** الحالة الحالية لاتصال الإحصاءات الحيّة. */
+export function getFeedState(): FeedState {
+  return feedState;
+}
+
+/** اشتراك في تغيّر حالة الاتصال؛ يُعيد دالة إلغاء الاشتراك. */
+export function onFeedState(cb: (s: FeedState) => void): () => void {
+  if (typeof window === 'undefined') return () => {};
+  const h = () => cb(feedState);
+  window.addEventListener(FEED_EVENT, h);
+  return () => window.removeEventListener(FEED_EVENT, h);
 }
 
 /** آخر أرقام مشتركة معروفة في هذا المتصفّح (أو null). */
@@ -101,6 +158,28 @@ function writeSharedActivityCache(patch: Record<string, ActivityStats>, replace 
 interface LocalStore {
   site: { visitors: number; views: number; downloads: number };
   activities: Record<string, ActivityStats>;
+  /** التوزيع اليومي لإجمالي الموقع في وضع العرض. */
+  daily?: Record<string, SiteStats>;
+}
+
+export type DailySiteStats = Record<string, SiteStats>;
+
+function bumpLocalDaily(local: LocalStore, field: keyof SiteStats, day: string) {
+  local.daily ??= {};
+  const d = (local.daily[day] ??= { visitors: 0, views: 0, downloads: 0 });
+  d[field] += 1;
+}
+
+/** يزيد عدّاد اليوم في siteDaily/{day} — مستقلّ عن العدّاد التراكمي. */
+async function bumpSiteDaily(field: keyof SiteStats, day: string): Promise<void> {
+  const db = getDb();
+  if (!db) return;
+  try {
+    const { doc, setDoc, increment } = await import('firebase/firestore');
+    await setDoc(doc(db, 'siteDaily', day), { [field]: increment(1) }, { merge: true });
+  } catch (e) {
+    reportSyncError(e, 'حفظ التوزيع اليومي للإحصاءات');
+  }
 }
 
 function readLocal(): LocalStore {
@@ -143,8 +222,10 @@ export function trackVisit(): Promise<void> {
 }
 
 async function recordVisit(): Promise<void> {
+  const day = localDateKey();
   const local = readLocal();
   local.site.visitors += 1;
+  bumpLocalDaily(local, 'visitors', day);
   writeLocal(local);
 
   if (!isFirebaseConfigured) return;
@@ -160,7 +241,9 @@ async function recordVisit(): Promise<void> {
     reportSyncOk();
   } catch (e) {
     reportSyncError(e, 'حفظ عدّاد الزوّار');
+    return;
   }
+  await bumpSiteDaily('visitors', day);
 }
 
 /** ينتظر احتساب زيارة هذا الدخول (إن بدأت) حتى تشمل القراءةُ الزائرَ الحالي. */
@@ -179,10 +262,15 @@ async function bumpActivity(
   activityId: string,
   field: 'views' | 'downloads'
 ): Promise<void> {
+  const day = localDateKey();
+  const dayField = field === 'views' ? 'viewsByDay' : 'downloadsByDay';
   const local = readLocal();
   const a = (local.activities[activityId] ??= { views: 0, downloads: 0 });
   a[field] += 1;
+  const byDay = (a[dayField] ??= {});
+  byDay[day] = (byDay[day] || 0) + 1;
   local.site[field] += 1;
+  bumpLocalDaily(local, field, day);
   writeLocal(local);
   if (!isFirebaseConfigured) notifyLocalActivityStats();
 
@@ -200,6 +288,81 @@ async function bumpActivity(
     reportSyncOk();
   } catch (e) {
     reportSyncError(e, field === 'views' ? 'حفظ عدّاد المشاهدات' : 'حفظ عدّاد التنزيلات');
+    return;
+  }
+
+  // التوزيع اليومي: كتابتان مستقلّتان بعد نجاح الإجمالي.
+  try {
+    const { doc, setDoc, increment } = await import('firebase/firestore');
+    await setDoc(
+      doc(db, 'activityStats', activityId),
+      { [dayField]: { [day]: increment(1) } },
+      { merge: true }
+    );
+  } catch (e) {
+    reportSyncError(e, 'حفظ التوزيع اليومي للنشاط');
+  }
+  await bumpSiteDaily(field, day);
+}
+
+/** يحوّل وثيقة activityStats إلى ActivityStats مع الخرائط اليومية. */
+function toActivityStats(data: Record<string, unknown>): ActivityStats {
+  const map = (v: unknown): Record<string, number> => {
+    if (!v || typeof v !== 'object') return {};
+    const out: Record<string, number> = {};
+    for (const [k, n] of Object.entries(v as Record<string, unknown>)) {
+      const x = Number(n);
+      if (x > 0) out[k] = x;
+    }
+    return out;
+  };
+  return {
+    views: Number(data.views) || 0,
+    downloads: Number(data.downloads) || 0,
+    viewsByDay: map(data.viewsByDay),
+    downloadsByDay: map(data.downloadsByDay),
+  };
+}
+
+/**
+ * التوزيع اليومي لإجمالي الموقع بين يومين (شاملين، YYYY-MM-DD).
+ * يُعيد خريطة بالأيام التي لها بيانات فقط؛ الأيام الغائبة = صفر.
+ */
+export async function getSiteDaily(from: string, to: string): Promise<DailySiteStats> {
+  if (typeof window === 'undefined') return {};
+  if (!isFirebaseConfigured) {
+    const all = readLocal().daily ?? {};
+    return Object.fromEntries(Object.entries(all).filter(([d]) => d >= from && d <= to));
+  }
+  const db = getDb();
+  if (!db) return {};
+  try {
+    const { collection, getDocs, query, where, documentId } = await import(
+      'firebase/firestore'
+    );
+    const snap = await withTimeout(
+      getDocs(
+        query(
+          collection(db, 'siteDaily'),
+          where(documentId(), '>=', from),
+          where(documentId(), '<=', to)
+        )
+      ),
+      READ_TIMEOUT_MS
+    );
+    const out: DailySiteStats = {};
+    snap.docs.forEach((d) => {
+      const x = d.data() as Partial<SiteStats>;
+      out[d.id] = {
+        visitors: Number(x.visitors) || 0,
+        views: Number(x.views) || 0,
+        downloads: Number(x.downloads) || 0,
+      };
+    });
+    return out;
+  } catch (e) {
+    reportSyncError(e, 'قراءة التوزيع اليومي للإحصاءات');
+    return {};
   }
 }
 
@@ -268,22 +431,41 @@ export function subscribeSiteStats(cb: (s: SiteStats) => void): () => void {
   let alive = true;
   let unsub: (() => void) | null = null;
 
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  const clearFeedTimeout = () => {
+    if (timeoutId) clearTimeout(timeoutId);
+    timeoutId = null;
+  };
+
   (async () => {
     await settleVisit();
     if (!alive) return;
     if (!isFirebaseConfigured) {
+      setFeedState({ status: 'local' });
       cb(readLocal().site);
       return;
     }
     const db = getDb();
-    if (!db) return;
+    if (!db) {
+      setFeedState({ status: 'error', code: 'init-failed' });
+      return;
+    }
+    if (feedState.status !== 'live') setFeedState({ status: 'connecting' });
     const { doc, onSnapshot } = await import('firebase/firestore');
     if (!alive) return;
+    // وعود Firestore قد لا تُحسم على الشبكات المحجوبة: إن لم تصل لقطة مؤكَّدة
+    // خلال المهلة نعلن «انتهاء المهلة» ليظهر السبب بدل أصفار صامتة، مع
+    // إبقاء المستمع حيًّا فتتحوّل الحالة إلى «متّصل» حين يصل الردّ.
+    timeoutId = setTimeout(() => {
+      timeoutId = null;
+      if (alive && feedState.status === 'connecting') setFeedState({ status: 'timeout' });
+    }, READ_TIMEOUT_MS);
     unsub = onSnapshot(
       doc(db, 'stats', 'site'),
       { includeMetadataChanges: true },
       (snap) => {
         if (snap.metadata.hasPendingWrites || snap.metadata.fromCache) return;
+        clearFeedTimeout();
         const d = (snap.exists() ? snap.data() : {}) as Partial<SiteStats>;
         const out = {
           visitors: d.visitors ?? 0,
@@ -291,16 +473,31 @@ export function subscribeSiteStats(cb: (s: SiteStats) => void): () => void {
           downloads: d.downloads ?? 0,
         };
         writeCachedSiteStats(out);
+        setFeedState({ status: 'live', lastServerAt: Date.now(), code: undefined });
         cb(out);
       },
-      (e) => reportSyncError(e, 'قراءة إحصاءات الموقع')
+      (e) => {
+        clearFeedTimeout();
+        setFeedState({ status: 'error', code: errorCodeOf(e) });
+        reportSyncError(e, 'قراءة إحصاءات الموقع');
+      }
     );
-  })().catch((e) => reportSyncError(e, 'قراءة إحصاءات الموقع'));
+  })().catch((e) => {
+    clearFeedTimeout();
+    setFeedState({ status: 'error', code: errorCodeOf(e) });
+    reportSyncError(e, 'قراءة إحصاءات الموقع');
+  });
 
   return () => {
     alive = false;
+    clearFeedTimeout();
     unsub?.();
   };
+}
+
+function errorCodeOf(e: unknown): string {
+  const code = (e as { code?: unknown })?.code;
+  return typeof code === 'string' && code ? code : 'unknown';
 }
 
 export async function getActivityStats(id: string): Promise<ActivityStats> {
@@ -315,8 +512,7 @@ export async function getActivityStats(id: string): Promise<ActivityStats> {
       getDoc(doc(db, 'activityStats', id)),
       READ_TIMEOUT_MS
     );
-    const d = (snap.exists() ? snap.data() : {}) as Partial<ActivityStats>;
-    const out = { views: d.views ?? 0, downloads: d.downloads ?? 0 };
+    const out = toActivityStats(snap.exists() ? snap.data() : {});
     if (!snap.metadata.fromCache) writeSharedActivityCache({ [id]: out });
     return out;
   } catch (e) {
@@ -339,8 +535,7 @@ export async function getAllActivityStats(): Promise<
     );
     const out: Record<string, ActivityStats> = {};
     snap.docs.forEach((d) => {
-      const data = d.data() as Partial<ActivityStats>;
-      out[d.id] = { views: data.views ?? 0, downloads: data.downloads ?? 0 };
+      out[d.id] = toActivityStats(d.data());
     });
     if (!snap.metadata.fromCache) writeSharedActivityCache(out, true);
     return out;
@@ -408,8 +603,7 @@ async function startActivityFeed(): Promise<void> {
         if (snap.metadata.hasPendingWrites || snap.metadata.fromCache) return;
         const out: Record<string, ActivityStats> = {};
         snap.docs.forEach((d) => {
-          const data = d.data() as Partial<ActivityStats>;
-          out[d.id] = { views: data.views ?? 0, downloads: data.downloads ?? 0 };
+          out[d.id] = toActivityStats(d.data());
         });
         activityLatest = out;
         writeSharedActivityCache(out, true);

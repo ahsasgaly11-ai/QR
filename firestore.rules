@@ -179,13 +179,47 @@ service cloud.firestore {
       allow delete: if isOwner();
     }
 
-    // إحصاءات كل نشاط (مشاهدات/تنزيلات)
-    match /activityStats/{activityId} {
+    // التوزيع اليومي لإجمالي الموقع: وثيقة لكل يوم (معرّفها YYYY-MM-DD).
+    // لا تُقبل الكتابة إلا على وثيقة الأمس/اليوم/الغد (UTC) — فلا يمكن
+    // إنشاء أيام عشوائية أو تعديل التاريخ القديم.
+    function nearDay(k) {
+      return k == dayOf(request.time)
+        || k == dayOf(request.time - duration.value(1, 'd'))
+        || k == dayOf(request.time + duration.value(1, 'd'));
+    }
+
+    match /siteDaily/{day} {
       allow read: if true;
-      allow create: if request.resource.data.keys().hasOnly(['views', 'downloads'])
+      allow create: if nearDay(day)
+                    && request.resource.data.keys()
+                      .hasOnly(['visitors', 'views', 'downloads'])
+                    && startCount('visitors')
                     && startCount('views')
                     && startCount('downloads');
-      allow update: if isOwner() || incrementsOnly(['views', 'downloads']);
+      allow update: if isOwner()
+                    || (nearDay(day) && incrementsOnly(['visitors', 'views', 'downloads']));
+      allow delete: if isOwner();
+    }
+
+    // إحصاءات كل نشاط (مشاهدات/تنزيلات + توزيعهما اليومي)
+    function activityDayMapsOnly() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['viewsByDay', 'downloadsByDay'])
+        && dayMapUpdateOk('viewsByDay')
+        && dayMapUpdateOk('downloadsByDay');
+    }
+
+    match /activityStats/{activityId} {
+      allow read: if true;
+      allow create: if request.resource.data.keys()
+                      .hasOnly(['views', 'downloads', 'viewsByDay', 'downloadsByDay'])
+                    && startCount('views')
+                    && startCount('downloads')
+                    && dayMapCreateOk('viewsByDay')
+                    && dayMapCreateOk('downloadsByDay');
+      allow update: if isOwner()
+                    || incrementsOnly(['views', 'downloads'])
+                    || activityDayMapsOnly();
       allow delete: if isOwner();
     }
 
