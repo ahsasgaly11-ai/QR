@@ -1,6 +1,6 @@
 import { getDb, isFirebaseConfigured } from '@/lib/firebase';
 import type { ActivityStats } from '@/lib/types';
-import { reportSyncError, reportSyncOk } from '@/lib/stats-sync';
+import { reportReadOk, reportSyncError, reportSyncOk } from '@/lib/stats-sync';
 import { localDateKey } from '@/lib/heatmap-analytics';
 
 // ---------------------------------------------------------------------------
@@ -27,7 +27,9 @@ type SiteStats = { visitors: number; views: number; downloads: number };
 /** أقصى انتظار لاحتساب زيارة الدخول الحالي قبل قراءة العدّادات. */
 const VISIT_SETTLE_MS = 2500;
 /** أقصى انتظار لقراءة Firestore قبل الرجوع إلى آخر أرقام معروفة. */
-const READ_TIMEOUT_MS = 8000;
+// 12 ثانية: اكتشاف Firestore التلقائي لوضع long-polling على الشبكات المقيّدة
+// (شبكات المدارس) قد يستغرق بضع ثوانٍ قبل أوّل ردّ، و8 ثوانٍ كانت تقطعه.
+const READ_TIMEOUT_MS = 12000;
 
 /**
  * وعود Firestore قد لا تُحسم أبدًا حين يتعذّر الاتصال (شبكة المدرسة، وضع
@@ -362,7 +364,7 @@ export async function getSiteDaily(from: string, to: string): Promise<DailySiteS
     });
     return out;
   } catch (e) {
-    reportSyncError(e, 'قراءة التوزيع اليومي للإحصاءات', 'daily');
+    reportSyncError(e, 'قراءة التوزيع اليومي للإحصاءات', 'daily', 'read');
     return {};
   }
 }
@@ -412,10 +414,13 @@ export async function getSiteStats(): Promise<SiteStats | null> {
       views: d.views ?? 0,
       downloads: d.downloads ?? 0,
     };
-    if (!snap.metadata.fromCache) writeCachedSiteStats(out);
+    if (!snap.metadata.fromCache) {
+      writeCachedSiteStats(out);
+      reportReadOk();
+    }
     return out;
   } catch (e) {
-    reportSyncError(e, 'قراءة إحصاءات الموقع');
+    reportSyncError(e, 'قراءة إحصاءات الموقع', 'core', 'read');
     return getCachedSiteStats();
   }
 }
@@ -475,18 +480,20 @@ export function subscribeSiteStats(cb: (s: SiteStats) => void): () => void {
         };
         writeCachedSiteStats(out);
         setFeedState({ status: 'live', lastServerAt: Date.now(), code: undefined });
+        // وصل ردّ مؤكَّد من الخادم: أي إشعار «تعذّر الاتصال» عابر صار قديمًا.
+        reportReadOk();
         cb(out);
       },
       (e) => {
         clearFeedTimeout();
         setFeedState({ status: 'error', code: errorCodeOf(e) });
-        reportSyncError(e, 'قراءة إحصاءات الموقع');
+        reportSyncError(e, 'قراءة إحصاءات الموقع', 'core', 'read');
       }
     );
   })().catch((e) => {
     clearFeedTimeout();
     setFeedState({ status: 'error', code: errorCodeOf(e) });
-    reportSyncError(e, 'قراءة إحصاءات الموقع');
+    reportSyncError(e, 'قراءة إحصاءات الموقع', 'core', 'read');
   });
 
   return () => {
@@ -517,7 +524,7 @@ export async function getActivityStats(id: string): Promise<ActivityStats> {
     if (!snap.metadata.fromCache) writeSharedActivityCache({ [id]: out });
     return out;
   } catch (e) {
-    reportSyncError(e, 'قراءة إحصاءات النشاط');
+    reportSyncError(e, 'قراءة إحصاءات النشاط', 'core', 'read');
     return fallback;
   }
 }
@@ -541,7 +548,7 @@ export async function getAllActivityStats(): Promise<
     if (!snap.metadata.fromCache) writeSharedActivityCache(out, true);
     return out;
   } catch (e) {
-    reportSyncError(e, 'قراءة إحصاءات الأنشطة');
+    reportSyncError(e, 'قراءة إحصاءات الأنشطة', 'core', 'read');
     return readSharedActivityCache();
   }
 }
@@ -610,10 +617,10 @@ async function startActivityFeed(): Promise<void> {
         writeSharedActivityCache(out, true);
         emitAllActivities();
       },
-      (e) => reportSyncError(e, 'قراءة إحصاءات الأنشطة')
+      (e) => reportSyncError(e, 'قراءة إحصاءات الأنشطة', 'core', 'read')
     );
   } catch (e) {
-    reportSyncError(e, 'قراءة إحصاءات الأنشطة');
+    reportSyncError(e, 'قراءة إحصاءات الأنشطة', 'core', 'read');
   } finally {
     activityStarting = false;
   }

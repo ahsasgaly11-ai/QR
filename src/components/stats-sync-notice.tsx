@@ -37,8 +37,8 @@ export function StatsSyncNotice() {
     body =
       'لا تُحفظ مرّات اللعب والتنزيلات في قاعدة البيانات المشتركة، فلا يراها المشرف ولا بقيّة المستخدمين. انشر ملف firestore.rules على مشروع Firebase (firebase deploy --only firestore:rules) أو انسخ محتواه إلى Firebase Console ← Firestore Database ← Rules ثم Publish.';
   } else if (problem) {
-    title = 'تعذّر الاتصال بقاعدة بيانات الإحصاءات';
-    body = `لم تُحفظ آخر عملية في Firestore (${problem.code}). ستُعاد المحاولة تلقائيًا؛ تحقّق من اتصال الشبكة أو من حجب الشبكة لخدمات Google.`;
+    title = 'تعذّر حفظ آخر عدّاد في قاعدة بيانات الإحصاءات';
+    body = `لم تصل آخر زيادة (لعب أو تنزيل) إلى Firestore (${problem.code}). يختفي هذا التنبيه تلقائيًا حين يصل ردّ من الخادم أو تنجح الزيادة التالية؛ إن تكرّر فتحقّق من اتصال الشبكة أو من حجبها لخدمات Google.`;
   } else {
     return null;
   }

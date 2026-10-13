@@ -423,7 +423,7 @@ async function readSchoolMetrics(): Promise<MetricMap> {
     });
     return out;
   } catch (e) {
-    reportSyncError(e, 'قراءة مقاييس المدارس');
+    reportSyncError(e, 'قراءة مقاييس المدارس', 'core', 'read');
     return local;
   }
 }
