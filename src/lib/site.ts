@@ -11,3 +11,9 @@ export const SITE_NAME = 'منصة مناهج قطر التفاعلية';
 // ضعه في NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION فيظهر وسم التحقّق تلقائيًّا.
 export const GOOGLE_SITE_VERIFICATION =
   process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION?.trim() || '';
+
+// بيانات التواصل الرسمية لصاحب المنصّة — مصدر واحد يُستخدم في التذييل وبطاقة
+// «التواصل» وقسم «أثر التعلّم»، فلا يتفرّق البريد أو الرقم بين الملفات.
+export const CONTACT_EMAIL = 'a.aldhahli1610@education.qa';
+export const CONTACT_PHONE_E164 = '+97470776067';
+export const CONTACT_PHONE_PRETTY = '+974 7077 6067';

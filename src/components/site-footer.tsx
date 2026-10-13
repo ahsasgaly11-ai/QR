@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { SITE_NAME } from '@/lib/site';
+import { Mail, MessageCircleMore } from 'lucide-react';
+import { CONTACT_EMAIL, CONTACT_PHONE_E164, CONTACT_PHONE_PRETTY, SITE_NAME } from '@/lib/site';
 import { DownloadsSwitch } from './downloads-switch';
 
 const LINKS = [
@@ -104,7 +105,7 @@ export function SiteFooter() {
     <footer className="relative mt-24 text-white/90">
       <DohaSkyline />
       <div className="bg-[color:var(--maroon-800)]">
-        <div className="mx-auto grid max-w-7xl gap-10 px-6 pb-12 pt-6 md:grid-cols-3">
+        <div className="mx-auto grid max-w-7xl gap-10 px-6 pb-12 pt-6 md:grid-cols-2 lg:grid-cols-[1.15fr_0.7fr_1fr_1.15fr]">
           <div>
             <div className="mb-4 flex items-center gap-3">
               <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-white p-1.5">
@@ -157,6 +158,53 @@ export function SiteFooter() {
               التقنيات ويعزّز حبّ الاستكشاف لدى المتعلّمين.
             </p>
           </div>
+
+          {/* التواصل: بريد رسمي واضح + واتساب — للمعلّمين والمحكّمين وأولياء الأمور */}
+          <div>
+            <h2 className="mb-4 font-display text-sm font-extrabold text-[#ecd9a6]">
+              تواصل معنا
+            </h2>
+            <ul className="space-y-3 text-sm text-white/85">
+              <li>
+                <a
+                  href={`mailto:${CONTACT_EMAIL}`}
+                  className="footer-contact"
+                  aria-label={`مراسلة ${CONTACT_EMAIL} بالبريد`}
+                >
+                  <span className="footer-contact-icon" aria-hidden>
+                    <Mail className="h-4 w-4" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-xs text-white/60">البريد الإلكتروني</span>
+                    <span dir="ltr" className="footer-contact-value block font-bold">
+                      {CONTACT_EMAIL}
+                    </span>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a
+                  href={`https://wa.me/${CONTACT_PHONE_E164.replace(/\D/g, '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="footer-contact"
+                >
+                  <span className="footer-contact-icon" aria-hidden>
+                    <MessageCircleMore className="h-4 w-4" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-xs text-white/60">واتساب</span>
+                    <span dir="ltr" className="block font-bold tabular-nums">
+                      {CONTACT_PHONE_PRETTY}
+                    </span>
+                  </span>
+                </a>
+              </li>
+            </ul>
+            <p className="mt-3 text-xs leading-6 text-white/60">
+              للمعلّمين: شاركونا أثر الأنشطة في صفوفكم أو اقترحوا نشاطًا جديدًا.
+            </p>
+          </div>
         </div>
 
         {/* اعتماد التصميم */}
@@ -167,6 +215,17 @@ export function SiteFooter() {
               <span className="font-display font-bold text-[#ecd9a6]">
                 الأستاذ عبداللطيف الذهلي
               </span>
+              <span className="text-white/40" aria-hidden>
+                •
+              </span>
+              <a
+                href={`mailto:${CONTACT_EMAIL}`}
+                dir="ltr"
+                className="inline-flex items-center gap-1.5 text-white/80 underline-offset-4 transition-colors hover:text-white hover:underline"
+              >
+                <Mail className="h-3.5 w-3.5" aria-hidden />
+                {CONTACT_EMAIL}
+              </a>
             </p>
           </div>
         </div>
