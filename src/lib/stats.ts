@@ -177,8 +177,9 @@ async function bumpSiteDaily(field: keyof SiteStats, day: string): Promise<void>
   try {
     const { doc, setDoc, increment } = await import('firebase/firestore');
     await setDoc(doc(db, 'siteDaily', day), { [field]: increment(1) }, { merge: true });
+    reportSyncOk('daily');
   } catch (e) {
-    reportSyncError(e, 'حفظ التوزيع اليومي للإحصاءات');
+    reportSyncError(e, 'حفظ التوزيع اليومي للإحصاءات', 'daily');
   }
 }
 
@@ -300,7 +301,7 @@ async function bumpActivity(
       { merge: true }
     );
   } catch (e) {
-    reportSyncError(e, 'حفظ التوزيع اليومي للنشاط');
+    reportSyncError(e, 'حفظ التوزيع اليومي للنشاط', 'daily');
   }
   await bumpSiteDaily(field, day);
 }
@@ -361,7 +362,7 @@ export async function getSiteDaily(from: string, to: string): Promise<DailySiteS
     });
     return out;
   } catch (e) {
-    reportSyncError(e, 'قراءة التوزيع اليومي للإحصاءات');
+    reportSyncError(e, 'قراءة التوزيع اليومي للإحصاءات', 'daily');
     return {};
   }
 }
