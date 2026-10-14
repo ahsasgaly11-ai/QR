@@ -116,7 +116,7 @@ function PlayerInner({ activity, localHtml, next }: PlayerProps) {
       if (revokeOpen) URL.revokeObjectURL(revokeOpen);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- العنوان للعرض فقط
-  }, [localHtml, remote, activity.id]);
+  }, [localHtml, remote, activity.id, activity.fileVersion]);
 
   const uploaded = Boolean(localHtml || remote);
   const url = uploaded ? blobUrl ?? '' : fileUrl(activity);

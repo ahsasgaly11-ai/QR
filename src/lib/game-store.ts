@@ -120,8 +120,8 @@ export async function replaceGameHtml(
   const db = getDb();
   if (!db) throw new Error('تعذّر الاتصال بقاعدة البيانات.');
   const count = await saveGameHtml(id, html, onProgress);
-  const { collection, getDocs, writeBatch, doc } = await import('firebase/firestore');
-  const snap = await getDocs(collection(db, 'activities', id, 'chunks'));
+  const { collection, getDocsFromServer, writeBatch, doc } = await import('firebase/firestore');
+  const snap = await getDocsFromServer(collection(db, 'activities', id, 'chunks'));
   const stale = snap.docs.map((d) => d.id).filter((cid) => {
     const n = Number(cid);
     return !Number.isFinite(n) || n >= count;
@@ -133,6 +133,11 @@ export async function replaceGameHtml(
     }
     await batch.commit();
   }
+  // تحقّق بالقراءة من الخادم: ما خُزِّن هو الملف الجديد نفسه بايتًا ببايت
+  const back = await loadGameHtml(id);
+  if (back === null || back.length !== html.length || back !== html) {
+    throw new Error('اكتمل الرفع لكن القراءة من الخادم لا تطابق الملف الجديد؛ أعد المحاولة.');
+  }
   return count;
 }
 
@@ -142,8 +147,15 @@ export async function loadGameHtml(id: string): Promise<string | null> {
   if (!db) return null;
 
   try {
-    const { collection, getDocs } = await import('firebase/firestore');
-    const snap = await getDocs(collection(db, 'activities', id, 'chunks'));
+    // من الخادم دائمًا: لا نسخة محلية قديمة بعد استبدال الملف
+    const { collection, getDocsFromServer, getDocs } = await import('firebase/firestore');
+    const col = collection(db, 'activities', id, 'chunks');
+    let snap;
+    try {
+      snap = await getDocsFromServer(col);
+    } catch {
+      snap = await getDocs(col);
+    }
     if (snap.empty) return null;
 
     const parts: string[] = [];

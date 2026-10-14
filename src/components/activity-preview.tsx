@@ -92,7 +92,7 @@ export function ActivityPreview({
           } else setFailed(true);
         } else if (activity.stored === 'firestore') {
           // 1) الذاكرة المحلية: المعاينة لا تتغيّر، فالزيارة الثانية فورية
-          let html = await getCachedPreview(activity.id, PREVIEW_VERSION);
+          let html = await getCachedPreview(activity.id, PREVIEW_VERSION + (activity.fileVersion ?? 0));
           if (!alive) return;
 
           if (!html) {
@@ -110,7 +110,7 @@ export function ActivityPreview({
               if (full) html = makePreviewHtml(full, Infinity);
             }
             if (!alive) return;
-            if (html) void putCachedPreview(activity.id, html, PREVIEW_VERSION);
+            if (html) void putCachedPreview(activity.id, html, PREVIEW_VERSION + (activity.fileVersion ?? 0));
           }
 
           // أصلح البكسل الأخضر في كل المسارات — بما فيها نسخة مخزَّنة محليًا

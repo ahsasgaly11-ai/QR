@@ -67,6 +67,8 @@ export function ActivitiesManager({
   /** ملف HTML جديد يستبدل ملف اللعبة الحالي عند الحفظ (اختياري). */
   const [newFile, setNewFile] = useState<File | null>(null);
   const [fileProgress, setFileProgress] = useState<number | null>(null);
+  /** رسالة نجاح بعد استبدال ملف — حتى لا يمرّ الاستبدال صامتًا. */
+  const [replaced, setReplaced] = useState<{ id: string; title: string; file: string } | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [backfill, setBackfill] = useState<{ done: number; total: number } | null>(null);
@@ -138,10 +140,12 @@ export function ActivitiesManager({
     try {
       let patch: Partial<Activity> = { ...draft, title: draft.title!.trim() };
       // استبدال ملف اللعبة أولًا: إن فشل لا يُحفظ شيء، فلا يشير النشاط إلى ملف ناقص
-      if (newFile) patch = { ...patch, ...(await replaceFile(id, newFile)) };
+      const replacedFile = newFile ? await replaceFile(id, newFile) : null;
+      if (replacedFile) patch = { ...patch, ...replacedFile };
       // بلا بيانات تربوية يُحذف الحقل من الوثيقة بدل حفظ كائن فارغ
       const pedagogy = normalizePedagogy(draftToPedagogy(ped));
       await persist(id, pedagogy ? { ...patch, pedagogy } : { ...patch, pedagogy: undefined }, !pedagogy);
+      if (replacedFile) setReplaced({ id, title: patch.title ?? '', file: replacedFile.file ?? '' });
       setNewFile(null);
       setEditing(null);
     } catch (err) {
@@ -180,15 +184,17 @@ export function ActivitiesManager({
           hasPreview,
           previewV: hasPreview ? PREVIEW_VERSION : 0,
           external: false,
+          fileVersion: Date.now(),
         };
       }
       const { getLocalRecord, saveLocalActivity, dropCachedPreview } = await import('@/lib/local-store');
       const rec = await getLocalRecord(id);
       if (!rec) throw new Error('لم يُعثر على النشاط في هذا المتصفّح.');
-      if (!(await saveLocalActivity({ ...rec.activity, file: file.name }, html)))
+      const fileVersion = Date.now();
+      if (!(await saveLocalActivity({ ...rec.activity, file: file.name, fileVersion }, html)))
         throw new Error('تعذّر حفظ الملف في متصفّحك.');
       await dropCachedPreview(id).catch(() => {});
-      return { file: file.name };
+      return { file: file.name, fileVersion };
     } finally {
       setFileProgress(null);
     }
@@ -352,6 +358,27 @@ export function ActivitiesManager({
         <p className="rounded-xl bg-[color:var(--teal)]/15 px-4 py-2.5 text-sm font-bold text-[color:var(--teal)]">
           {backfillMsg}
         </p>
+      )}
+      {replaced && (
+        <div
+          role="status"
+          className="flex flex-wrap items-center gap-3 rounded-xl bg-[color:var(--teal)]/15 px-4 py-2.5 text-sm font-bold text-[color:var(--teal)]"
+        >
+          <span className="min-w-0 flex-1">
+            تم استبدال ملف «{replaced.title}» بـ<span dir="ltr">{replaced.file}</span> وتحقّقنا من حفظه على الخادم.
+          </span>
+          <a
+            href={`/play/${replaced.id}?v=${Date.now()}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-primary btn-sm px-3 py-1.5 text-xs"
+          >
+            افتح النشاط للتأكّد
+          </a>
+          <button type="button" onClick={() => setReplaced(null)} className="text-xs text-muted-foreground" aria-label="إغلاق">
+            ✕
+          </button>
+        </div>
       )}
       <div className="relative">
         <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
