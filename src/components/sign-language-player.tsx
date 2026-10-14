@@ -25,6 +25,8 @@ import { cn } from '@/lib/utils';
 // ملّي ثانية لكل خطوة صورة/نص (تُطال للكلمة). المقاطع تتقدّم عند انتهائها.
 const IMG_MS = 1200;
 const WORD_MS = 1700;
+// صورة متحرّكة (GIF) لإشارة كلمة: تُمهَل لتُرى الحركة كاملة.
+const GIF_MS = 3800;
 
 export function SignLanguagePlayer({ text }: { text: string }) {
   const [manifest, setManifest] = useState<SignManifest | null>(null);
@@ -101,7 +103,8 @@ export function SignLanguagePlayer({ text }: { text: string }) {
   useEffect(() => {
     if (!playing || !step) return;
     if (showMedia && (step.media === 'video' || step.media === 'yt')) return;
-    const t = setTimeout(next, step.kind === 'word' ? WORD_MS : IMG_MS);
+    const isGif = showMedia && step.media === 'img' && /\.gif(\?|$)/i.test(step.src || '');
+    const t = setTimeout(next, isGif ? GIF_MS : step.kind === 'word' ? WORD_MS : IMG_MS);
     return () => clearTimeout(t);
   }, [playing, i, step, showMedia, next]);
 

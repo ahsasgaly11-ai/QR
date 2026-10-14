@@ -8,7 +8,7 @@
 //   الاستخدام:
 //     node scripts/import-signs.mjs --map map.csv --src <مجلّد المقاطع> \
 //          --source <معرّف المصدر> --category <معرّف الفئة> [--title <عنوان الفئة>] \
-//          [--crop auto|W:H:X:Y] [--speed 1.0] [--size 400] [--force]
+//          [--crop auto|none|W:H:X:Y] [--speed 1.0] [--size 400] [--force]
 //
 //   صيغة map.csv (الرأس إلزامي، الفاصل فاصلة؛ الأعمدة الاختيارية تُترك فارغة):
 //     key,gloss,file,aliases,category
@@ -98,6 +98,7 @@ function probe(src) {
 
 /** قصّ تلقائي: مربّع في منتصف الإطار بطول أصغر بُعد. */
 function cropFilter(spec, src) {
+  if (spec === 'none') return null; // بلا قصّ: يُحشى الإطار إلى مربّع في convert()
   if (spec && spec !== 'auto') return `crop=${spec}`;
   const { w, h } = probe(src);
   if (!w || !h || w === h) return null;
@@ -110,7 +111,15 @@ function convert(src, dst, o) {
   const parts = [];
   const crop = cropFilter(o.crop, src);
   if (crop) parts.push(crop);
-  parts.push(`scale=${o.size}:${o.size}`);
+  if (o.crop === 'none') {
+    // مصدر غير مربّع (مثل GIF 4:3): نحافظ على الإطار كاملًا ونحشو الباقي أسود.
+    parts.push(
+      `scale=${o.size}:${o.size}:force_original_aspect_ratio=decrease:flags=lanczos`,
+      `pad=${o.size}:${o.size}:(ow-iw)/2:(oh-ih)/2:color=black`
+    );
+  } else {
+    parts.push(`scale=${o.size}:${o.size}`);
+  }
   if (o.speed && o.speed !== 1) parts.push(`setpts=${(1 / o.speed).toFixed(4)}*PTS`);
   parts.push('format=yuv420p');
   const r = spawnSync('ffmpeg', ['-v', 'error', '-y', '-i', src, '-an', '-vf', parts.join(','), '-r', '30', '-c:v', 'libx264', '-preset', 'slow', '-crf', '27', '-profile:v', 'main', '-movflags', '+faststart', dst], { stdio: 'inherit' });
