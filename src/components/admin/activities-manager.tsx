@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import {
-  Pencil, Trash2, X, Check, Loader2, Lock, Eye, Download, Images, Search, FolderInput, Hand, Sparkles,
+  Pencil, Trash2, X, Check, Loader2, Lock, Eye, Download, Images, Search, FolderInput, Hand, Sparkles, FileCode2, UploadCloud,
 } from 'lucide-react';
 import type { Activity, ActivityType, Subject } from '@/lib/types';
 import { ACTIVITY_META } from '@/lib/types';
@@ -14,6 +14,7 @@ import {
 } from '@/lib/content';
 import { revalidateContent } from '@/lib/revalidate';
 import { PREVIEW_VERSION } from '@/lib/preview-html';
+import { MAX_GAME_BYTES } from '@/lib/game-store';
 import { isFirebaseConfigured } from '@/lib/firebase';
 import { ActivityTypeBadge } from '@/components/activity-type-badge';
 import { normalizePedagogy, pedagogyStatus } from '@/lib/pedagogy';
@@ -63,6 +64,9 @@ export function ActivitiesManager({
   const [draft, setDraft] = useState<Partial<Activity>>({});
   const [ped, setPed] = useState<PedagogyDraft>(() => pedagogyToDraft(undefined));
   const [busy, setBusy] = useState(false);
+  /** ملف HTML جديد يستبدل ملف اللعبة الحالي عند الحفظ (اختياري). */
+  const [newFile, setNewFile] = useState<File | null>(null);
+  const [fileProgress, setFileProgress] = useState<number | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [backfill, setBackfill] = useState<{ done: number; total: number } | null>(null);
@@ -132,15 +136,61 @@ export function ActivitiesManager({
     setBusy(true);
     setError('');
     try {
-      const patch: Partial<Activity> = { ...draft, title: draft.title!.trim() };
+      let patch: Partial<Activity> = { ...draft, title: draft.title!.trim() };
+      // استبدال ملف اللعبة أولًا: إن فشل لا يُحفظ شيء، فلا يشير النشاط إلى ملف ناقص
+      if (newFile) patch = { ...patch, ...(await replaceFile(id, newFile)) };
       // بلا بيانات تربوية يُحذف الحقل من الوثيقة بدل حفظ كائن فارغ
       const pedagogy = normalizePedagogy(draftToPedagogy(ped));
       await persist(id, pedagogy ? { ...patch, pedagogy } : { ...patch, pedagogy: undefined }, !pedagogy);
+      setNewFile(null);
       setEditing(null);
     } catch (err) {
       setError(errorText(err, 'تعذّر حفظ التعديل.'));
     } finally {
       setBusy(false);
+    }
+  }
+
+  /**
+   * يستبدل ملف اللعبة لنشاط قائم ويُعيد حقول الوثيقة التي تتغيّر معه
+   * (اسم الملف، عدد الأجزاء، المعاينة). الإحصاءات والمعرّف والرابط تبقى كما هي.
+   */
+  async function replaceFile(id: string, file: File): Promise<Partial<Activity>> {
+    if (file.size > MAX_GAME_BYTES)
+      throw new Error(
+        `حجم الملف ${(file.size / 1048576).toFixed(1)} م.ب ويتجاوز الحدّ المسموح (${MAX_GAME_BYTES / 1048576} م.ب).`
+      );
+    const html = await file.text();
+    if (!/<\s*(html|body|script|canvas|div)/i.test(html))
+      throw new Error('الملف لا يبدو صفحة HTML صالحة.');
+    setFileProgress(0);
+    try {
+      if (isFirebaseConfigured) {
+        const { replaceGameHtml, savePreviewHtml } = await import('@/lib/game-store');
+        const chunks = await replaceGameHtml(id, html, (p) =>
+          setFileProgress(Math.round((p.done / p.total) * 100))
+        );
+        const hasPreview = await savePreviewHtml(id, html);
+        const { dropCachedPreview } = await import('@/lib/local-store');
+        await dropCachedPreview(id).catch(() => {});
+        return {
+          file: file.name,
+          stored: 'firestore',
+          chunks,
+          hasPreview,
+          previewV: hasPreview ? PREVIEW_VERSION : 0,
+          external: false,
+        };
+      }
+      const { getLocalRecord, saveLocalActivity, dropCachedPreview } = await import('@/lib/local-store');
+      const rec = await getLocalRecord(id);
+      if (!rec) throw new Error('لم يُعثر على النشاط في هذا المتصفّح.');
+      if (!(await saveLocalActivity({ ...rec.activity, file: file.name }, html)))
+        throw new Error('تعذّر حفظ الملف في متصفّحك.');
+      await dropCachedPreview(id).catch(() => {});
+      return { file: file.name };
+    } finally {
+      setFileProgress(null);
     }
   }
 
@@ -357,6 +407,50 @@ export function ActivitiesManager({
                     </button>
                   ))}
                 </div>
+                {/* استبدال ملف اللعبة دون حذف النشاط */}
+                <div className="rounded-xl border border-[color:var(--hairline)] p-3">
+                  <label htmlFor={`replace-file-${a.id}`} className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-[color:var(--maroon)]">
+                    <FileCode2 className="h-4 w-4" /> ملف اللعبة (HTML)
+                  </label>
+                  <p className="mb-2 text-[11px] font-medium leading-5 text-muted-foreground">
+                    الملف الحالي: <span dir="ltr" className="font-bold text-foreground">{a.file || '—'}</span>.
+                    اختر ملفًا جديدًا ليحلّ محلّه عند الحفظ؛ يبقى الرابط والإحصاءات والهدف التعليمي كما هي.
+                  </p>
+                  <label
+                    className={
+                      'flex cursor-pointer items-center gap-3 rounded-lg border-2 border-dashed px-3 py-2.5 text-sm transition ' +
+                      (newFile
+                        ? 'border-[color:var(--teal)] bg-[color:var(--teal)]/10'
+                        : 'border-[color:var(--gold)]/50 hover:border-[color:var(--maroon)]')
+                    }
+                  >
+                    <UploadCloud className="h-5 w-5 shrink-0 text-[color:var(--maroon)]" />
+                    {newFile ? (
+                      <span className="min-w-0 flex-1 truncate">
+                        <b dir="ltr">{newFile.name}</b> · {(newFile.size / 1024).toFixed(0)} كيلوبايت — سيُستبدل عند الحفظ
+                      </span>
+                    ) : (
+                      <span className="flex-1 font-bold text-[color:var(--maroon)]">اختر ملف HTML بديلًا…</span>
+                    )}
+                    <input
+                      id={`replace-file-${a.id}`}
+                      type="file"
+                      accept=".html,text/html"
+                      className="hidden"
+                      onChange={(e) => setNewFile(e.target.files?.[0] ?? null)}
+                    />
+                  </label>
+                  {newFile && (
+                    <button
+                      type="button"
+                      onClick={() => setNewFile(null)}
+                      className="mt-2 text-xs font-bold text-muted-foreground hover:text-[color:var(--coral)]"
+                    >
+                      إلغاء الاستبدال والإبقاء على الملف الحالي
+                    </button>
+                  )}
+                </div>
+
                 {/* مقطع لغة الإشارة القطرية (اختياري) */}
                 <div className="rounded-xl border border-[color:var(--hairline)] p-3">
                   <label htmlFor="activity-signlang" className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-[color:var(--maroon)]">
@@ -432,9 +526,20 @@ export function ActivitiesManager({
                     className="btn-primary btn-sm px-4 py-2 text-sm"
                   >
                     {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                    حفظ
+                    {fileProgress !== null
+                      ? `جارٍ رفع الملف… ${fileProgress}٪`
+                      : newFile
+                        ? 'حفظ واستبدال الملف'
+                        : 'حفظ'}
                   </button>
-                  <button onClick={() => setEditing(null)} className="btn-ghost btn-sm px-4 py-2 text-sm">
+                  <button
+                    onClick={() => {
+                      setNewFile(null);
+                      setEditing(null);
+                    }}
+                    disabled={busy}
+                    className="btn-ghost btn-sm px-4 py-2 text-sm"
+                  >
                     <X className="h-4 w-4" /> إلغاء
                   </button>
                 </div>
@@ -492,6 +597,7 @@ export function ActivitiesManager({
                       setError('');
                       setConfirming(null);
                       setEditing(a.id);
+                      setNewFile(null);
                       setPed(pedagogyToDraft(a.pedagogy));
                       setDraft({
                         title: a.title,
