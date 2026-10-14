@@ -58,6 +58,8 @@ export interface SignStep {
   source?: string;
 }
 
+// مقسّم الكلمات: حروف وأرقام **وعلامات تشكيل** (\p{M}) حتى لا تنقسم «ينفّذ» عند الشدّة.
+const WORD_RE = /[\p{L}\p{M}\p{N}]+/gu;
 // علامات التشكيل والتطويل — تُزال قبل المطابقة والتهجئة.
 const MARKS = /[ؐ-ًؚ-ٰٟۖ-ۜ۟-۪ۨ-ۭـ]/g;
 // نطاق الحروف العربية الأساسية.
@@ -141,7 +143,7 @@ function makeStep(
  */
 export function buildSequence(text: string, m: SignManifest | null): SignStep[] {
   const steps: SignStep[] = [];
-  const words = (text || '').match(/[\p{L}\p{N}]+/gu) || [];
+  const words = (text || '').match(WORD_RE) || [];
   words.forEach((w, wi) => {
     const wordEntry = lookupWord(m, w);
     if (wordEntry) {
@@ -168,7 +170,7 @@ export function buildSequence(text: string, m: SignManifest | null): SignStep[] 
 
 /** الكلمات المصدر (لإبراز النصّ المقروء أثناء العرض). */
 export function sourceWords(text: string): string[] {
-  return (text || '').match(/[\p{L}\p{N}]+/gu) || [];
+  return (text || '').match(WORD_RE) || [];
 }
 
 // تحميل القاموس مرّة واحدة وتخزينه. غياب الملف لا يكسر المحرّك.
