@@ -79,9 +79,10 @@ async function main() {
         gloss = await generateGloss(text, keys, vocab);
       } catch (e) {
         const status = e instanceof GlossError ? e.status : 500;
-        if (status === 429 && attempt < 3) {
-          console.log(`  ⏳ حدّ الطلبات — انتظار 30 ثانية (محاولة ${attempt})`);
-          await sleep(30000);
+        if ((status === 429 || status === 503) && attempt < 3) {
+          const wait = status === 503 ? 45000 : 30000;
+          console.log(`  ⏳ ${status === 503 ? 'النموذج مشغول' : 'حدّ الطلبات'} — انتظار ${wait / 1000} ثانية (محاولة ${attempt})`);
+          await sleep(wait);
           continue;
         }
         console.error('❌', text.slice(0, 60), e instanceof Error ? e.message : e);

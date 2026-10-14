@@ -17,7 +17,7 @@ import {
   sanitizeGloss,
   type Gloss,
 } from './sign-gloss';
-import { currentGeminiModel, forgetGeminiModel, resolveGeminiModel } from './gemini-model';
+import { currentGeminiModel, demoteGeminiModel, forgetGeminiModel, resolveGeminiModel } from './gemini-model';
 
 export type GlossProvider = 'anthropic' | 'gemini';
 
@@ -91,7 +91,7 @@ async function viaAnthropic(text: string, keys: string[], words: string[]): Prom
   }
 }
 
-async function viaGemini(text: string, keys: string[], words: string[], retried = false): Promise<Gloss> {
+async function viaGemini(text: string, keys: string[], words: string[], retried = false, hops = 0): Promise<Gloss> {
   const key = process.env.GEMINI_API_KEY!;
   // يُختار تلقائيًّا أحدث نموذج Flash متاح للمفتاح (Google تُوقف القديمة للمفاتيح الجديدة)
   const model = await resolveGeminiModel(key);
@@ -114,7 +114,12 @@ async function viaGemini(text: string, keys: string[], words: string[], retried 
   if (res.status === 404 && !retried && !process.env.GEMINI_MODEL?.trim()) {
     // النموذج المختار لم يعد متاحًا: أعد الاكتشاف مرّة واحدة
     forgetGeminiModel();
-    return viaGemini(text, keys, words, true);
+    return viaGemini(text, keys, words, true, hops);
+  }
+  if (res.status === 503) {
+    // «ضغط عالٍ» على النموذج: انتقل إلى أفضل نموذج Flash بديل (حتى بديلين)
+    if (hops < 2 && demoteGeminiModel(model)) return viaGemini(text, keys, words, retried, hops + 1);
+    throw new GlossError(`نموذج Gemini (${model}) مشغول حاليًّا، حاول بعد قليل`, 503);
   }
   if (res.status === 429) throw new GlossError('بلغ مفتاح Gemini حدّ الطبقة المجانية مؤقّتًا، حاول بعد دقيقة', 429);
   if (!res.ok) {
