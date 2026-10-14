@@ -38,9 +38,9 @@ function main() {
   const plan = JSON.parse(readFileSync(PLAN, 'utf8'));
   const manifest = { version: plan.version ?? 1, words: {}, letters: {} };
 
-  // مصدر الإشارة: عنصر مستورد من قاعدة KArSL يحمل source="karsl" ليُنسَب في
-  // المشغّل (لهجة إشارية سعودية)؛ وما صُوِّر محليًّا مع مترجم قطري يبقى بلا مصدر.
-  const sourceOf = (item) => (item.karsl ? 'karsl' : undefined);
+  // مصدر الإشارة: عنصر مستورد من قاعدة خارجية يحمل source (مثل "karsl") ليُنسَب في
+  // المشغّل؛ وما صُوِّر محليًّا مع مترجم قطري يبقى بلا مصدر.
+  const sourceOf = (item) => item.source || (item.karsl ? 'karsl' : undefined);
 
   let haveL = 0;
   const totalL = plan.letters?.length ?? 0;
