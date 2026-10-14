@@ -107,6 +107,35 @@ export async function saveGameHtml(
   return parts.length;
 }
 
+/**
+ * يستبدل ملف اللعبة لنشاط قائم دون حذف النشاط: يكتب الأجزاء الجديدة فوق
+ * القديمة (0..n-1)، ثم يحذف ما بقي من أجزاء قديمة بفهارس أعلى — وإلا ضمّها
+ * loadGameHtml إلى الملف الجديد فظهر مكسورًا. يُعيد عدد الأجزاء الجديدة.
+ */
+export async function replaceGameHtml(
+  id: string,
+  html: string,
+  onProgress?: (p: SaveProgress) => void
+): Promise<number> {
+  const db = getDb();
+  if (!db) throw new Error('تعذّر الاتصال بقاعدة البيانات.');
+  const count = await saveGameHtml(id, html, onProgress);
+  const { collection, getDocs, writeBatch, doc } = await import('firebase/firestore');
+  const snap = await getDocs(collection(db, 'activities', id, 'chunks'));
+  const stale = snap.docs.map((d) => d.id).filter((cid) => {
+    const n = Number(cid);
+    return !Number.isFinite(n) || n >= count;
+  });
+  for (let start = 0; start < stale.length; start += 200) {
+    const batch = writeBatch(db);
+    for (const cid of stale.slice(start, start + 200)) {
+      batch.delete(doc(db, 'activities', id, 'chunks', cid));
+    }
+    await batch.commit();
+  }
+  return count;
+}
+
 /** يقرأ أجزاء اللعبة ويعيد ملف الـ HTML كاملًا. */
 export async function loadGameHtml(id: string): Promise<string | null> {
   const db = getDb();
