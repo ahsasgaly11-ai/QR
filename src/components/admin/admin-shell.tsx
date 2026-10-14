@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { UploadCloud, ListChecks, Layers, LogOut, Megaphone, Download, Gamepad2, ClipboardCheck, HeartHandshake } from 'lucide-react';
+import { UploadCloud, ListChecks, Layers, LogOut, Megaphone, Download, Gamepad2, ClipboardCheck, HeartHandshake, SpellCheck2 } from 'lucide-react';
 import type { Subject, Activity } from '@/lib/types';
 import { AuthGate } from './auth-gate';
 import { AdminUploader } from '@/components/admin-uploader';
@@ -10,10 +10,11 @@ import { ContentManager } from './content-manager';
 import { TickerManager } from './ticker-manager';
 import { ImpactManager } from './impact-manager';
 import { DownloadsManager } from './downloads-manager';
+import { ContentAudit } from './content-audit';
 import { signOutAdmin, isFirebaseConfigured } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 
-type Tab = 'upload' | 'activities' | 'smart-games' | 'reviews' | 'content' | 'ticker' | 'impact' | 'downloads';
+type Tab = 'upload' | 'activities' | 'smart-games' | 'reviews' | 'content' | 'audit' | 'ticker' | 'impact' | 'downloads';
 
 export function AdminShell({
   subjects,
@@ -36,6 +37,7 @@ export function AdminShell({
     { id: 'smart-games', label: 'ألعاب التعزيز', icon: Gamepad2 },
     { id: 'reviews', label: 'مراجعات الوحدات', icon: ClipboardCheck },
     { id: 'content', label: 'إدارة المناهج', icon: Layers },
+    { id: 'audit', label: 'تدقيق المحتوى', icon: SpellCheck2 },
     { id: 'ticker', label: 'الشريط المتحرّك', icon: Megaphone },
     { id: 'impact', label: 'أثر التعلّم', icon: HeartHandshake },
     { id: 'downloads', label: 'التنزيل', icon: Download },
@@ -143,6 +145,7 @@ export function AdminShell({
         </div>
       )}
       {tab === 'content' && <ContentManager initial={structure} activities={activities} />}
+      {tab === 'audit' && <ContentAudit activities={activities} structure={structure} />}
       {tab === 'ticker' && <TickerManager />}
       {tab === 'impact' && <ImpactManager />}
       {tab === 'downloads' && <DownloadsManager structure={structure} />}

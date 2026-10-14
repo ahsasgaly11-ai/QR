@@ -43,6 +43,71 @@ export interface DashboardRow {
   subject: string;
   gradeId: string;
   grade: string;
+  /** الوحدة والدرس — لتجميع «نسبة الإتقان» على مستوى الدرس. */
+  unitId?: string;
+  unit?: string;
+  lessonId?: string;
+  lesson?: string;
+}
+
+// --- دليل التعلّم: الإتقان --------------------------------------------------
+export interface MasteryAgg {
+  attempts: number;
+  correct: number;
+  total: number;
+  /** نسبة مئوية مقرّبة، أو null بلا محاولات. */
+  percent: number | null;
+}
+
+export function masteryOf(s: ActivityStats | undefined): MasteryAgg {
+  const attempts = s?.attempts || 0;
+  const correct = s?.correct || 0;
+  const total = s?.total || 0;
+  return { attempts, correct, total, percent: total > 0 ? Math.round((correct / total) * 100) : null };
+}
+
+/** إتقان مجموعة أنشطة (درس أو وحدة أو الفلتر الحالي) مجمَّعًا. */
+export function masterySum(rows: { id: string }[], stats: Record<string, ActivityStats>): MasteryAgg {
+  let attempts = 0;
+  let correct = 0;
+  let total = 0;
+  for (const r of rows) {
+    const s = stats[r.id];
+    attempts += s?.attempts || 0;
+    correct += s?.correct || 0;
+    total += s?.total || 0;
+  }
+  return { attempts, correct, total, percent: total > 0 ? Math.round((correct / total) * 100) : null };
+}
+
+/** الإتقان مجمَّعًا حسب الدرس (الأنشطة بلا درس تُجمع تحت عنوانها). */
+export function masteryByLesson(
+  rows: DashboardRow[],
+  stats: Record<string, ActivityStats>
+): { key: string; label: string; context: string; agg: MasteryAgg; activities: number }[] {
+  const groups = new Map<string, { label: string; context: string; rows: DashboardRow[] }>();
+  for (const r of rows) {
+    const key = r.lessonId ? `${r.subjectId}/${r.gradeId}/${r.unitId}/${r.lessonId}` : `act/${r.id}`;
+    const g = groups.get(key) ?? {
+      label: r.lesson || r.title,
+      context: [r.subject, r.unit].filter(Boolean).join(' • '),
+      rows: [],
+    };
+    g.rows.push(r);
+    groups.set(key, g);
+  }
+  return [...groups.entries()]
+    .map(([key, g]) => ({ key, label: g.label, context: g.context, agg: masterySum(g.rows, stats), activities: g.rows.length }))
+    .filter((x) => x.agg.attempts > 0)
+    .sort((a, b) => b.agg.attempts - a.agg.attempts);
+}
+
+/** تصنيف لفظي لنسبة الإتقان — يُقرأ مع الرقم لا بدله. */
+export function masteryBand(p: number | null): { label: string; color: string } {
+  if (p === null) return { label: 'لا محاولات', color: 'var(--muted)' };
+  if (p >= 80) return { label: 'إتقان', color: 'var(--teal)' };
+  if (p >= 60) return { label: 'قريب من الإتقان', color: 'var(--gold)' };
+  return { label: 'يحتاج دعمًا', color: 'var(--coral)' };
 }
 
 export interface Filters {

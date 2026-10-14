@@ -13,7 +13,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import type { Activity } from '@/lib/types';
-import { trackView, trackDownload } from '@/lib/stats';
+import { trackView, trackDownload, recordMastery } from '@/lib/stats';
 import { trackSchoolPlay, trackSchoolDownload } from '@/lib/school-store';
 import { useActivityDownloadEnabled, downloadsAllowedNow } from '@/lib/site-settings';
 import { SchoolGate } from './school-gate';
@@ -28,6 +28,7 @@ import {
   GAME_SANDBOX,
   FS_REQUEST_KEY,
   FS_STATE_KEY,
+  SCORE_KEY,
 } from '@/lib/local-store';
 
 function nativeFullscreenElement(): Element | null {
@@ -375,7 +376,14 @@ function PlayerInner({ activity, localHtml, next }: PlayerProps) {
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
       if (!frameRef.current || e.source !== frameRef.current.contentWindow) return;
-      const action = (e.data as Record<string, unknown> | null)?.[FS_REQUEST_KEY];
+      const data = e.data as Record<string, unknown> | null;
+      // نتيجة تعلّم تبلّغها اللعبة نفسها (window.qaReport) — انظر local-store
+      const score = data?.[SCORE_KEY] as { correct?: unknown; total?: unknown } | undefined;
+      if (score && typeof score === 'object') {
+        void recordMastery(activity.id, Number(score.correct), Number(score.total), 'game');
+        return;
+      }
+      const action = data?.[FS_REQUEST_KEY];
       if (action === 'enter') {
         if (immersiveRef.current) return;
         gameOwnedRef.current = true;
@@ -388,7 +396,7 @@ function PlayerInner({ activity, localHtml, next }: PlayerProps) {
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [enterImmersive, exitImmersive]);
+  }, [enterImmersive, exitImmersive, activity.id]);
 
   // أبلغ اللعبة بحالة وضع الموقع (عند الخروج منه تُعيد اللعبة الجزء المكبَّر)
   const syncFrameFullscreen = useCallback(() => {

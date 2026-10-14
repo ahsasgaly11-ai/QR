@@ -1,14 +1,22 @@
-import { Download, Landmark, Mail, PlayCircle, School, Sparkles, Users } from 'lucide-react';
+import { ClipboardCheck, Download, Landmark, Mail, PlayCircle, School, Sparkles, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { SectionHead } from '@/components/home/section-head';
 import { ImpactVoices } from '@/components/home/impact-voices';
 import { MUNICIPALITIES } from '@/data/qatar-schools';
 import type { ImpactSettings } from '@/lib/impact';
 import { CONTACT_EMAIL } from '@/lib/site';
-import type { ReachSnapshot, SiteTotals } from '@/lib/stats-server';
+import type { MasterySnapshot, ReachSnapshot, SiteTotals } from '@/lib/stats-server';
 import { formatFull } from '@/lib/utils';
 
-type Figure = { icon: LucideIcon; value: number; label: string; note: string; tone: string };
+type Figure = {
+  icon: LucideIcon;
+  value: number;
+  label: string;
+  note: string;
+  tone: string;
+  /** يُعرض الرقم نسبة مئوية (مثل الإتقان) بدل عدد. */
+  suffix?: string;
+};
 
 /**
  * قسم «أثر التعلّم» في الصفحة الرئيسية: أرقام حقيقية تُحتسب من استخدام
@@ -20,11 +28,13 @@ export function ImpactSection({
   totals,
   reach,
   voices,
+  mastery,
 }: {
   activities: number;
   totals: SiteTotals | null;
   reach: ReachSnapshot | null;
   voices: ImpactSettings;
+  mastery?: MasterySnapshot | null;
 }) {
   const figures: Figure[] = [
     {
@@ -81,6 +91,17 @@ export function ImpactSection({
     });
   }
 
+  if (mastery && mastery.percent !== null && mastery.attempts > 0) {
+    figures.push({
+      icon: ClipboardCheck,
+      value: mastery.percent,
+      suffix: '%',
+      label: 'نسبة الإتقان في التقويم الختامي',
+      note: `إجابات صحيحة من ${formatFull(mastery.total)} سؤالًا أجاب عنها الطلبة بعد الأنشطة، في ${formatFull(mastery.attempts)} محاولة بلا أسماء.`,
+      tone: '#0f8f7c',
+    });
+  }
+
   const subject = encodeURIComponent('أثر منصة مناهج قطر التفاعلية في صفّي');
 
   return (
@@ -104,7 +125,10 @@ export function ImpactSection({
                 <f.icon className="h-5 w-5" strokeWidth={2.3} />
               </span>
               <span className="min-w-0">
-                <span className="impact-figure-n">{formatFull(f.value)}</span>
+                <span className="impact-figure-n">
+                  {formatFull(f.value)}
+                  {f.suffix}
+                </span>
                 <span className="impact-figure-l">{f.label}</span>
                 <span className="impact-figure-note">{f.note}</span>
               </span>

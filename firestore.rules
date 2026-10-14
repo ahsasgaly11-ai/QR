@@ -209,17 +209,50 @@ service cloud.firestore {
         && dayMapUpdateOk('downloadsByDay');
     }
 
+    // --- دليل التعلّم: نتائج التقويم الختامي (بلا بيانات شخصية) ----------------
+    //  كل عملية = محاولة واحدة: attempts +1، وtotal يزيد بعدد الأسئلة (1..20)،
+    //  وcorrect يزيد بعدد الإجابات الصحيحة (0..عدد الأسئلة)، ويوم المحاولة +1.
+    //  لا يمكن تضخيم الإتقان: الصحيح لا يتجاوز المُجاب في العملية نفسها.
+    function masteryStartOk() {
+      let a = request.resource.data.get('attempts', 0);
+      let c = request.resource.data.get('correct', 0);
+      let t = request.resource.data.get('total', 0);
+      return a is int && c is int && t is int
+        && a >= 0 && a <= 1
+        && t >= 0 && t <= 20
+        && c >= 0 && c <= t
+        && (a == 1 || (t == 0 && c == 0))
+        && dayMapCreateOk('attemptsByDay');
+    }
+    function masteryUpdateOk() {
+      let da = request.resource.data.get('attempts', 0) - resource.data.get('attempts', 0);
+      let dc = request.resource.data.get('correct', 0) - resource.data.get('correct', 0);
+      let dt = request.resource.data.get('total', 0) - resource.data.get('total', 0);
+      return request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['attempts', 'correct', 'total', 'attemptsByDay'])
+        && request.resource.data.get('attempts', 0) is int
+        && request.resource.data.get('correct', 0) is int
+        && request.resource.data.get('total', 0) is int
+        && da == 1
+        && dt >= 1 && dt <= 20
+        && dc >= 0 && dc <= dt
+        && dayMapUpdateOk('attemptsByDay');
+    }
+
     match /activityStats/{activityId} {
       allow read: if true;
       allow create: if request.resource.data.keys()
-                      .hasOnly(['views', 'downloads', 'viewsByDay', 'downloadsByDay'])
+                      .hasOnly(['views', 'downloads', 'viewsByDay', 'downloadsByDay',
+                                'attempts', 'correct', 'total', 'attemptsByDay'])
                     && startCount('views')
                     && startCount('downloads')
                     && dayMapCreateOk('viewsByDay')
-                    && dayMapCreateOk('downloadsByDay');
+                    && dayMapCreateOk('downloadsByDay')
+                    && masteryStartOk();
       allow update: if isOwner()
                     || incrementsOnly(['views', 'downloads'])
-                    || activityDayMapsOnly();
+                    || activityDayMapsOnly()
+                    || masteryUpdateOk();
       allow delete: if isOwner();
     }
 

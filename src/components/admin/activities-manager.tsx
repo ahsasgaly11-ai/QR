@@ -16,6 +16,13 @@ import { revalidateContent } from '@/lib/revalidate';
 import { PREVIEW_VERSION } from '@/lib/preview-html';
 import { isFirebaseConfigured } from '@/lib/firebase';
 import { ActivityTypeBadge } from '@/components/activity-type-badge';
+import { normalizePedagogy, pedagogyStatus } from '@/lib/pedagogy';
+import {
+  PedagogyFields,
+  draftToPedagogy,
+  pedagogyToDraft,
+  type PedagogyDraft,
+} from './pedagogy-fields';
 
 const TYPES = Object.keys(ACTIVITY_META) as ActivityType[];
 
@@ -54,6 +61,7 @@ export function ActivitiesManager({
   const [uploaded, setUploaded] = useState<Set<string>>(() => new Set(uploadedIds));
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState<Partial<Activity>>({});
+  const [ped, setPed] = useState<PedagogyDraft>(() => pedagogyToDraft(undefined));
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState<string | null>(null);
   const [error, setError] = useState('');
@@ -125,7 +133,9 @@ export function ActivitiesManager({
     setError('');
     try {
       const patch: Partial<Activity> = { ...draft, title: draft.title!.trim() };
-      await persist(id, patch);
+      // بلا بيانات تربوية يُحذف الحقل من الوثيقة بدل حفظ كائن فارغ
+      const pedagogy = normalizePedagogy(draftToPedagogy(ped));
+      await persist(id, pedagogy ? { ...patch, pedagogy } : { ...patch, pedagogy: undefined }, !pedagogy);
       setEditing(null);
     } catch (err) {
       setError(errorText(err, 'تعذّر حفظ التعديل.'));
@@ -148,10 +158,10 @@ export function ActivitiesManager({
   }
 
   /** يحفظ التعديل في Firestore (أو في المتصفّح بوضع العرض) ثم في القائمة. */
-  async function persist(id: string, patch: Partial<Activity>) {
+  async function persist(id: string, patch: Partial<Activity>, clearPedagogy = false) {
     const current = rows.find((a) => a.id === id);
     if (isFirebaseConfigured) {
-      await updateActivity(id, patch);
+      await updateActivity(id, patch, clearPedagogy ? ['pedagogy'] : []);
       await revalidateContent({ subjectId: current?.subjectId, activityId: id });
       if (patch.subjectId && patch.subjectId !== current?.subjectId)
         await revalidateContent({ subjectId: patch.subjectId });
@@ -159,10 +169,19 @@ export function ActivitiesManager({
       const { getLocalRecord, saveLocalActivity } = await import('@/lib/local-store');
       const rec = await getLocalRecord(id);
       if (!rec) throw new Error('لم يُعثر على النشاط في هذا المتصفّح.');
-      const ok = await saveLocalActivity({ ...rec.activity, ...patch }, rec.html);
+      const merged = { ...rec.activity, ...patch };
+      if (clearPedagogy) delete merged.pedagogy;
+      const ok = await saveLocalActivity(merged, rec.html);
       if (!ok) throw new Error('تعذّر حفظ التعديل في متصفّحك.');
     }
-    setRows((r) => r.map((a) => (a.id === id ? { ...a, ...patch } : a)));
+    setRows((r) =>
+      r.map((a) => {
+        if (a.id !== id) return a;
+        const next = { ...a, ...patch };
+        if (clearPedagogy) delete next.pedagogy;
+        return next;
+      })
+    );
   }
 
   async function remove(id: string) {
@@ -360,6 +379,15 @@ export function ActivitiesManager({
                   </p>
                 </div>
 
+                {!a.smartReinforcement && (
+                  <PedagogyFields
+                    value={ped}
+                    onChange={setPed}
+                    inputClass={inp}
+                    labelClass="mb-1 block text-xs font-semibold text-[color:var(--maroon)]"
+                  />
+                )}
+
                 {!a.smartReinforcement && !a.unitReview && (
                   <div className="rounded-xl border border-[color:var(--hairline)] p-3">
                     <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-[color:var(--maroon)]">
@@ -429,6 +457,14 @@ export function ActivitiesManager({
                         <Lock className="h-3 w-3" /> مضمّن
                       </span>
                     )}
+                    {!a.smartReinforcement && !pedagogyStatus(a.pedagogy).complete && (
+                      <span
+                        className="pill bg-[color:var(--coral)]/12 text-[color:var(--coral)]"
+                        title={`ناقص: ${pedagogyStatus(a.pedagogy).missing.join('، ')}`}
+                      >
+                        بلا هدف تعليمي
+                      </span>
+                    )}
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {labelOf(a)}
@@ -456,6 +492,7 @@ export function ActivitiesManager({
                       setError('');
                       setConfirming(null);
                       setEditing(a.id);
+                      setPed(pedagogyToDraft(a.pedagogy));
                       setDraft({
                         title: a.title,
                         description: a.description,

@@ -322,7 +322,85 @@ function toActivityStats(data: Record<string, unknown>): ActivityStats {
     downloads: Number(data.downloads) || 0,
     viewsByDay: map(data.viewsByDay),
     downloadsByDay: map(data.downloadsByDay),
+    attempts: Number(data.attempts) || 0,
+    correct: Number(data.correct) || 0,
+    total: Number(data.total) || 0,
+    attemptsByDay: map(data.attemptsByDay),
   };
+}
+
+// --- دليل التعلّم: نتائج التقويم الختامي ---------------------------------------
+//  كل إكمال لتذكرة الخروج (أو نتيجة ترسلها اللعبة نفسها) يُسجَّل بلا أي بيانات
+//  شخصية: محاولة واحدة + عدد الإجابات الصحيحة من مجموع الأسئلة. من هذه
+//  الأرقام تُحسب «نسبة الإتقان» لكل نشاط ودرس في لوحة الإحصاءات.
+//
+//  حدود القبول (تطابق قواعد Firestore): 1 ≤ total ≤ MASTERY_MAX_QUESTIONS،
+//  0 ≤ correct ≤ total. ما يتجاوزها يُرفض محليًا قبل أي كتابة.
+
+export const MASTERY_MAX_QUESTIONS = 20;
+
+export type MasteryOutcome = 'saved' | 'duplicate' | 'invalid' | 'failed';
+
+/**
+ * آخر تسجيل لكل (نشاط، مصدر) — يمنع احتساب الإرسال نفسه مرّتين حين تكرّر
+ * اللعبة رسالتها. المصدران مستقلّان: تذكرة الخروج لا تُحجب بنتيجة أبلغتها
+ * اللعبة قبل ثوانٍ، لأنهما قياسان مختلفان.
+ */
+const lastMasteryAt = new Map<string, number>();
+const MASTERY_DEDUPE_MS = 3000;
+
+export function recordMastery(
+  activityId: string,
+  correct: number,
+  total: number,
+  source: 'ticket' | 'game' = 'ticket'
+): Promise<MasteryOutcome> {
+  const t = Math.round(Number(total));
+  const c = Math.round(Number(correct));
+  if (!Number.isFinite(t) || !Number.isFinite(c)) return Promise.resolve('invalid');
+  if (t < 1 || t > MASTERY_MAX_QUESTIONS || c < 0 || c > t) return Promise.resolve('invalid');
+  const key = `${source}:${activityId}`;
+  const now = Date.now();
+  const prev = lastMasteryAt.get(key);
+  if (prev !== undefined && now - prev < MASTERY_DEDUPE_MS) return Promise.resolve('duplicate');
+  lastMasteryAt.set(key, now);
+  return writeMastery(activityId, c, t).then((ok) => (ok ? 'saved' : 'failed'));
+}
+
+async function writeMastery(activityId: string, correct: number, total: number): Promise<boolean> {
+  const day = localDateKey();
+  const local = readLocal();
+  const a = (local.activities[activityId] ??= { views: 0, downloads: 0 });
+  a.attempts = (a.attempts ?? 0) + 1;
+  a.correct = (a.correct ?? 0) + correct;
+  a.total = (a.total ?? 0) + total;
+  const byDay = (a.attemptsByDay ??= {});
+  byDay[day] = (byDay[day] || 0) + 1;
+  writeLocal(local);
+  if (!isFirebaseConfigured) {
+    notifyLocalActivityStats();
+    return true;
+  }
+  const db = getDb();
+  if (!db) return false;
+  try {
+    const { doc, setDoc, increment } = await import('firebase/firestore');
+    await setDoc(
+      doc(db, 'activityStats', activityId),
+      {
+        attempts: increment(1),
+        correct: increment(correct),
+        total: increment(total),
+        attemptsByDay: { [day]: increment(1) },
+      },
+      { merge: true }
+    );
+    reportSyncOk();
+    return true;
+  } catch (e) {
+    reportSyncError(e, 'حفظ نتيجة التقويم الختامي');
+    return false;
+  }
 }
 
 /**

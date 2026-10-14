@@ -15,6 +15,8 @@ import { PlayPageMode } from '@/components/play-page-mode';
 import { IosDocumentsNotice } from '@/components/ios-documents-notice';
 import { HeritageIcon, ACTIVITY_ICON } from '@/components/heritage-icons';
 import { BackButton } from '@/components/back-button';
+import { LessonObjectives } from '@/components/lesson-objectives';
+import { ExitTicket } from '@/components/exit-ticket';
 import { SITE_NAME } from '@/lib/site';
 import { ACTIVITY_META } from '@/lib/types';
 
@@ -130,6 +132,10 @@ export default async function PlayPage({
       <IosDocumentsNotice variant="inline" />
 
       <div className="play-below short-hide">
+        <LessonObjectives activity={activity} lesson={lesson} />
+        {activity.pedagogy?.exitTicket?.length ? (
+          <ExitTicket activityId={activity.id} questions={activity.pedagogy.exitTicket} />
+        ) : null}
         <section>
           <h2 className="play-below-title">عن النشاط</h2>
           <p className="leading-8 text-[color:var(--ink-2)]">

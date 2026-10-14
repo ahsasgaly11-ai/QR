@@ -17,6 +17,7 @@ const NAV = [
   { href: '/search', label: 'بحث' },
   { href: '/dashboard', label: 'الإحصاءات' },
   { href: '/heatmap', label: 'الخريطة الحرارية' },
+  { href: '/about', label: 'عن المنصّة' },
 ];
 
 const UPLOAD = { href: '/admin', label: 'رفع نشاط' };

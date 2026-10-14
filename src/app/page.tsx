@@ -13,7 +13,7 @@ import { SectionHead } from '@/components/home/section-head';
 import { NaseejShow } from '@/components/home/naseej-show';
 import { LaunchVideo } from '@/components/home/launch-video';
 import { ImpactSection } from '@/components/home/impact-section';
-import { getReachServer, getSiteStatsServer } from '@/lib/stats-server';
+import { getMasteryServer, getReachServer, getSiteStatsServer } from '@/lib/stats-server';
 import { fetchImpactServer } from '@/lib/impact';
 import { HeritageIcon } from '@/components/heritage-icons';
 import type { HeritageIconKind } from '@/components/heritage-icons';
@@ -38,12 +38,13 @@ const TYPES: { icon: HeritageIconKind; label: string; desc: string }[] = [
 export default async function HomePage() {
   // المحتوى والعدّادات المشتركة وآراء «أثر التعلّم» تُقرأ معًا في الخادم،
   // فتصل الأرقام الفعلية مضمَّنة في HTML بدل أصفار تنتظر المتصفّح.
-  const [subjects, activities, siteStats, reach, impact] = await Promise.all([
+  const [subjects, activities, siteStats, reach, impact, mastery] = await Promise.all([
     getSubjects(),
     getAllActivities(),
     getSiteStatsServer(),
     getReachServer(),
     fetchImpactServer(),
+    getMasteryServer(),
   ]);
   // العدد نفسه الذي تعرضه لوحة الإحصاءات (كل الأنشطة المنشورة).
   const total = activities.length;
@@ -254,7 +255,7 @@ export default async function HomePage() {
       </section>
 
       {/* ===================== أثر التعلّم ===================== */}
-      <ImpactSection activities={total} totals={siteStats} reach={reach} voices={impact} />
+      <ImpactSection activities={total} totals={siteStats} reach={reach} voices={impact} mastery={mastery} />
 
       {/* ===================== أنشطة مميّزة (عند وجود محتوى) ========= */}
       {featured.length > 0 && (
