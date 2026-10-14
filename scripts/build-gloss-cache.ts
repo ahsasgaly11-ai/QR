@@ -14,27 +14,24 @@
 // ---------------------------------------------------------------------------
 
 import { readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { GLOSS_VERSION, glossCacheKey, type Gloss } from '../src/lib/sign-gloss.ts';
-import { GlossError, generateGloss, glossModelName, glossProvider } from '../src/lib/sign-gloss-server.ts';
+import { join } from 'node:path';
+import { GLOSS_VERSION, glossCacheKey, type Gloss } from '../src/lib/sign-gloss';
+import { GlossError, generateGloss, glossModelName, glossProvider } from '../src/lib/sign-gloss-server';
+import { PEDAGOGY_PACK } from '../src/data/pedagogy-pack';
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+// يُشغَّل من جذر المستودع عبر npm run sign:gloss (tsx).
+const ROOT = process.cwd();
 const OUT = join(ROOT, 'public', 'sign', 'gloss-cache.json');
 const force = process.argv.includes('--force');
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 function texts(): string[] {
-  // نصوص اللوحة = العنوان + الوصف لكل نشاط (كما يبنيها SignLanguagePanel)
-  const src = readFileSync(join(ROOT, 'src', 'data', 'pedagogy-pack.ts'), 'utf8');
-  const blocks = src.split(/\n\s*\{\s*\n/).slice(1);
+  // نصوص اللوحة = «العنوان. الوصف» لكل نشاط (كما يبنيها SignLanguagePanel)، والعنوان وحده.
   const out = new Set<string>();
-  for (const b of blocks) {
-    const t = b.match(/title:\s*'([^']+)'/)?.[1];
-    const d = b.match(/description:\s*'([^']+)'/)?.[1];
-    const joined = [t, d].filter(Boolean).join('. ');
+  for (const e of Object.values(PEDAGOGY_PACK)) {
+    const joined = [e.title, e.description].filter(Boolean).join('. ');
     if (joined) out.add(joined);
-    if (t) out.add(t);
+    if (e.title) out.add(e.title);
   }
   return [...out];
 }
@@ -88,6 +85,11 @@ async function main() {
           continue;
         }
         console.error('❌', text.slice(0, 60), e instanceof Error ? e.message : e);
+        // خطأ إعداد (مفتاح غير صالح، صلاحية، طلب مرفوض): لا فائدة من إكمال بقية النصوص.
+        if (status === 400 || status === 401 || status === 403) {
+          console.error('\n⛔ توقّف: الخطأ يخصّ الإعداد لا النصّ. أصلحه ثم أعد التشغيل (ما حُسب محفوظ).');
+          process.exit(2);
+        }
         break;
       }
     }
@@ -106,4 +108,7 @@ async function main() {
   console.log(`\n✅ الغلوس: ${done} جديد، ${reused} معاد استخدامه، ${failed} فشل → ${OUT}`);
 }
 
-main();
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});
