@@ -20,7 +20,7 @@ export default async function DashboardPage() {
   const subjects = await getSubjects();
 
   const rows: DashboardRow[] = activities.map((a) => {
-    const { subject, grade } = locateActivity(subjects, a);
+    const { subject, grade, unit, lesson } = locateActivity(subjects, a);
     return {
       id: a.id,
       title: a.title,
@@ -29,6 +29,10 @@ export default async function DashboardPage() {
       subject: subject?.title ?? '',
       gradeId: a.gradeId ?? '',
       grade: grade?.title ?? '',
+      unitId: a.unitId ?? '',
+      unit: unit?.title ?? '',
+      lessonId: lesson ? a.lessonId : '',
+      lesson: lesson?.title ?? '',
     };
   });
 

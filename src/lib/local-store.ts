@@ -161,9 +161,26 @@ window.addEventListener('keydown',function(e){if(e.key!=='Escape')return;if(el)e
 
 const FULLSCREEN_SHIM = `<script>${FULLSCREEN_SHIM_JS}</script>`;
 
-/** يحقن بديل التخزين وجسر ملء الشاشة في بداية المستند قبل أي سكربت للعبة. */
+// ---------------------------------------------------------------------------
+// جسر نتيجة التعلّم.
+//
+// اللعبة التي تحتوي أسئلتها الخاصة تستطيع إبلاغ المنصّة بنتيجة الطالب عند
+// انتهاء التحدّي بسطر واحد:
+//     window.qaReport(correct, total)      // مثال: qaReport(4, 5)
+// أو بالرسالة الخام:  parent.postMessage({ __qaScore: { correct, total } }, '*')
+// فتُسجَّل محاولة واحدة بلا أي بيانات شخصية وتظهر في «نسبة الإتقان» بلوحة
+// الإحصاءات، تمامًا كتذكرة الخروج التي يضيفها المشرف من لوحة الإدارة.
+// ---------------------------------------------------------------------------
+
+/** مفتاح رسالة نتيجة التعلّم من اللعبة إلى الموقع. */
+export const SCORE_KEY = '__qaScore';
+
+const REPORT_SHIM = `<script>(function(){var P=window.parent;if(!P||P===window)return;
+window.qaReport=function(c,t){try{P.postMessage({${SCORE_KEY}:{correct:Number(c),total:Number(t)}},'*')}catch(e){}};})();</script>`;
+
+/** يحقن بديل التخزين وجسر ملء الشاشة وجسر النتيجة في بداية المستند قبل أي سكربت للعبة. */
 export function withStorageShim(html: string): string {
-  const shims = STORAGE_SHIM + FULLSCREEN_SHIM;
+  const shims = STORAGE_SHIM + FULLSCREEN_SHIM + REPORT_SHIM;
   const m = /<head[^>]*>/i.exec(html);
   if (m) return html.slice(0, m.index + m[0].length) + shims + html.slice(m.index + m[0].length);
   return shims + html;

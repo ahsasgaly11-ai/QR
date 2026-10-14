@@ -26,6 +26,13 @@ import {
   saveLocalStructure,
   getLocalStructure,
 } from '@/lib/local-store';
+import { normalizePedagogy } from '@/lib/pedagogy';
+import {
+  EMPTY_PEDAGOGY_DRAFT,
+  PedagogyFields,
+  draftToPedagogy,
+  type PedagogyDraft,
+} from '@/components/admin/pedagogy-fields';
 
 const TYPES = Object.keys(ACTIVITY_META) as ActivityType[];
 const NEW = '__new__';
@@ -76,6 +83,7 @@ export function AdminUploader({
   const [description, setDescription] = useState('');
   const [signLang, setSignLang] = useState('');
   const [downloadable, setDownloadable] = useState(false);
+  const [ped, setPed] = useState<PedagogyDraft>(EMPTY_PEDAGOGY_DRAFT);
   const [type, setType] = useState<ActivityType>(smartOnly || reviewOnly ? 'game' : 'experiment');
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
@@ -147,10 +155,12 @@ export function AdminUploader({
         : lessonId;
     const id = `act-${stamp}-${rid()}`;
 
+    const pedagogy = normalizePedagogy(draftToPedagogy(ped));
     const baseActivity: Activity = {
       id,
       title: title.trim(),
       description: description.trim(),
+      ...(pedagogy ? { pedagogy } : {}),
       ...(signLang.trim() ? { signLang: signLang.trim() } : {}),
       smartReinforcement: smartOnly,
       ...(reviewOnly ? { unitReview: true, downloadable } : {}),
@@ -534,6 +544,10 @@ export function AdminUploader({
           placeholder="وصف موجز يظهر للطلبة…"
         />
       </div>
+
+      {!smartOnly && (
+        <PedagogyFields value={ped} onChange={setPed} inputClass={inputCls} labelClass={labelCls} />
+      )}
 
       <div className="mt-5">
         <label htmlFor="uploader-signlang" className={labelCls}>رابط شرح بلغة الإشارة (اختياري)</label>

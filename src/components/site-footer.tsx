@@ -7,6 +7,7 @@ import { DownloadsSwitch } from './downloads-switch';
 const LINKS = [
   { href: '/', label: 'الرئيسية' },
   { href: '/browse', label: 'تصفّح المناهج' },
+  { href: '/about', label: 'عن المنصّة' },
   { href: '/dashboard', label: 'لوحة الإحصاءات' },
   { href: '/admin', label: 'رفع نشاط جديد' },
   { href: '/privacy', label: 'سياسة الخصوصية' },

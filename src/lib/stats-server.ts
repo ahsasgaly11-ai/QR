@@ -103,3 +103,35 @@ export async function getReachServer(): Promise<ReachSnapshot | null> {
     return null;
   }
 }
+
+
+/** دليل التعلّم مجمَّعًا من activityStats: المحاولات والإجابات الصحيحة من المجابة. */
+export interface MasterySnapshot {
+  attempts: number;
+  correct: number;
+  total: number;
+  /** نسبة الإتقان المقرّبة، أو null بلا محاولات. */
+  percent: number | null;
+}
+
+export async function getMasteryServer(): Promise<MasterySnapshot | null> {
+  if (!isFirebaseConfigured) return null;
+  const db = getDb();
+  if (!db) return null;
+  try {
+    const { collection, getDocs } = await import('firebase/firestore');
+    const snap = await withTimeout(getDocs(collection(db, 'activityStats')), SERVER_TIMEOUT_MS);
+    let attempts = 0;
+    let correct = 0;
+    let total = 0;
+    snap.docs.forEach((d) => {
+      const x = d.data() as { attempts?: number; correct?: number; total?: number };
+      attempts += Number(x.attempts) || 0;
+      correct += Number(x.correct) || 0;
+      total += Number(x.total) || 0;
+    });
+    return { attempts, correct, total, percent: total > 0 ? Math.round((correct / total) * 100) : null };
+  } catch {
+    return null;
+  }
+}

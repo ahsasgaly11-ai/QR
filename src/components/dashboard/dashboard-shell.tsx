@@ -23,8 +23,9 @@ import {
   TrendingDown,
   TrendingUp,
   Users,
+  ClipboardCheck,
 } from 'lucide-react';
-import { ACTIVITY_META, type ActivityType } from '@/lib/types';
+import { ACTIVITY_META, type ActivityStats, type ActivityType } from '@/lib/types';
 import { isFirebaseConfigured } from '@/lib/firebase';
 import { formatFull, formatPercent } from '@/lib/utils';
 import {
@@ -33,6 +34,9 @@ import {
   downloadText,
   firstTrackedDay,
   hasContentFilter,
+  masteryBand,
+  masteryByLesson,
+  masterySum,
   metricTotal,
   NO_FILTERS,
   peakDay,
@@ -403,6 +407,8 @@ export function DashboardShell({ rows: serverRows }: { rows: DashboardRow[] }) {
                 {/* أنواع الأنشطة */}
                 <TypeBreakdown rows={perActivity} />
               </div>
+
+              <MasteryPanel rows={filteredRows} stats={stats} loaded={loaded} />
 
               <div className="grid gap-4 lg:grid-cols-3">
                 <TopActivities
@@ -1065,5 +1071,126 @@ function LockedPanel({ checking }: { checking: boolean }) {
         </>
       )}
     </div>
+  );
+}
+
+
+/**
+ * دليل التعلّم: نسبة الإتقان من نتائج التقويم الختامي (تذكرة الخروج) ومن
+ * النتائج التي تبلّغها الألعاب نفسها. الرقم = الإجابات الصحيحة ÷ المجابة،
+ * بلا أسماء ولا أجهزة، مجمَّعًا على مستوى الدرس ثم النشاط.
+ */
+function MasteryPanel({
+  rows,
+  stats,
+  loaded,
+}: {
+  rows: DashboardRow[];
+  stats: Record<string, ActivityStats>;
+  loaded: boolean;
+}) {
+  const all = masterySum(rows, stats);
+  const lessons = masteryByLesson(rows, stats);
+  const perActivity = rows
+    .map((r) => ({ r, m: masterySum([r], stats) }))
+    .filter((x) => x.m.attempts > 0)
+    .sort((a, b) => b.m.attempts - a.m.attempts)
+    .slice(0, 8);
+  const band = masteryBand(all.percent);
+  const withTicket = rows.length; // كل الأنشطة في الفلتر (المرجع للنسبة)
+
+  return (
+    <figure className="panel min-w-0 p-4 sm:p-6">
+      <CardHead icon={ClipboardCheck} title="دليل التعلّم: نسبة الإتقان" />
+      {!loaded ? (
+        <EmptyBlock text="يجري التحميل…" />
+      ) : all.attempts === 0 ? (
+        <EmptyBlock text="لا نتائج تقويم بعد. أضِف «سؤال التقويم الختامي» لأي نشاط من لوحة الإدارة، وستظهر هنا نسبة إجابات الطلبة الصحيحة فور أوّل محاولة." />
+      ) : (
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,260px)_1fr]">
+          <div className="rounded-2xl bg-[color:var(--surface-2)] p-4">
+            <p className="text-xs font-bold text-muted-foreground">الإتقان العام</p>
+            <p className="mt-1 font-display text-4xl font-extrabold tabular-nums" style={{ color: band.color }}>
+              {all.percent}%
+            </p>
+            <p className="text-sm font-bold" style={{ color: band.color }}>{band.label}</p>
+            <dl className="mt-3 space-y-1 text-xs text-muted-foreground">
+              <div className="flex justify-between gap-2">
+                <dt>محاولات مسجَّلة</dt>
+                <dd className="tabular-nums font-bold text-foreground">{formatFull(all.attempts)}</dd>
+              </div>
+              <div className="flex justify-between gap-2">
+                <dt>إجابات صحيحة / مجابة</dt>
+                <dd className="tabular-nums font-bold text-foreground">
+                  {formatFull(all.correct)} / {formatFull(all.total)}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-2">
+                <dt>أنشطة لها نتائج</dt>
+                <dd className="tabular-nums font-bold text-foreground">
+                  {formatFull(rows.filter((r) => (stats[r.id]?.attempts || 0) > 0).length)} / {formatFull(withTicket)}
+                </dd>
+              </div>
+            </dl>
+            <p className="mt-3 text-[11px] leading-5 text-muted-foreground">
+              النسبة = الإجابات الصحيحة ÷ المجابة في التقويم الختامي، بلا أسماء ولا أجهزة.
+              80% فأعلى إتقان، 60% إلى 79% قريب من الإتقان، وأقلّ من ذلك يحتاج دعمًا.
+            </p>
+          </div>
+          <div className="min-w-0 space-y-4">
+            {lessons.length > 0 && (
+              <div>
+                <p className="mb-2 text-xs font-bold text-muted-foreground">حسب الدرس</p>
+                <ol className="space-y-2.5">
+                  {lessons.slice(0, 6).map((l) => {
+                    const b = masteryBand(l.agg.percent);
+                    return (
+                      <li key={l.key} className="mastery-row">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-bold text-foreground">{l.label}</p>
+                          <p className="truncate text-[11px] text-muted-foreground">
+                            {l.context || '—'} · {formatFull(l.agg.attempts)} محاولة · {l.activities} نشاط
+                          </p>
+                        </div>
+                        <span className="mastery-pct" style={{ color: b.color }} title={b.label}>
+                          {l.agg.percent}%
+                        </span>
+                        <div className="bar-track !h-1.5 col-span-2">
+                          <div className="h-full" style={{ width: `${l.agg.percent ?? 0}%`, background: b.color }} />
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </div>
+            )}
+            <div>
+              <p className="mb-2 text-xs font-bold text-muted-foreground">حسب النشاط</p>
+              <ol className="space-y-2">
+                {perActivity.map(({ r, m }) => {
+                  const b = masteryBand(m.percent);
+                  return (
+                    <li key={r.id} className="flex items-center justify-between gap-3 text-sm">
+                      <Link
+                        href={`/play/${r.id}`}
+                        className="min-w-0 flex-1 truncate font-bold text-foreground hover:text-[color:var(--maroon)]"
+                      >
+                        {r.title}
+                      </Link>
+                      <span className="shrink-0 text-[11px] text-muted-foreground tabular-nums">
+                        {formatFull(m.attempts)} محاولة
+                      </span>
+                      <span className="mastery-pct shrink-0" style={{ color: b.color }} title={b.label}>
+                        {m.percent}%
+                      </span>
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+          </div>
+        </div>
+      )}
+    </figure>
   );
 }

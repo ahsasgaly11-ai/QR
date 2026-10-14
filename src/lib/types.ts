@@ -29,10 +29,46 @@ export const ACTIVITY_META: Record<
   game: { label: 'لعبة تعليمية', icon: 'gamepad', color: '#6a4c93' },
 };
 
+/** سؤال تقويم ختامي (تذكرة خروج) من اختيار من متعدّد. */
+export interface ExitQuestion {
+  /** نص السؤال */
+  q: string;
+  /** الخيارات (2 إلى 4) */
+  options: string[];
+  /** فهرس الإجابة الصحيحة داخل options */
+  answer: number;
+}
+
+/** موضع توظيف النشاط في الدرس. */
+export type LessonPhase = 'before' | 'during' | 'after';
+
+/**
+ * البيانات التربوية للنشاط — ما يربطه بالهدف التعليمي للدرس ويُظهر للمعلّم
+ * والمحكّم كيف يُوظَّف وما الذي يقيسه.
+ */
+export interface Pedagogy {
+  /** الهدف التعليمي كما في دليل المعلّم */
+  objective?: string;
+  /** نواتج التعلّم المتوقّعة (كل ناتج سطر) */
+  outcomes?: string[];
+  /** المدة المقترحة بالدقائق */
+  duration?: number;
+  /** متى يُوظَّف: قبل الدرس (تهيئة)، أثناءه (بناء)، بعده (تثبيت/تقويم) */
+  phase?: LessonPhase;
+  /** كيف يوظّفه المعلّم في الصف (خطوات مختصرة) */
+  usage?: string;
+  /** مراعاة الفروق الفردية وأدوات الدعم */
+  support?: string;
+  /** أسئلة التقويم الختامي (1 إلى 3) — تُعرض بعد النشاط وتُسجَّل نتائجها */
+  exitTicket?: ExitQuestion[];
+}
+
 export interface Activity {
   id: string;
   title: string;
   description?: string;
+  /** الهدف التعليمي ونواتج التعلّم وطريقة التوظيف والتقويم الختامي */
+  pedagogy?: Pedagogy;
   /** يظهر النشاط في قسم «ألعاب التعزيز الذكية» في الصفحة الرئيسية. */
   smartReinforcement?: boolean;
   /**
@@ -107,6 +143,14 @@ export interface Subject {
 export interface ActivityStats {
   views: number;
   downloads: number;
+  /** عدد مرّات إكمال التقويم الختامي (محاولة = طالب أجاب كل الأسئلة). */
+  attempts?: number;
+  /** مجموع الإجابات الصحيحة في كل المحاولات. */
+  correct?: number;
+  /** مجموع الأسئلة المجابة في كل المحاولات. */
+  total?: number;
+  /** توزيع المحاولات يوميًا: { 'YYYY-MM-DD': n }. */
+  attemptsByDay?: Record<string, number>;
   /** توزيع يومي للمشاهدات: { 'YYYY-MM-DD': n } (يبدأ من يوم تفعيله). */
   viewsByDay?: Record<string, number>;
   /** توزيع يومي للتنزيلات: { 'YYYY-MM-DD': n }. */

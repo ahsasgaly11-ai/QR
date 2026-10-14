@@ -11,6 +11,8 @@ import { PlayPageMode } from './play-page-mode';
 import { IosDocumentsNotice } from './ios-documents-notice';
 import { OryxMascot } from './oryx-mascot';
 import { BackButton } from './back-button';
+import { LessonObjectives } from './lesson-objectives';
+import { ExitTicket } from './exit-ticket';
 
 /**
  * يُستخدم عندما لا يجد الخادم النشاط: قد يكون نشاطًا مرفوعًا في «وضع العرض»
@@ -137,6 +139,14 @@ export function LocalPlay({ activityId }: { activityId: string }) {
 
       <ActivityPlayer activity={activity} localHtml={html} />
       <IosDocumentsNotice variant="inline" />
+
+      {/* الهدف التعليمي وتذكرة الخروج كما في صفحة النشاط المنشور */}
+      <div className="play-below short-hide">
+        <LessonObjectives activity={activity} />
+        {activity.pedagogy?.exitTicket?.length ? (
+          <ExitTicket activityId={activity.id} questions={activity.pedagogy.exitTicket} />
+        ) : null}
+      </div>
     </div>
   );
 }

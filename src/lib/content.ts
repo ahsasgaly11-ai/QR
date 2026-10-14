@@ -166,15 +166,18 @@ export async function deleteActivity(id: string): Promise<void> {
 
 export async function updateActivity(
   id: string,
-  patch: Partial<Activity>
+  patch: Partial<Activity>,
+  /** حقول تُحذف من الوثيقة (مثل pedagogy حين تُفرَّغ من النموذج). */
+  remove: (keyof Activity)[] = []
 ): Promise<void> {
   const db = getDb();
   if (!db) throw new Error('Firebase غير مُعدّ.');
   // Firestore يرفض أي حقل قيمته undefined فيفشل الحفظ كلّه — أزِلها أولًا
-  const clean = Object.fromEntries(
+  const clean: Record<string, unknown> = Object.fromEntries(
     Object.entries(patch).filter(([k, v]) => v !== undefined && k !== 'id')
   );
-  const { doc, setDoc } = await import('firebase/firestore');
+  const { doc, setDoc, deleteField } = await import('firebase/firestore');
+  for (const k of remove) clean[k] = deleteField();
   await setDoc(doc(db, 'activities', id), clean, { merge: true });
 }
 
