@@ -11,6 +11,7 @@ import { TickerManager } from './ticker-manager';
 import { ImpactManager } from './impact-manager';
 import { DownloadsManager } from './downloads-manager';
 import { ContentAudit } from './content-audit';
+import { PedagogyPackApply } from './pedagogy-pack-apply';
 import { signOutAdmin, isFirebaseConfigured } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 
@@ -145,7 +146,12 @@ export function AdminShell({
         </div>
       )}
       {tab === 'content' && <ContentManager initial={structure} activities={activities} />}
-      {tab === 'audit' && <ContentAudit activities={activities} structure={structure} />}
+      {tab === 'audit' && (
+        <div className="space-y-6">
+          <PedagogyPackApply activities={activities} structure={structure} />
+          <ContentAudit activities={activities} structure={structure} />
+        </div>
+      )}
       {tab === 'ticker' && <TickerManager />}
       {tab === 'impact' && <ImpactManager />}
       {tab === 'downloads' && <DownloadsManager structure={structure} />}
