@@ -62,7 +62,7 @@
 
 | الطبقة | ما تفعله | الملفات |
 |---|---|---|
-| **نموذج الغلوس** | يحوّل نصّ النشاط إلى تسلسل إشاري: تجريد التصريف (طلبة ← طالب، يصنّف ← تصنيف)، مرادف يحفظ المعنى، حذف ما لا يُشار (أل، الرابط)، ترتيب إشاري (الزمان والمكان أوّلًا، الاستفهام آخرًا، العدد بعد المعدود)، والإشارات المركّبة. المخرج مفاتيح من القاموس فقط وما عداه يُهجّى | `src/lib/sign-gloss.ts` (الموجّه والمخطّط)، `src/app/api/sign/gloss/route.ts` (Claude + تخزين)، `scripts/build-gloss-cache.mts` (حساب مسبق إلى `gloss-cache.json`) |
+| **نموذج الغلوس** | يحوّل نصّ النشاط إلى تسلسل إشاري: تجريد التصريف (طلبة ← طالب، يصنّف ← تصنيف)، مرادف يحفظ المعنى، حذف ما لا يُشار (أل، الرابط)، ترتيب إشاري (الزمان والمكان أوّلًا، الاستفهام آخرًا، العدد بعد المعدود)، والإشارات المركّبة. المخرج مفاتيح من القاموس فقط وما عداه يُهجّى | `src/lib/sign-gloss.ts` (الموجّه والمخطّط)، `src/lib/sign-gloss-server.ts` (المزوّد: Gemini المجاني أو Claude) و`src/app/api/sign/gloss/route.ts` (تخزين وسقف)، `scripts/build-gloss-cache.mts` (حساب مسبق إلى `gloss-cache.json`) |
 | **بنك الحركات والأفاتار الموحّد** | يستخلص الهيكل العظمي (33 معلمًا للجسم + 21 لكل يد) من كل مقطع محلي بنموذج MediaPipe Holistic إلى `poses/*.json`، ويعيد أفاتار واحد بهوية المنصّة أداءه على canvas بدل فيديوهات المصادر المتباينة | `scripts/extract-poses.py`، `src/components/sign-skeleton.tsx` |
 
 **التشغيل:**
@@ -72,7 +72,9 @@
 curl -L -o /tmp/holistic_landmarker.task https://storage.googleapis.com/mediapipe-models/holistic_landmarker/holistic_landmarker/float16/latest/holistic_landmarker.task
 pip install mediapipe && npm run sign:poses
 
-# الغلوس المحسوب مسبقًا لكل الأنشطة (يحتاج ANTHROPIC_API_KEY)
+# الغلوس المحسوب مسبقًا لكل الأنشطة — بمفتاح Gemini المجاني (aistudio.google.com/apikey)
+GEMINI_API_KEY=… npm run sign:gloss
+# أو بمفتاح Claude (مدفوع، له الأولوية إن ضُبط الاثنان)
 ANTHROPIC_API_KEY=sk-ant-… npm run sign:gloss
 ```
 
