@@ -86,7 +86,7 @@ async function main() {
         }
         console.error('❌', text.slice(0, 60), e instanceof Error ? e.message : e);
         // خطأ إعداد (مفتاح غير صالح، صلاحية، طلب مرفوض): لا فائدة من إكمال بقية النصوص.
-        if (status === 400 || status === 401 || status === 403) {
+        if (status === 400 || status === 401 || status === 403 || status === 404) {
           console.error('\n⛔ توقّف: الخطأ يخصّ الإعداد لا النصّ. أصلحه ثم أعد التشغيل (ما حُسب محفوظ).');
           process.exit(2);
         }
@@ -105,7 +105,12 @@ async function main() {
     await sleep(pauseMs);
   }
   writeFileSync(OUT, JSON.stringify(cache, null, 1) + '\n', 'utf8');
-  console.log(`\n✅ الغلوس: ${done} جديد، ${reused} معاد استخدامه، ${failed} فشل → ${OUT}`);
+  console.log(`\nالنموذج المستخدَم: ${glossModelName()}`);
+  console.log(`✅ الغلوس: ${done} جديد، ${reused} معاد استخدامه، ${failed} فشل → ${OUT}`);
+  if (failed > 0 && done === 0 && reused === 0) {
+    console.error('⛔ لم ينجح أي نصّ — الخطأ على الأرجح في الإعداد لا في النصوص.');
+    process.exit(2);
+  }
 }
 
 main().catch((e) => {

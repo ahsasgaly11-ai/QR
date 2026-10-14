@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { resolveGeminiModel } from '@/lib/gemini-model';
 import { bearerToken, verifyOwnerToken } from '@/lib/server-auth';
 
 // ---------------------------------------------------------------------------
@@ -14,7 +15,6 @@ import { bearerToken, verifyOwnerToken } from '@/lib/server-auth';
 
 export const runtime = 'nodejs';
 
-const MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
 
 const PROMPT = `هذه صفحات فهرس (جدول محتويات) من كتاب مدرسي عربي.
 قد تكون أكثر من صفحة — عالِجها بالترتيب المُعطى وأخرِج فهرسًا واحدًا متصلًا.
@@ -152,7 +152,7 @@ export async function POST(req: Request) {
 
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${await resolveGeminiModel(key)}:generateContent`,
       {
         method: 'POST',
         // المفتاح في ترويسة لا في الرابط، فلا يظهر في سجلّات الطلبات
