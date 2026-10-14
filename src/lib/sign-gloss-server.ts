@@ -17,12 +17,11 @@ import {
   sanitizeGloss,
   type Gloss,
 } from './sign-gloss';
+import { currentGeminiModel, forgetGeminiModel, resolveGeminiModel } from './gemini-model';
 
 export type GlossProvider = 'anthropic' | 'gemini';
 
 export const CLAUDE_MODEL = 'claude-opus-5-5';
-/** نموذج Gemini الافتراضي: الأسرع في الطبقة المجانية مع مخرج JSON منظّم. */
-export const GEMINI_MODEL_DEFAULT = 'gemini-2.5-flash';
 
 export function glossProvider(): GlossProvider | null {
   if (process.env.ANTHROPIC_API_KEY) return 'anthropic';
@@ -33,7 +32,7 @@ export function glossProvider(): GlossProvider | null {
 export function glossModelName(): string {
   const p = glossProvider();
   if (p === 'anthropic') return CLAUDE_MODEL;
-  if (p === 'gemini') return process.env.GEMINI_MODEL?.trim() || GEMINI_MODEL_DEFAULT;
+  if (p === 'gemini') return currentGeminiModel();
   return '';
 }
 
@@ -92,9 +91,10 @@ async function viaAnthropic(text: string, keys: string[], words: string[]): Prom
   }
 }
 
-async function viaGemini(text: string, keys: string[], words: string[]): Promise<Gloss> {
+async function viaGemini(text: string, keys: string[], words: string[], retried = false): Promise<Gloss> {
   const key = process.env.GEMINI_API_KEY!;
-  const model = process.env.GEMINI_MODEL?.trim() || GEMINI_MODEL_DEFAULT;
+  // يُختار تلقائيًّا أحدث نموذج Flash متاح للمفتاح (Google تُوقف القديمة للمفاتيح الجديدة)
+  const model = await resolveGeminiModel(key);
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
     {
@@ -111,6 +111,11 @@ async function viaGemini(text: string, keys: string[], words: string[]): Promise
       }),
     }
   );
+  if (res.status === 404 && !retried && !process.env.GEMINI_MODEL?.trim()) {
+    // النموذج المختار لم يعد متاحًا: أعد الاكتشاف مرّة واحدة
+    forgetGeminiModel();
+    return viaGemini(text, keys, words, true);
+  }
   if (res.status === 429) throw new GlossError('بلغ مفتاح Gemini حدّ الطبقة المجانية مؤقّتًا، حاول بعد دقيقة', 429);
   if (!res.ok) {
     // رسالة Gemini نفسها (لا تحوي المفتاح) تفيد في التشخيص: مفتاح غير صالح، نموذج غير متاح…
@@ -121,7 +126,10 @@ async function viaGemini(text: string, keys: string[], words: string[]): Promise
     } catch {
       /* لا جسم JSON */
     }
-    throw new GlossError(`خطأ من Gemini (${res.status})${detail ? ` — ${detail}` : ''}`, res.status === 400 || res.status === 403 ? res.status : 502);
+    throw new GlossError(
+      `خطأ من Gemini (${res.status}، النموذج ${model})${detail ? ` — ${detail}` : ''}`,
+      res.status === 400 || res.status === 403 || res.status === 404 ? res.status : 502
+    );
   }
   const data = (await res.json()) as {
     candidates?: { content?: { parts?: { text?: string }[] } }[];
