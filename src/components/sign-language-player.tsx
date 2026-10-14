@@ -1,14 +1,17 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Play, Pause, ChevronRight, ChevronLeft, RotateCcw, Info } from 'lucide-react';
+import { Play, Pause, ChevronRight, ChevronLeft, RotateCcw, Info, Sparkles, User } from 'lucide-react';
 import {
   buildSequence,
+  buildSequenceFromGloss,
   loadSignManifest,
   sourceWords,
   SIGN_SOURCES,
   type SignManifest,
 } from '@/lib/sign-interpreter';
+import { glossCacheKey, GLOSS_VERSION, type Gloss } from '@/lib/sign-gloss';
+import { SignSkeleton, poseUrlFor } from './sign-skeleton';
 import { SignAvatar } from './sign-avatar';
 import { SignYouTube } from './sign-youtube';
 import { HandSign } from './hand-sign';
@@ -28,9 +31,74 @@ const WORD_MS = 1700;
 // صورة متحرّكة (GIF) لإشارة كلمة: تُمهَل لتُرى الحركة كاملة.
 const GIF_MS = 3800;
 
+// جلب الغلوس: الملف المحسوب مسبقًا أوّلًا (صفر تكلفة)، ثم الخادم، وإلا الوضع الحرفي.
+let staticGloss: Promise<Record<string, Gloss>> | null = null;
+function loadStaticGloss(): Promise<Record<string, Gloss>> {
+  if (!staticGloss) {
+    staticGloss = fetch('/sign/gloss-cache.json', { cache: 'force-cache' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => (j && j.version === GLOSS_VERSION ? (j.items ?? {}) : {}))
+      .catch(() => ({}));
+  }
+  return staticGloss;
+}
+const glossMemo = new Map<string, Promise<Gloss | null>>();
+function fetchGloss(text: string): Promise<Gloss | null> {
+  const key = glossCacheKey(text);
+  if (!glossMemo.has(key)) {
+    glossMemo.set(
+      key,
+      loadStaticGloss().then(async (items) => {
+        if (items[key]) return items[key];
+        try {
+          const r = await fetch('/api/sign/gloss', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ text }),
+          });
+          if (!r.ok) return null;
+          const j = (await r.json()) as { gloss?: Gloss };
+          return j.gloss ?? null;
+        } catch {
+          return null;
+        }
+      })
+    );
+  }
+  return glossMemo.get(key)!;
+}
+
+const MODE_STORE = 'qa-sign-mode'; // smart | literal
+const AVATAR_STORE = 'qa-sign-avatar'; // on | off
+
 export function SignLanguagePlayer({ text }: { text: string }) {
   const [manifest, setManifest] = useState<SignManifest | null>(null);
   const [ready, setReady] = useState(false);
+  // الترتيب الإشاري الذكي (نموذج الغلوس) أم الحرفي كلمةً كلمة
+  const [mode, setMode] = useState<'smart' | 'literal'>('smart');
+  const [gloss, setGloss] = useState<Gloss | null>(null);
+  // الأفاتار الموحّد (بنك الحركات) بدل فيديو المصدر حين يتوفّر
+  const [avatar, setAvatar] = useState(false);
+  const [noPose, setNoPose] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    try {
+      const m = localStorage.getItem(MODE_STORE);
+      if (m === 'literal' || m === 'smart') setMode(m);
+      setAvatar(localStorage.getItem(AVATAR_STORE) === 'on');
+    } catch {
+      /* التخزين غير متاح */
+    }
+  }, []);
+  useEffect(() => {
+    let alive = true;
+    setGloss(null);
+    fetchGloss(text).then((g) => {
+      if (alive) setGloss(g);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [text]);
   const [i, setI] = useState(0);
   const [playing, setPlaying] = useState(true);
   // وضع المراجعة (للمترجم المعتمد فقط) — يكشف أوضاع الحروف المسودّة غير المعتمدة.
@@ -55,14 +123,18 @@ export function SignLanguagePlayer({ text }: { text: string }) {
     };
   }, []);
 
-  const steps = useMemo(() => buildSequence(text, manifest), [text, manifest]);
+  const smart = mode === 'smart' && !!gloss && gloss.items.length > 0;
+  const steps = useMemo(
+    () => (smart && gloss ? buildSequenceFromGloss(text, gloss, manifest) : buildSequence(text, manifest)),
+    [text, manifest, gloss, smart]
+  );
   const words = useMemo(() => sourceWords(text), [text]);
 
-  // أعِد الضبط عند تغيّر النشاط (النصّ) أو وصول القاموس.
+  // أعِد الضبط عند تغيّر النشاط (النصّ) أو وصول القاموس أو تبديل الوضع.
   useEffect(() => {
     setI(0);
     setPlaying(true);
-  }, [text, manifest]);
+  }, [text, manifest, smart]);
 
   const total = steps.length;
   const step = steps[i];
@@ -114,6 +186,8 @@ export function SignLanguagePlayer({ text }: { text: string }) {
   );
   // مصدر الإشارة المعروضة الآن (إن كانت من قاعدة خارجية) — يُنسَب بصدق للطالب.
   const source = showMedia && step?.source ? SIGN_SOURCES[step.source] : undefined;
+  const poseUrl = showMedia && step.media === 'video' ? poseUrlFor(step.src) : null;
+  const showSkeleton = avatar && !!poseUrl && !noPose.has(poseUrl);
 
   if (!ready) {
     return (
@@ -150,6 +224,62 @@ export function SignLanguagePlayer({ text }: { text: string }) {
         </p>
       )}
 
+      {/* شريط الوضع: الترتيب الإشاري الذكي / الحرفي، والأفاتار الموحّد */}
+      <div className="flex items-center justify-between gap-2 border-b border-[color:var(--hairline)] px-2 py-1.5 text-[11px] font-bold">
+        <button
+          type="button"
+          onClick={() => {
+            const m = mode === 'smart' ? 'literal' : 'smart';
+            setMode(m);
+            try {
+              localStorage.setItem(MODE_STORE, m);
+            } catch {
+              /* تجاهل */
+            }
+          }}
+          aria-pressed={mode === 'smart'}
+          title={
+            smart
+              ? 'ترتيب إشاري تقريبي من نموذج لغوي مقيّد بمفردات القاموس — بانتظار اعتماد مترجم. اضغط للوضع الحرفي.'
+              : gloss
+              ? 'الوضع الحرفي: كلمةً كلمة بترتيب الجملة العربية. اضغط للترتيب الإشاري الذكي.'
+              : 'الوضع الحرفي: كلمةً كلمة (الغلوس الذكي غير متاح لهذا النصّ بعد).'
+          }
+          className={cn(
+            'flex items-center gap-1 rounded-lg px-2 py-1 transition',
+            smart
+              ? 'bg-[color:var(--maroon-100)] text-[color:var(--maroon)]'
+              : 'text-muted-foreground hover:bg-[color:var(--surface-2)]'
+          )}
+        >
+          <Sparkles className="h-3.5 w-3.5" />
+          {smart ? 'ترتيب إشاري ذكي' : 'حرفي كلمةً كلمة'}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            const v = !avatar;
+            setAvatar(v);
+            try {
+              localStorage.setItem(AVATAR_STORE, v ? 'on' : 'off');
+            } catch {
+              /* تجاهل */
+            }
+          }}
+          aria-pressed={avatar}
+          title="الأفاتار الموحّد يعيد أداء الإشارة من الهيكل العظمي المستخلص آليًّا من مقطع المصدر"
+          className={cn(
+            'flex items-center gap-1 rounded-lg px-2 py-1 transition',
+            avatar
+              ? 'bg-[color:var(--maroon-100)] text-[color:var(--maroon)]'
+              : 'text-muted-foreground hover:bg-[color:var(--surface-2)]'
+          )}
+        >
+          <User className="h-3.5 w-3.5" />
+          الأفاتار الموحّد
+        </button>
+      </div>
+
       {/* المسرح */}
       <div className="relative grid aspect-square w-full place-items-center bg-black">
         {showMedia && step.media === 'yt' ? (
@@ -158,6 +288,19 @@ export function SignLanguagePlayer({ text }: { text: string }) {
             <div className="absolute bottom-2 left-2 grid h-16 w-16 place-items-end overflow-hidden rounded-full bg-white/90 shadow-md">
               <SignAvatar state="greet" />
             </div>
+          </>
+        ) : showSkeleton && poseUrl ? (
+          <>
+            <SignSkeleton
+              key={`${i}-${poseUrl}`}
+              src={poseUrl}
+              playing={playing}
+              onEnded={next}
+              onUnavailable={() => setNoPose((p) => new Set(p).add(poseUrl))}
+            />
+            <span className="absolute right-2 top-2 rounded-lg bg-white/15 px-2 py-0.5 text-[10px] font-black text-white backdrop-blur">
+              الأفاتار الموحّد
+            </span>
           </>
         ) : showMedia && step.media === 'video' ? (
           <>

@@ -222,6 +222,45 @@ export function buildSequence(text: string, m: SignManifest | null): SignStep[] 
   return steps;
 }
 
+/**
+ * يبني تسلسل الإشارات من غلوس جاهز (نموذج الغلوس): كل عنصر إمّا مفتاح موجود في
+ * القاموس فيُعرض إشارةً واحدة تغطّي كلمات النصّ من from إلى to، أو كلمة تُهجّى
+ * حرفًا حرفًا. يحافظ على قاعدة الصدق نفسها: لا إشارة بلا أصل موثّق.
+ */
+export function buildSequenceFromGloss(
+  text: string,
+  gloss: { items: { key: string; word: string; from: number; to: number; spell?: string }[] },
+  m: SignManifest | null
+): SignStep[] {
+  const steps: SignStep[] = [];
+  const words = (text || '').match(WORD_RE) || [];
+  for (const it of gloss.items) {
+    const from = Math.max(0, Math.min(words.length - 1, it.from | 0));
+    const to = Math.max(from, Math.min(words.length - 1, it.to | 0));
+    const span = to - from + 1;
+    const entry = it.key ? lookupWord(m, it.key) : undefined;
+    const glyph = it.word || words.slice(from, to + 1).join(' ');
+    if (entry) {
+      steps.push({ ...makeStep('word', glyph, entry.gloss || glyph, from, entry), span });
+      continue;
+    }
+    const bare = stripMarks(it.spell || glyph);
+    if (!ARABIC.test(bare)) {
+      steps.push({ ...makeStep('raw', glyph, glyph, from), span });
+      continue;
+    }
+    for (const ch of Array.from(bare)) {
+      if (!ARABIC.test(ch)) {
+        if (ch.trim()) steps.push({ ...makeStep('raw', ch, ch, from), span });
+        continue;
+      }
+      const le = m?.letters?.[ch] || m?.letters?.[normalizeWord(ch)];
+      steps.push({ ...makeStep('letter', ch, ch, from, le), span });
+    }
+  }
+  return steps;
+}
+
 /** الكلمات المصدر (لإبراز النصّ المقروء أثناء العرض). */
 export function sourceWords(text: string): string[] {
   return (text || '').match(WORD_RE) || [];
