@@ -1,5 +1,1526 @@
 {
   "version": 1,
-  "words": {},
-  "letters": {}
+  "words": {
+    "0": {
+      "video": "words/numbers/karsl-1.mp4",
+      "gloss": "صفر",
+      "source": "karsl"
+    },
+    "1": {
+      "video": "words/numbers/1.mp4",
+      "gloss": "واحد",
+      "source": "karsl"
+    },
+    "2": {
+      "video": "words/numbers/2.mp4",
+      "gloss": "اثنان",
+      "source": "karsl"
+    },
+    "3": {
+      "video": "words/numbers/3.mp4",
+      "gloss": "ثلاثة",
+      "source": "karsl"
+    },
+    "4": {
+      "video": "words/numbers/4.mp4",
+      "gloss": "أربعة",
+      "source": "karsl"
+    },
+    "5": {
+      "video": "words/numbers/5.mp4",
+      "gloss": "خمسة",
+      "source": "karsl"
+    },
+    "6": {
+      "video": "words/numbers/6.mp4",
+      "gloss": "ستة",
+      "source": "karsl"
+    },
+    "7": {
+      "video": "words/numbers/7.mp4",
+      "gloss": "سبعة",
+      "source": "karsl"
+    },
+    "8": {
+      "video": "words/numbers/8.mp4",
+      "gloss": "ثمانية",
+      "source": "karsl"
+    },
+    "9": {
+      "video": "words/numbers/9.mp4",
+      "gloss": "تسعة",
+      "source": "karsl"
+    },
+    "10": {
+      "video": "words/numbers/10.mp4",
+      "gloss": "عشرة",
+      "source": "karsl"
+    },
+    "20": {
+      "video": "words/numbers/karsl-12.mp4",
+      "gloss": "عشرون",
+      "source": "karsl"
+    },
+    "30": {
+      "video": "words/numbers/karsl-13.mp4",
+      "gloss": "ثلاثون",
+      "source": "karsl"
+    },
+    "40": {
+      "video": "words/numbers/karsl-14.mp4",
+      "gloss": "أربعون",
+      "source": "karsl"
+    },
+    "50": {
+      "video": "words/numbers/karsl-15.mp4",
+      "gloss": "خمسون",
+      "source": "karsl"
+    },
+    "60": {
+      "video": "words/numbers/karsl-16.mp4",
+      "gloss": "ستون",
+      "source": "karsl"
+    },
+    "70": {
+      "video": "words/numbers/karsl-17.mp4",
+      "gloss": "سبعون",
+      "source": "karsl"
+    },
+    "80": {
+      "video": "words/numbers/karsl-18.mp4",
+      "gloss": "ثمانون",
+      "source": "karsl"
+    },
+    "90": {
+      "video": "words/numbers/karsl-19.mp4",
+      "gloss": "تسعون",
+      "source": "karsl"
+    },
+    "100": {
+      "video": "words/numbers/karsl-20.mp4",
+      "gloss": "مئة",
+      "source": "karsl"
+    },
+    "200": {
+      "video": "words/numbers/karsl-21.mp4",
+      "gloss": "مئتان",
+      "source": "karsl"
+    },
+    "300": {
+      "video": "words/numbers/karsl-22.mp4",
+      "gloss": "ثلاثمئة",
+      "source": "karsl"
+    },
+    "400": {
+      "video": "words/numbers/karsl-23.mp4",
+      "gloss": "أربعمئة",
+      "source": "karsl"
+    },
+    "500": {
+      "video": "words/numbers/karsl-24.mp4",
+      "gloss": "خمسمئة",
+      "source": "karsl"
+    },
+    "600": {
+      "video": "words/numbers/karsl-25.mp4",
+      "gloss": "ستمئة",
+      "source": "karsl"
+    },
+    "700": {
+      "video": "words/numbers/karsl-26.mp4",
+      "gloss": "سبعمئة",
+      "source": "karsl"
+    },
+    "800": {
+      "video": "words/numbers/karsl-27.mp4",
+      "gloss": "ثمانمئة",
+      "source": "karsl"
+    },
+    "900": {
+      "video": "words/numbers/karsl-28.mp4",
+      "gloss": "تسعمئة",
+      "source": "karsl"
+    },
+    "1000": {
+      "video": "words/numbers/karsl-29.mp4",
+      "gloss": "ألف",
+      "source": "karsl"
+    },
+    "1000000": {
+      "video": "words/numbers/karsl-30.mp4",
+      "gloss": "مليون",
+      "source": "karsl"
+    },
+    "شكرا": {
+      "video": "words/basics/shukran.mp4",
+      "gloss": "شكرًا",
+      "source": "karsl"
+    },
+    "تفضل": {
+      "video": "words/basics/karsl-291.mp4",
+      "gloss": "تفضّل",
+      "source": "karsl"
+    },
+    "اهلا": {
+      "video": "words/basics/karsl-289.mp4",
+      "gloss": "أهلًا وسهلًا",
+      "source": "karsl"
+    },
+    "معلم": {
+      "video": "words/classroom/muallim.mp4",
+      "gloss": "معلّم",
+      "source": "karsl"
+    },
+    "مدرس": {
+      "video": "words/classroom/muallim.mp4",
+      "gloss": "معلّم",
+      "source": "karsl"
+    },
+    "معلمه": {
+      "video": "words/classroom/muallim.mp4",
+      "gloss": "معلّم",
+      "source": "karsl"
+    },
+    "المعلمه": {
+      "video": "words/classroom/muallim.mp4",
+      "gloss": "معلّم",
+      "source": "karsl"
+    },
+    "عضله": {
+      "video": "words/science/adala.mp4",
+      "gloss": "عضلة",
+      "source": "karsl"
+    },
+    "عضلات": {
+      "video": "words/science/adala.mp4",
+      "gloss": "عضلة",
+      "source": "karsl"
+    },
+    "قلب": {
+      "video": "words/science/qalb.mp4",
+      "gloss": "قلب",
+      "source": "karsl"
+    },
+    "قلوب": {
+      "video": "words/science/qalb.mp4",
+      "gloss": "قلب",
+      "source": "karsl"
+    },
+    "واحد": {
+      "video": "words/numbers/1.mp4",
+      "gloss": "واحد",
+      "source": "karsl"
+    },
+    "اثنان": {
+      "video": "words/numbers/2.mp4",
+      "gloss": "اثنان",
+      "source": "karsl"
+    },
+    "ثلاثه": {
+      "video": "words/numbers/3.mp4",
+      "gloss": "ثلاثة",
+      "source": "karsl"
+    },
+    "اربعه": {
+      "video": "words/numbers/4.mp4",
+      "gloss": "أربعة",
+      "source": "karsl"
+    },
+    "خمسه": {
+      "video": "words/numbers/5.mp4",
+      "gloss": "خمسة",
+      "source": "karsl"
+    },
+    "سته": {
+      "video": "words/numbers/6.mp4",
+      "gloss": "ستة",
+      "source": "karsl"
+    },
+    "سبعه": {
+      "video": "words/numbers/7.mp4",
+      "gloss": "سبعة",
+      "source": "karsl"
+    },
+    "ثمانيه": {
+      "video": "words/numbers/8.mp4",
+      "gloss": "ثمانية",
+      "source": "karsl"
+    },
+    "تسعه": {
+      "video": "words/numbers/9.mp4",
+      "gloss": "تسعة",
+      "source": "karsl"
+    },
+    "عشره": {
+      "video": "words/numbers/10.mp4",
+      "gloss": "عشرة",
+      "source": "karsl"
+    },
+    "صفر": {
+      "video": "words/numbers/karsl-1.mp4",
+      "gloss": "صفر",
+      "source": "karsl"
+    },
+    "عشرون": {
+      "video": "words/numbers/karsl-12.mp4",
+      "gloss": "عشرون",
+      "source": "karsl"
+    },
+    "عشرين": {
+      "video": "words/numbers/karsl-12.mp4",
+      "gloss": "عشرون",
+      "source": "karsl"
+    },
+    "ثلاثون": {
+      "video": "words/numbers/karsl-13.mp4",
+      "gloss": "ثلاثون",
+      "source": "karsl"
+    },
+    "ثلاثين": {
+      "video": "words/numbers/karsl-13.mp4",
+      "gloss": "ثلاثون",
+      "source": "karsl"
+    },
+    "اربعون": {
+      "video": "words/numbers/karsl-14.mp4",
+      "gloss": "أربعون",
+      "source": "karsl"
+    },
+    "اربعين": {
+      "video": "words/numbers/karsl-14.mp4",
+      "gloss": "أربعون",
+      "source": "karsl"
+    },
+    "خمسون": {
+      "video": "words/numbers/karsl-15.mp4",
+      "gloss": "خمسون",
+      "source": "karsl"
+    },
+    "خمسين": {
+      "video": "words/numbers/karsl-15.mp4",
+      "gloss": "خمسون",
+      "source": "karsl"
+    },
+    "ستون": {
+      "video": "words/numbers/karsl-16.mp4",
+      "gloss": "ستون",
+      "source": "karsl"
+    },
+    "ستين": {
+      "video": "words/numbers/karsl-16.mp4",
+      "gloss": "ستون",
+      "source": "karsl"
+    },
+    "سبعون": {
+      "video": "words/numbers/karsl-17.mp4",
+      "gloss": "سبعون",
+      "source": "karsl"
+    },
+    "سبعين": {
+      "video": "words/numbers/karsl-17.mp4",
+      "gloss": "سبعون",
+      "source": "karsl"
+    },
+    "ثمانون": {
+      "video": "words/numbers/karsl-18.mp4",
+      "gloss": "ثمانون",
+      "source": "karsl"
+    },
+    "ثمانين": {
+      "video": "words/numbers/karsl-18.mp4",
+      "gloss": "ثمانون",
+      "source": "karsl"
+    },
+    "تسعون": {
+      "video": "words/numbers/karsl-19.mp4",
+      "gloss": "تسعون",
+      "source": "karsl"
+    },
+    "تسعين": {
+      "video": "words/numbers/karsl-19.mp4",
+      "gloss": "تسعون",
+      "source": "karsl"
+    },
+    "مئه": {
+      "video": "words/numbers/karsl-20.mp4",
+      "gloss": "مئة",
+      "source": "karsl"
+    },
+    "مائه": {
+      "video": "words/numbers/karsl-20.mp4",
+      "gloss": "مئة",
+      "source": "karsl"
+    },
+    "مئتان": {
+      "video": "words/numbers/karsl-21.mp4",
+      "gloss": "مئتان",
+      "source": "karsl"
+    },
+    "مئتين": {
+      "video": "words/numbers/karsl-21.mp4",
+      "gloss": "مئتان",
+      "source": "karsl"
+    },
+    "مائتين": {
+      "video": "words/numbers/karsl-21.mp4",
+      "gloss": "مئتان",
+      "source": "karsl"
+    },
+    "ثلاثمئه": {
+      "video": "words/numbers/karsl-22.mp4",
+      "gloss": "ثلاثمئة",
+      "source": "karsl"
+    },
+    "ثلاثمائه": {
+      "video": "words/numbers/karsl-22.mp4",
+      "gloss": "ثلاثمئة",
+      "source": "karsl"
+    },
+    "اربعمئه": {
+      "video": "words/numbers/karsl-23.mp4",
+      "gloss": "أربعمئة",
+      "source": "karsl"
+    },
+    "اربعمائه": {
+      "video": "words/numbers/karsl-23.mp4",
+      "gloss": "أربعمئة",
+      "source": "karsl"
+    },
+    "خمسمئه": {
+      "video": "words/numbers/karsl-24.mp4",
+      "gloss": "خمسمئة",
+      "source": "karsl"
+    },
+    "خمسمائه": {
+      "video": "words/numbers/karsl-24.mp4",
+      "gloss": "خمسمئة",
+      "source": "karsl"
+    },
+    "ستمئه": {
+      "video": "words/numbers/karsl-25.mp4",
+      "gloss": "ستمئة",
+      "source": "karsl"
+    },
+    "ستمائه": {
+      "video": "words/numbers/karsl-25.mp4",
+      "gloss": "ستمئة",
+      "source": "karsl"
+    },
+    "سبعمئه": {
+      "video": "words/numbers/karsl-26.mp4",
+      "gloss": "سبعمئة",
+      "source": "karsl"
+    },
+    "سبعمائه": {
+      "video": "words/numbers/karsl-26.mp4",
+      "gloss": "سبعمئة",
+      "source": "karsl"
+    },
+    "ثمانمئه": {
+      "video": "words/numbers/karsl-27.mp4",
+      "gloss": "ثمانمئة",
+      "source": "karsl"
+    },
+    "ثمانمائه": {
+      "video": "words/numbers/karsl-27.mp4",
+      "gloss": "ثمانمئة",
+      "source": "karsl"
+    },
+    "تسعمئه": {
+      "video": "words/numbers/karsl-28.mp4",
+      "gloss": "تسعمئة",
+      "source": "karsl"
+    },
+    "تسعمائه": {
+      "video": "words/numbers/karsl-28.mp4",
+      "gloss": "تسعمئة",
+      "source": "karsl"
+    },
+    "الف": {
+      "video": "words/numbers/karsl-29.mp4",
+      "gloss": "ألف",
+      "source": "karsl"
+    },
+    "مليون": {
+      "video": "words/numbers/karsl-30.mp4",
+      "gloss": "مليون",
+      "source": "karsl"
+    },
+    "اب": {
+      "video": "words/community/ab.mp4",
+      "gloss": "أب",
+      "source": "karsl"
+    },
+    "ام": {
+      "video": "words/community/umm.mp4",
+      "gloss": "أم",
+      "source": "karsl"
+    },
+    "اخ": {
+      "video": "words/community/akh.mp4",
+      "gloss": "أخ",
+      "source": "karsl"
+    },
+    "اخت": {
+      "video": "words/community/ukht.mp4",
+      "gloss": "أخت",
+      "source": "karsl"
+    },
+    "صديق": {
+      "video": "words/community/sadiq.mp4",
+      "gloss": "صديق",
+      "source": "karsl"
+    },
+    "اصدقاء": {
+      "video": "words/community/sadiq.mp4",
+      "gloss": "صديق",
+      "source": "karsl"
+    },
+    "اسره": {
+      "video": "words/community/usra.mp4",
+      "gloss": "أسرة",
+      "source": "karsl"
+    },
+    "اسر": {
+      "video": "words/community/usra.mp4",
+      "gloss": "أسرة",
+      "source": "karsl"
+    },
+    "جده": {
+      "video": "words/community/karsl-193.mp4",
+      "gloss": "جدّة",
+      "source": "karsl"
+    },
+    "جد": {
+      "video": "words/community/karsl-194.mp4",
+      "gloss": "جدّ",
+      "source": "karsl"
+    },
+    "بنت": {
+      "video": "words/community/karsl-199.mp4",
+      "gloss": "بنت",
+      "source": "karsl"
+    },
+    "رجل": {
+      "video": "words/community/karsl-202.mp4",
+      "gloss": "رجل",
+      "source": "karsl"
+    },
+    "شاب": {
+      "video": "words/community/karsl-203.mp4",
+      "gloss": "شابّ",
+      "source": "karsl"
+    },
+    "ابن": {
+      "video": "words/community/karsl-216.mp4",
+      "gloss": "ابن",
+      "source": "karsl"
+    },
+    "ابنه": {
+      "video": "words/community/karsl-217.mp4",
+      "gloss": "ابنة",
+      "source": "karsl"
+    },
+    "ناس": {
+      "video": "words/community/karsl-218.mp4",
+      "gloss": "ناس",
+      "source": "karsl"
+    },
+    "طفل": {
+      "video": "words/community/karsl-223.mp4",
+      "gloss": "طفل",
+      "source": "karsl"
+    },
+    "اطفال": {
+      "video": "words/community/karsl-223.mp4",
+      "gloss": "طفل",
+      "source": "karsl"
+    },
+    "جار": {
+      "video": "words/community/karsl-292.mp4",
+      "gloss": "جار",
+      "source": "karsl"
+    },
+    "ضيف": {
+      "video": "words/community/karsl-295.mp4",
+      "gloss": "ضيف",
+      "source": "karsl"
+    },
+    "عدو": {
+      "video": "words/community/karsl-296.mp4",
+      "gloss": "عدوّ",
+      "source": "karsl"
+    },
+    "هديه": {
+      "video": "words/community/karsl-298.mp4",
+      "gloss": "هديّة",
+      "source": "karsl"
+    },
+    "جمجمه": {
+      "video": "words/health/karsl-72.mp4",
+      "gloss": "جمجمة",
+      "source": "karsl"
+    },
+    "رئتان": {
+      "video": "words/health/karsl-77.mp4",
+      "gloss": "رئتان",
+      "source": "karsl"
+    },
+    "رئتين": {
+      "video": "words/health/karsl-77.mp4",
+      "gloss": "رئتان",
+      "source": "karsl"
+    },
+    "رئه": {
+      "video": "words/health/karsl-77.mp4",
+      "gloss": "رئتان",
+      "source": "karsl"
+    },
+    "شهيق": {
+      "video": "words/health/karsl-78.mp4",
+      "gloss": "شهيق وزفير",
+      "source": "karsl"
+    },
+    "زفير": {
+      "video": "words/health/karsl-78.mp4",
+      "gloss": "شهيق وزفير",
+      "source": "karsl"
+    },
+    "وجه": {
+      "video": "words/health/karsl-80.mp4",
+      "gloss": "وجه",
+      "source": "karsl"
+    },
+    "بلعوم": {
+      "video": "words/health/karsl-81.mp4",
+      "gloss": "بلعوم",
+      "source": "karsl"
+    },
+    "كبد": {
+      "video": "words/health/karsl-82.mp4",
+      "gloss": "كبد",
+      "source": "karsl"
+    },
+    "بنكرياس": {
+      "video": "words/health/karsl-83.mp4",
+      "gloss": "بنكرياس",
+      "source": "karsl"
+    },
+    "انسجه": {
+      "video": "words/health/karsl-91.mp4",
+      "gloss": "أنسجة",
+      "source": "karsl"
+    },
+    "نسيج": {
+      "video": "words/health/karsl-91.mp4",
+      "gloss": "أنسجة",
+      "source": "karsl"
+    },
+    "مستشفي": {
+      "video": "words/health/karsl-92.mp4",
+      "gloss": "مستشفى",
+      "source": "karsl"
+    },
+    "صيدليه": {
+      "video": "words/health/karsl-100.mp4",
+      "gloss": "صيدلية",
+      "source": "karsl"
+    },
+    "مختبر": {
+      "video": "words/health/karsl-109.mp4",
+      "gloss": "مختبر",
+      "source": "karsl"
+    },
+    "معمل": {
+      "video": "words/health/karsl-109.mp4",
+      "gloss": "مختبر",
+      "source": "karsl"
+    },
+    "التهاب": {
+      "video": "words/health/karsl-111.mp4",
+      "gloss": "التهاب",
+      "source": "karsl"
+    },
+    "التهابات": {
+      "video": "words/health/karsl-111.mp4",
+      "gloss": "التهاب",
+      "source": "karsl"
+    },
+    "تورم": {
+      "video": "words/health/karsl-112.mp4",
+      "gloss": "تورّم",
+      "source": "karsl"
+    },
+    "زكام": {
+      "video": "words/health/karsl-113.mp4",
+      "gloss": "زكام",
+      "source": "karsl"
+    },
+    "عدوي": {
+      "video": "words/health/karsl-114.mp4",
+      "gloss": "عدوى",
+      "source": "karsl"
+    },
+    "صداع": {
+      "video": "words/health/karsl-115.mp4",
+      "gloss": "صداع",
+      "source": "karsl"
+    },
+    "الم": {
+      "video": "words/health/karsl-116.mp4",
+      "gloss": "ألم",
+      "source": "karsl"
+    },
+    "حمي": {
+      "video": "words/health/karsl-117.mp4",
+      "gloss": "حمّى",
+      "source": "karsl"
+    },
+    "حساسيه": {
+      "video": "words/health/karsl-130.mp4",
+      "gloss": "حساسية",
+      "source": "karsl"
+    },
+    "دواء": {
+      "video": "words/health/karsl-132.mp4",
+      "gloss": "دواء",
+      "source": "karsl"
+    },
+    "ادويه": {
+      "video": "words/health/karsl-132.mp4",
+      "gloss": "دواء",
+      "source": "karsl"
+    },
+    "مرض": {
+      "video": "words/health/karsl-134.mp4",
+      "gloss": "مرض",
+      "source": "karsl"
+    },
+    "مريض": {
+      "video": "words/health/karsl-134.mp4",
+      "gloss": "مرض",
+      "source": "karsl"
+    },
+    "امراض": {
+      "video": "words/health/karsl-134.mp4",
+      "gloss": "مرض",
+      "source": "karsl"
+    },
+    "بكتيريا": {
+      "video": "words/health/karsl-147.mp4",
+      "gloss": "بكتيريا",
+      "source": "karsl"
+    },
+    "بكتريا": {
+      "video": "words/health/karsl-147.mp4",
+      "gloss": "بكتيريا",
+      "source": "karsl"
+    },
+    "جرثومه": {
+      "video": "words/health/karsl-148.mp4",
+      "gloss": "جرثومة",
+      "source": "karsl"
+    },
+    "جراثيم": {
+      "video": "words/health/karsl-148.mp4",
+      "gloss": "جرثومة",
+      "source": "karsl"
+    },
+    "فيروس": {
+      "video": "words/health/karsl-149.mp4",
+      "gloss": "فيروس",
+      "source": "karsl"
+    },
+    "فيروسات": {
+      "video": "words/health/karsl-149.mp4",
+      "gloss": "فيروس",
+      "source": "karsl"
+    },
+    "انتشار": {
+      "video": "words/health/karsl-150.mp4",
+      "gloss": "انتشار",
+      "source": "karsl"
+    },
+    "وباء": {
+      "video": "words/health/karsl-156.mp4",
+      "gloss": "وباء",
+      "source": "karsl"
+    },
+    "مناعه": {
+      "video": "words/health/karsl-157.mp4",
+      "gloss": "مناعة",
+      "source": "karsl"
+    },
+    "عصب": {
+      "video": "words/health/karsl-158.mp4",
+      "gloss": "عصب",
+      "source": "karsl"
+    },
+    "اعصاب": {
+      "video": "words/health/karsl-158.mp4",
+      "gloss": "عصب",
+      "source": "karsl"
+    },
+    "معافي": {
+      "video": "words/health/karsl-159.mp4",
+      "gloss": "معافى",
+      "source": "karsl"
+    },
+    "ياكل": {
+      "video": "words/verbs/karsl-160.mp4",
+      "gloss": "يأكل",
+      "source": "karsl"
+    },
+    "يشرب": {
+      "video": "words/verbs/karsl-161.mp4",
+      "gloss": "يشرب",
+      "source": "karsl"
+    },
+    "ينام": {
+      "video": "words/verbs/karsl-162.mp4",
+      "gloss": "ينام",
+      "source": "karsl"
+    },
+    "يستيقظ": {
+      "video": "words/verbs/karsl-163.mp4",
+      "gloss": "يستيقظ",
+      "source": "karsl"
+    },
+    "يسمع": {
+      "video": "words/verbs/karsl-164.mp4",
+      "gloss": "يسمع",
+      "source": "karsl"
+    },
+    "يسكت": {
+      "video": "words/verbs/karsl-165.mp4",
+      "gloss": "يسكت",
+      "source": "karsl"
+    },
+    "يشم": {
+      "video": "words/verbs/karsl-166.mp4",
+      "gloss": "يشمّ",
+      "source": "karsl"
+    },
+    "يصعد": {
+      "video": "words/verbs/karsl-167.mp4",
+      "gloss": "يصعد",
+      "source": "karsl"
+    },
+    "ينزل": {
+      "video": "words/verbs/karsl-168.mp4",
+      "gloss": "ينزل",
+      "source": "karsl"
+    },
+    "يفتح": {
+      "video": "words/verbs/karsl-169.mp4",
+      "gloss": "يفتح",
+      "source": "karsl"
+    },
+    "يغلق": {
+      "video": "words/verbs/karsl-170.mp4",
+      "gloss": "يغلق",
+      "source": "karsl"
+    },
+    "يقفل": {
+      "video": "words/verbs/karsl-170.mp4",
+      "gloss": "يغلق",
+      "source": "karsl"
+    },
+    "يبني": {
+      "video": "words/verbs/karsl-171.mp4",
+      "gloss": "يبني",
+      "source": "karsl"
+    },
+    "يكسر": {
+      "video": "words/verbs/karsl-172.mp4",
+      "gloss": "يكسر",
+      "source": "karsl"
+    },
+    "يمشي": {
+      "video": "words/verbs/karsl-173.mp4",
+      "gloss": "يمشي",
+      "source": "karsl"
+    },
+    "يحب": {
+      "video": "words/verbs/karsl-174.mp4",
+      "gloss": "يحبّ",
+      "source": "karsl"
+    },
+    "يكره": {
+      "video": "words/verbs/karsl-175.mp4",
+      "gloss": "يكره",
+      "source": "karsl"
+    },
+    "يزرع": {
+      "video": "words/verbs/karsl-178.mp4",
+      "gloss": "يزرع",
+      "source": "karsl"
+    },
+    "يسقي": {
+      "video": "words/verbs/karsl-179.mp4",
+      "gloss": "يسقي",
+      "source": "karsl"
+    },
+    "يحصد": {
+      "video": "words/verbs/karsl-180.mp4",
+      "gloss": "يحصد",
+      "source": "karsl"
+    },
+    "يفكر": {
+      "video": "words/verbs/karsl-181.mp4",
+      "gloss": "يفكّر",
+      "source": "karsl"
+    },
+    "يساعد": {
+      "video": "words/verbs/karsl-182.mp4",
+      "gloss": "يساعد",
+      "source": "karsl"
+    },
+    "يختار": {
+      "video": "words/verbs/karsl-185.mp4",
+      "gloss": "يختار",
+      "source": "karsl"
+    },
+    "ينادي": {
+      "video": "words/verbs/karsl-186.mp4",
+      "gloss": "ينادي",
+      "source": "karsl"
+    },
+    "يقف": {
+      "video": "words/verbs/karsl-189.mp4",
+      "gloss": "يقف",
+      "source": "karsl"
+    },
+    "يدخل": {
+      "video": "words/verbs/karsl-191.mp4",
+      "gloss": "يدخل",
+      "source": "karsl"
+    },
+    "جميل": {
+      "video": "words/adjectives/karsl-224.mp4",
+      "gloss": "جميل",
+      "source": "karsl"
+    },
+    "قبيح": {
+      "video": "words/adjectives/karsl-225.mp4",
+      "gloss": "قبيح",
+      "source": "karsl"
+    },
+    "طويل": {
+      "video": "words/adjectives/karsl-226.mp4",
+      "gloss": "طويل",
+      "source": "karsl"
+    },
+    "قصير": {
+      "video": "words/adjectives/karsl-227.mp4",
+      "gloss": "قصير",
+      "source": "karsl"
+    },
+    "نحيف": {
+      "video": "words/adjectives/karsl-228.mp4",
+      "gloss": "نحيف",
+      "source": "karsl"
+    },
+    "سمين": {
+      "video": "words/adjectives/karsl-229.mp4",
+      "gloss": "سمين",
+      "source": "karsl"
+    },
+    "غني": {
+      "video": "words/adjectives/karsl-230.mp4",
+      "gloss": "غني",
+      "source": "karsl"
+    },
+    "فقير": {
+      "video": "words/adjectives/karsl-231.mp4",
+      "gloss": "فقير",
+      "source": "karsl"
+    },
+    "قلق": {
+      "video": "words/adjectives/karsl-235.mp4",
+      "gloss": "قلق",
+      "source": "karsl"
+    },
+    "خائف": {
+      "video": "words/adjectives/karsl-237.mp4",
+      "gloss": "خائف",
+      "source": "karsl"
+    },
+    "سعيد": {
+      "video": "words/adjectives/karsl-238.mp4",
+      "gloss": "سعيد",
+      "source": "karsl"
+    },
+    "مسرور": {
+      "video": "words/adjectives/karsl-238.mp4",
+      "gloss": "سعيد",
+      "source": "karsl"
+    },
+    "حزين": {
+      "video": "words/adjectives/karsl-239.mp4",
+      "gloss": "حزين",
+      "source": "karsl"
+    },
+    "شجاع": {
+      "video": "words/adjectives/karsl-240.mp4",
+      "gloss": "شجاع",
+      "source": "karsl"
+    },
+    "كريم": {
+      "video": "words/adjectives/karsl-247.mp4",
+      "gloss": "كريم",
+      "source": "karsl"
+    },
+    "شعور": {
+      "video": "words/adjectives/karsl-254.mp4",
+      "gloss": "شعور",
+      "source": "karsl"
+    },
+    "مشاعر": {
+      "video": "words/adjectives/karsl-254.mp4",
+      "gloss": "شعور",
+      "source": "karsl"
+    },
+    "تعب": {
+      "video": "words/adjectives/karsl-255.mp4",
+      "gloss": "تعب",
+      "source": "karsl"
+    },
+    "متعب": {
+      "video": "words/adjectives/karsl-255.mp4",
+      "gloss": "تعب",
+      "source": "karsl"
+    },
+    "خفيف": {
+      "video": "words/adjectives/karsl-259.mp4",
+      "gloss": "خفيف",
+      "source": "karsl"
+    },
+    "ثقيل": {
+      "video": "words/adjectives/karsl-260.mp4",
+      "gloss": "ثقيل",
+      "source": "karsl"
+    },
+    "قديم": {
+      "video": "words/adjectives/karsl-261.mp4",
+      "gloss": "قديم",
+      "source": "karsl"
+    },
+    "صدق": {
+      "video": "words/adjectives/karsl-263.mp4",
+      "gloss": "صدق",
+      "source": "karsl"
+    },
+    "صبر": {
+      "video": "words/adjectives/karsl-265.mp4",
+      "gloss": "صبر",
+      "source": "karsl"
+    },
+    "ذكي": {
+      "video": "words/adjectives/karsl-272.mp4",
+      "gloss": "ذكي",
+      "source": "karsl"
+    },
+    "امام": {
+      "video": "words/directions/karsl-273.mp4",
+      "gloss": "أمام",
+      "source": "karsl"
+    },
+    "بجانب": {
+      "video": "words/directions/karsl-274.mp4",
+      "gloss": "بجانب",
+      "source": "karsl"
+    },
+    "بعيد": {
+      "video": "words/directions/karsl-275.mp4",
+      "gloss": "بعيد",
+      "source": "karsl"
+    },
+    "بين": {
+      "video": "words/directions/karsl-276.mp4",
+      "gloss": "بين",
+      "source": "karsl"
+    },
+    "تحت": {
+      "video": "words/directions/karsl-277.mp4",
+      "gloss": "تحت",
+      "source": "karsl"
+    },
+    "حول": {
+      "video": "words/directions/karsl-278.mp4",
+      "gloss": "حول",
+      "source": "karsl"
+    },
+    "خارج": {
+      "video": "words/directions/karsl-279.mp4",
+      "gloss": "خارج",
+      "source": "karsl"
+    },
+    "خلف": {
+      "video": "words/directions/karsl-280.mp4",
+      "gloss": "خلف",
+      "source": "karsl"
+    },
+    "داخل": {
+      "video": "words/directions/karsl-281.mp4",
+      "gloss": "داخل",
+      "source": "karsl"
+    },
+    "فوق": {
+      "video": "words/directions/karsl-282.mp4",
+      "gloss": "فوق",
+      "source": "karsl"
+    },
+    "قريب": {
+      "video": "words/directions/karsl-283.mp4",
+      "gloss": "قريب",
+      "source": "karsl"
+    },
+    "هنا": {
+      "video": "words/directions/karsl-285.mp4",
+      "gloss": "هنا",
+      "source": "karsl"
+    },
+    "هناك": {
+      "video": "words/directions/karsl-286.mp4",
+      "gloss": "هناك",
+      "source": "karsl"
+    },
+    "يسار": {
+      "video": "words/directions/karsl-287.mp4",
+      "gloss": "يسار",
+      "source": "karsl"
+    },
+    "يمين": {
+      "video": "words/directions/karsl-288.mp4",
+      "gloss": "يمين",
+      "source": "karsl"
+    },
+    "بيت": {
+      "video": "words/home/karsl-299.mp4",
+      "gloss": "بيت",
+      "source": "karsl"
+    },
+    "جدار": {
+      "video": "words/home/karsl-300.mp4",
+      "gloss": "جدار",
+      "source": "karsl"
+    },
+    "سقف": {
+      "video": "words/home/karsl-301.mp4",
+      "gloss": "سقف",
+      "source": "karsl"
+    },
+    "باب": {
+      "video": "words/home/karsl-302.mp4",
+      "gloss": "باب",
+      "source": "karsl"
+    },
+    "شباك": {
+      "video": "words/home/karsl-303.mp4",
+      "gloss": "شبّاك",
+      "source": "karsl"
+    },
+    "نافذه": {
+      "video": "words/home/karsl-303.mp4",
+      "gloss": "شبّاك",
+      "source": "karsl"
+    },
+    "غرفه": {
+      "video": "words/home/karsl-304.mp4",
+      "gloss": "غرفة",
+      "source": "karsl"
+    },
+    "سرير": {
+      "video": "words/home/karsl-306.mp4",
+      "gloss": "سرير",
+      "source": "karsl"
+    },
+    "مطبخ": {
+      "video": "words/home/karsl-312.mp4",
+      "gloss": "مطبخ",
+      "source": "karsl"
+    },
+    "فرن": {
+      "video": "words/home/karsl-313.mp4",
+      "gloss": "فرن",
+      "source": "karsl"
+    },
+    "طبق": {
+      "video": "words/home/karsl-315.mp4",
+      "gloss": "طبق",
+      "source": "karsl"
+    },
+    "صحن": {
+      "video": "words/home/karsl-315.mp4",
+      "gloss": "طبق",
+      "source": "karsl"
+    },
+    "سكين": {
+      "video": "words/home/karsl-316.mp4",
+      "gloss": "سكّين",
+      "source": "karsl"
+    },
+    "شوكه": {
+      "video": "words/home/karsl-317.mp4",
+      "gloss": "شوكة",
+      "source": "karsl"
+    },
+    "ملعقه": {
+      "video": "words/home/karsl-318.mp4",
+      "gloss": "ملعقة",
+      "source": "karsl"
+    },
+    "فنجان": {
+      "video": "words/home/karsl-319.mp4",
+      "gloss": "فنجان",
+      "source": "karsl"
+    },
+    "كاس": {
+      "video": "words/home/karsl-321.mp4",
+      "gloss": "كأس",
+      "source": "karsl"
+    },
+    "كوب": {
+      "video": "words/home/karsl-321.mp4",
+      "gloss": "كأس",
+      "source": "karsl"
+    },
+    "ابريق": {
+      "video": "words/home/karsl-324.mp4",
+      "gloss": "إبريق",
+      "source": "karsl"
+    },
+    "طاوله": {
+      "video": "words/home/karsl-325.mp4",
+      "gloss": "طاولة",
+      "source": "karsl"
+    },
+    "كرسي": {
+      "video": "words/home/karsl-328.mp4",
+      "gloss": "كرسي",
+      "source": "karsl"
+    },
+    "غساله": {
+      "video": "words/home/karsl-329.mp4",
+      "gloss": "غسّالة",
+      "source": "karsl"
+    },
+    "منشفه": {
+      "video": "words/home/karsl-330.mp4",
+      "gloss": "منشفة",
+      "source": "karsl"
+    },
+    "تلفزيون": {
+      "video": "words/home/karsl-336.mp4",
+      "gloss": "تلفزيون",
+      "source": "karsl"
+    },
+    "تلفاز": {
+      "video": "words/home/karsl-336.mp4",
+      "gloss": "تلفزيون",
+      "source": "karsl"
+    },
+    "كاميرا": {
+      "video": "words/home/karsl-340.mp4",
+      "gloss": "كاميرا",
+      "source": "karsl"
+    },
+    "هاتف": {
+      "video": "words/home/karsl-341.mp4",
+      "gloss": "هاتف",
+      "source": "karsl"
+    },
+    "تلفون": {
+      "video": "words/home/karsl-341.mp4",
+      "gloss": "هاتف",
+      "source": "karsl"
+    },
+    "فيديو": {
+      "video": "words/home/karsl-343.mp4",
+      "gloss": "فيديو",
+      "source": "karsl"
+    },
+    "مدفاه": {
+      "video": "words/home/karsl-345.mp4",
+      "gloss": "مدفأة",
+      "source": "karsl"
+    },
+    "مفتاح": {
+      "video": "words/home/karsl-346.mp4",
+      "gloss": "مفتاح",
+      "source": "karsl"
+    },
+    "مروحه": {
+      "video": "words/home/karsl-347.mp4",
+      "gloss": "مروحة",
+      "source": "karsl"
+    },
+    "كهرباء": {
+      "video": "words/home/karsl-349.mp4",
+      "gloss": "كهرباء",
+      "source": "karsl"
+    },
+    "مكيف": {
+      "video": "words/home/karsl-350.mp4",
+      "gloss": "مكيّف",
+      "source": "karsl"
+    },
+    "مكواه": {
+      "video": "words/home/karsl-354.mp4",
+      "gloss": "مكواة",
+      "source": "karsl"
+    },
+    "مهندس": {
+      "video": "words/jobs/karsl-459.mp4",
+      "gloss": "مهندس",
+      "source": "karsl"
+    },
+    "سائق": {
+      "video": "words/jobs/karsl-462.mp4",
+      "gloss": "سائق",
+      "source": "karsl"
+    },
+    "مذيع": {
+      "video": "words/jobs/karsl-469.mp4",
+      "gloss": "مذيع",
+      "source": "karsl"
+    },
+    "مدير": {
+      "video": "words/jobs/karsl-471.mp4",
+      "gloss": "مدير",
+      "source": "karsl"
+    },
+    "وزير": {
+      "video": "words/jobs/karsl-473.mp4",
+      "gloss": "وزير",
+      "source": "karsl"
+    },
+    "صحفي": {
+      "video": "words/jobs/karsl-481.mp4",
+      "gloss": "صحفي",
+      "source": "karsl"
+    },
+    "رسام": {
+      "video": "words/jobs/karsl-482.mp4",
+      "gloss": "رسّام",
+      "source": "karsl"
+    },
+    "ضابط": {
+      "video": "words/jobs/karsl-484.mp4",
+      "gloss": "ضابط",
+      "source": "karsl"
+    },
+    "طيار": {
+      "video": "words/jobs/karsl-485.mp4",
+      "gloss": "طيّار",
+      "source": "karsl"
+    },
+    "جندي": {
+      "video": "words/jobs/karsl-486.mp4",
+      "gloss": "جندي",
+      "source": "karsl"
+    },
+    "نجار": {
+      "video": "words/jobs/karsl-490.mp4",
+      "gloss": "نجّار",
+      "source": "karsl"
+    },
+    "طباخ": {
+      "video": "words/jobs/karsl-492.mp4",
+      "gloss": "طبّاخ",
+      "source": "karsl"
+    },
+    "فلاح": {
+      "video": "words/jobs/karsl-493.mp4",
+      "gloss": "فلّاح",
+      "source": "karsl"
+    },
+    "مزارع": {
+      "video": "words/jobs/karsl-493.mp4",
+      "gloss": "فلّاح",
+      "source": "karsl"
+    },
+    "موظف": {
+      "video": "words/jobs/karsl-494.mp4",
+      "gloss": "موظّف",
+      "source": "karsl"
+    },
+    "صيدلي": {
+      "video": "words/jobs/karsl-496.mp4",
+      "gloss": "صيدلي",
+      "source": "karsl"
+    },
+    "طبيب": {
+      "video": "words/jobs/karsl-497.mp4",
+      "gloss": "طبيب",
+      "source": "karsl"
+    },
+    "ممرضه": {
+      "video": "words/jobs/karsl-498.mp4",
+      "gloss": "ممرّضة",
+      "source": "karsl"
+    },
+    "ممرض": {
+      "video": "words/jobs/karsl-499.mp4",
+      "gloss": "ممرّض",
+      "source": "karsl"
+    },
+    "محام": {
+      "video": "words/jobs/karsl-500.mp4",
+      "gloss": "محامٍ",
+      "source": "karsl"
+    },
+    "محامي": {
+      "video": "words/jobs/karsl-500.mp4",
+      "gloss": "محامٍ",
+      "source": "karsl"
+    }
+  },
+  "letters": {
+    "ا": {
+      "video": "letters/alef.mp4",
+      "source": "karsl"
+    },
+    "ب": {
+      "video": "letters/ba.mp4",
+      "source": "karsl"
+    },
+    "ت": {
+      "video": "letters/ta.mp4",
+      "source": "karsl"
+    },
+    "ث": {
+      "video": "letters/tha.mp4",
+      "source": "karsl"
+    },
+    "ج": {
+      "video": "letters/jim.mp4",
+      "source": "karsl"
+    },
+    "ح": {
+      "video": "letters/hha.mp4",
+      "source": "karsl"
+    },
+    "خ": {
+      "video": "letters/kha.mp4",
+      "source": "karsl"
+    },
+    "د": {
+      "video": "letters/dal.mp4",
+      "source": "karsl"
+    },
+    "ذ": {
+      "video": "letters/dhal.mp4",
+      "source": "karsl"
+    },
+    "ر": {
+      "video": "letters/ra.mp4",
+      "source": "karsl"
+    },
+    "ز": {
+      "video": "letters/zay.mp4",
+      "source": "karsl"
+    },
+    "س": {
+      "video": "letters/sin.mp4",
+      "source": "karsl"
+    },
+    "ش": {
+      "video": "letters/shin.mp4",
+      "source": "karsl"
+    },
+    "ص": {
+      "video": "letters/sad.mp4",
+      "source": "karsl"
+    },
+    "ض": {
+      "video": "letters/dad.mp4",
+      "source": "karsl"
+    },
+    "ط": {
+      "video": "letters/tta.mp4",
+      "source": "karsl"
+    },
+    "ظ": {
+      "video": "letters/dha.mp4",
+      "source": "karsl"
+    },
+    "ع": {
+      "video": "letters/ain.mp4",
+      "source": "karsl"
+    },
+    "غ": {
+      "video": "letters/ghain.mp4",
+      "source": "karsl"
+    },
+    "ف": {
+      "video": "letters/fa.mp4",
+      "source": "karsl"
+    },
+    "ق": {
+      "video": "letters/qaf.mp4",
+      "source": "karsl"
+    },
+    "ك": {
+      "video": "letters/kaf.mp4",
+      "source": "karsl"
+    },
+    "ل": {
+      "video": "letters/lam.mp4",
+      "source": "karsl"
+    },
+    "م": {
+      "video": "letters/mim.mp4",
+      "source": "karsl"
+    },
+    "ن": {
+      "video": "letters/nun.mp4",
+      "source": "karsl"
+    },
+    "ه": {
+      "video": "letters/ha.mp4",
+      "source": "karsl"
+    },
+    "و": {
+      "video": "letters/waw.mp4",
+      "source": "karsl"
+    },
+    "ي": {
+      "video": "letters/ya.mp4",
+      "source": "karsl"
+    },
+    "ة": {
+      "video": "letters/ta-marbuta.mp4",
+      "source": "karsl"
+    },
+    "أ": {
+      "video": "letters/alef-hamza.mp4",
+      "source": "karsl"
+    },
+    "ؤ": {
+      "video": "letters/waw-hamza.mp4",
+      "source": "karsl"
+    },
+    "ئ": {
+      "video": "letters/ya-hamza.mp4",
+      "source": "karsl"
+    },
+    "ء": {
+      "video": "letters/hamza.mp4",
+      "source": "karsl"
+    },
+    "إ": {
+      "video": "letters/alef-hamza-below.mp4",
+      "source": "karsl"
+    },
+    "آ": {
+      "video": "letters/alef-madda.mp4",
+      "source": "karsl"
+    },
+    "ى": {
+      "video": "letters/alef-maqsura.mp4",
+      "source": "karsl"
+    }
+  }
 }

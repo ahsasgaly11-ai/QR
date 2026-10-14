@@ -1,11 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Play, Pause, ChevronRight, ChevronLeft, RotateCcw, Info } from 'lucide-react';
 import {
   buildSequence,
   loadSignManifest,
   sourceWords,
+  SIGN_SOURCES,
   type SignManifest,
 } from '@/lib/sign-interpreter';
 import { SignAvatar } from './sign-avatar';
@@ -107,6 +108,8 @@ export function SignLanguagePlayer({ text }: { text: string }) {
     () => steps.some((s) => s.hasAsset && !failed.has(s.src!)),
     [steps, failed]
   );
+  // مصدر الإشارة المعروضة الآن (إن كانت من قاعدة خارجية) — يُنسَب بصدق للطالب.
+  const source = showMedia && step?.source ? SIGN_SOURCES[step.source] : undefined;
 
   if (!ready) {
     return (
@@ -138,8 +141,8 @@ export function SignLanguagePlayer({ text }: { text: string }) {
       {!anyAsset && !review && (
         <p className="flex items-start gap-2 bg-[color:var(--maroon-100)] px-3 py-2 text-[11px] font-bold leading-5 text-[color:var(--maroon)]">
           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          لم تُضَف بعد أصول القاموس الإشاري الموثّق، فيُعرَض النصّ حرفًا حرفًا
-          مؤقتًا. عند إضافة إشارات مركز مدى المعتمدة تظهر تلقائيًّا هنا.
+          لا تتوفّر في القاموس الإشاري إشارة لكلمات هذا النصّ بعد، فيُعرَض حرفًا
+          حرفًا مؤقتًا. كلّما أُضيفت إشارات موثّقة ظهرت تلقائيًّا هنا.
         </p>
       )}
 
@@ -220,6 +223,14 @@ export function SignLanguagePlayer({ text }: { text: string }) {
         <p className="font-display text-lg font-black text-[color:var(--maroon)]">
           {step.gloss}
         </p>
+        {source && (
+          <p
+            className="mt-0.5 text-[10px] font-bold leading-4 text-muted-foreground"
+            title={source.note}
+          >
+            المصدر: {source.label}
+          </p>
+        )}
       </div>
 
       {/* النصّ المقروء مع إبراز الكلمة الجارية */}

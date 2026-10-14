@@ -38,24 +38,41 @@ function main() {
   const plan = JSON.parse(readFileSync(PLAN, 'utf8'));
   const manifest = { version: plan.version ?? 1, words: {}, letters: {} };
 
+  // مصدر الإشارة: عنصر مستورد من قاعدة KArSL يحمل source="karsl" ليُنسَب في
+  // المشغّل (لهجة إشارية سعودية)؛ وما صُوِّر محليًّا مع مترجم قطري يبقى بلا مصدر.
+  const sourceOf = (item) => (item.karsl ? 'karsl' : undefined);
+
   let haveL = 0;
   const totalL = plan.letters?.length ?? 0;
   for (const l of plan.letters ?? []) {
     const file = resolveFile(l.file);
     if (!file) continue;
-    manifest.letters[l.key] = { [mediaKey(file)]: file };
+    const entry = { [mediaKey(file)]: file };
+    const source = sourceOf(l);
+    if (source) entry.source = source;
+    manifest.letters[l.key] = entry;
     haveL++;
   }
 
   let haveW = 0;
   let totalW = 0;
+  let aliases = 0;
   for (const cat of plan.categories ?? []) {
     for (const w of cat.words ?? []) {
       totalW++;
       const file = resolveFile(w.file);
       if (!file) continue;
-      manifest.words[w.key] = { [mediaKey(file)]: file, gloss: w.gloss || w.key };
+      const entry = { [mediaKey(file)]: file, gloss: w.gloss || w.key };
+      const source = sourceOf(w);
+      if (source) entry.source = source;
+      manifest.words[w.key] = entry;
       haveW++;
+      // الأسماء المستعارة (جمع/مرادف/رقم) تشير إلى الإشارة نفسها.
+      for (const a of w.aliases ?? []) {
+        if (manifest.words[a]) continue;
+        manifest.words[a] = entry;
+        aliases++;
+      }
     }
   }
 
@@ -63,7 +80,7 @@ function main() {
 
   console.log('✅ تم بناء manifest.json');
   console.log(`   الحروف : ${haveL}/${totalL}`);
-  console.log(`   الكلمات: ${haveW}/${totalW}`);
+  console.log(`   الكلمات: ${haveW}/${totalW} (+${aliases} اسمًا مستعارًا)`);
   if (haveL + haveW === 0) {
     console.log('   (لا توجد مقاطع بعد — صوّر العناصر وضعها في public/sign/ ثم أعد التشغيل.)');
   }
