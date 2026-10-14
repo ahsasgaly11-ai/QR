@@ -40,11 +40,10 @@ export function glossModelName(): string {
 const WORD_RE = /[\p{L}\p{M}\p{N}]+/gu;
 
 export class GlossError extends Error {
-  constructor(
-    message: string,
-    public status: number
-  ) {
+  status: number;
+  constructor(message: string, status: number) {
     super(message);
+    this.status = status;
   }
 }
 
@@ -113,7 +112,17 @@ async function viaGemini(text: string, keys: string[], words: string[]): Promise
     }
   );
   if (res.status === 429) throw new GlossError('بلغ مفتاح Gemini حدّ الطبقة المجانية مؤقّتًا، حاول بعد دقيقة', 429);
-  if (!res.ok) throw new GlossError(`خطأ من Gemini (${res.status})`, 502);
+  if (!res.ok) {
+    // رسالة Gemini نفسها (لا تحوي المفتاح) تفيد في التشخيص: مفتاح غير صالح، نموذج غير متاح…
+    let detail = '';
+    try {
+      const err = (await res.json()) as { error?: { message?: string; status?: string } };
+      detail = [err.error?.status, err.error?.message].filter(Boolean).join(': ').slice(0, 200);
+    } catch {
+      /* لا جسم JSON */
+    }
+    throw new GlossError(`خطأ من Gemini (${res.status})${detail ? ` — ${detail}` : ''}`, res.status === 400 || res.status === 403 ? res.status : 502);
+  }
   const data = (await res.json()) as {
     candidates?: { content?: { parts?: { text?: string }[] } }[];
   };

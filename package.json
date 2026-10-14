@@ -11,7 +11,7 @@
     "sign:manifest": "node scripts/build-sign-manifest.mjs",
     "postinstall": "node scripts/copy-pdf-worker.mjs",
     "sign:poses": "python3 scripts/extract-poses.py --model ${HOLISTIC_MODEL:-/tmp/holistic_landmarker.task}",
-    "sign:gloss": "node --experimental-strip-types scripts/build-gloss-cache.mts"
+    "sign:gloss": "tsx scripts/build-gloss-cache.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.133.0",
