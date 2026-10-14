@@ -1,35 +1,28 @@
 // ---------------------------------------------------------------------------
 // يحسب الغلوس الإشاري مسبقًا لكل نصوص الأنشطة المعروفة (العنوان + الوصف من
-// الحزمة التربوية) عبر Claude، ويكتبها في public/sign/gloss-cache.json فيعمل
-// «الترتيب الإشاري الذكي» في المنصّة بلا أي استدعاء وقت التشغيل.
+// الحزمة التربوية) ويكتبها في public/sign/gloss-cache.json، فيعمل «الترتيب
+// الإشاري الذكي» في المنصّة بلا أي استدعاء وقت التشغيل.
 //
-//   ANTHROPIC_API_KEY=... node --experimental-strip-types scripts/build-gloss-cache.mts [--force]
+//   # بمفتاح Gemini المجاني (Google AI Studio):
+//   GEMINI_API_KEY=... npm run sign:gloss
+//   # أو بمفتاح Claude:
+//   ANTHROPIC_API_KEY=... npm run sign:gloss
 //
 // يعيد استخدام ما حُسب سابقًا (مفتاح = تجزئة النصّ المُطبَّع + إصدار الغلوس)،
-// فلا يُستدعى النموذج إلا للنصوص الجديدة أو المتغيّرة. التكلفة التقريبية:
-// ~4 آلاف رمز إدخال (المفردات، مخزّنة مؤقّتًا) + النصّ لكل نشاط.
+// فلا يُستدعى النموذج إلا للنصوص الجديدة أو المتغيّرة. مع Gemini المجاني يراعي
+// حدّ الطلبات في الدقيقة (مهلة بين الاستدعاءات وإعادة محاولة عند 429).
 // ---------------------------------------------------------------------------
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import Anthropic from '@anthropic-ai/sdk';
-import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
-import {
-  GLOSS_SYSTEM_PROMPT,
-  GLOSS_VERSION,
-  GlossSchema,
-  buildGlossUserMessage,
-  glossCacheKey,
-  sanitizeGloss,
-  type Gloss,
-} from '../src/lib/sign-gloss.ts';
+import { GLOSS_VERSION, glossCacheKey, type Gloss } from '../src/lib/sign-gloss.ts';
+import { GlossError, generateGloss, glossModelName, glossProvider } from '../src/lib/sign-gloss-server.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'public', 'sign', 'gloss-cache.json');
-const MODEL = 'claude-opus-5-5';
-const WORD_RE = /[\p{L}\p{M}\p{N}]+/gu;
 const force = process.argv.includes('--force');
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 function texts(): string[] {
   // نصوص اللوحة = العنوان + الوصف لكل نشاط (كما يبنيها SignLanguagePanel)
@@ -47,10 +40,15 @@ function texts(): string[] {
 }
 
 async function main() {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.error('يلزم ANTHROPIC_API_KEY لحساب الغلوس.');
+  const provider = glossProvider();
+  if (!provider) {
+    console.error('يلزم GEMINI_API_KEY (مجاني من aistudio.google.com) أو ANTHROPIC_API_KEY لحساب الغلوس.');
     process.exit(1);
   }
+  console.log(`المزوّد: ${provider} — النموذج: ${glossModelName()}`);
+  // الطبقة المجانية من Gemini محدودة بعدد طلبات في الدقيقة؛ نترك مهلة بين الاستدعاءات.
+  const pauseMs = provider === 'gemini' ? 7000 : 500;
+
   const manifest = JSON.parse(readFileSync(join(ROOT, 'public', 'sign', 'manifest.json'), 'utf8')) as {
     words?: Record<string, unknown>;
   };
@@ -68,7 +66,6 @@ async function main() {
     /* لا ملف سابق */
   }
 
-  const client = new Anthropic();
   const all = texts();
   let done = 0,
     reused = 0,
@@ -79,30 +76,31 @@ async function main() {
       reused++;
       continue;
     }
-    const words = text.match(WORD_RE) ?? [];
-    try {
-      const res = await client.messages.parse({
-        model: MODEL,
-        max_tokens: 4000,
-        output_config: { effort: 'medium', format: zodOutputFormat(GlossSchema) },
-        system: [{ type: 'text', text: GLOSS_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
-        messages: [{ role: 'user', content: buildGlossUserMessage(text, keys, words) }],
-      });
-      if (res.stop_reason === 'refusal' || !res.parsed_output) {
-        failed++;
-        console.error('⚠️ لم يُنتَج غلوس:', text.slice(0, 60));
-        continue;
+    let gloss: Gloss | null = null;
+    for (let attempt = 1; attempt <= 3 && !gloss; attempt++) {
+      try {
+        gloss = await generateGloss(text, keys, vocab);
+      } catch (e) {
+        const status = e instanceof GlossError ? e.status : 500;
+        if (status === 429 && attempt < 3) {
+          console.log(`  ⏳ حدّ الطلبات — انتظار 30 ثانية (محاولة ${attempt})`);
+          await sleep(30000);
+          continue;
+        }
+        console.error('❌', text.slice(0, 60), e instanceof Error ? e.message : e);
+        break;
       }
-      const gloss = sanitizeGloss(res.parsed_output, vocab, words.length);
-      cache.items[key] = { ...gloss, text };
-      done++;
-      const signed = gloss.items.filter((i) => i.key).length;
-      console.log(`${done + reused}/${all.length} ${text.slice(0, 50)}… → ${signed} إشارة، ${gloss.items.length - signed} تهجئة`);
-      writeFileSync(OUT, JSON.stringify(cache, null, 1) + '\n', 'utf8'); // حفظ تدريجي
-    } catch (e) {
-      failed++;
-      console.error('❌', text.slice(0, 60), e instanceof Error ? e.message : e);
     }
+    if (!gloss) {
+      failed++;
+      continue;
+    }
+    cache.items[key] = { ...gloss, text };
+    done++;
+    const signed = gloss.items.filter((i) => i.key).length;
+    console.log(`${done + reused}/${all.length} ${text.slice(0, 50)}… → ${signed} إشارة، ${gloss.items.length - signed} تهجئة`);
+    writeFileSync(OUT, JSON.stringify(cache, null, 1) + '\n', 'utf8'); // حفظ تدريجي
+    await sleep(pauseMs);
   }
   writeFileSync(OUT, JSON.stringify(cache, null, 1) + '\n', 'utf8');
   console.log(`\n✅ الغلوس: ${done} جديد، ${reused} معاد استخدامه، ${failed} فشل → ${OUT}`);

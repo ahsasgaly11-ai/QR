@@ -1,35 +1,26 @@
 import { NextResponse } from 'next/server';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import Anthropic from '@anthropic-ai/sdk';
-import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { getDb } from '@/lib/firebase';
-import {
-  GLOSS_SYSTEM_PROMPT,
-  GLOSS_VERSION,
-  GlossSchema,
-  buildGlossUserMessage,
-  glossCacheKey,
-  sanitizeGloss,
-  type Gloss,
-} from '@/lib/sign-gloss';
+import { GLOSS_VERSION, GlossSchema, glossCacheKey, type Gloss } from '@/lib/sign-gloss';
+import { GlossError, generateGloss, glossModelName, glossProvider } from '@/lib/sign-gloss-server';
 
 // ---------------------------------------------------------------------------
 // POST /api/sign/gloss  { text }  →  { gloss, cached: 'memory'|'static'|'firestore'|false }
 //
-// يترجم نصّ النشاط إلى غلوس إشاري مقيّد بمفردات القاموس عبر Claude، ويخزّن
-// النتيجة (ذاكرة الخادم + Firestore إن وُجد) فلا تُستدعى الواجهة مرّتين للنصّ
-// نفسه. بلا ANTHROPIC_API_KEY يعيد 503 فيتراجع المشغّل إلى الوضع الحرفي.
+// يترجم نصّ النشاط إلى غلوس إشاري مقيّد بمفردات القاموس عبر المزوّد المتاح
+// (Claude بمفتاح ANTHROPIC_API_KEY، أو Gemini بمفتاح GEMINI_API_KEY المجاني)،
+// ويخزّن النتيجة (ذاكرة الخادم + Firestore إن وُجد) فلا يُستدعى النموذج مرّتين
+// للنصّ نفسه. بلا مفتاح يعيد 503 فيتراجع المشغّل إلى الوضع الحرفي.
 //
-// حماية التكلفة: النصّ حتى 600 حرف، وسقف يومي لاستدعاءات النموذج لكل خادم،
-// وكل الأنشطة المعروفة تُحسب مسبقًا في public/sign/gloss-cache.json.
+// حماية التكلفة والحصّة: النصّ حتى 600 حرف، وسقف يومي لاستدعاءات النموذج لكل
+// خادم، وكل الأنشطة المعروفة تُحسب مسبقًا في public/sign/gloss-cache.json.
 // ---------------------------------------------------------------------------
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-const MODEL = 'claude-opus-5-5';
 const MAX_CHARS = 600;
 const DAILY_CAP = Number(process.env.SIGN_GLOSS_DAILY_CAP || 300);
 
@@ -60,7 +51,17 @@ async function loadStatic() {
   return staticCache;
 }
 
-const WORD_RE = /[\p{L}\p{M}\p{N}]+/gu;
+/** GET: حالة النموذج (للتشخيص من المتصفّح دون استهلاك الحصّة). */
+export async function GET() {
+  const provider = glossProvider();
+  return NextResponse.json({
+    enabled: !!provider,
+    provider,
+    model: glossModelName() || null,
+    dailyCap: DAILY_CAP,
+    usedToday: dayStamp === new Date().toISOString().slice(0, 10) ? dayCalls : 0,
+  });
+}
 
 export async function POST(req: Request) {
   let body: { text?: string };
@@ -101,7 +102,7 @@ export async function POST(req: Request) {
     }
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!glossProvider()) {
     return NextResponse.json({ error: 'نموذج الغلوس غير مفعّل على الخادم' }, { status: 503 });
   }
   const today = new Date().toISOString().slice(0, 10);
@@ -115,38 +116,21 @@ export async function POST(req: Request) {
   dayCalls++;
 
   const { keys, set } = await loadVocab();
-  const words = text.match(WORD_RE) ?? [];
-  const client = new Anthropic();
   try {
-    const res = await client.messages.parse({
-      model: MODEL,
-      max_tokens: 4000,
-      output_config: { effort: 'medium', format: zodOutputFormat(GlossSchema) },
-      system: [{ type: 'text', text: GLOSS_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
-      messages: [{ role: 'user', content: buildGlossUserMessage(text, keys, words) }],
-    });
-    if (res.stop_reason === 'refusal' || !res.parsed_output) {
-      return NextResponse.json({ error: 'تعذّر توليد الغلوس' }, { status: 502 });
-    }
-    const gloss = sanitizeGloss(res.parsed_output, set, words.length);
+    const gloss = await generateGloss(text, keys, set);
     memory.set(key, gloss);
     if (db) {
       setDoc(doc(db, 'signGloss', key), {
         text,
         gloss,
         version: GLOSS_VERSION,
-        model: MODEL,
+        model: glossModelName(),
         createdAt: serverTimestamp(),
       }).catch(() => {});
     }
     return NextResponse.json({ gloss, cached: false });
   } catch (e) {
-    if (e instanceof Anthropic.RateLimitError) {
-      return NextResponse.json({ error: 'النموذج مشغول، حاول لاحقًا' }, { status: 429 });
-    }
-    if (e instanceof Anthropic.APIError) {
-      return NextResponse.json({ error: `خطأ من النموذج (${e.status})` }, { status: 502 });
-    }
+    if (e instanceof GlossError) return NextResponse.json({ error: e.message }, { status: e.status });
     return NextResponse.json({ error: 'خطأ غير متوقّع' }, { status: 500 });
   }
 }
