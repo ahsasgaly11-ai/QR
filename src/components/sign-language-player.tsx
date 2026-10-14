@@ -12,6 +12,7 @@ import {
 } from '@/lib/sign-interpreter';
 import { glossCacheKey, GLOSS_VERSION, type Gloss } from '@/lib/sign-gloss';
 import { SignSkeleton, poseUrlFor } from './sign-skeleton';
+import { SignAvatar3D, canUseWebGL } from './sign-avatar-3d';
 import { SignAvatar } from './sign-avatar';
 import { SignYouTube } from './sign-youtube';
 import { HandSign } from './hand-sign';
@@ -78,13 +79,16 @@ export function SignLanguagePlayer({ text }: { text: string }) {
   const [mode, setMode] = useState<'smart' | 'literal'>('smart');
   const [gloss, setGloss] = useState<Gloss | null>(null);
   // الأفاتار الموحّد (بنك الحركات) بدل فيديو المصدر حين يتوفّر
-  const [avatar, setAvatar] = useState(false);
+  // مفعَّل افتراضيًّا: المترجم ثلاثي الأبعاد حيث يتوفّر WebGL، وإلا الهيكل ثنائي الأبعاد.
+  const [avatar, setAvatar] = useState(true);
+  const [gl3d, setGl3d] = useState(false);
   const [noPose, setNoPose] = useState<Set<string>>(new Set());
   useEffect(() => {
+    setGl3d(canUseWebGL());
     try {
       const m = localStorage.getItem(MODE_STORE);
       if (m === 'literal' || m === 'smart') setMode(m);
-      setAvatar(localStorage.getItem(AVATAR_STORE) === 'on');
+      setAvatar(localStorage.getItem(AVATAR_STORE) !== 'off');
     } catch {
       /* التخزين غير متاح */
     }
@@ -267,7 +271,7 @@ export function SignLanguagePlayer({ text }: { text: string }) {
             }
           }}
           aria-pressed={avatar}
-          title="الأفاتار الموحّد يعيد أداء الإشارة من الهيكل العظمي المستخلص آليًّا من مقطع المصدر"
+          title="المترجم ثلاثي الأبعاد يعيد أداء الإشارة (اليدان وتعابير الوجه) من حركة مستخلصة آليًّا من مقطع المصدر الموثّق. اضغط لعرض مقطع المصدر نفسه."
           className={cn(
             'flex items-center gap-1 rounded-lg px-2 py-1 transition',
             avatar
@@ -276,12 +280,34 @@ export function SignLanguagePlayer({ text }: { text: string }) {
           )}
         >
           <User className="h-3.5 w-3.5" />
-          الأفاتار الموحّد
+          {gl3d ? 'المترجم ثلاثي الأبعاد' : 'الأفاتار الموحّد'}
         </button>
       </div>
 
       {/* المسرح */}
       <div className="relative grid aspect-square w-full place-items-center bg-black">
+        {/* المترجم ثلاثي الأبعاد يبقى مُركَّبًا طوال التشغيل لينتقل بين الإشارات بسلاسة */}
+        {avatar && gl3d && (
+          <div
+            aria-hidden={!showSkeleton}
+            className={cn(
+              'absolute inset-0 bg-[radial-gradient(circle_at_50%_32%,var(--maroon-700),#16050c_78%)]',
+              !showSkeleton && 'invisible'
+            )}
+          >
+            <SignAvatar3D
+              src={showSkeleton ? poseUrl : null}
+              cue={i}
+              playing={playing}
+              onEnded={next}
+              onUnavailable={(u) => setNoPose((p) => new Set(p).add(u))}
+              onFailed={() => setGl3d(false)}
+            />
+            <span className="absolute right-2 top-2 rounded-lg bg-white/15 px-2 py-0.5 text-[10px] font-black text-white backdrop-blur">
+              المترجم ثلاثي الأبعاد
+            </span>
+          </div>
+        )}
         {showMedia && step.media === 'yt' ? (
           <>
             <SignYouTube id={step.src!} title={step.gloss} onEnded={next} />
@@ -289,7 +315,7 @@ export function SignLanguagePlayer({ text }: { text: string }) {
               <SignAvatar state="greet" />
             </div>
           </>
-        ) : showSkeleton && poseUrl ? (
+        ) : showSkeleton && gl3d ? null : showSkeleton && poseUrl ? (
           <>
             <SignSkeleton
               key={`${i}-${poseUrl}`}
