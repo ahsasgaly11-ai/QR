@@ -1245,7 +1245,8 @@ body { padding-bottom: var(--ticker-h); }
 .hw .hw-stage { animation: hw-open 1.5s cubic-bezier(0.7, 0, 0.2, 1) both; }
 .hw .hw-layer { animation: hw-rise 1.5s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: calc(0.3s + var(--i) * 0.11s); }
 .hw .hw-arch-line { animation: hw-fade 1.2s ease 0.2s both; }
-.hero-rise > * { animation: hw-text 0.9s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: calc(0.75s + var(--i, 0) * 0.1s); }
+/* تأخير قصير فقط: عنوان الواجهة هو أكبر عنصر في أوّل شاشة (LCP) ولا يُرسم قبل بدء حركته */
+.hero-rise > * { animation: hw-text 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: calc(0.2s + var(--i, 0) * 0.08s); }
 @keyframes hw-open { from { clip-path: inset(0 47% 0 47%); } to { clip-path: inset(0 0 0 0); } }
 @keyframes hw-rise { from { translate: 0 14%; opacity: 0; } to { translate: 0 0; opacity: 1; } }
 @keyframes hw-fade { from { opacity: 0; } }
@@ -3267,10 +3268,11 @@ td .kpi-spark { --tone: var(--maroon); }
      (زرّ التواصل لا يظهر أصلًا خارج الصفحة الرئيسية.)
    ========================================================================= */
 .player-frame { scroll-margin-top: 74px; } /* ارتفاع الشريط الثابت + هامش */
+/* في صفحة التشغيل على كل المقاسات: لا شريط رؤية ولا تميمة فوق مسرح اللعبة */
+html[data-play] { --ticker-h: 0px; }
+html[data-play] .vision-ticker,
+html[data-play] .floating-mascot { display: none !important; }
 @media (max-width: 640px) {
-  html[data-play] { --ticker-h: 0px; }
-  html[data-play] .vision-ticker,
-  html[data-play] .floating-mascot { display: none !important; }
   html[data-play] .a11y-tab {
     top: auto;
     bottom: calc(var(--ticker-h) + 0.9rem);

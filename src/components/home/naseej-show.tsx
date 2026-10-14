@@ -54,17 +54,39 @@ export function NaseejShow() {
       setSrc(url);
       return;
     }
+    // لا يُحمَّل المشهد ثلاثي الأبعاد إلا حين يقترب فعلًا من الشاشة، وبعد أن
+    // يفرغ المتصفّح من رسم الواجهة الأولى وترطيبها، حتى لا يزاحم أوّل ظهور.
+    type IdleWindow = Window & {
+      requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number;
+      cancelIdleCallback?: (h: number) => void;
+    };
+    const win = window as IdleWindow;
+    let idle: number | null = null;
+    let usedIdle = false;
+    const start = () => {
+      const run = () => setSrc(url);
+      if (win.requestIdleCallback) {
+        usedIdle = true;
+        idle = win.requestIdleCallback(run, { timeout: 2500 });
+      } else idle = win.setTimeout(run, 800);
+    };
     const io = new IntersectionObserver(
       (es) => {
         if (es.some((e) => e.isIntersecting)) {
-          setSrc(url);
+          start();
           io.disconnect();
         }
       },
-      { rootMargin: '600px 0px' },
+      { rootMargin: '160px 0px' },
     );
     io.observe(el);
-    return () => io.disconnect();
+    return () => {
+      io.disconnect();
+      if (idle !== null) {
+        if (usedIdle && win.cancelIdleCallback) win.cancelIdleCallback(idle);
+        else clearTimeout(idle);
+      }
+    };
   }, []);
 
   // حالة الصوت تصل من داخل العرض

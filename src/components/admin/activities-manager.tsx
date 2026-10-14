@@ -175,8 +175,9 @@ export function ActivitiesManager({
           setFileProgress(Math.round((p.done / p.total) * 100))
         );
         const hasPreview = await savePreviewHtml(id, html);
-        const { dropCachedPreview } = await import('@/lib/local-store');
+        const { dropCachedPreview, dropCachedGame } = await import('@/lib/local-store');
         await dropCachedPreview(id).catch(() => {});
+        await dropCachedGame(id).catch(() => {});
         return {
           file: file.name,
           stored: 'firestore',

@@ -77,6 +77,8 @@ export default function RootLayout({
       <head>
         {/* الخطوط مستضافة محليًا (src/app/fonts.css)؛ نحمّل مسبقًا الملفين
             العربيين للنصوص والعناوين لأنهما يظهران في أول شاشة. */}
+        {/* الأنشطة والإحصاءات تُقرأ من Firestore: فتح الاتصال مبكرًا يوفّر مئات الملّي ثانية */}
+        <link rel="preconnect" href="https://firestore.googleapis.com" crossOrigin="anonymous" />
         <link rel="preload" href="/fonts/readex-pro-arabic-982df5.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <link rel="preload" href="/fonts/el-messiri-arabic-26956f.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <script

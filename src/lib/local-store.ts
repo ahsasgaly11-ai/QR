@@ -13,7 +13,9 @@ import type { Activity, Subject } from '@/lib/types';
 const DB_NAME = 'qa-curriculum';
 const STORE = 'activities';
 const PREVIEW_STORE = 'previews';
-const DB_VERSION = 2;
+/** نسخ الألعاب المحمَّلة: تشغيلها الثاني فوري وبلا قراءات من Firestore. */
+const GAME_STORE = 'games';
+const DB_VERSION = 3;
 const STRUCTURE_KEY = 'qa-local-structure-v1';
 
 export interface LocalRecord {
@@ -37,6 +39,9 @@ function openDb(): Promise<IDBDatabase | null> {
         }
         if (!db.objectStoreNames.contains(PREVIEW_STORE)) {
           db.createObjectStore(PREVIEW_STORE, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains(GAME_STORE)) {
+          db.createObjectStore(GAME_STORE, { keyPath: 'id' });
         }
       };
       req.onsuccess = () => resolve(req.result);
@@ -312,4 +317,49 @@ export async function dropCachedPreview(id: string): Promise<void> {
     (s) => s.delete(id) as unknown as IDBRequest<undefined>,
     PREVIEW_STORE
   );
+}
+
+// ---------------------------------------------------------------------------
+// ذاكرة الألعاب المحمَّلة (IndexedDB)
+//
+// ملف اللعبة يُقرأ من Firestore مقسّمًا إلى أجزاء، وقد يبلغ عدّة ميجابايتات.
+// نحفظ نسخة في متصفّح الطالب بمفتاح (المعرّف + نسخة الملف)، فيفتح النشاط في
+// المرّة التالية فورًا وبلا قراءات، ويعمل في الصف حتى على شبكة بطيئة. استبدال
+// الملف من لوحة الإدارة يغيّر النسخة فتُتجاهل النسخة القديمة تلقائيًا.
+// ---------------------------------------------------------------------------
+
+interface CachedGame {
+  id: string;
+  /** مفتاح النسخة: fileVersion أو عدد الأجزاء */
+  v: string;
+  html: string;
+  at: number;
+}
+
+/** أقصى عدد ألعاب محفوظة؛ الأقدم استخدامًا يُحذف أولًا. */
+const GAME_CACHE_MAX = 40;
+
+export async function getCachedGame(id: string, v: string): Promise<string | null> {
+  const rec = await tx<CachedGame>('readonly', (s) => s.get(id), GAME_STORE);
+  if (!rec || rec.v !== v || !rec.html) return null;
+  // تحديث طابع آخر استخدام دون انتظار
+  void tx('readwrite', (s) => s.put({ ...rec, at: Date.now() }) as IDBRequest<IDBValidKey>, GAME_STORE);
+  return rec.html;
+}
+
+export async function putCachedGame(id: string, v: string, html: string): Promise<void> {
+  const rec: CachedGame = { id, v, html, at: Date.now() };
+  await tx('readwrite', (s) => s.put(rec) as IDBRequest<IDBValidKey>, GAME_STORE);
+  void pruneGameCache();
+}
+
+export async function dropCachedGame(id: string): Promise<void> {
+  await tx('readwrite', (s) => s.delete(id) as unknown as IDBRequest<undefined>, GAME_STORE);
+}
+
+async function pruneGameCache(): Promise<void> {
+  const all = await tx<CachedGame[]>('readonly', (s) => s.getAll(), GAME_STORE);
+  if (!all || all.length <= GAME_CACHE_MAX) return;
+  const stale = [...all].sort((a, b) => a.at - b.at).slice(0, all.length - GAME_CACHE_MAX);
+  for (const r of stale) await dropCachedGame(r.id);
 }

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Check, Copy, Mail, MessageCircleMore, Phone, X } from 'lucide-react';
 import { CONTACT_EMAIL, CONTACT_PHONE_E164, CONTACT_PHONE_PRETTY } from '@/lib/site';
+import { normalizePathname } from '@/lib/pathname';
 
 /** رقم التواصل والبريد — مصدر واحد (src/lib/site.ts) تُشتقّ منه كل الروابط. */
 const PHONE_E164 = CONTACT_PHONE_E164;
@@ -27,7 +28,7 @@ function WhatsAppGlyph({ className }: { className?: string }) {
  * الجوال.
  */
 export function ContactFab() {
-  const pathname = usePathname();
+  const pathname = normalizePathname(usePathname());
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const wrapRef = useRef<HTMLDivElement | null>(null);
