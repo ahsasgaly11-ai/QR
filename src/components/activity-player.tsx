@@ -95,8 +95,11 @@ function PlayerInner({ activity, localHtml, next }: PlayerProps) {
     } else if (remote) {
       setFetchFailed(false);
       (async () => {
-        const { loadGameHtml } = await import('@/lib/game-store');
-        const html = await loadGameHtml(activity.id);
+        const { loadGameHtmlCached } = await import('@/lib/game-store');
+        setProgress(null);
+        const html = await loadGameHtmlCached(activity, (p) => {
+          if (alive) setProgress(Math.round((p.done / p.total) * 100));
+        });
         if (!alive) return;
         if (!html) return setFetchFailed(true);
         htmlRef.current = html;
@@ -129,6 +132,8 @@ function PlayerInner({ activity, localHtml, next }: PlayerProps) {
   // يوقف المشرف التنزيل من لوحة التحكّم ← تُستخدم اللعبة داخل الموقع فقط
   const canDownload = useActivityDownloadEnabled(activity);
   const [loading, setLoading] = useState(true);
+  /** نسبة تحميل أجزاء اللعبة من الخادم (null قبل البدء أو عند القراءة من الذاكرة). */
+  const [progress, setProgress] = useState<number | null>(null);
   const [key, setKey] = useState(0);
 
   // رفيق لغة الإشارة: حالة الفتح والتفضيل (تُدار هنا لضبط موضع اللوحة في التدفّق).
@@ -478,9 +483,14 @@ function PlayerInner({ activity, localHtml, next }: PlayerProps) {
           loading && (
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-[color:var(--surface)]">
               <Loader2 className="h-10 w-10 animate-spin text-[color:var(--maroon)]" />
-              <p className="text-sm font-bold text-muted-foreground">
-                جارٍ تحميل النشاط…
+              <p className="text-sm font-bold text-muted-foreground" aria-live="polite">
+                {progress !== null && progress < 100 ? `جارٍ تحميل النشاط… ${progress}٪` : 'جارٍ تحميل النشاط…'}
               </p>
+              {progress !== null && progress < 100 && (
+                <div className="bar-track h-1.5 w-40" aria-hidden>
+                  <div className="h-full transition-[width] duration-200" style={{ width: `${progress}%`, background: 'var(--maroon)' }} />
+                </div>
+              )}
             </div>
           )
         )}

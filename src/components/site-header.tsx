@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { ThemeToggle } from './theme-toggle';
 import { PearlChest } from './pearls/pearl-chest';
 import { SITE_NAME } from '@/lib/site';
+import { normalizePathname } from '@/lib/pathname';
 
 // روابط التنقّل نصّية فقط — بلا أيقونات.
 const NAV = [
@@ -23,7 +24,7 @@ const NAV = [
 const UPLOAD = { href: '/admin', label: 'رفع نشاط' };
 
 export function SiteHeader() {
-  const pathname = usePathname();
+  const pathname = normalizePathname(usePathname());
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 

@@ -1,4 +1,5 @@
 import { getDb } from '@/lib/firebase';
+import type { Activity } from '@/lib/types';
 
 // ---------------------------------------------------------------------------
 // تخزين ملفات الألعاب داخل Firestore (بلا Firebase Storage)
@@ -267,4 +268,79 @@ export async function deleteGameChunks(id: string): Promise<void> {
     }
     await batch.commit();
   }
+}
+
+// --- تحميل تدريجي مع نسبة تقدّم، ونسخة محفوظة في المتصفّح ---------------------
+
+export type LoadProgress = { done: number; total: number };
+
+/**
+ * يقرأ الأجزاء جزءًا جزءًا (بتوازٍ محدود) ليبلّغ بنسبة التقدّم بدل انتظار
+ * صامت قد يطول على شبكات المدارس. يعود إلى القراءة الجماعية إن لم يُعرف عدد
+ * الأجزاء أو سقط جزء.
+ */
+export async function loadGameHtmlProgressive(
+  id: string,
+  chunks: number | undefined,
+  onProgress?: (p: LoadProgress) => void
+): Promise<string | null> {
+  const db = getDb();
+  if (!db) return null;
+  if (!chunks || chunks < 1 || chunks > 200) return loadGameHtml(id);
+  try {
+    const { doc, getDocFromServer } = await import('firebase/firestore');
+    const parts: (string | undefined)[] = new Array(chunks);
+    let done = 0;
+    let next = 0;
+    const worker = async () => {
+      while (next < chunks) {
+        const i = next++;
+        const snap = await getDocFromServer(doc(db, 'activities', id, 'chunks', String(i)));
+        if (!snap.exists()) throw new Error('missing chunk ' + i);
+        parts[i] = (snap.data() as { s?: string }).s ?? '';
+        done++;
+        onProgress?.({ done, total: chunks });
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(4, chunks) }, worker));
+    if (parts.some((p) => p === undefined)) return loadGameHtml(id);
+    return parts.join('');
+  } catch {
+    return loadGameHtml(id);
+  }
+}
+
+/** مفتاح نسخة الملف: يتغيّر مع كل استبدال، فتُتجاهل النسخة المحفوظة القديمة. */
+export function gameCacheKey(a: Pick<Activity, 'fileVersion' | 'chunks'>): string {
+  return `${a.fileVersion ?? 0}:${a.chunks ?? 0}`;
+}
+
+/**
+ * يُعيد ملف اللعبة من ذاكرة المتصفّح إن وُجد بالنسخة نفسها، وإلا يحمّله من
+ * Firestore تدريجيًا ثم يحفظه للمرّات التالية.
+ */
+export async function loadGameHtmlCached(
+  activity: Pick<Activity, 'id' | 'fileVersion' | 'chunks'>,
+  onProgress?: (p: LoadProgress) => void
+): Promise<string | null> {
+  const key = gameCacheKey(activity);
+  const { getCachedGame, putCachedGame } = await import('@/lib/local-store');
+  try {
+    const hit = await getCachedGame(activity.id, key);
+    if (hit) {
+      onProgress?.({ done: 1, total: 1 });
+      return hit;
+    }
+  } catch {
+    /* ذاكرة غير متاحة (وضع خاص) — نحمّل من الخادم */
+  }
+  const html = await loadGameHtmlProgressive(activity.id, activity.chunks, onProgress);
+  if (html) {
+    try {
+      await putCachedGame(activity.id, key, html);
+    } catch {
+      /* لا مساحة — لا يهمّ */
+    }
+  }
+  return html;
 }
