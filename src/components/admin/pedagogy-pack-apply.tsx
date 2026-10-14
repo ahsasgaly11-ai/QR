@@ -8,7 +8,7 @@ import { isFirebaseConfigured } from '@/lib/firebase';
 import { fetchUploadedActivities, getStructure, saveStructure, updateActivity } from '@/lib/content';
 import { revalidateContent } from '@/lib/revalidate';
 import { normalizePedagogy, pedagogyStatus } from '@/lib/pedagogy';
-import { LESSON_TITLE_FIXES, PEDAGOGY_PACK, type PackEntry } from '@/data/pedagogy-pack';
+import { fixLessonTitle, PEDAGOGY_PACK, type PackEntry } from '@/data/pedagogy-pack';
 import { cn } from '@/lib/utils';
 
 type Plan = {
@@ -27,8 +27,9 @@ type Plan = {
  * لا يُستبدل ما كتبه المشرف يدويًا: النشاط الذي تكتمل بياناته التربوية
  * يُترك كما هو ما لم يُفعَّل خيار «استبدال الموجود».
  */
-export function PedagogyPackApply({ activities: initial }: { activities: Activity[]; structure: Subject[] }) {
+export function PedagogyPackApply({ activities: initial, structure: initialStructure }: { activities: Activity[]; structure: Subject[] }) {
   const [activities, setActivities] = useState<Activity[]>(initial);
+  const [structure, setStructure] = useState<Subject[]>(initialStructure);
   const [loading, setLoading] = useState(true);
   const [overwrite, setOverwrite] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -41,12 +42,17 @@ export function PedagogyPackApply({ activities: initial }: { activities: Activit
     (async () => {
       try {
         if (isFirebaseConfigured) {
-          const acts = await fetchUploadedActivities();
-          if (alive && acts.length) setActivities(acts);
+          const [acts, tree] = await Promise.all([fetchUploadedActivities(), getStructure()]);
+          if (!alive) return;
+          if (acts.length) setActivities(acts);
+          setStructure(tree);
         } else {
-          const { listLocalActivities } = await import('@/lib/local-store');
+          const { listLocalActivities, getLocalStructure } = await import('@/lib/local-store');
           const acts = await listLocalActivities();
-          if (alive && acts.length) setActivities(acts);
+          if (!alive) return;
+          if (acts.length) setActivities(acts);
+          const tree = getLocalStructure();
+          if (tree) setStructure(tree);
         }
       } finally {
         if (alive) setLoading(false);
@@ -77,6 +83,18 @@ export function PedagogyPackApply({ activities: initial }: { activities: Activit
 
   const pending = plans.filter((p) => p.changes.length > 0);
   const unmatched = Object.keys(PEDAGOGY_PACK).length - plans.length;
+  /** عناوين دروس ما زالت بترقيم مزدوج (تُصحَّح مع الحزمة) */
+  const lessonFixes = useMemo(() => {
+    const out: { before: string; after: string }[] = [];
+    for (const s of structure)
+      for (const g of s.grades)
+        for (const u of g.units)
+          for (const l of u.lessons) {
+            const after = fixLessonTitle(l.title);
+            if (after !== l.title) out.push({ before: l.title, after });
+          }
+    return out;
+  }, [structure]);
 
   async function apply() {
     setBusy(true);
@@ -125,12 +143,13 @@ export function PedagogyPackApply({ activities: initial }: { activities: Activit
         tree = getLocalStructure();
       }
       if (tree) {
+        tree = JSON.parse(JSON.stringify(tree)) as Subject[];
         for (const s of tree)
           for (const g of s.grades)
             for (const u of g.units)
               for (const l of u.lessons) {
-                const fix = LESSON_TITLE_FIXES[l.title];
-                if (fix && fix !== l.title) {
+                const fix = fixLessonTitle(l.title);
+                if (fix !== l.title) {
                   l.title = fix;
                   lessons++;
                 }
@@ -141,6 +160,7 @@ export function PedagogyPackApply({ activities: initial }: { activities: Activit
             const { saveLocalStructure } = await import('@/lib/local-store');
             saveLocalStructure(tree);
           }
+          setStructure(tree);
         }
       }
     } catch (e) {
@@ -188,6 +208,11 @@ export function PedagogyPackApply({ activities: initial }: { activities: Activit
         <span className="rounded-full bg-[color:var(--gold)]/20 px-3 py-1.5 text-[color:var(--maroon)]">
           ستتغيّر: {loading ? '…' : pending.length}
         </span>
+        {!loading && lessonFixes.length > 0 && (
+          <span className="rounded-full bg-[color:var(--gold)]/20 px-3 py-1.5 text-[color:var(--maroon)]">
+            عناوين دروس تُصحَّح: {lessonFixes.length}
+          </span>
+        )}
         {unmatched > 0 && !loading && (
           <span className="rounded-full bg-[color:var(--surface-2)] px-3 py-1.5 text-muted-foreground">
             بلا نشاط مطابق: {unmatched}
@@ -195,6 +220,16 @@ export function PedagogyPackApply({ activities: initial }: { activities: Activit
         )}
       </div>
 
+      {!loading && lessonFixes.length > 0 && (
+        <ul className="mt-3 space-y-1 rounded-xl border border-[color:var(--hairline)] p-2 text-sm">
+          {lessonFixes.map((f) => (
+            <li key={f.before} className="flex flex-wrap items-center gap-2 px-2 py-1">
+              <span className="text-muted-foreground line-through">{f.before}</span>
+              <span className="font-bold text-foreground">← {f.after}</span>
+            </li>
+          ))}
+        </ul>
+      )}
       {!loading && pending.length > 0 && (
         <ul className="mt-3 max-h-72 space-y-1 overflow-auto rounded-xl border border-[color:var(--hairline)] p-2 text-sm">
           {pending.map((p) => (
@@ -235,7 +270,7 @@ export function PedagogyPackApply({ activities: initial }: { activities: Activit
       <button
         type="button"
         onClick={apply}
-        disabled={busy || loading || pending.length === 0}
+        disabled={busy || loading || (pending.length === 0 && lessonFixes.length === 0)}
         className="btn-primary mt-4 px-5 py-2.5 text-sm"
       >
         {busy ? (
@@ -245,7 +280,12 @@ export function PedagogyPackApply({ activities: initial }: { activities: Activit
           </>
         ) : (
           <>
-            <Sparkles className="h-4 w-4" /> تطبيق الحزمة على {pending.length} نشاطًا
+            <Sparkles className="h-4 w-4" />
+            {pending.length > 0
+              ? `تطبيق الحزمة على ${pending.length} نشاطًا${lessonFixes.length ? ` و${lessonFixes.length} عنوان درس` : ''}`
+              : lessonFixes.length > 0
+                ? `تصحيح ${lessonFixes.length} عنوان درس`
+                : 'لا تغييرات معلّقة'}
           </>
         )}
       </button>

@@ -9,6 +9,7 @@
 
 import type { Activity, ActivityType, Subject } from '@/lib/types';
 import { pedagogyStatus } from '@/lib/pedagogy';
+import { fixLessonTitle } from '@/data/pedagogy-pack';
 
 export type AuditKind = 'spelling' | 'spacing' | 'type' | 'pedagogy' | 'description';
 
@@ -252,9 +253,10 @@ export function auditContent(activities: Activity[], structure: Subject[]): Audi
           });
         for (const l of u.lessons) {
           const lf = proofread(l.title);
-          // ترقيم مزدوج مثل «1. الدَّرْسُ 3.1:» — نحذف الرقم المتقدّم
-          const dbl = /^\s*\d+[.)]\s+(?=(?:الدَّرْسُ|الدرس)\s*\d)/.exec(l.title);
-          const after = dbl ? (lf?.after ?? l.title).replace(/^\s*\d+[.)]\s+/, '') : lf?.after;
+          // ترقيم مزدوج مثل «1. الدَّرْسُ 3.1:» — نُبقي رقم الدرس وحده (مطابقة بلا تشكيل)
+          const numbered = fixLessonTitle(lf?.after ?? l.title);
+          const dbl = numbered !== (lf?.after ?? l.title);
+          const after = dbl ? numbered : lf?.after;
           if (after && after !== l.title)
             push({
               kind: 'spelling',
