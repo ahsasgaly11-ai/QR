@@ -49,7 +49,9 @@ function main() {
   const plan = JSON.parse(readFileSync(PLAN, 'utf8'));
   const rows = parseCsv(readFileSync(MAP, 'utf8'));
   const cats = new Map(plan.categories.map((c) => [c.id, c]));
-  const owned = new Set(); // مفاتيح لها إشارة فعلية من مصدر آخر
+  // أزل إدخالات KISR السابقة ثم أعد بناءها من الخريطة (إعادة تشغيل آمنة)
+  for (const c of plan.categories) c.words = c.words.filter((w) => !(w.source || '').startsWith('kisr-'));
+  const owned = new Set(); // مفاتيح لها إشارة فعلية من مصدر آخر (بعد إزالة إدخالات KISR)
   for (const c of plan.categories)
     for (const w of c.words) {
       const has = w.yt || existsSync(join(SIGN_DIR, w.file || ''));
@@ -58,8 +60,6 @@ function main() {
         for (const a of w.aliases ?? []) owned.add(a);
       }
     }
-  // أزل إدخالات KISR السابقة ثم أعد بناءها من الخريطة (إعادة تشغيل آمنة)
-  for (const c of plan.categories) c.words = c.words.filter((w) => !(w.source || '').startsWith('kisr-'));
 
   let added = 0, aliases = 0, skipped = 0;
   for (const r of rows) {

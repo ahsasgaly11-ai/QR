@@ -30,6 +30,22 @@ function resolveFile(relPath) {
   return null;
 }
 
+// تطبيع المفاتيح كما يفعل المحرّك (sign-interpreter) حتى تتطابق «خائف» و«رئتين»
+// مهما كُتبت الهمزات في الخطة: إزالة التشكيل، أ/إ/آ ← ا، ى ← ي، ؤ ← و، ئ ← ي، ة ← ه.
+const MARKS = /[\u064B-\u0652\u0670\u0640]/g;
+function normalizeKey(s) {
+  return String(s)
+    .trim()
+    .replace(MARKS, '')
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x660))
+    .replace(/[إأآٱ]/g, 'ا')
+    .replace(/ى/g, 'ي')
+    .replace(/ؤ/g, 'و')
+    .replace(/ئ/g, 'ي')
+    .replace(/ة/g, 'ه')
+    .toLowerCase();
+}
+
 function mediaKey(file) {
   return VIDEO_EXT.includes(extname(file).toLowerCase()) ? 'video' : 'img';
 }
@@ -68,12 +84,13 @@ function main() {
         : { [mediaKey(file)]: file, gloss: w.gloss || w.key };
       const source = sourceOf(w);
       if (source) entry.source = source;
-      manifest.words[w.key] = entry;
+      manifest.words[normalizeKey(w.key)] = entry;
       haveW++;
       // الأسماء المستعارة (جمع/مرادف/رقم) تشير إلى الإشارة نفسها.
       for (const a of w.aliases ?? []) {
-        if (manifest.words[a]) continue;
-        manifest.words[a] = entry;
+        const k = normalizeKey(a);
+        if (manifest.words[k]) continue;
+        manifest.words[k] = entry;
         aliases++;
       }
     }
