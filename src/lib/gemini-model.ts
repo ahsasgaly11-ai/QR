@@ -13,6 +13,18 @@ const API = 'https://generativelanguage.googleapis.com/v1beta';
 
 let cached: string | null = null;
 let inflight: Promise<string> | null = null;
+// نماذج أعادت «ضغط عالٍ» (503) مؤخّرًا: تُستبعد 30 دقيقة ليُختار التالي، ثم تعود.
+const DEMOTE_MS = 30 * 60 * 1000;
+const demotedAt = new Map<string, number>();
+function isDemoted(id: string): boolean {
+  const t = demotedAt.get(id);
+  if (t === undefined) return false;
+  if (Date.now() - t > DEMOTE_MS) {
+    demotedAt.delete(id);
+    return false;
+  }
+  return true;
+}
 
 interface ModelInfo {
   name?: string; // "models/gemini-x.y-flash"
@@ -46,6 +58,7 @@ async function discover(key: string): Promise<string> {
       const id = (m.name ?? '').replace(/^models\//, '');
       if (
         /^gemini-[\d.]+-flash/.test(id) &&
+        !isDemoted(id) &&
         !/image|audio|tts|live|thinking|embedding/.test(id) &&
         (m.supportedGenerationMethods ?? []).includes('generateContent')
       ) {
@@ -78,6 +91,18 @@ export async function resolveGeminiModel(key: string): Promise<string> {
 /** يُستدعى عند 404 من النموذج المختار: يمسح الاختيار ليُعاد الاكتشاف. */
 export function forgetGeminiModel(): void {
   cached = null;
+}
+
+/**
+ * يستبعد نموذجًا مثقلًا (503 متكرّر) ويمسح الاختيار، فيُختار في الاستدعاء التالي
+ * أفضل نموذج Flash متاح غيره (مثل نسخة lite أو الإصدار السابق). يعيد true إن
+ * بقي بديل محتمل.
+ */
+export function demoteGeminiModel(id: string): boolean {
+  if (process.env.GEMINI_MODEL?.trim()) return false; // نموذج مثبّت يدويًّا: لا تبديل
+  demotedAt.set(id, Date.now());
+  cached = null;
+  return demotedAt.size < 4;
 }
 
 /** اسم النموذج المعروف حاليًّا (للعرض فقط؛ قد يكون فارغًا قبل أول استدعاء). */
