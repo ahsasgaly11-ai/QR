@@ -1,0 +1,307 @@
+{
+ "name": "منصة مناهج قطر التفاعلية — فيديو الشرح",
+ "fps": 60,
+ "width": 1920,
+ "height": 1080,
+ "bpm": 96,
+ "beatsPerBar": 4,
+ "palette": {
+  "bg": "#f6efe3",
+  "ink": "#231a17",
+  "acc": "#8a1538",
+  "clay": "#6b0f2b",
+  "hi": "#d4a843",
+  "mut": "#4b3d3a",
+  "gold": "#d4a843",
+  "gold2": "#a8812a",
+  "teal": "#1f6b5a",
+  "sand": "#efe3cf",
+  "cream": "#fbf6ee"
+ },
+ "fonts": {
+  "display": "Cairo",
+  "body": "Readex Pro",
+  "num": "Inter"
+ },
+ "images": {
+  "logo": "assets/logo.png",
+  "oryx": "assets/oryx.png",
+  "home": "web/home_hero.png",
+  "browse": "web/browse.png",
+  "subject": "web/subject.png",
+  "subjectFull": "web/subject_full.png",
+  "playTop": "web/play_top.png",
+  "playGame": "web/play_game.png",
+  "playObj": "web/play_objectives.png",
+  "ticket": "web/play_ticket.png",
+  "ticketChosen": "web/play_ticket_chosen.png",
+  "ticketDone": "web/play_ticket_done.png",
+  "game3d": "web/play_3d_game.png",
+  "teeth": "web/play_teeth_game.png",
+  "dash": "web/dash_mastery.png",
+  "heat": "web/heatmap.png",
+  "about": "web/about.png",
+  "mHome": "web/m_home.png",
+  "mPlay": "web/m_play.png",
+  "mObj": "web/m_objectives.png",
+  "mTicket": "web/m_ticket.png"
+ },
+ "post": {
+  "grain": 0.0,
+  "vignette": 0.0
+ },
+ "voice": {
+  "name": "ar-QA-MoazNeural",
+  "rate": "+4%",
+  "pitch": "+0Hz"
+ },
+ "timing": {
+  "snap": "none",
+  "snapTarget": "line",
+  "snapLines": "all",
+  "leadIn": 0.3,
+  "gap": 0,
+  "startPad": 0,
+  "tail": 0.4,
+  "keepOriginal": true
+ },
+ "sections": [
+  {
+   "name": "intro",
+   "at": 0
+  }
+ ],
+ "scenes": [
+  {
+   "id": "p1",
+   "file": "scenes/p1.js",
+   "lines": [
+    "l1",
+    "l2"
+   ],
+   "minDur": 7
+  },
+  {
+   "id": "p2",
+   "file": "scenes/p2.js",
+   "lines": [
+    "l3"
+   ],
+   "transition": {
+    "type": "dip",
+    "dur": 0.4,
+    "color": "#f6efe3"
+   }
+  },
+  {
+   "id": "p3",
+   "file": "scenes/p3.js",
+   "lines": [
+    "l4",
+    "l5"
+   ],
+   "transition": {
+    "type": "dip",
+    "dur": 0.4,
+    "color": "#f6efe3"
+   }
+  },
+  {
+   "id": "p4",
+   "file": "scenes/p4.js",
+   "lines": [
+    "l6"
+   ],
+   "transition": {
+    "type": "dip",
+    "dur": 0.4,
+    "color": "#6b0f2b"
+   }
+  },
+  {
+   "id": "s1",
+   "file": "scenes/s1.js",
+   "lines": [
+    "l7"
+   ],
+   "transition": {
+    "type": "dip",
+    "dur": 0.5,
+    "color": "#f6efe3"
+   }
+  },
+  {
+   "id": "s2",
+   "file": "scenes/s2.js",
+   "lines": [
+    "l8",
+    "l9"
+   ],
+   "transition": {
+    "type": "dip",
+    "dur": 0.4,
+    "color": "#f6efe3"
+   }
+  },
+  {
+   "id": "s3",
+   "file": "scenes/s3.js",
+   "lines": [
+    "l10",
+    "l11"
+   ],
+   "transition": {
+    "type": "dip",
+    "dur": 0.4,
+    "color": "#f6efe3"
+   }
+  },
+  {
+   "id": "s4",
+   "file": "scenes/s4.js",
+   "lines": [
+    "l12"
+   ],
+   "transition": {
+    "type": "dip",
+    "dur": 0.4,
+    "color": "#f6efe3"
+   }
+  },
+  {
+   "id": "s5",
+   "file": "scenes/s5.js",
+   "lines": [
+    "l13"
+   ],
+   "transition": {
+    "type": "dip",
+    "dur": 0.4,
+    "color": "#f6efe3"
+   }
+  },
+  {
+   "id": "s6",
+   "file": "scenes/s6.js",
+   "lines": [
+    "l14"
+   ],
+   "transition": {
+    "type": "dip",
+    "dur": 0.4,
+    "color": "#f6efe3"
+   }
+  },
+  {
+   "id": "a1",
+   "file": "scenes/a1.js",
+   "lines": [
+    "l15"
+   ],
+   "transition": {
+    "type": "dip",
+    "dur": 0.5,
+    "color": "#8a1538"
+   }
+  },
+  {
+   "id": "a2",
+   "file": "scenes/a2.js",
+   "lines": [
+    "l16"
+   ],
+   "transition": {
+    "type": "dip",
+    "dur": 0.4,
+    "color": "#f6efe3"
+   }
+  },
+  {
+   "id": "a3",
+   "file": "scenes/a3.js",
+   "lines": [
+    "l17",
+    "l18"
+   ],
+   "transition": {
+    "type": "dip",
+    "dur": 0.4,
+    "color": "#f6efe3"
+   }
+  },
+  {
+   "id": "a4",
+   "file": "scenes/a4.js",
+   "lines": [
+    "l19"
+   ],
+   "transition": {
+    "type": "dip",
+    "dur": 0.4,
+    "color": "#f6efe3"
+   }
+  },
+  {
+   "id": "a5",
+   "file": "scenes/a5.js",
+   "lines": [
+    "l20"
+   ],
+   "transition": {
+    "type": "dip",
+    "dur": 0.4,
+    "color": "#f6efe3"
+   }
+  },
+  {
+   "id": "a6",
+   "file": "scenes/a6.js",
+   "lines": [
+    "l21"
+   ],
+   "transition": {
+    "type": "dip",
+    "dur": 0.4,
+    "color": "#f6efe3"
+   }
+  },
+  {
+   "id": "a7",
+   "file": "scenes/a7.js",
+   "lines": [
+    "l22"
+   ],
+   "transition": {
+    "type": "dip",
+    "dur": 0.4,
+    "color": "#f6efe3"
+   }
+  },
+  {
+   "id": "e1",
+   "file": "scenes/e1.js",
+   "lines": [
+    "l23",
+    "l24"
+   ],
+   "transition": {
+    "type": "dip",
+    "dur": 0.4,
+    "color": "#f6efe3"
+   }
+  },
+  {
+   "id": "e2",
+   "file": "scenes/e2.js",
+   "lines": [
+    "l25"
+   ],
+   "minDur": 7,
+   "transition": {
+    "type": "dip",
+    "dur": 0.6,
+    "color": "#8a1538"
+   }
+  }
+ ]
+}
