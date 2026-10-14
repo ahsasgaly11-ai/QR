@@ -258,7 +258,46 @@ export function buildSequenceFromGloss(
       steps.push({ ...makeStep('letter', ch, ch, from, le), span });
     }
   }
-  return steps;
+  return fillSkippedWords(steps, words, m);
+}
+
+// أدوات تُحذف عمدًا في الغلوس (القاعدة 4 في موجّه النموذج) فلا تُستعاد.
+const GLOSS_DROPPABLE = new Set(['ان', 'قد', 'كان', 'يكون', 'كانت', 'تكون', 'هو', 'هي', 'ما', 'ثم']);
+
+/**
+ * شبكة أمان فوق الغلوس: النموذج (وخاصة نسخ lite) قد يُسقط كلمات ذات معنى. كل كلمة
+ * لم يغطّها أي عنصر ولها إشارة في القاموس تُدرَج إشارتها بعد الخطوة التي تغطّي
+ * أقرب كلمة سابقة لها، فلا يفقد الطالب محتوى له إشارة. لا تُهجّى الكلمات المُستعادة
+ * (حتى لا يطول العرض)؛ الوضع الحرفي متاح لمن يريد النصّ كاملًا.
+ */
+function fillSkippedWords(steps: SignStep[], words: string[], m: SignManifest | null): SignStep[] {
+  const covered = new Set<number>();
+  for (const s of steps) for (let k = s.word; k < s.word + (s.span ?? 1); k++) covered.add(k);
+  const out = [...steps];
+  for (let wi = 0; wi < words.length; wi++) {
+    if (covered.has(wi) || GLOSS_DROPPABLE.has(normalizeWord(words[wi]))) continue;
+    const next = words[wi + 1];
+    const pair = next && !covered.has(wi + 1) ? lookupWord(m, `${words[wi]} ${next}`) : undefined;
+    const entry = pair ?? lookupWord(m, words[wi]);
+    if (!entry) continue;
+    const span = pair ? 2 : 1;
+    const glyph = words.slice(wi, wi + span).join(' ');
+    // موضع الإدراج: بعد آخر خطوة تغطّي أقرب كلمة سابقة (أو في البداية)
+    let pos = 0;
+    for (let j = wi - 1; j >= 0 && !pos; j--) {
+      for (let i = out.length - 1; i >= 0; i--) {
+        const s = out[i];
+        if (j >= s.word && j < s.word + (s.span ?? 1)) {
+          pos = i + 1;
+          break;
+        }
+      }
+    }
+    out.splice(pos, 0, { ...makeStep('word', glyph, entry.gloss || glyph, wi, entry), span });
+    for (let k = wi; k < wi + span; k++) covered.add(k);
+    if (pair) wi++;
+  }
+  return out;
 }
 
 /** الكلمات المصدر (لإبراز النصّ المقروء أثناء العرض). */
