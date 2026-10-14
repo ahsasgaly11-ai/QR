@@ -52,7 +52,7 @@ async function main() {
   const keys = Object.keys(manifest.words ?? {}).sort();
   const vocab = new Set(keys);
 
-  let cache: { version: number; items: Record<string, Gloss & { text: string }> } = {
+  let cache: { version: number; items: Record<string, Gloss & { text: string; model?: string }> } = {
     version: GLOSS_VERSION,
     items: {},
   };
@@ -79,6 +79,11 @@ async function main() {
         gloss = await generateGloss(text, keys, vocab);
       } catch (e) {
         const status = e instanceof GlossError ? e.status : 500;
+        if (e instanceof GlossError && e.daily) {
+          writeFileSync(OUT, JSON.stringify(cache, null, 1) + '\n', 'utf8');
+          console.error(`\n⏸ ${e.message}. ما حُسب محفوظ (${done} جديد)؛ أعد التشغيل بعد التجديد لإكمال الباقي.`);
+          process.exit(3);
+        }
         if ((status === 429 || status === 503) && attempt < 3) {
           const wait = status === 503 ? 45000 : 30000;
           console.log(`  ⏳ ${status === 503 ? 'النموذج مشغول' : 'حدّ الطلبات'} — انتظار ${wait / 1000} ثانية (محاولة ${attempt})`);
@@ -98,7 +103,7 @@ async function main() {
       failed++;
       continue;
     }
-    cache.items[key] = { ...gloss, text };
+    cache.items[key] = { ...gloss, text, model: glossModelName() };
     done++;
     const signed = gloss.items.filter((i) => i.key).length;
     console.log(`${done + reused}/${all.length} ${text.slice(0, 50)}… → ${signed} إشارة، ${gloss.items.length - signed} تهجئة`);

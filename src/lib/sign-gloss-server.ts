@@ -17,7 +17,12 @@ import {
   sanitizeGloss,
   type Gloss,
 } from './sign-gloss';
-import { currentGeminiModel, demoteGeminiModel, forgetGeminiModel, resolveGeminiModel } from './gemini-model';
+import {
+  currentGeminiModel,
+  demoteGeminiModel,
+  isGeminiModelDemoted,
+  resolveGeminiModel,
+} from './gemini-model';
 
 export type GlossProvider = 'anthropic' | 'gemini';
 
@@ -40,9 +45,31 @@ const WORD_RE = /[\p{L}\p{M}\p{N}]+/gu;
 
 export class GlossError extends Error {
   status: number;
-  constructor(message: string, status: number) {
+  /** نفدت الحصّة اليومية لكل النماذج المتاحة: لا فائدة من إعادة المحاولة قبل التجديد. */
+  daily: boolean;
+  constructor(message: string, status: number, daily = false) {
     super(message);
     this.status = status;
+    this.daily = daily;
+  }
+}
+
+/** أقصى عدد تنقّلات بين النماذج في الطلب الواحد (لكل نموذج Flash حصّته اليومية المستقلّة). */
+const MAX_HOPS = 8;
+
+/** يقرأ خطأ 429: هل هو نفاد حصّة يومية؟ وبعد كم ميلي ثانية تتجدّد؟ */
+async function readQuota(res: Response): Promise<{ daily: boolean; retryMs: number }> {
+  try {
+    const j = (await res.json()) as {
+      error?: { details?: { quotaId?: string; violations?: { quotaId?: string }[]; retryDelay?: string }[] };
+    };
+    const details = j.error?.details ?? [];
+    const daily = details.some((d) => (d.violations ?? []).some((v) => /PerDay/i.test(v.quotaId ?? '')));
+    const delay = details.find((d) => d.retryDelay)?.retryDelay ?? '';
+    const sec = Number(/^(\d+(?:\.\d+)?)s$/.exec(delay)?.[1] ?? NaN);
+    return { daily, retryMs: Number.isFinite(sec) ? sec * 1000 : 0 };
+  } catch {
+    return { daily: false, retryMs: 0 };
   }
 }
 
@@ -91,10 +118,22 @@ async function viaAnthropic(text: string, keys: string[], words: string[]): Prom
   }
 }
 
-async function viaGemini(text: string, keys: string[], words: string[], retried = false, hops = 0): Promise<Gloss> {
+async function viaGemini(
+  text: string,
+  keys: string[],
+  words: string[],
+  hops = 0,
+  lastDaily = false
+): Promise<Gloss> {
   const key = process.env.GEMINI_API_KEY!;
   // يُختار تلقائيًّا أحدث نموذج Flash متاح للمفتاح (Google تُوقف القديمة للمفاتيح الجديدة)
   const model = await resolveGeminiModel(key);
+  if (hops > 0 && isGeminiModelDemoted(model)) {
+    // استُبعدت كل البدائل: لا تُهدر طلبًا آخر
+    throw lastDaily
+      ? new GlossError('نفدت الحصّة اليومية المجانية لنماذج Gemini، تتجدّد غدًا', 429, true)
+      : new GlossError('نماذج Gemini مشغولة حاليًّا، حاول بعد قليل', 503);
+  }
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
     {
@@ -111,17 +150,26 @@ async function viaGemini(text: string, keys: string[], words: string[], retried 
       }),
     }
   );
-  if (res.status === 404 && !retried && !process.env.GEMINI_MODEL?.trim()) {
-    // النموذج المختار لم يعد متاحًا: أعد الاكتشاف مرّة واحدة
-    forgetGeminiModel();
-    return viaGemini(text, keys, words, true, hops);
+  if (res.status === 404 && hops < MAX_HOPS && demoteGeminiModel(model, 24 * 3600 * 1000)) {
+    // النموذج المختار غير متاح لهذا المفتاح (أُوقف للمستخدمين الجدد): استبعده وأعد الاكتشاف
+    return viaGemini(text, keys, words, hops + 1, lastDaily);
   }
   if (res.status === 503) {
-    // «ضغط عالٍ» على النموذج: انتقل إلى أفضل نموذج Flash بديل (حتى بديلين)
-    if (hops < 2 && demoteGeminiModel(model)) return viaGemini(text, keys, words, retried, hops + 1);
+    // «ضغط عالٍ» على النموذج: انتقل إلى أفضل نموذج Flash بديل
+    if (hops < MAX_HOPS && demoteGeminiModel(model)) return viaGemini(text, keys, words, hops + 1, false);
     throw new GlossError(`نموذج Gemini (${model}) مشغول حاليًّا، حاول بعد قليل`, 503);
   }
-  if (res.status === 429) throw new GlossError('بلغ مفتاح Gemini حدّ الطبقة المجانية مؤقّتًا، حاول بعد دقيقة', 429);
+  if (res.status === 429) {
+    const q = await readQuota(res);
+    if (q.daily) {
+      // نفدت الحصّة اليومية لهذا النموذج: استبعده حتى التجديد وانتقل إلى نموذج آخر
+      if (hops < MAX_HOPS && demoteGeminiModel(model, q.retryMs || 24 * 3600 * 1000)) {
+        return viaGemini(text, keys, words, hops + 1, true);
+      }
+      throw new GlossError('نفدت الحصّة اليومية المجانية لنماذج Gemini، تتجدّد غدًا', 429, true);
+    }
+    throw new GlossError('بلغ مفتاح Gemini حدّ الطبقة المجانية مؤقّتًا، حاول بعد دقيقة', 429);
+  }
   if (!res.ok) {
     // رسالة Gemini نفسها (لا تحوي المفتاح) تفيد في التشخيص: مفتاح غير صالح، نموذج غير متاح…
     let detail = '';

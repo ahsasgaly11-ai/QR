@@ -13,14 +13,15 @@ const API = 'https://generativelanguage.googleapis.com/v1beta';
 
 let cached: string | null = null;
 let inflight: Promise<string> | null = null;
-// نماذج أعادت «ضغط عالٍ» (503) مؤخّرًا: تُستبعد 30 دقيقة ليُختار التالي، ثم تعود.
+// نماذج مستبعدة مؤقّتًا ليُختار التالي: «ضغط عالٍ» (503) لـ30 دقيقة، أو نفاد الحصّة
+// اليومية للنموذج (429؛ الطبقة المجانية ~20 طلبًا يوميًّا لكل نموذج) حتى موعد التجديد.
 const DEMOTE_MS = 30 * 60 * 1000;
-const demotedAt = new Map<string, number>();
+const demotedUntil = new Map<string, number>();
 function isDemoted(id: string): boolean {
-  const t = demotedAt.get(id);
+  const t = demotedUntil.get(id);
   if (t === undefined) return false;
-  if (Date.now() - t > DEMOTE_MS) {
-    demotedAt.delete(id);
+  if (Date.now() > t) {
+    demotedUntil.delete(id);
     return false;
   }
   return true;
@@ -94,15 +95,20 @@ export function forgetGeminiModel(): void {
 }
 
 /**
- * يستبعد نموذجًا مثقلًا (503 متكرّر) ويمسح الاختيار، فيُختار في الاستدعاء التالي
- * أفضل نموذج Flash متاح غيره (مثل نسخة lite أو الإصدار السابق). يعيد true إن
- * بقي بديل محتمل.
+ * يستبعد نموذجًا مثقلًا (503) أو نفدت حصّته اليومية (429) ويمسح الاختيار، فيُختار
+ * في الاستدعاء التالي أفضل نموذج Flash متاح غيره (الإصدار السابق أو نسخة lite).
+ * يعيد false إن كان النموذج مثبّتًا يدويًّا (لا تبديل).
  */
-export function demoteGeminiModel(id: string): boolean {
+export function demoteGeminiModel(id: string, ms = DEMOTE_MS): boolean {
   if (process.env.GEMINI_MODEL?.trim()) return false; // نموذج مثبّت يدويًّا: لا تبديل
-  demotedAt.set(id, Date.now());
+  demotedUntil.set(id, Date.now() + ms);
   cached = null;
-  return demotedAt.size < 4;
+  return true;
+}
+
+/** هل النموذج مستبعد حاليًّا؟ (حين لا يبقى بديل يعيد الاكتشاف الاسم المستعار نفسه). */
+export function isGeminiModelDemoted(id: string): boolean {
+  return isDemoted(id);
 }
 
 /** اسم النموذج المعروف حاليًّا (للعرض فقط؛ قد يكون فارغًا قبل أول استدعاء). */
