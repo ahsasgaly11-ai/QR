@@ -17,6 +17,8 @@ export interface SignEntry {
   img?: string;
   /** مسار مقطع الإشارة (نسبيّ إلى /sign/ أو رابط مطلق). */
   video?: string;
+  /** معرّف مقطع يوتيوب يُضمَّن بمشغّل يوتيوب (بديل عن ملف محلي). */
+  yt?: string;
   /** تسمية توضيحية تُعرض تحت الإشارة (اختياري). */
   gloss?: string;
   /** مصدر الإشارة إن لم تكن تصويرًا محليًّا (مثل "karsl") — يُنسَب في المشغّل. */
@@ -32,6 +34,22 @@ export const SIGN_SOURCES: Record<string, { label: string; note: string }> = {
   sshi: {
     label: 'مكتبة لغة الإشارة السعودية — الجمعية السعودية للإعاقة السمعية',
     note: 'لهجة إشارية سعودية بمؤدٍّ بشري؛ تُستبدَل بالإشارة القطرية المعتمدة عند تصويرها.',
+  },
+  'kisr-unified': {
+    label: 'القاموس الإشاري العربي الموحّد — معهد الكويت للأبحاث العلمية (يوتيوب)',
+    note: 'القاموس العربي الموحّد المعتمد في قطر، يُعرض من قناة المعهد على يوتيوب.',
+  },
+  'kisr-kuwaiti': {
+    label: 'القاموس الإشاري الكويتي — معهد الكويت للأبحاث العلمية (يوتيوب)',
+    note: 'لهجة إشارية كويتية (خليجية)، يُعرض من قناة المعهد على يوتيوب.',
+  },
+  'kisr-preschool': {
+    label: 'قاموس الأطفال الإشاري — معهد الكويت للأبحاث العلمية (يوتيوب)',
+    note: 'لهجة إشارية كويتية (خليجية)، يُعرض من قناة المعهد على يوتيوب.',
+  },
+  'kisr-scout': {
+    label: 'القاموس الإشاري الكشفي — معهد الكويت للأبحاث العلمية (يوتيوب)',
+    note: 'لهجة إشارية كويتية (خليجية)، يُعرض من قناة المعهد على يوتيوب.',
   },
 };
 
@@ -53,7 +71,9 @@ export interface SignStep {
   gloss: string;
   /** رابط أصل الإشارة إن توفّر. */
   src?: string;
-  media?: 'img' | 'video';
+  media?: 'img' | 'video' | 'yt';
+  /** عدد كلمات النصّ التي تغطّيها هذه الخطوة (2 للإشارة المركّبة من كلمتين). */
+  span?: number;
   /** هل توجد إشارة موثّقة لهذا العنصر؟ */
   hasAsset: boolean;
   /** ترتيب الكلمة المصدر التي ينتمي إليها (لإبراز النصّ). */
@@ -98,7 +118,7 @@ function lookupWord(m: SignManifest | null, raw: string): SignEntry | undefined 
   if (!words) return undefined;
   const has = (k: string) => {
     const e = words[k];
-    return e && (e.img || e.video) ? e : undefined;
+    return e && (e.img || e.video || e.yt) ? e : undefined;
   };
   const n = normalizeWord(raw);
   const candidates = [n];
@@ -107,6 +127,14 @@ function lookupWord(m: SignManifest | null, raw: string): SignEntry | undefined 
   for (const base of [...candidates]) {
     const noAl = base.replace(/^(ال|لل|بال|كال|فال|وال)(?=.{2,})/, '');
     if (noAl !== base) candidates.push(noAl);
+  }
+  // عبارة من كلمتين: مفاتيح الإشارات المركّبة مخزّنة بلا «ال» في كل كلمة.
+  if (n.includes(' ')) {
+    const bare = n
+      .split(' ')
+      .map((p) => p.replace(/^(ال|لل|بال|كال|فال|وال)(?=.{2,})/, '').replace(/^[وف](?=.{3,})/, ''))
+      .join(' ');
+    if (!candidates.includes(bare)) candidates.push(bare);
   }
   for (const c of candidates) {
     const e = has(c);
@@ -128,14 +156,14 @@ function makeStep(
   word: number,
   entry?: SignEntry
 ): SignStep {
-  const src = assetUrl(entry?.video || entry?.img);
+  const src = entry?.yt ? entry.yt : assetUrl(entry?.video || entry?.img);
   return {
     kind,
     glyph,
     gloss,
     word,
     src,
-    media: entry?.video ? 'video' : entry?.img ? 'img' : undefined,
+    media: entry?.yt ? 'yt' : entry?.video ? 'video' : entry?.img ? 'img' : undefined,
     hasAsset: !!src,
     source: src ? entry?.source : undefined,
   };
@@ -148,7 +176,25 @@ function makeStep(
 export function buildSequence(text: string, m: SignManifest | null): SignStep[] {
   const steps: SignStep[] = [];
   const words = (text || '').match(WORD_RE) || [];
+  let skip = 0;
   words.forEach((w, wi) => {
+    if (skip > 0) {
+      skip--;
+      return;
+    }
+    // إشارة مركّبة من كلمتين (مثل «هيكل عظمي» أو «درجة الحرارة») تُفضَّل على الكلمة المفردة.
+    const nextW = words[wi + 1];
+    if (nextW) {
+      const pair = lookupWord(m, `${w} ${nextW}`);
+      if (pair) {
+        steps.push({
+          ...makeStep('word', `${w} ${nextW}`, pair.gloss || `${w} ${nextW}`, wi, pair),
+          span: 2,
+        });
+        skip = 1;
+        return;
+      }
+    }
     const wordEntry = lookupWord(m, w);
     if (wordEntry) {
       steps.push(makeStep('word', w, wordEntry.gloss || w, wi, wordEntry));

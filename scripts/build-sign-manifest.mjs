@@ -60,9 +60,12 @@ function main() {
   for (const cat of plan.categories ?? []) {
     for (const w of cat.words ?? []) {
       totalW++;
-      const file = resolveFile(w.file);
-      if (!file) continue;
-      const entry = { [mediaKey(file)]: file, gloss: w.gloss || w.key };
+      // إشارة مضمَّنة من يوتيوب (قواميس مؤسسية تنشر مقاطعها هناك): لا ملف محلي.
+      const file = w.yt ? null : resolveFile(w.file);
+      if (!file && !w.yt) continue;
+      const entry = w.yt
+        ? { yt: w.yt, gloss: w.gloss || w.key }
+        : { [mediaKey(file)]: file, gloss: w.gloss || w.key };
       const source = sourceOf(w);
       if (source) entry.source = source;
       manifest.words[w.key] = entry;
