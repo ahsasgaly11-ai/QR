@@ -1375,6 +1375,1596 @@
       "video": "words/jobs/karsl-500.mp4",
       "gloss": "محامٍ",
       "source": "karsl"
+    },
+    "لون": {
+      "yt": "IRdt3MRwmXY",
+      "gloss": "لون",
+      "source": "kisr-unified"
+    },
+    "بنفسجي": {
+      "yt": "GfQPnDl_D60",
+      "gloss": "بنفسجي",
+      "source": "kisr-unified"
+    },
+    "سنتيمتر": {
+      "yt": "zVNdwXYXsNk",
+      "gloss": "سنتيمتر - سم",
+      "source": "kisr-unified"
+    },
+    "سم": {
+      "yt": "zVNdwXYXsNk",
+      "gloss": "سنتيمتر - سم",
+      "source": "kisr-unified"
+    },
+    "ثانيه": {
+      "yt": "ed2W0X5V_bk",
+      "gloss": "ثانية",
+      "source": "kisr-unified"
+    },
+    "ظهر": {
+      "yt": "PDfRccMf8Ro",
+      "gloss": "الظهر",
+      "source": "kisr-unified"
+    },
+    "يوم": {
+      "yt": "NjANp0-4yxs",
+      "gloss": "يوم",
+      "source": "kisr-unified"
+    },
+    "عصر": {
+      "yt": "ZHgWlMdOivI",
+      "gloss": "العصر",
+      "source": "kisr-unified"
+    },
+    "لتري": {
+      "yt": "qCQhQ51H1Qw",
+      "gloss": "لتر - ل",
+      "source": "kisr-unified"
+    },
+    "وقت": {
+      "yt": "To8FT2_hZss",
+      "gloss": "وقت",
+      "source": "kisr-unified"
+    },
+    "قدم": {
+      "yt": "nYYUuUBIre0",
+      "gloss": "قدم",
+      "source": "kisr-unified"
+    },
+    "عقد": {
+      "yt": "NsKfzDp7SwY",
+      "gloss": "عقد",
+      "source": "kisr-unified"
+    },
+    "ساعه": {
+      "yt": "55pMID8yRwk",
+      "gloss": "ساعة",
+      "source": "kisr-unified"
+    },
+    "دقيقه": {
+      "yt": "ktxHe8kFYZY",
+      "gloss": "دقيقة",
+      "source": "kisr-unified"
+    },
+    "حكم": {
+      "yt": "0kBUSGUrAFk",
+      "gloss": "حكم",
+      "source": "kisr-unified"
+    },
+    "هدف": {
+      "yt": "IhAxfwk3Mi8",
+      "gloss": "هدف",
+      "source": "kisr-unified"
+    },
+    "انتقال": {
+      "yt": "Ws2xf1a5zLs",
+      "gloss": "انتقال",
+      "source": "kisr-unified"
+    },
+    "قطر": {
+      "yt": "91CkuXrLU3Y",
+      "gloss": "قطر",
+      "source": "kisr-unified"
+    },
+    "رباط": {
+      "yt": "kf_vdJwel7w",
+      "gloss": "الرباط",
+      "source": "kisr-unified"
+    },
+    "مسطره": {
+      "yt": "URQ9Z5qRSRI",
+      "gloss": "مسطرة",
+      "source": "kisr-unified"
+    },
+    "اصغر من": {
+      "yt": "8hPYBmi0Wn0",
+      "gloss": "أصغر من",
+      "source": "kisr-unified"
+    },
+    "تعلم": {
+      "yt": "1Ada8CV3BvU",
+      "gloss": "تعلم - تعليم",
+      "source": "kisr-unified"
+    },
+    "مدرسه": {
+      "yt": "lG0KLVZdMlw",
+      "gloss": "مدرسة",
+      "source": "kisr-unified"
+    },
+    "اول": {
+      "yt": "DLJr6MCAOd0",
+      "gloss": "الأول",
+      "source": "kisr-unified"
+    },
+    "اولي": {
+      "yt": "DLJr6MCAOd0",
+      "gloss": "الأول",
+      "source": "kisr-unified"
+    },
+    "كليه": {
+      "yt": "8zr0NU2ATBQ",
+      "gloss": "كلية",
+      "source": "kisr-unified"
+    },
+    "يجمع": {
+      "yt": "wwjGu80iyPQ",
+      "gloss": "جمع",
+      "source": "kisr-unified"
+    },
+    "صف": {
+      "yt": "cIgs7XsF9qo",
+      "gloss": "طابور - صف",
+      "source": "kisr-unified"
+    },
+    "مختلفه": {
+      "yt": "x0GeNUnomNw",
+      "gloss": "مختلف",
+      "source": "kisr-unified"
+    },
+    "سبوره": {
+      "yt": "ZbD6vN_JRL4",
+      "gloss": "سبورة",
+      "source": "kisr-unified"
+    },
+    "ابدا": {
+      "yt": "udCcWrzU3f4",
+      "gloss": "أبدا",
+      "source": "kisr-unified"
+    },
+    "تكرار": {
+      "yt": "HqYj-myleLM",
+      "gloss": "إعادة - تكرار",
+      "source": "kisr-unified"
+    },
+    "اعاده": {
+      "yt": "HqYj-myleLM",
+      "gloss": "إعادة - تكرار",
+      "source": "kisr-unified"
+    },
+    "كتاب": {
+      "yt": "G-jRpsmKg9o",
+      "gloss": "كتاب",
+      "source": "kisr-unified"
+    },
+    "طرح": {
+      "yt": "9ykPy737viU",
+      "gloss": "طرح",
+      "source": "kisr-unified"
+    },
+    "خط": {
+      "yt": "tQ3IS61Rmj0",
+      "gloss": "خط",
+      "source": "kisr-unified"
+    },
+    "رحله": {
+      "yt": "160rA_4_rPg",
+      "gloss": "رحلة",
+      "source": "kisr-unified"
+    },
+    "بسرعه": {
+      "yt": "4j9MNCz4ug0",
+      "gloss": "بسرعة",
+      "source": "kisr-unified"
+    },
+    "يمثل": {
+      "yt": "VXOcxwkCb2Y",
+      "gloss": "يمثل",
+      "source": "kisr-unified"
+    },
+    "يمثله": {
+      "yt": "VXOcxwkCb2Y",
+      "gloss": "يمثل",
+      "source": "kisr-unified"
+    },
+    "صقر": {
+      "yt": "0FPidmVBqWU",
+      "gloss": "صقر",
+      "source": "kisr-unified"
+    },
+    "حيه": {
+      "yt": "Hd5sMWrsFYE",
+      "gloss": "حية - أفعى",
+      "source": "kisr-unified"
+    },
+    "اسد": {
+      "yt": "iMr0xbp7DJo",
+      "gloss": "أسد",
+      "source": "kisr-unified"
+    },
+    "حصان": {
+      "yt": "JI-9uBUTLOw",
+      "gloss": "حصان",
+      "source": "kisr-unified"
+    },
+    "ادوات": {
+      "yt": "XrNrTEJOgrA",
+      "gloss": "الأدوات",
+      "source": "kisr-unified"
+    },
+    "نسخه": {
+      "yt": "_JhNFHbzLW0",
+      "gloss": "نسخ",
+      "source": "kisr-unified"
+    },
+    "عرض": {
+      "yt": "gSZ5nhmlPEo",
+      "gloss": "عرض",
+      "source": "kisr-unified"
+    },
+    "يعرض": {
+      "yt": "gSZ5nhmlPEo",
+      "gloss": "عرض",
+      "source": "kisr-unified"
+    },
+    "سماعه": {
+      "yt": "8Akf_Fw5kn0",
+      "gloss": "السماعة",
+      "source": "kisr-unified"
+    },
+    "يحسب": {
+      "yt": "Yl04gkVI1rY",
+      "gloss": "يحسب",
+      "source": "kisr-unified"
+    },
+    "الين": {
+      "yt": "781ah86o-8w",
+      "gloss": "ين",
+      "source": "kisr-unified"
+    },
+    "جورب": {
+      "yt": "iGlTLRnX4t4",
+      "gloss": "جورب",
+      "source": "kisr-unified"
+    },
+    "سلك كهربايي": {
+      "yt": "InlmTyNC3gg",
+      "gloss": "سلك كهربائي",
+      "source": "kisr-unified"
+    },
+    "ملابس": {
+      "yt": "WhJItns5PlM",
+      "gloss": "ملابس",
+      "source": "kisr-unified"
+    },
+    "قفازات": {
+      "yt": "sekjpYBykMU",
+      "gloss": "قفاز",
+      "source": "kisr-unified"
+    },
+    "معطف": {
+      "yt": "gN4ktcHheTA",
+      "gloss": "معطف",
+      "source": "kisr-unified"
+    },
+    "هيكل عظمي": {
+      "yt": "3cAyRIYjITQ",
+      "gloss": "هيكل عظمي",
+      "source": "kisr-unified"
+    },
+    "مرضا": {
+      "yt": "DCEsSc23EV4",
+      "gloss": "مريض - مرض",
+      "source": "kisr-unified"
+    },
+    "قطاره": {
+      "yt": "Rg6Kz73BJIE",
+      "gloss": "قطارة",
+      "source": "kisr-unified"
+    },
+    "قفص صدري": {
+      "yt": "o8-DPuqUWxo",
+      "gloss": "قفص صدري",
+      "source": "kisr-unified"
+    },
+    "اعاقه": {
+      "yt": "X4VJM3b44MU",
+      "gloss": "إعاقة",
+      "source": "kisr-unified"
+    },
+    "مستشفيات": {
+      "yt": "bpq_bbjJfmY",
+      "gloss": "مستشفى",
+      "source": "kisr-unified"
+    },
+    "هذه": {
+      "yt": "SudR3dbpAGU",
+      "gloss": "هذه",
+      "source": "kisr-unified"
+    },
+    "علي": {
+      "yt": "5xGivnevbPE",
+      "gloss": "على",
+      "source": "kisr-unified"
+    },
+    "عليها": {
+      "yt": "5xGivnevbPE",
+      "gloss": "على",
+      "source": "kisr-unified"
+    },
+    "عليه": {
+      "yt": "5xGivnevbPE",
+      "gloss": "على",
+      "source": "kisr-unified"
+    },
+    "انا": {
+      "yt": "dlbooG5Ryo4",
+      "gloss": "أنا",
+      "source": "kisr-unified"
+    },
+    "هما": {
+      "yt": "bRGBkHtr08A",
+      "gloss": "هما",
+      "source": "kisr-unified"
+    },
+    "لي": {
+      "yt": "2vA2sEChVK4",
+      "gloss": "لي",
+      "source": "kisr-unified"
+    },
+    "تي": {
+      "yt": "HWJICUUT2Pg",
+      "gloss": "التي",
+      "source": "kisr-unified"
+    },
+    "سبب": {
+      "yt": "dQbzVJa_tII",
+      "gloss": "لماذا - السبب",
+      "source": "kisr-unified"
+    },
+    "لماذا": {
+      "yt": "dQbzVJa_tII",
+      "gloss": "لماذا - السبب",
+      "source": "kisr-unified"
+    },
+    "بينها": {
+      "yt": "8XUqGW-1zKY",
+      "gloss": "بين",
+      "source": "kisr-unified"
+    },
+    "من خلال": {
+      "yt": "ktX9ditMqfY",
+      "gloss": "من خلال",
+      "source": "kisr-unified"
+    },
+    "لحم": {
+      "yt": "p5B5-Mxrg8c",
+      "gloss": "لحم",
+      "source": "kisr-unified"
+    },
+    "ماء": {
+      "yt": "OVuh-XwmJi4",
+      "gloss": "ماء",
+      "source": "kisr-unified"
+    },
+    "خبز": {
+      "yt": "LY2kZPvQKeA",
+      "gloss": "خبز",
+      "source": "kisr-unified"
+    },
+    "ملفوف": {
+      "yt": "5CC0ndbbWBY",
+      "gloss": "ملفوف - كرنب",
+      "source": "kisr-unified"
+    },
+    "دقيق": {
+      "yt": "eV1mSSt3p1w",
+      "gloss": "دقيق - طحين",
+      "source": "kisr-unified"
+    },
+    "يدعم": {
+      "yt": "uAjwM8KVoWk",
+      "gloss": "يدعم",
+      "source": "kisr-unified"
+    },
+    "ماده صلبه": {
+      "yt": "oyGVmi7j4YA",
+      "gloss": "مادة صلبة",
+      "source": "kisr-unified"
+    },
+    "قاع بحر": {
+      "yt": "mh7AuFv1v4s",
+      "gloss": "قاع البحر",
+      "source": "kisr-unified"
+    },
+    "رمل": {
+      "yt": "KOeYuCw7Dtk",
+      "gloss": "رمل",
+      "source": "kisr-unified"
+    },
+    "صحراء": {
+      "yt": "7aLe1-YsNcs",
+      "gloss": "صحراء",
+      "source": "kisr-unified"
+    },
+    "محيط": {
+      "yt": "bIvnX9ynV_I",
+      "gloss": "محيط",
+      "source": "kisr-unified"
+    },
+    "محيطه": {
+      "yt": "bIvnX9ynV_I",
+      "gloss": "محيط",
+      "source": "kisr-unified"
+    },
+    "بحر": {
+      "yt": "qd1ynAR43Tc",
+      "gloss": "بحر",
+      "source": "kisr-unified"
+    },
+    "مطر": {
+      "yt": "jVcE9bAicwE",
+      "gloss": "مطر",
+      "source": "kisr-unified"
+    },
+    "مخيم": {
+      "yt": "h9TVwvdHKzQ",
+      "gloss": "مخيم",
+      "source": "kisr-unified"
+    },
+    "ماده": {
+      "yt": "XMKLmPFH3sY",
+      "gloss": "مادة",
+      "source": "kisr-unified"
+    },
+    "مواد": {
+      "yt": "XMKLmPFH3sY",
+      "gloss": "مادة",
+      "source": "kisr-unified"
+    },
+    "طريق": {
+      "yt": "7OqOCJBwSGw",
+      "gloss": "طريق",
+      "source": "kisr-unified"
+    },
+    "سياره": {
+      "yt": "YD9HYG9b17E",
+      "gloss": "سيارة",
+      "source": "kisr-unified"
+    },
+    "شفاف": {
+      "yt": "iLeaqb_jZjE",
+      "gloss": "شفاف",
+      "source": "kisr-kuwaiti"
+    },
+    "شفافه": {
+      "yt": "iLeaqb_jZjE",
+      "gloss": "شفاف",
+      "source": "kisr-kuwaiti"
+    },
+    "جدري": {
+      "yt": "X96oFoXLj_4",
+      "gloss": "جدري",
+      "source": "kisr-kuwaiti"
+    },
+    "قماش": {
+      "yt": "eQ8OcHj5DZI",
+      "gloss": "قماش",
+      "source": "kisr-kuwaiti"
+    },
+    "شعر": {
+      "yt": "TnGD7Wmsl3A",
+      "gloss": "شعر",
+      "source": "kisr-kuwaiti"
+    },
+    "عظام": {
+      "yt": "BgPsFYQEwdc",
+      "gloss": "عظام",
+      "source": "kisr-kuwaiti"
+    },
+    "راس": {
+      "yt": "pIzKr4QjImA",
+      "gloss": "رأس",
+      "source": "kisr-kuwaiti"
+    },
+    "انف": {
+      "yt": "yG1WNgfEjRI",
+      "gloss": "أنف",
+      "source": "kisr-kuwaiti"
+    },
+    "عين": {
+      "yt": "eayUv6Z23Iw",
+      "gloss": "عين",
+      "source": "kisr-kuwaiti"
+    },
+    "عينان": {
+      "yt": "eayUv6Z23Iw",
+      "gloss": "عين",
+      "source": "kisr-kuwaiti"
+    },
+    "جسم": {
+      "yt": "2auKaMQDnL4",
+      "gloss": "جسم",
+      "source": "kisr-kuwaiti"
+    },
+    "جسمه": {
+      "yt": "2auKaMQDnL4",
+      "gloss": "جسم",
+      "source": "kisr-kuwaiti"
+    },
+    "جلد": {
+      "yt": "FLjDUSXiS00",
+      "gloss": "جلد",
+      "source": "kisr-kuwaiti"
+    },
+    "اصابه": {
+      "yt": "KFEfE7VQdoE",
+      "gloss": "إصابة",
+      "source": "kisr-kuwaiti"
+    },
+    "ذراع": {
+      "yt": "ruDTLM0qXI0",
+      "gloss": "ذراع",
+      "source": "kisr-kuwaiti"
+    },
+    "بطن": {
+      "yt": "AcYqpyBBl9k",
+      "gloss": "بطن",
+      "source": "kisr-kuwaiti"
+    },
+    "يد": {
+      "yt": "M9DPzUv1OIA",
+      "gloss": "يد",
+      "source": "kisr-kuwaiti"
+    },
+    "ايدي": {
+      "yt": "M9DPzUv1OIA",
+      "gloss": "يد",
+      "source": "kisr-kuwaiti"
+    },
+    "تسوس": {
+      "yt": "50EBc6HUjB0",
+      "gloss": "تسوس",
+      "source": "kisr-kuwaiti"
+    },
+    "اذن": {
+      "yt": "sdkUtztNiOI",
+      "gloss": "أذن",
+      "source": "kisr-kuwaiti"
+    },
+    "كمامه": {
+      "yt": "d9hp82eIXzc",
+      "gloss": "كمام",
+      "source": "kisr-kuwaiti"
+    },
+    "صدر": {
+      "yt": "qo_2oDvm6zE",
+      "gloss": "صدر",
+      "source": "kisr-kuwaiti"
+    },
+    "صدري": {
+      "yt": "qo_2oDvm6zE",
+      "gloss": "صدر",
+      "source": "kisr-kuwaiti"
+    },
+    "صدرك": {
+      "yt": "qo_2oDvm6zE",
+      "gloss": "صدر",
+      "source": "kisr-kuwaiti"
+    },
+    "فم": {
+      "yt": "IBDUZsKN5QQ",
+      "gloss": "فم",
+      "source": "kisr-kuwaiti"
+    },
+    "ركبه": {
+      "yt": "DNS2IFdpV5g",
+      "gloss": "ركبة",
+      "source": "kisr-kuwaiti"
+    },
+    "رقبه": {
+      "yt": "XpTXBDUzk1I",
+      "gloss": "رقبة",
+      "source": "kisr-kuwaiti"
+    },
+    "حذاء": {
+      "yt": "pS_p8ilMveY",
+      "gloss": "حذاء",
+      "source": "kisr-kuwaiti"
+    },
+    "حمايه": {
+      "yt": "D6EujOW4Psk",
+      "gloss": "حماية",
+      "source": "kisr-kuwaiti"
+    },
+    "خطر": {
+      "yt": "cK-axGFPMXo",
+      "gloss": "خطر",
+      "source": "kisr-kuwaiti"
+    },
+    "حدد": {
+      "yt": "n2SuwlBALVs",
+      "gloss": "حدد",
+      "source": "kisr-kuwaiti"
+    },
+    "ابتعاد": {
+      "yt": "WgjWf3oWIho",
+      "gloss": "ابتعاد",
+      "source": "kisr-kuwaiti"
+    },
+    "معادن": {
+      "yt": "XVKEgWkECOs",
+      "gloss": "معادن",
+      "source": "kisr-kuwaiti"
+    },
+    "موجود": {
+      "yt": "Fh8grDIRKq0",
+      "gloss": "موجود",
+      "source": "kisr-kuwaiti"
+    },
+    "اسم": {
+      "yt": "NcaB5Hnr0vY",
+      "gloss": "الأسم",
+      "source": "kisr-kuwaiti"
+    },
+    "بعده": {
+      "yt": "xYmPqGe8irI",
+      "gloss": "بعد",
+      "source": "kisr-kuwaiti"
+    },
+    "بعدها": {
+      "yt": "xYmPqGe8irI",
+      "gloss": "بعد",
+      "source": "kisr-kuwaiti"
+    },
+    "شكل": {
+      "yt": "4AMALmm_5i4",
+      "gloss": "شكل",
+      "source": "kisr-kuwaiti"
+    },
+    "شكلها": {
+      "yt": "4AMALmm_5i4",
+      "gloss": "شكل",
+      "source": "kisr-kuwaiti"
+    },
+    "شكله": {
+      "yt": "4AMALmm_5i4",
+      "gloss": "شكل",
+      "source": "kisr-kuwaiti"
+    },
+    "نبات": {
+      "yt": "T7g4SxWIa04",
+      "gloss": "نبات",
+      "source": "kisr-kuwaiti"
+    },
+    "نباتات": {
+      "yt": "T7g4SxWIa04",
+      "gloss": "نبات",
+      "source": "kisr-kuwaiti"
+    },
+    "نسبه": {
+      "yt": "kDk7eSsKr1Q",
+      "gloss": "نسبة",
+      "source": "kisr-kuwaiti"
+    },
+    "تحدي": {
+      "yt": "WjnF45w4Es0",
+      "gloss": "تحدي",
+      "source": "kisr-kuwaiti"
+    },
+    "مقابله": {
+      "yt": "oHftpPGIzgM",
+      "gloss": "مقابلة",
+      "source": "kisr-kuwaiti"
+    },
+    "سلوك": {
+      "yt": "8Vo9AnISclU",
+      "gloss": "سلوك",
+      "source": "kisr-kuwaiti"
+    },
+    "سلوكا": {
+      "yt": "8Vo9AnISclU",
+      "gloss": "سلوك",
+      "source": "kisr-kuwaiti"
+    },
+    "فقط": {
+      "yt": "mlj2ZpDb05o",
+      "gloss": "فقط",
+      "source": "kisr-kuwaiti"
+    },
+    "سليم": {
+      "yt": "-ztboadXFJY",
+      "gloss": "سليم",
+      "source": "kisr-kuwaiti"
+    },
+    "صغير": {
+      "yt": "HH-BVvpNwJg",
+      "gloss": "صغير",
+      "source": "kisr-kuwaiti"
+    },
+    "صغيره": {
+      "yt": "HH-BVvpNwJg",
+      "gloss": "صغير",
+      "source": "kisr-kuwaiti"
+    },
+    "افضل": {
+      "yt": "kOlhlpOH5mY",
+      "gloss": "أفضل",
+      "source": "kisr-kuwaiti"
+    },
+    "يستنتج": {
+      "yt": "TX1931dfKh0",
+      "gloss": "استنتاج",
+      "source": "kisr-kuwaiti"
+    },
+    "عمل": {
+      "yt": "isjRxqb98Gg",
+      "gloss": "عمل",
+      "source": "kisr-kuwaiti"
+    },
+    "عملي": {
+      "yt": "isjRxqb98Gg",
+      "gloss": "عمل",
+      "source": "kisr-kuwaiti"
+    },
+    "جماعي": {
+      "yt": "j9ea_FFVaBs",
+      "gloss": "جماعة",
+      "source": "kisr-kuwaiti"
+    },
+    "حرف": {
+      "yt": "LTZQgWnG1pA",
+      "gloss": "حرف",
+      "source": "kisr-kuwaiti"
+    },
+    "نظافه": {
+      "yt": "dVt0v0YKgl8",
+      "gloss": "نظافة",
+      "source": "kisr-kuwaiti"
+    },
+    "يناقش": {
+      "yt": "GJHMfDzPx4k",
+      "gloss": "مناقشة",
+      "source": "kisr-kuwaiti"
+    },
+    "تجربه": {
+      "yt": "EWfpGm1-mls",
+      "gloss": "تجربة",
+      "source": "kisr-kuwaiti"
+    },
+    "يجرب": {
+      "yt": "EWfpGm1-mls",
+      "gloss": "تجربة",
+      "source": "kisr-kuwaiti"
+    },
+    "بسيطه": {
+      "yt": "MlD0QnSgvGA",
+      "gloss": "بسيط",
+      "source": "kisr-kuwaiti"
+    },
+    "حديقه": {
+      "yt": "RQ-DKfL9fio",
+      "gloss": "روضة - حديقة",
+      "source": "kisr-kuwaiti"
+    },
+    "زياده": {
+      "yt": "6RccnnkcIRc",
+      "gloss": "زيادة",
+      "source": "kisr-kuwaiti"
+    },
+    "فريق": {
+      "yt": "9s7Ca6MjfIw",
+      "gloss": "فريق",
+      "source": "kisr-kuwaiti"
+    },
+    "مناسبه": {
+      "yt": "egxCvlLJzcY",
+      "gloss": "مناسبة",
+      "source": "kisr-kuwaiti"
+    },
+    "زينه": {
+      "yt": "xSZtTKtNOO8",
+      "gloss": "زينة",
+      "source": "kisr-kuwaiti"
+    },
+    "استخدام": {
+      "yt": "lGz488m4eHw",
+      "gloss": "استخدام",
+      "source": "kisr-kuwaiti"
+    },
+    "يستخدم": {
+      "yt": "lGz488m4eHw",
+      "gloss": "استخدام",
+      "source": "kisr-kuwaiti"
+    },
+    "قطع": {
+      "yt": "DKYlydxds_Q",
+      "gloss": "قطع",
+      "source": "kisr-kuwaiti"
+    },
+    "قطعه": {
+      "yt": "DKYlydxds_Q",
+      "gloss": "قطع",
+      "source": "kisr-kuwaiti"
+    },
+    "زجاج": {
+      "yt": "GmRfyzaBNEg",
+      "gloss": "زجاج",
+      "source": "kisr-kuwaiti"
+    },
+    "نقطه": {
+      "yt": "t6gF9C3cQIc",
+      "gloss": "نقطة",
+      "source": "kisr-kuwaiti"
+    },
+    "وقايه": {
+      "yt": "C6L7_SGwNNw",
+      "gloss": "وقاية",
+      "source": "kisr-kuwaiti"
+    },
+    "قوه": {
+      "yt": "XUtyHKJoQi4",
+      "gloss": "قوة",
+      "source": "kisr-kuwaiti"
+    },
+    "احصاءات": {
+      "yt": "GZSUHyH-xu8",
+      "gloss": "إحصاء",
+      "source": "kisr-kuwaiti"
+    },
+    "مقارنه": {
+      "yt": "X2AU1YOIVl4",
+      "gloss": "مقارنة",
+      "source": "kisr-kuwaiti"
+    },
+    "حياه": {
+      "yt": "8T4szWcepyY",
+      "gloss": "حياة",
+      "source": "kisr-kuwaiti"
+    },
+    "اصلي": {
+      "yt": "kp_ahJm9oj0",
+      "gloss": "أصلي",
+      "source": "kisr-kuwaiti"
+    },
+    "مثالا": {
+      "yt": "YmiFc3uZlc4",
+      "gloss": "مثال",
+      "source": "kisr-kuwaiti"
+    },
+    "لعبه": {
+      "yt": "Lt-fZWVxcm4",
+      "gloss": "لعبة",
+      "source": "kisr-kuwaiti"
+    },
+    "فكره": {
+      "yt": "LWB5nuz_42o",
+      "gloss": "فكرة",
+      "source": "kisr-kuwaiti"
+    },
+    "عدد": {
+      "yt": "YSSBzrkDuQc",
+      "gloss": "عدد",
+      "source": "kisr-kuwaiti"
+    },
+    "ان": {
+      "yt": "ERtJFYbyP2c",
+      "gloss": "الآن",
+      "source": "kisr-kuwaiti"
+    },
+    "حركه": {
+      "yt": "lHcGc0howL0",
+      "gloss": "حركة",
+      "source": "kisr-kuwaiti"
+    },
+    "يحرك": {
+      "yt": "lHcGc0howL0",
+      "gloss": "حركة",
+      "source": "kisr-kuwaiti"
+    },
+    "حركات": {
+      "yt": "lHcGc0howL0",
+      "gloss": "حركة",
+      "source": "kisr-kuwaiti"
+    },
+    "عنوان": {
+      "yt": "C69HgCb0148",
+      "gloss": "عنوان",
+      "source": "kisr-kuwaiti"
+    },
+    "تقليد": {
+      "yt": "yT6Ks_V95bg",
+      "gloss": "تقليد",
+      "source": "kisr-kuwaiti"
+    },
+    "وعد": {
+      "yt": "VgMSnYZDwxs",
+      "gloss": "وعد",
+      "source": "kisr-kuwaiti"
+    },
+    "تقويم": {
+      "yt": "scb4Qnad6QY",
+      "gloss": "تقويم - رزنامة",
+      "source": "kisr-kuwaiti"
+    },
+    "نشاط": {
+      "yt": "MqhWx8JYzFI",
+      "gloss": "نشاط",
+      "source": "kisr-kuwaiti"
+    },
+    "جديد": {
+      "yt": "5m5X5BTcMDk",
+      "gloss": "جديد",
+      "source": "kisr-kuwaiti"
+    },
+    "جديده": {
+      "yt": "5m5X5BTcMDk",
+      "gloss": "جديد",
+      "source": "kisr-kuwaiti"
+    },
+    "غبار": {
+      "yt": "n1vxJ4Z8KNo",
+      "gloss": "غبار",
+      "source": "kisr-kuwaiti"
+    },
+    "لوحه": {
+      "yt": "eoDJAsKyYdM",
+      "gloss": "لوحة",
+      "source": "kisr-kuwaiti"
+    },
+    "تراجع": {
+      "yt": "V68ncuvs1Fk",
+      "gloss": "تراجع",
+      "source": "kisr-kuwaiti"
+    },
+    "معلومات": {
+      "yt": "An3hSaTXFzY",
+      "gloss": "معلومات",
+      "source": "kisr-kuwaiti"
+    },
+    "قطن": {
+      "yt": "biw-YN7_kqw",
+      "gloss": "قطن",
+      "source": "kisr-kuwaiti"
+    },
+    "قطني": {
+      "yt": "biw-YN7_kqw",
+      "gloss": "قطن",
+      "source": "kisr-kuwaiti"
+    },
+    "عجله": {
+      "yt": "JAaNTLrl-6o",
+      "gloss": "عجلة",
+      "source": "kisr-kuwaiti"
+    },
+    "تعلمت": {
+      "yt": "TyiwdaLEWDQ",
+      "gloss": "تعلمت",
+      "source": "kisr-kuwaiti"
+    },
+    "اطراف": {
+      "yt": "u_GqU3IkaPw",
+      "gloss": "طرف",
+      "source": "kisr-kuwaiti"
+    },
+    "ذهب": {
+      "yt": "RTBwhLIrYRE",
+      "gloss": "ذهب",
+      "source": "kisr-kuwaiti"
+    },
+    "طين": {
+      "yt": "Hx2OsZ0KPzE",
+      "gloss": "طين",
+      "source": "kisr-kuwaiti"
+    },
+    "قفص": {
+      "yt": "KNyFrn9D4F4",
+      "gloss": "قفص",
+      "source": "kisr-kuwaiti"
+    },
+    "وحده": {
+      "yt": "geQ-Lk8Alnw",
+      "gloss": "وحدة",
+      "source": "kisr-kuwaiti"
+    },
+    "مظله": {
+      "yt": "ZrNRPXV_IWk",
+      "gloss": "مظلة",
+      "source": "kisr-kuwaiti"
+    },
+    "خيط": {
+      "yt": "mmAkN886fP0",
+      "gloss": "خيط",
+      "source": "kisr-kuwaiti"
+    },
+    "يمنع": {
+      "yt": "6ZGxXZ65BHg",
+      "gloss": "منع",
+      "source": "kisr-kuwaiti"
+    },
+    "صداقه": {
+      "yt": "yZC6IK-Ms68",
+      "gloss": "صداقة",
+      "source": "kisr-kuwaiti"
+    },
+    "ضغط": {
+      "yt": "d3Q9VTs_MXs",
+      "gloss": "ضغط",
+      "source": "kisr-kuwaiti"
+    },
+    "اضغط": {
+      "yt": "d3Q9VTs_MXs",
+      "gloss": "ضغط",
+      "source": "kisr-kuwaiti"
+    },
+    "اختيار": {
+      "yt": "nb-Ulq8FvEo",
+      "gloss": "اختيار",
+      "source": "kisr-kuwaiti"
+    },
+    "قوي": {
+      "yt": "WafUcjNX0lk",
+      "gloss": "قوي",
+      "source": "kisr-kuwaiti"
+    },
+    "قويه": {
+      "yt": "WafUcjNX0lk",
+      "gloss": "قوي",
+      "source": "kisr-kuwaiti"
+    },
+    "سطح": {
+      "yt": "grsHKAr8Lw8",
+      "gloss": "سطح",
+      "source": "kisr-kuwaiti"
+    },
+    "جزء": {
+      "yt": "J7RYmbJhXoE",
+      "gloss": "جزء",
+      "source": "kisr-kuwaiti"
+    },
+    "اجزاء": {
+      "yt": "J7RYmbJhXoE",
+      "gloss": "جزء",
+      "source": "kisr-kuwaiti"
+    },
+    "خشب": {
+      "yt": "Ep3qLcRgV5Y",
+      "gloss": "خشب",
+      "source": "kisr-kuwaiti"
+    },
+    "خشبي": {
+      "yt": "Ep3qLcRgV5Y",
+      "gloss": "خشب",
+      "source": "kisr-kuwaiti"
+    },
+    "طول": {
+      "yt": "uiYgDHqyEoQ",
+      "gloss": "طول",
+      "source": "kisr-kuwaiti"
+    },
+    "طوله": {
+      "yt": "uiYgDHqyEoQ",
+      "gloss": "طول",
+      "source": "kisr-kuwaiti"
+    },
+    "حجم": {
+      "yt": "plSqBUzGHMc",
+      "gloss": "حجم",
+      "source": "kisr-kuwaiti"
+    },
+    "سلامه": {
+      "yt": "x599UNcAQE4",
+      "gloss": "سلامة",
+      "source": "kisr-kuwaiti"
+    },
+    "يتعاون": {
+      "yt": "hVsDpHbIEGk",
+      "gloss": "تعاون",
+      "source": "kisr-kuwaiti"
+    },
+    "شرحها": {
+      "yt": "Lj2Hw6MLCII",
+      "gloss": "شرح",
+      "source": "kisr-kuwaiti"
+    },
+    "يطلب": {
+      "yt": "vzX31lw9uu0",
+      "gloss": "طلب",
+      "source": "kisr-kuwaiti"
+    },
+    "سر": {
+      "yt": "GfNexohrnbM",
+      "gloss": "سر",
+      "source": "kisr-kuwaiti"
+    },
+    "قاع": {
+      "yt": "Z_8ZJ8l_vlE",
+      "gloss": "قاع",
+      "source": "kisr-kuwaiti"
+    },
+    "مصدر": {
+      "yt": "cnM7nlFSTgk",
+      "gloss": "مصدر",
+      "source": "kisr-kuwaiti"
+    },
+    "يترك": {
+      "yt": "puSK4bVUDAY",
+      "gloss": "ترك",
+      "source": "kisr-kuwaiti"
+    },
+    "اجراءات": {
+      "yt": "Ee0Kz8crRd4",
+      "gloss": "إجراءات",
+      "source": "kisr-kuwaiti"
+    },
+    "مراجعه": {
+      "yt": "PvWZJdx6nkc",
+      "gloss": "مراجعة",
+      "source": "kisr-kuwaiti"
+    },
+    "ورق": {
+      "yt": "Wm9Z8BJVqvo",
+      "gloss": "ورق",
+      "source": "kisr-kuwaiti"
+    },
+    "اوراق": {
+      "yt": "Wm9Z8BJVqvo",
+      "gloss": "ورق",
+      "source": "kisr-kuwaiti"
+    },
+    "تصنيف": {
+      "yt": "UOehu6xzmpA",
+      "gloss": "تصنيف",
+      "source": "kisr-kuwaiti"
+    },
+    "يصنف": {
+      "yt": "UOehu6xzmpA",
+      "gloss": "تصنيف",
+      "source": "kisr-kuwaiti"
+    },
+    "نظام": {
+      "yt": "nNgEyJSwRKM",
+      "gloss": "نظام",
+      "source": "kisr-kuwaiti"
+    },
+    "بطاريه": {
+      "yt": "JGk6F4PgfjY",
+      "gloss": "بطارية",
+      "source": "kisr-kuwaiti"
+    },
+    "قواعد": {
+      "yt": "17nFrVXdMpA",
+      "gloss": "قواعد",
+      "source": "kisr-kuwaiti"
+    },
+    "قلم رصاص": {
+      "yt": "tK8VNGO6QqI",
+      "gloss": "قلم رصاص",
+      "source": "kisr-kuwaiti"
+    },
+    "يسال": {
+      "yt": "tZkHOr3mh-A",
+      "gloss": "يسأل",
+      "source": "kisr-kuwaiti"
+    },
+    "درس": {
+      "yt": "Lv33ysRM-18",
+      "gloss": "درس",
+      "source": "kisr-kuwaiti"
+    },
+    "اختبار": {
+      "yt": "yz6cbXS2qqo",
+      "gloss": "اختبار",
+      "source": "kisr-kuwaiti"
+    },
+    "بوابه": {
+      "yt": "6eMixpATLKo",
+      "gloss": "بوابة",
+      "source": "kisr-kuwaiti"
+    },
+    "بوابات": {
+      "yt": "6eMixpATLKo",
+      "gloss": "بوابة",
+      "source": "kisr-kuwaiti"
+    },
+    "صابون": {
+      "yt": "O4aHYk1IAII",
+      "gloss": "صابون",
+      "source": "kisr-kuwaiti"
+    },
+    "تكاثر": {
+      "yt": "VDRgq_ixXK8",
+      "gloss": "تكاثر",
+      "source": "kisr-kuwaiti"
+    },
+    "يلبس": {
+      "yt": "x_uylliDMA4",
+      "gloss": "يلبس",
+      "source": "kisr-kuwaiti"
+    },
+    "اكبر": {
+      "yt": "uPCAk7Ra18I",
+      "gloss": "أكبر",
+      "source": "kisr-kuwaiti"
+    },
+    "مدبب": {
+      "yt": "4GbXIZlmjlE",
+      "gloss": "مدبب",
+      "source": "kisr-kuwaiti"
+    },
+    "صلب": {
+      "yt": "ejpKGxFDyIA",
+      "gloss": "صلب",
+      "source": "kisr-kuwaiti"
+    },
+    "صلبه": {
+      "yt": "ejpKGxFDyIA",
+      "gloss": "صلب",
+      "source": "kisr-kuwaiti"
+    },
+    "لينه": {
+      "yt": "K5lYhc3W7u8",
+      "gloss": "لين",
+      "source": "kisr-kuwaiti"
+    },
+    "مر": {
+      "yt": "jV9xew8Tonc",
+      "gloss": "مر",
+      "source": "kisr-kuwaiti"
+    },
+    "كثير": {
+      "yt": "7YcZsmrfPMA",
+      "gloss": "كثير",
+      "source": "kisr-kuwaiti"
+    },
+    "كثيرا": {
+      "yt": "7YcZsmrfPMA",
+      "gloss": "كثير",
+      "source": "kisr-kuwaiti"
+    },
+    "كبير": {
+      "yt": "Ww30S8iKS1k",
+      "gloss": "كبير",
+      "source": "kisr-kuwaiti"
+    },
+    "كبيره": {
+      "yt": "Ww30S8iKS1k",
+      "gloss": "كبير",
+      "source": "kisr-kuwaiti"
+    },
+    "نظيفه": {
+      "yt": "rk_6RMdMzf4",
+      "gloss": "نظيف",
+      "source": "kisr-kuwaiti"
+    },
+    "بطيء": {
+      "yt": "CiSdYN07pww",
+      "gloss": "بطيء",
+      "source": "kisr-kuwaiti"
+    },
+    "اقل": {
+      "yt": "qCb-kpG24jY",
+      "gloss": "أقل",
+      "source": "kisr-kuwaiti"
+    },
+    "سريع": {
+      "yt": "J_fTRF091vE",
+      "gloss": "سريع",
+      "source": "kisr-kuwaiti"
+    },
+    "مسطحه": {
+      "yt": "OlzrYFIKTPA",
+      "gloss": "مسطح",
+      "source": "kisr-kuwaiti"
+    },
+    "اقل من": {
+      "yt": "rzJ7HzloUvI",
+      "gloss": "أقل من",
+      "source": "kisr-kuwaiti"
+    },
+    "اكثر من": {
+      "yt": "DASujXDlXz4",
+      "gloss": "أكثر من",
+      "source": "kisr-kuwaiti"
+    },
+    "اكثر": {
+      "yt": "DASujXDlXz4",
+      "gloss": "أكثر من",
+      "source": "kisr-kuwaiti"
+    },
+    "نمر": {
+      "yt": "309D5oswFGU",
+      "gloss": "نمر",
+      "source": "kisr-kuwaiti"
+    },
+    "حيوانات": {
+      "yt": "7nDjSYq_Hms",
+      "gloss": "حيوانات",
+      "source": "kisr-kuwaiti"
+    },
+    "كيف": {
+      "yt": "x4B5EfFehtE",
+      "gloss": "كيف",
+      "source": "kisr-kuwaiti"
+    },
+    "ماذا": {
+      "yt": "M4SGSFl-HaQ",
+      "gloss": "ماذا",
+      "source": "kisr-kuwaiti"
+    },
+    "كم": {
+      "yt": "D4s7zCseoA0",
+      "gloss": "كم",
+      "source": "kisr-kuwaiti"
+    },
+    "اين": {
+      "yt": "_5NRL26vBcY",
+      "gloss": "أين",
+      "source": "kisr-kuwaiti"
+    },
+    "ايهما": {
+      "yt": "1RF8PyZqwjw",
+      "gloss": "أيهما",
+      "source": "kisr-kuwaiti"
+    },
+    "متي": {
+      "yt": "cNod367eCq4",
+      "gloss": "متى",
+      "source": "kisr-kuwaiti"
+    },
+    "صيد": {
+      "yt": "n8I3vsiDIGw",
+      "gloss": "صيد",
+      "source": "kisr-kuwaiti"
+    },
+    "يذكر": {
+      "yt": "A7IZAJdvhFA",
+      "gloss": "أذكر",
+      "source": "kisr-kuwaiti"
+    },
+    "يحمل": {
+      "yt": "8DY9rwTVxjs",
+      "gloss": "يحمل",
+      "source": "kisr-kuwaiti"
+    },
+    "يتكون": {
+      "yt": "44GZ2eF6slM",
+      "gloss": "يتكون",
+      "source": "kisr-kuwaiti"
+    },
+    "يتحرك": {
+      "yt": "A2u-Jfj3JW8",
+      "gloss": "يتحرك",
+      "source": "kisr-kuwaiti"
+    },
+    "يضع": {
+      "yt": "Ru5BGxso1ws",
+      "gloss": "يضع",
+      "source": "kisr-kuwaiti"
+    },
+    "يخمن": {
+      "yt": "SY5-zQ3ncwk",
+      "gloss": "يخمن",
+      "source": "kisr-kuwaiti"
+    },
+    "يبدا": {
+      "yt": "J32ShHhjh-g",
+      "gloss": "يبدأ",
+      "source": "kisr-kuwaiti"
+    },
+    "يلمس": {
+      "yt": "g0ahRuhoyvM",
+      "gloss": "يلمس",
+      "source": "kisr-kuwaiti"
+    },
+    "يقيس": {
+      "yt": "4GdKxDHMJUY",
+      "gloss": "يقيس",
+      "source": "kisr-kuwaiti"
+    },
+    "يقيسون": {
+      "yt": "4GdKxDHMJUY",
+      "gloss": "يقيس",
+      "source": "kisr-kuwaiti"
+    },
+    "يقلدون": {
+      "yt": "m-Z_naPxNU0",
+      "gloss": "يقلد",
+      "source": "kisr-kuwaiti"
+    },
+    "يكتشف": {
+      "yt": "jB2VzN_B1KQ",
+      "gloss": "يكتشف",
+      "source": "kisr-kuwaiti"
+    },
+    "يقع": {
+      "yt": "ephwDU12lJ8",
+      "gloss": "يتعثر - يقع",
+      "source": "kisr-kuwaiti"
+    },
+    "تتنفس": {
+      "yt": "iWexicWXnaU",
+      "gloss": "تتنفس",
+      "source": "kisr-kuwaiti"
+    },
+    "يربط": {
+      "yt": "g__hlKFFsfY",
+      "gloss": "يربط",
+      "source": "kisr-kuwaiti"
+    },
+    "يربطها": {
+      "yt": "g__hlKFFsfY",
+      "gloss": "يربط",
+      "source": "kisr-kuwaiti"
+    },
+    "يتوفر": {
+      "yt": "TvWGEBurxVQ",
+      "gloss": "يتوفر",
+      "source": "kisr-kuwaiti"
+    },
+    "يشارك": {
+      "yt": "iMRHXzu_0O8",
+      "gloss": "أشارك",
+      "source": "kisr-kuwaiti"
+    },
+    "لا يستطيع": {
+      "yt": "gKLfJJRwv6g",
+      "gloss": "لا يستطيع",
+      "source": "kisr-kuwaiti"
+    },
+    "يغسل": {
+      "yt": "vWZebwH9-GI",
+      "gloss": "أغسل",
+      "source": "kisr-kuwaiti"
+    },
+    "يتنفس": {
+      "yt": "CT532X6ZyBs",
+      "gloss": "يتنفس",
+      "source": "kisr-kuwaiti"
+    },
+    "يعود": {
+      "yt": "pr_-NgSsAMM",
+      "gloss": "يعود",
+      "source": "kisr-kuwaiti"
+    },
+    "يرسم": {
+      "yt": "oZRAxNrP0qo",
+      "gloss": "يرسم",
+      "source": "kisr-kuwaiti"
+    },
+    "يرسمون": {
+      "yt": "oZRAxNrP0qo",
+      "gloss": "يرسم",
+      "source": "kisr-kuwaiti"
+    },
+    "يحدد": {
+      "yt": "L4400h0poic",
+      "gloss": "يحدد",
+      "source": "kisr-kuwaiti"
+    },
+    "عضو": {
+      "yt": "9VpknRXJBw0",
+      "gloss": "عضو",
+      "source": "kisr-kuwaiti"
+    },
+    "عضوين": {
+      "yt": "9VpknRXJBw0",
+      "gloss": "عضو",
+      "source": "kisr-kuwaiti"
+    },
+    "اعضاء": {
+      "yt": "9VpknRXJBw0",
+      "gloss": "عضو",
+      "source": "kisr-kuwaiti"
+    },
+    "عالم": {
+      "yt": "cD9pxcAHebw",
+      "gloss": "عالم",
+      "source": "kisr-kuwaiti"
+    },
+    "صياد": {
+      "yt": "NqOx-syCyZU",
+      "gloss": "صياد",
+      "source": "kisr-kuwaiti"
+    },
+    "بناء": {
+      "yt": "4W2_5npGSw8",
+      "gloss": "بناء",
+      "source": "kisr-kuwaiti"
+    },
+    "مغلقه": {
+      "yt": "9ByOiAy1PDA",
+      "gloss": "مغلق",
+      "source": "kisr-preschool"
+    },
+    "قلم": {
+      "yt": "Cjk2ca4N8xk",
+      "gloss": "قلم",
+      "source": "kisr-preschool"
+    },
+    "وان": {
+      "yt": "F98vtAJ8XYI",
+      "gloss": "ألوان",
+      "source": "kisr-preschool"
+    },
+    "محار": {
+      "yt": "ouIdeIg62RM",
+      "gloss": "محار",
+      "source": "kisr-preschool"
+    },
+    "ورقه": {
+      "yt": "ZR06nQiorc0",
+      "gloss": "ورقة",
+      "source": "kisr-preschool"
+    },
+    "هواء": {
+      "yt": "jaCSOpuqYyc",
+      "gloss": "هواء",
+      "source": "kisr-preschool"
+    },
+    "رياضه": {
+      "yt": "tXTiHO5M8E8",
+      "gloss": "رياضة",
+      "source": "kisr-preschool"
+    },
+    "بلاستيك": {
+      "yt": "tMBLd18PdRk",
+      "gloss": "بلاستيك",
+      "source": "kisr-preschool"
+    },
+    "بلاستيكي": {
+      "yt": "tMBLd18PdRk",
+      "gloss": "بلاستيك",
+      "source": "kisr-preschool"
+    },
+    "حقيقي": {
+      "yt": "isumVcqDFys",
+      "gloss": "حقيقي",
+      "source": "kisr-preschool"
+    },
+    "حقيقيه": {
+      "yt": "isumVcqDFys",
+      "gloss": "حقيقي",
+      "source": "kisr-preschool"
+    },
+    "حقيقيا": {
+      "yt": "isumVcqDFys",
+      "gloss": "حقيقي",
+      "source": "kisr-preschool"
+    },
+    "مغامره": {
+      "yt": "lY9glSU58OI",
+      "gloss": "مغامرة",
+      "source": "kisr-scout"
+    },
+    "خريطه": {
+      "yt": "aJsl8n9tHqE",
+      "gloss": "خريطة",
+      "source": "kisr-scout"
+    },
+    "جروح": {
+      "yt": "Eh7dVelvZTs",
+      "gloss": "جروح",
+      "source": "kisr-scout"
+    },
+    "جري": {
+      "yt": "ip5oZ81uvGA",
+      "gloss": "جري",
+      "source": "kisr-scout"
+    },
+    "مصفاه": {
+      "yt": "wOa7ItzjYMA",
+      "gloss": "مصفاة",
+      "source": "kisr-scout"
     }
   },
   "letters": {

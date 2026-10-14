@@ -10,6 +10,7 @@ import {
   type SignManifest,
 } from '@/lib/sign-interpreter';
 import { SignAvatar } from './sign-avatar';
+import { SignYouTube } from './sign-youtube';
 import { HandSign } from './hand-sign';
 import { getLetterHandshape, isSignReviewMode } from '@/lib/handshapes';
 import { cn } from '@/lib/utils';
@@ -99,7 +100,7 @@ export function SignLanguagePlayer({ text }: { text: string }) {
   // التقدّم التلقائي للصور/النصّ (المقاطع العاملة تتقدّم على onEnded).
   useEffect(() => {
     if (!playing || !step) return;
-    if (showMedia && step.media === 'video') return;
+    if (showMedia && (step.media === 'video' || step.media === 'yt')) return;
     const t = setTimeout(next, step.kind === 'word' ? WORD_MS : IMG_MS);
     return () => clearTimeout(t);
   }, [playing, i, step, showMedia, next]);
@@ -148,7 +149,14 @@ export function SignLanguagePlayer({ text }: { text: string }) {
 
       {/* المسرح */}
       <div className="relative grid aspect-square w-full place-items-center bg-black">
-        {showMedia && step.media === 'video' ? (
+        {showMedia && step.media === 'yt' ? (
+          <>
+            <SignYouTube id={step.src!} title={step.gloss} onEnded={next} />
+            <div className="absolute bottom-2 left-2 grid h-16 w-16 place-items-end overflow-hidden rounded-full bg-white/90 shadow-md">
+              <SignAvatar state="greet" />
+            </div>
+          </>
+        ) : showMedia && step.media === 'video' ? (
           <>
             <video
               key={`${i}-${step.src}`}
@@ -240,7 +248,7 @@ export function SignLanguagePlayer({ text }: { text: string }) {
             key={wi}
             type="button"
             aria-label={`الانتقال إلى إشارة كلمة «${w}»`}
-            aria-current={step.word === wi ? 'true' : undefined}
+            aria-current={wi >= step.word && wi < step.word + (step.span ?? 1) ? 'true' : undefined}
             onClick={() => {
               const first = steps.findIndex((s) => s.word === wi);
               if (first >= 0) {
@@ -250,7 +258,7 @@ export function SignLanguagePlayer({ text }: { text: string }) {
             }}
             className={cn(
               'mx-0.5 cursor-pointer rounded px-1 font-bold transition',
-              step.word === wi
+              wi >= step.word && wi < step.word + (step.span ?? 1)
                 ? 'bg-[color:var(--gold)]/40 text-[color:var(--ink)]'
                 : 'text-muted-foreground hover:bg-[color:var(--surface-2)]'
             )}

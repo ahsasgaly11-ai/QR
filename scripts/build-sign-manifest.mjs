@@ -38,9 +38,9 @@ function main() {
   const plan = JSON.parse(readFileSync(PLAN, 'utf8'));
   const manifest = { version: plan.version ?? 1, words: {}, letters: {} };
 
-  // مصدر الإشارة: عنصر مستورد من قاعدة KArSL يحمل source="karsl" ليُنسَب في
-  // المشغّل (لهجة إشارية سعودية)؛ وما صُوِّر محليًّا مع مترجم قطري يبقى بلا مصدر.
-  const sourceOf = (item) => (item.karsl ? 'karsl' : undefined);
+  // مصدر الإشارة: عنصر مستورد من قاعدة خارجية يحمل source (مثل "karsl") ليُنسَب في
+  // المشغّل؛ وما صُوِّر محليًّا مع مترجم قطري يبقى بلا مصدر.
+  const sourceOf = (item) => item.source || (item.karsl ? 'karsl' : undefined);
 
   let haveL = 0;
   const totalL = plan.letters?.length ?? 0;
@@ -60,9 +60,12 @@ function main() {
   for (const cat of plan.categories ?? []) {
     for (const w of cat.words ?? []) {
       totalW++;
-      const file = resolveFile(w.file);
-      if (!file) continue;
-      const entry = { [mediaKey(file)]: file, gloss: w.gloss || w.key };
+      // إشارة مضمَّنة من يوتيوب (قواميس مؤسسية تنشر مقاطعها هناك): لا ملف محلي.
+      const file = w.yt ? null : resolveFile(w.file);
+      if (!file && !w.yt) continue;
+      const entry = w.yt
+        ? { yt: w.yt, gloss: w.gloss || w.key }
+        : { [mediaKey(file)]: file, gloss: w.gloss || w.key };
       const source = sourceOf(w);
       if (source) entry.source = source;
       manifest.words[w.key] = entry;
