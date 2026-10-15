@@ -8,9 +8,14 @@
 #       [--only words/health] [--fps 15] [--force]
 #
 # المخرج: public/sign/poses/<مسار المقطع بلا امتداد>.json
-#   { "v":1, "fps":15, "w":1, "h":1, "src":"words/health/karsl-148.mp4",
-#     "frames":[ { "p":[[x,y,vis]...33], "l":[[x,y]...21]|null, "r":[[x,y]...21]|null } ... ] }
-#   الإحداثيات مُطبَّعة إلى [0,1] نسبةً إلى الإطار، ومقرّبة إلى 3 منازل.
+#   { "v":2, "fps":15, "ar":1 (عرض/ارتفاع), "src":"words/health/karsl-148.mp4", "fk":[أسماء تعابير الوجه],
+#     "frames":[ { "p":[[x,y,z,vis]...25], "l":[[x,y,z]...21]|null, "r":[[x,y,z]...21]|null,
+#                  "h":[[x,y,z]...5]|null, "f":[قيم التعابير]|null } ... ] }
+#   x,y مُطبَّعة إلى [0,1] نسبةً إلى الإطار، وz عمق نسبي بمقياس x (MediaPipe)،
+#   مقرّبة إلى 3 منازل. p: معالم الجزء العلوي (0–24) فقط.
+#   h: خمس نقاط من الوجه لاتجاه الرأس (طرف الأنف، العينان، الذقن، الجبهة).
+#   f: تعابير الوجه (blendshapes) — العلامات غير اليدوية في لغة الإشارة
+#   (الحاجبان للاستفهام، الفم، العينان) يؤدّيها الأفاتار ثلاثي الأبعاد.
 #
 # ملاحظة صدق: الهيكل المستخلص آليًّا قد يفقد تفاصيل الأصابع في الإطارات السريعة؛
 # لذلك يبقى مقطع المصدر هو المرجع، والأفاتار خيار عرض موحّد.
@@ -26,12 +31,26 @@ SIGN_DIR = os.path.join(ROOT, 'public', 'sign')
 OUT_DIR = os.path.join(SIGN_DIR, 'poses')
 
 
-def landmarks_to_list(lms, with_vis=False, nd=3):
+# تعابير الوجه المحفوظة (من 52 تعبيرًا في MediaPipe) — ما يلزم العلامات غير اليدوية.
+FACE_KEYS = [
+    'browInnerUp', 'browDownLeft', 'browDownRight', 'browOuterUpLeft', 'browOuterUpRight',
+    'eyeBlinkLeft', 'eyeBlinkRight', 'eyeWideLeft', 'eyeWideRight', 'eyeSquintLeft', 'eyeSquintRight',
+    'jawOpen', 'mouthSmileLeft', 'mouthSmileRight', 'mouthFrownLeft', 'mouthFrownRight',
+    'mouthPucker', 'mouthFunnel', 'mouthStretchLeft', 'mouthStretchRight', 'mouthPressLeft',
+    'mouthPressRight', 'mouthRollLower', 'cheekPuff', 'noseSneerLeft', 'noseSneerRight',
+]
+# طرف الأنف، زاويتا العينين الخارجيتان، الذقن، أعلى الجبهة (Face Mesh 468)
+HEAD_IDX = [1, 33, 263, 152, 10]
+
+
+def landmarks_to_list(lms, with_vis=False, nd=3, idx=None):
     if not lms:
         return None
+    if idx is not None:
+        lms = [lms[i] for i in idx]
     out = []
     for lm in lms:
-        row = [round(lm.x, nd), round(lm.y, nd)]
+        row = [round(lm.x, nd), round(lm.y, nd), round(lm.z, nd)]
         if with_vis:
             row.append(round(getattr(lm, 'visibility', 1.0) or 0.0, 2))
         out.append(row)
@@ -46,6 +65,7 @@ def extract(path, landmarker, fps_target):
     global _ts_base
     cap = cv2.VideoCapture(path)
     src_fps = cap.get(cv2.CAP_PROP_FPS) or 30
+    w, h = cap.get(cv2.CAP_PROP_FRAME_WIDTH) or 1, cap.get(cv2.CAP_PROP_FRAME_HEIGHT) or 1
     step = max(1, int(round(src_fps / fps_target)))
     frames = []
     i = 0
@@ -64,15 +84,22 @@ def extract(path, landmarker, fps_target):
             pose = res.pose_landmarks or None
             lh = res.left_hand_landmarks or None
             rh = res.right_hand_landmarks or None
+            face = res.face_landmarks or None
+            bs = None
+            if res.face_blendshapes:
+                cats = {c.category_name: c.score for c in res.face_blendshapes}
+                bs = [round(cats.get(k, 0.0), 2) for k in FACE_KEYS]
             frames.append({
-                'p': landmarks_to_list(pose, with_vis=True),
+                'p': landmarks_to_list(pose[:25] if pose else None, with_vis=True),
                 'l': landmarks_to_list(lh),
                 'r': landmarks_to_list(rh),
+                'h': landmarks_to_list(face, idx=HEAD_IDX) if face else None,
+                'f': bs,
             })
         i += 1
     cap.release()
     _ts_base = ts + 1000
-    return frames, src_fps / step
+    return frames, src_fps / step, round(w / h, 3)
 
 
 def _advance_ts(delta=5000):
@@ -90,7 +117,8 @@ def main():
     a = ap.parse_args()
 
     base = mp_python.BaseOptions(model_asset_path=a.model)
-    opts = vision.HolisticLandmarkerOptions(base_options=base, running_mode=vision.RunningMode.VIDEO)
+    opts = vision.HolisticLandmarkerOptions(base_options=base, running_mode=vision.RunningMode.VIDEO,
+                                         output_face_blendshapes=True)
     clips = sorted(glob.glob(os.path.join(SIGN_DIR, a.only or '', '**', '*.mp4'), recursive=True))
     done = skipped = failed = 0
     # الكاشف يتعطّل بعد أي خطأ داخلي في الرسم البياني؛ نعيد إنشاءه عند الفشل.
@@ -103,7 +131,7 @@ def main():
                 skipped += 1
                 continue
             try:
-                frames, fps = extract(clip, landmarker, a.fps)
+                frames, fps, ar = extract(clip, landmarker, a.fps)
                 detected = sum(1 for f in frames if f['p'])
                 if not frames or detected < len(frames) * 0.5:
                     print(f'⚠️ {rel}: كُشف الجسم في {detected}/{len(frames)} إطارًا فقط — تُخطّى', file=sys.stderr)
@@ -111,7 +139,8 @@ def main():
                     continue
                 os.makedirs(os.path.dirname(out), exist_ok=True)
                 with open(out, 'w', encoding='utf8') as f:
-                    json.dump({'v': 1, 'fps': round(fps, 2), 'src': rel.replace(os.sep, '/'), 'frames': frames},
+                    json.dump({'v': 2, 'fps': round(fps, 2), 'ar': ar, 'src': rel.replace(os.sep, '/'), 'fk': FACE_KEYS,
+                               'frames': frames},
                               f, ensure_ascii=False, separators=(',', ':'))
                 done += 1
                 print(f'{rel}: {len(frames)} إطارًا، أيدٍ في {sum(1 for f in frames if f["l"] or f["r"])}')
