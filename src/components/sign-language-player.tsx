@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Play, Pause, ChevronRight, ChevronLeft, RotateCcw, Info, Sparkles, User } from 'lucide-react';
+import { Play, Pause, ChevronRight, ChevronLeft, RotateCcw, Info, Sparkles, Gauge, Film } from 'lucide-react';
 import {
   buildSequence,
   buildSequenceFromGloss,
@@ -13,24 +13,22 @@ import {
 import { glossCacheKey, GLOSS_VERSION, type Gloss } from '@/lib/sign-gloss';
 import { SignSkeleton, poseUrlFor } from './sign-skeleton';
 import { SignAvatar3D, canUseWebGL } from './sign-avatar-3d';
-import { SignAvatar } from './sign-avatar';
-import { SignYouTube } from './sign-youtube';
-import { HandSign } from './hand-sign';
-import { getLetterHandshape, isSignReviewMode } from '@/lib/handshapes';
+import { isSignReviewMode } from '@/lib/handshapes';
 import { cn } from '@/lib/utils';
 
 // ---------------------------------------------------------------------------
-// مُشغّل الترجمة الإشارية التلقائي
-// يعرض نصّ النشاط إشارةً إشارة من القاموس الموثّق، مع تحكّم كامل (تشغيل/إيقاف،
-// السابق/التالي، إعادة). صادق: حيث لا تتوفّر إشارة موثّقة يعرض الحرف/الكلمة
-// نصًّا واضحًا دون تلفيق يد، ويُعلن ذلك في شريط أعلى المُشغّل.
+// مُشغّل الترجمة الإشارية — مترجم واحد لكل النصّ
+//
+// شخصية ثلاثية الأبعاد واحدة تؤدّي نصّ النشاط إشارةً إشارة: الكلمات التي لها
+// إشارة موثّقة في القاموس تُؤدّى من حركتها المستخلصة، وما عداها يُهجّى حرفًا
+// حرفًا بالشخصية نفسها. لا مقاطع لمؤدّين مختلفين ولا تضمينات خارجية في واجهة
+// الطالب؛ مقطع المصدر يبقى متاحًا للمترجم المعتمد في وضع المراجعة فقط.
+// الصدق محفوظ: لا إشارة بلا أصل موثّق، ومصدر كل إشارة يُنسَب تحتها.
 // ---------------------------------------------------------------------------
 
-// ملّي ثانية لكل خطوة صورة/نص (تُطال للكلمة). المقاطع تتقدّم عند انتهائها.
-const IMG_MS = 1200;
-const WORD_MS = 1700;
-// صورة متحرّكة (GIF) لإشارة كلمة: تُمهَل لتُرى الحركة كاملة.
-const GIF_MS = 3800;
+// ملّي ثانية لرمز يُعرض نصًّا (أرقام/حروف لاتينية) ولحرف بلا حركة.
+const RAW_MS = 1100;
+const SPEEDS = [0.75, 1, 1.25] as const;
 
 // جلب الغلوس: الملف المحسوب مسبقًا أوّلًا (صفر تكلفة)، ثم الخادم، وإلا الوضع الحرفي.
 let staticGloss: Promise<Record<string, Gloss>> | null = null;
@@ -70,7 +68,7 @@ function fetchGloss(text: string): Promise<Gloss | null> {
 }
 
 const MODE_STORE = 'qa-sign-mode'; // smart | literal
-const AVATAR_STORE = 'qa-sign-avatar'; // on | off
+const SPEED_STORE = 'qa-sign-speed';
 
 export function SignLanguagePlayer({ text }: { text: string }) {
   const [manifest, setManifest] = useState<SignManifest | null>(null);
@@ -78,17 +76,22 @@ export function SignLanguagePlayer({ text }: { text: string }) {
   // الترتيب الإشاري الذكي (نموذج الغلوس) أم الحرفي كلمةً كلمة
   const [mode, setMode] = useState<'smart' | 'literal'>('smart');
   const [gloss, setGloss] = useState<Gloss | null>(null);
-  // الأفاتار الموحّد (بنك الحركات) بدل فيديو المصدر حين يتوفّر
-  // مفعَّل افتراضيًّا: المترجم ثلاثي الأبعاد حيث يتوفّر WebGL، وإلا الهيكل ثنائي الأبعاد.
-  const [avatar, setAvatar] = useState(true);
+  const [speed, setSpeed] = useState<number>(1);
+  // المترجم ثلاثي الأبعاد حيث يتوفّر WebGL، وإلا الهيكل ثنائي الأبعاد
   const [gl3d, setGl3d] = useState(false);
+  const [avatarReady, setAvatarReady] = useState(false);
   const [noPose, setNoPose] = useState<Set<string>>(new Set());
+  // وضع المراجعة (للمترجم المعتمد فقط): يتيح رؤية مقطع المصدر لكل إشارة.
+  const [review, setReview] = useState(false);
+  const [showSource, setShowSource] = useState(false);
   useEffect(() => {
     setGl3d(canUseWebGL());
+    setReview(isSignReviewMode());
     try {
       const m = localStorage.getItem(MODE_STORE);
       if (m === 'literal' || m === 'smart') setMode(m);
-      setAvatar(localStorage.getItem(AVATAR_STORE) !== 'off');
+      const sp = Number(localStorage.getItem(SPEED_STORE));
+      if (SPEEDS.includes(sp as (typeof SPEEDS)[number])) setSpeed(sp);
     } catch {
       /* التخزين غير متاح */
     }
@@ -105,15 +108,6 @@ export function SignLanguagePlayer({ text }: { text: string }) {
   }, [text]);
   const [i, setI] = useState(0);
   const [playing, setPlaying] = useState(true);
-  // وضع المراجعة (للمترجم المعتمد فقط) — يكشف أوضاع الحروف المسودّة غير المعتمدة.
-  const [review, setReview] = useState(false);
-  useEffect(() => setReview(isSignReviewMode()), []);
-  // مصادر تعذّر تحميلها (مقطع مُخطَّط لم يُصوَّر بعد) — نتراجع بلطف للنصّ.
-  const [failed, setFailed] = useState<Set<string>>(new Set());
-  const markFailed = useCallback((src?: string) => {
-    if (!src) return;
-    setFailed((prev) => (prev.has(src) ? prev : new Set(prev).add(src)));
-  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -129,7 +123,10 @@ export function SignLanguagePlayer({ text }: { text: string }) {
 
   const smart = mode === 'smart' && !!gloss && gloss.items.length > 0;
   const steps = useMemo(
-    () => (smart && gloss ? buildSequenceFromGloss(text, gloss, manifest) : buildSequence(text, manifest)),
+    () =>
+      smart && gloss
+        ? buildSequenceFromGloss(text, gloss, manifest, { avatarOnly: true })
+        : buildSequence(text, manifest, { avatarOnly: true }),
     [text, manifest, gloss, smart]
   );
   const words = useMemo(() => sourceWords(text), [text]);
@@ -143,14 +140,8 @@ export function SignLanguagePlayer({ text }: { text: string }) {
   const total = steps.length;
   const step = steps[i];
   const atEnd = i >= total - 1;
-  // هل نعرض وسيطًا فعليًّا الآن؟ (له أصل، ولم يتعذّر تحميله)
-  const broken = !!step?.src && failed.has(step.src);
-  const showMedia = !!step && !!step.media && !!step.src && !broken;
-  // وضع يد الشخصية للحرف الحالي (الموثّق للطلبة، والمسودّات أيضًا في المراجعة)
-  const handshape =
-    step && step.kind === 'letter' && !showMedia
-      ? getLetterHandshape(step.glyph, review)
-      : null;
+  const poseUrl = step?.media === 'video' ? poseUrlFor(step.src) : null;
+  const hasMotion = !!poseUrl && !noPose.has(poseUrl);
 
   const goto = useCallback(
     (n: number) => {
@@ -175,23 +166,24 @@ export function SignLanguagePlayer({ text }: { text: string }) {
     setPlaying(true);
   }, []);
 
-  // التقدّم التلقائي للصور/النصّ (المقاطع العاملة تتقدّم على onEnded).
+  // التقدّم التلقائي للرموز النصّية (الإشارات تتقدّم عند انتهاء أدائها).
   useEffect(() => {
-    if (!playing || !step) return;
-    if (showMedia && (step.media === 'video' || step.media === 'yt')) return;
-    const isGif = showMedia && step.media === 'img' && /\.gif(\?|$)/i.test(step.src || '');
-    const t = setTimeout(next, isGif ? GIF_MS : step.kind === 'word' ? WORD_MS : IMG_MS);
+    if (!playing || !step || hasMotion || showSource) return;
+    const t = setTimeout(next, RAW_MS / speed);
     return () => clearTimeout(t);
-  }, [playing, i, step, showMedia, next]);
+  }, [playing, i, step, hasMotion, showSource, next, speed]);
 
-  const anyAsset = useMemo(
-    () => steps.some((s) => s.hasAsset && !failed.has(s.src!)),
-    [steps, failed]
-  );
+  const anyAsset = useMemo(() => steps.some((s) => s.kind === 'word' && s.hasAsset), [steps]);
   // مصدر الإشارة المعروضة الآن (إن كانت من قاعدة خارجية) — يُنسَب بصدق للطالب.
-  const source = showMedia && step?.source ? SIGN_SOURCES[step.source] : undefined;
-  const poseUrl = showMedia && step.media === 'video' ? poseUrlFor(step.src) : null;
-  const showSkeleton = avatar && !!poseUrl && !noPose.has(poseUrl);
+  const source = step?.kind === 'word' && step.source ? SIGN_SOURCES[step.source] : undefined;
+  const setSpeedPersist = (v: number) => {
+    setSpeed(v);
+    try {
+      localStorage.setItem(SPEED_STORE, String(v));
+    } catch {
+      /* تجاهل */
+    }
+  };
 
   if (!ready) {
     return (
@@ -209,26 +201,27 @@ export function SignLanguagePlayer({ text }: { text: string }) {
     );
   }
 
+  const stageBg = 'bg-[radial-gradient(circle_at_50%_28%,#8a1538_0%,#4d0a20_55%,#1d0610_100%)]';
+
   return (
     <div className="flex flex-col">
-      {/* وضع المراجعة: تنبيه للمترجم أنّ أوضاع اليد مسودّات غير معتمدة */}
+      {/* وضع المراجعة: تنبيه للمترجم */}
       {review && (
         <p className="flex items-start gap-2 bg-[color:var(--gold)]/90 px-3 py-2 text-[11px] font-black leading-5 text-black">
           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          وضع المراجعة (للمترجم المعتمد): أوضاع اليد المعروضة مسودّات غير معتمدة —
-          راجِعها واعتمدها قبل عرضها على الطلبة.
+          وضع المراجعة (للمترجم المعتمد): يمكنك مقارنة أداء المترجم بمقطع المصدر لكل إشارة.
         </p>
       )}
-      {/* شريط صدق: يُعلن حين لا يحوي القاموس أصولًا موثّقة بعد */}
+      {/* شريط صدق: يُعلن حين لا يحوي القاموس إشارة لأي كلمة في النصّ */}
       {!anyAsset && !review && (
         <p className="flex items-start gap-2 bg-[color:var(--maroon-100)] px-3 py-2 text-[11px] font-bold leading-5 text-[color:var(--maroon)]">
           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          لا تتوفّر في القاموس الإشاري إشارة لكلمات هذا النصّ بعد، فيُعرَض حرفًا
-          حرفًا مؤقتًا. كلّما أُضيفت إشارات موثّقة ظهرت تلقائيًّا هنا.
+          لا تتوفّر في القاموس إشارة لكلمات هذا النصّ بعد، فيهجّيه المترجم حرفًا حرفًا.
+          كلّما أُضيفت إشارات موثّقة أدّاها تلقائيًّا.
         </p>
       )}
 
-      {/* شريط الوضع: الترتيب الإشاري الذكي / الحرفي، والأفاتار الموحّد */}
+      {/* شريط الوضع: الترتيب الإشاري الذكي / الحرفي، والسرعة */}
       <div className="flex items-center justify-between gap-2 border-b border-[color:var(--hairline)] px-2 py-1.5 text-[11px] font-bold">
         <button
           type="button"
@@ -259,155 +252,106 @@ export function SignLanguagePlayer({ text }: { text: string }) {
           <Sparkles className="h-3.5 w-3.5" />
           {smart ? 'ترتيب إشاري ذكي' : 'حرفي كلمةً كلمة'}
         </button>
-        <button
-          type="button"
-          onClick={() => {
-            const v = !avatar;
-            setAvatar(v);
-            try {
-              localStorage.setItem(AVATAR_STORE, v ? 'on' : 'off');
-            } catch {
-              /* تجاهل */
-            }
-          }}
-          aria-pressed={avatar}
-          title="المترجم ثلاثي الأبعاد يعيد أداء الإشارة (اليدان وتعابير الوجه) من حركة مستخلصة آليًّا من مقطع المصدر الموثّق. اضغط لعرض مقطع المصدر نفسه."
-          className={cn(
-            'flex items-center gap-1 rounded-lg px-2 py-1 transition',
-            avatar
-              ? 'bg-[color:var(--maroon-100)] text-[color:var(--maroon)]'
-              : 'text-muted-foreground hover:bg-[color:var(--surface-2)]'
-          )}
-        >
-          <User className="h-3.5 w-3.5" />
-          {gl3d ? 'المترجم ثلاثي الأبعاد' : 'الأفاتار الموحّد'}
-        </button>
+        <div className="flex items-center gap-1" role="group" aria-label="سرعة الأداء">
+          <Gauge className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
+          {SPEEDS.map((v) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setSpeedPersist(v)}
+              aria-pressed={speed === v}
+              className={cn(
+                'rounded-lg px-1.5 py-1 tabular-nums transition',
+                speed === v
+                  ? 'bg-[color:var(--maroon-100)] text-[color:var(--maroon)]'
+                  : 'text-muted-foreground hover:bg-[color:var(--surface-2)]'
+              )}
+            >
+              {v === 1 ? '١×' : v === 0.75 ? '٠٫٧٥×' : '١٫٢٥×'}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* المسرح */}
-      <div className="relative grid aspect-square w-full place-items-center bg-black">
-        {/* المترجم ثلاثي الأبعاد يبقى مُركَّبًا طوال التشغيل لينتقل بين الإشارات بسلاسة */}
-        {avatar && gl3d && (
-          <div
-            aria-hidden={!showSkeleton}
-            className={cn(
-              'absolute inset-0 bg-[radial-gradient(circle_at_50%_32%,var(--maroon-700),#16050c_78%)]',
-              !showSkeleton && 'invisible'
-            )}
-          >
-            <SignAvatar3D
-              src={showSkeleton ? poseUrl : null}
-              cue={i}
-              playing={playing}
-              onEnded={next}
-              onUnavailable={(u) => setNoPose((p) => new Set(p).add(u))}
-              onFailed={() => setGl3d(false)}
-            />
-            <span className="absolute right-2 top-2 rounded-lg bg-white/15 px-2 py-0.5 text-[10px] font-black text-white backdrop-blur">
-              المترجم ثلاثي الأبعاد
-            </span>
+      {/* المسرح: المترجم ثلاثي الأبعاد حاضر دائمًا */}
+      <div className={cn('relative grid aspect-square w-full place-items-center overflow-hidden', stageBg)}>
+        {gl3d && (
+          <SignAvatar3D
+            src={hasMotion && !showSource ? poseUrl : null}
+            cue={i}
+            playing={playing}
+            speed={speed}
+            onEnded={next}
+            onReady={() => setAvatarReady(true)}
+            onUnavailable={(u) => setNoPose((p) => new Set(p).add(u))}
+            onFailed={() => setGl3d(false)}
+            className="absolute inset-0 h-full w-full"
+          />
+        )}
+        {!gl3d && hasMotion && poseUrl && !showSource && (
+          <SignSkeleton
+            key={`${i}-${poseUrl}`}
+            src={poseUrl}
+            playing={playing}
+            onEnded={next}
+            onUnavailable={() => setNoPose((p) => new Set(p).add(poseUrl))}
+          />
+        )}
+        {gl3d && !avatarReady && (
+          <div className="absolute inset-0 grid place-items-center text-center text-white/85">
+            <div className="flex flex-col items-center gap-2">
+              <span className="h-8 w-8 animate-spin rounded-full border-2 border-white/30 border-t-white" aria-hidden />
+              <span className="text-xs font-bold">جارٍ تجهيز المترجم…</span>
+            </div>
           </div>
         )}
-        {showMedia && step.media === 'yt' ? (
-          <>
-            <SignYouTube id={step.src!} title={step.gloss} onEnded={next} />
-            <div className="absolute bottom-2 left-2 grid h-16 w-16 place-items-end overflow-hidden rounded-full bg-white/90 shadow-md">
-              <SignAvatar state="greet" />
-            </div>
-          </>
-        ) : showSkeleton && gl3d ? null : showSkeleton && poseUrl ? (
-          <>
-            <SignSkeleton
-              key={`${i}-${poseUrl}`}
-              src={poseUrl}
-              playing={playing}
-              onEnded={next}
-              onUnavailable={() => setNoPose((p) => new Set(p).add(poseUrl))}
-            />
-            <span className="absolute right-2 top-2 rounded-lg bg-white/15 px-2 py-0.5 text-[10px] font-black text-white backdrop-blur">
-              الأفاتار الموحّد
-            </span>
-          </>
-        ) : showMedia && step.media === 'video' ? (
-          <>
-            <video
-              key={`${i}-${step.src}`}
-              src={step.src}
-              autoPlay
-              muted
-              playsInline
-              onEnded={next}
-              onError={() => markFailed(step.src)}
-              className="h-full w-full object-contain"
-            />
-            {/* المرشد حاضر بحجم صغير في الزاوية */}
-            <div className="absolute bottom-2 left-2 grid h-16 w-16 place-items-end overflow-hidden rounded-full bg-white/90 shadow-md">
-              <SignAvatar state="greet" />
-            </div>
-          </>
-        ) : showMedia && step.media === 'img' ? (
-          <>
-            <img
-              src={step.src}
-              alt={`إشارة: ${step.gloss}`}
-              onError={() => markFailed(step.src)}
-              className="h-full w-full object-contain"
-            />
-            <div className="absolute bottom-2 left-2 grid h-16 w-16 place-items-end overflow-hidden rounded-full bg-white/90 shadow-md">
-              <SignAvatar state="greet" />
-            </div>
-          </>
-        ) : handshape ? (
-          // الشخصية تؤدّي وضع اليد للحرف من بياناته
-          <div className="flex w-full items-center justify-center gap-1 px-4">
-            <div className="h-36 w-32 shrink-0 sm:h-40 sm:w-36">
-              <HandSign pose={handshape.pose} />
-            </div>
-            <span className="font-display text-[3.5rem] font-black leading-none text-white sm:text-[4.5rem]">
+        {/* مقطع المصدر (وضع المراجعة فقط) */}
+        {review && showSource && step?.media === 'video' && step.src && (
+          <video
+            key={`${i}-${step.src}`}
+            src={step.src}
+            autoPlay
+            muted
+            playsInline
+            onEnded={next}
+            className="absolute inset-0 h-full w-full bg-black object-contain"
+          />
+        )}
+        {/* رمز يُعرض نصًّا: أرقام وحروف لاتينية، أو حرف لم تتوفّر حركته */}
+        {step && !hasMotion && !showSource && (
+          <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-2xl bg-white/92 px-4 py-2 shadow-lg backdrop-blur">
+            <span className="font-display text-[2.6rem] font-black leading-none text-[color:var(--maroon)]">
               {step.glyph}
             </span>
-            {!handshape.verified && (
-              <span className="absolute right-2 top-2 rounded-lg bg-[color:var(--gold)] px-2 py-0.5 text-[11px] font-black text-black shadow">
-                قيد المراجعة
-              </span>
-            )}
-            <div className="absolute bottom-2 left-2 grid h-14 w-14 place-items-end overflow-hidden rounded-full bg-white/90 shadow-md">
-              <SignAvatar state="present" />
-            </div>
-          </div>
-        ) : (
-          // لا إشارة موثّقة — المرشد يوجّه إلى الرمز المعروض نصًّا (دون تلفيق يد)
-          <div className="flex w-full items-center justify-center gap-2 px-4">
-            <div className="h-28 w-28 shrink-0 sm:h-32 sm:w-32">
-              <SignAvatar state={playing ? 'present' : 'greet'} />
-            </div>
-            <span className="flex flex-col items-center text-center">
-              <span className="font-display text-[4.5rem] font-black leading-none text-white sm:text-[5.5rem]">
-                {step.glyph}
-              </span>
-              <span className="mt-1 text-[11px] font-bold text-white/70">
-                {step.kind === 'word' ? 'كلمة' : step.kind === 'letter' ? 'حرف' : 'رمز'}
-              </span>
+            <span className="text-[11px] font-bold text-muted-foreground">
+              {step.kind === 'word' ? 'كلمة' : step.kind === 'letter' ? 'حرف' : 'رمز'}
             </span>
           </div>
         )}
-
         {/* عدّاد الخطوة */}
         <span className="absolute left-2 top-2 rounded-lg bg-white/15 px-2 py-0.5 text-[11px] font-black text-white backdrop-blur">
           {i + 1} / {total}
         </span>
+        {review && step?.media === 'video' && (
+          <button
+            type="button"
+            onClick={() => setShowSource((v) => !v)}
+            aria-pressed={showSource}
+            className="absolute right-2 top-2 flex items-center gap-1 rounded-lg bg-white/15 px-2 py-0.5 text-[10px] font-black text-white backdrop-blur hover:bg-white/25"
+          >
+            <Film className="h-3 w-3" />
+            {showSource ? 'المترجم' : 'مقطع المصدر'}
+          </button>
+        )}
       </div>
 
       {/* التسمية أسفل الإشارة */}
       <div className="bg-[color:var(--surface-2)] px-3 py-2 text-center">
         <p className="font-display text-lg font-black text-[color:var(--maroon)]">
-          {step.gloss}
+          {step.kind === 'letter' ? `حرف «${step.gloss}»` : step.gloss}
         </p>
         {source && (
-          <p
-            className="mt-0.5 text-[10px] font-bold leading-4 text-muted-foreground"
-            title={source.note}
-          >
+          <p className="mt-0.5 text-[10px] font-bold leading-4 text-muted-foreground" title={source.note}>
             المصدر: {source.label}
           </p>
         )}

@@ -65,8 +65,19 @@ export const FACE = [
 export type FaceKey = (typeof FACE)[number];
 export const FACE_INDEX = Object.fromEntries(FACE.map((k, i) => [k, i])) as Record<FaceKey, number>;
 
-// ---- أبعاد الشخصية (بالمتر تقريبًا) — يشاركها المشهد ----------------------
-export const RIG = {
+// ---- أبعاد الشخصية (بالمتر) — الافتراضية؛ المشهد ثلاثي الأبعاد يمرّر أبعاد الشخصية المحمَّلة ----
+export interface RigDims {
+  shoulderY: number;
+  shoulderX: number;
+  upperArm: number;
+  forearm: number;
+  hand: number;
+  headCenter: V3;
+  headR: V3;
+  torsoR: [number, number];
+  hipY: number;
+}
+export const DEFAULT_RIG: RigDims = {
   shoulderY: 1.45,
   shoulderX: 0.19, // نصف عرض الكتفين
   upperArm: 0.29,
@@ -211,22 +222,23 @@ const HAND_TEMPLATE: V3[] = [
 ];
 
 /** يد مرتخية موجّهة: up = اتجاه الأصابع، thumb = جهة الإبهام، palm = اتجاه الباطن. */
-export function orientedHand(up: V3, thumb: V3, palm: V3): V3[] {
-  const k = RIG.hand / 0.088;
+export function orientedHand(up: V3, thumb: V3, palm: V3, handLen = DEFAULT_RIG.hand): V3[] {
+  const k = handLen / 0.088;
   return HAND_TEMPLATE.map(([x, y, z]) => mul(add(add(mul(thumb, x), mul(up, y)), mul(palm, z)), k));
 }
 
 /** وضع الراحة: الذراعان منسدلتان قليلًا للأمام، والكفّان نحو الجسم. */
-export function restState(): AvatarState {
+export function restState(RIG: RigDims = DEFAULT_RIG): AvatarState {
   const y = RIG.shoulderY;
+  const sx = RIG.shoulderX;
   return {
-    lw: [0.2, y - 0.5, 0.1],
-    lp: [0.5, y - 0.3, -0.2],
-    rw: [-0.2, y - 0.5, 0.1],
-    rp: [-0.5, y - 0.3, -0.2],
+    lw: [sx + 0.03, y - 0.5, 0.1],
+    lp: [sx + 0.32, y - 0.3, -0.2],
+    rw: [-sx - 0.03, y - 0.5, 0.1],
+    rp: [-sx - 0.32, y - 0.3, -0.2],
     // اليسرى (عند +x): الباطن نحو -x — قالب اليمنى معكوس
-    lh: orientedHand(norm([0.05, -1, 0.15]), norm([0, 0.05, 1]), [-1, 0, 0]),
-    rh: orientedHand(norm([-0.05, -1, 0.15]), norm([0, 0.05, 1]), [1, 0, 0]),
+    lh: orientedHand(norm([0.05, -1, 0.15]), norm([0, 0.05, 1]), [-1, 0, 0], RIG.hand),
+    rh: orientedHand(norm([-0.05, -1, 0.15]), norm([0, 0.05, 1]), [1, 0, 0], RIG.hand),
     head: [0, 0, 0, 1],
     torso: [0, 0],
     face: FACE.map(() => 0),
@@ -235,7 +247,13 @@ export function restState(): AvatarState {
 
 // ---- IK بعظمتين ------------------------------------------------------------
 /** يحلّ المرفق والمعصم: من الكتف S إلى الهدف T بموجّه P. */
-export function solveArm(S: V3, T: V3, P: V3, L1 = RIG.upperArm, L2 = RIG.forearm): { elbow: V3; wrist: V3 } {
+export function solveArm(
+  S: V3,
+  T: V3,
+  P: V3,
+  L1 = DEFAULT_RIG.upperArm,
+  L2 = DEFAULT_RIG.forearm
+): { elbow: V3; wrist: V3; perp: V3; dir: V3 } {
   const v = sub(T, S);
   const dist = clamp(len(v), Math.abs(L1 - L2) + 1e-3, L1 + L2 - 1e-3);
   const dir = norm(v);
@@ -244,7 +262,7 @@ export function solveArm(S: V3, T: V3, P: V3, L1 = RIG.upperArm, L2 = RIG.forear
   let perp = sub(sub(P, S), mul(dir, dot(sub(P, S), dir)));
   if (len(perp) < 1e-5) perp = sub([0, -1, -0.3], mul(dir, dot([0, -1, -0.3], dir)));
   perp = norm(perp);
-  return { elbow: add(add(S, mul(dir, a)), mul(perp, h)), wrist: add(S, mul(dir, dist)) };
+  return { elbow: add(add(S, mul(dir, a)), mul(perp, h)), wrist: add(S, mul(dir, dist)), perp, dir };
 }
 
 // ---- التحضير -----------------------------------------------------------------
@@ -343,7 +361,7 @@ export function mirrorPoseFile(file: PoseFileAny): PoseFileAny {
   };
 }
 
-export function prepareMotion(input: PoseFileAny): Motion | null {
+export function prepareMotion(input: PoseFileAny, RIG: RigDims = DEFAULT_RIG): Motion | null {
   const file = input.frames?.length && dominantIsOther(input) ? mirrorPoseFile(input) : input;
   const frames = file.frames || [];
   if (!frames.length) return null;
@@ -367,7 +385,7 @@ export function prepareMotion(input: PoseFileAny): Motion | null {
   const W = quantile(widths, 0.9);
   if (!(W > 0)) return null;
   const k = (RIG.shoulderX * 2) / W;
-  const rest = restState();
+  const rest = restState(RIG);
   const n = frames.length;
   const SL: V3 = [RIG.shoulderX, RIG.shoulderY, 0];
   const SR: V3 = [-RIG.shoulderX, RIG.shoulderY, 0];
@@ -479,7 +497,7 @@ export function prepareMotion(input: PoseFileAny): Motion | null {
     const palm = norm(cross(up, [0, 0, side]));
     // القالب يد يمنى (إطار يميني)؛ اليسرى مرآتها
     const thumb = norm(cross(up, palm));
-    return orientedHand(up, side > 0 ? mul(thumb, -1) : thumb, palm);
+    return orientedHand(up, side > 0 ? mul(thumb, -1) : thumb, palm, RIG.hand);
   };
 
   // ---- الرأس والجذع ----
@@ -556,8 +574,8 @@ export function prepareMotion(input: PoseFileAny): Motion | null {
   for (let i = 0; i < n; i++) {
     const lp = pole(le[i], 1),
       rp = pole(re[i], -1);
-    const la = solveArm(SL, lw[i], lp);
-    const ra = solveArm(SR, rw[i], rp);
+    const la = solveArm(SL, lw[i], lp, RIG.upperArm, RIG.forearm);
+    const ra = solveArm(SR, rw[i], rp, RIG.upperArm, RIG.forearm);
     const lh = lhS ? lhS[i] : relaxedAlong(la.wrist, la.elbow, 1);
     const rh = rhS ? rhS[i] : relaxedAlong(ra.wrist, ra.elbow, -1);
     const a = actL[i],

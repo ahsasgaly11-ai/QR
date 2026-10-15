@@ -117,12 +117,23 @@ function normalizeWord(s: string): string {
  * الشائعة (واو/فاء العطف، «ال» التعريف، و«بال/لل/كال»). محافظ عن قصد: لا يُنزع
  * حرف جرّ وحده (كي لا تتحوّل «باب» إلى «أب»).
  */
-function lookupWord(m: SignManifest | null, raw: string): SignEntry | undefined {
+export interface SequenceOptions {
+  /**
+   * المترجم الموحّد: لا تُعدّ الكلمة «موجودة» إلا إذا كان لها مقطع محلي يملك
+   * حركة مستخلصة يؤدّيها المترجم ثلاثي الأبعاد؛ ما عداه (تضمين يوتيوب، صور)
+   * يُهجّى حرفًا حرفًا بالشخصية نفسها — شخصية واحدة لكل النصّ.
+   */
+  avatarOnly?: boolean;
+}
+
+function lookupWord(m: SignManifest | null, raw: string, opts?: SequenceOptions): SignEntry | undefined {
   const words = m?.words;
   if (!words) return undefined;
   const has = (k: string) => {
     const e = words[k];
-    return e && (e.img || e.video || e.yt) ? e : undefined;
+    if (!e) return undefined;
+    if (opts?.avatarOnly) return e.video ? e : undefined;
+    return e.img || e.video || e.yt ? e : undefined;
   };
   const n = normalizeWord(raw);
   const candidates = [n];
@@ -177,7 +188,7 @@ function makeStep(
  * يبني تسلسل الإشارات من نصّ حرّ. آمن مع النصّ الفارغ أو غياب القاموس:
  * يعود بخطوات نصّية واضحة تُعرَض حرفًا حرفًا حتى تُضاف الأصول الموثّقة.
  */
-export function buildSequence(text: string, m: SignManifest | null): SignStep[] {
+export function buildSequence(text: string, m: SignManifest | null, opts?: SequenceOptions): SignStep[] {
   const steps: SignStep[] = [];
   const words = (text || '').match(WORD_RE) || [];
   let skip = 0;
@@ -189,7 +200,7 @@ export function buildSequence(text: string, m: SignManifest | null): SignStep[] 
     // إشارة مركّبة من كلمتين (مثل «هيكل عظمي» أو «درجة الحرارة») تُفضَّل على الكلمة المفردة.
     const nextW = words[wi + 1];
     if (nextW) {
-      const pair = lookupWord(m, `${w} ${nextW}`);
+      const pair = lookupWord(m, `${w} ${nextW}`, opts);
       if (pair) {
         steps.push({
           ...makeStep('word', `${w} ${nextW}`, pair.gloss || `${w} ${nextW}`, wi, pair),
@@ -199,7 +210,7 @@ export function buildSequence(text: string, m: SignManifest | null): SignStep[] 
         return;
       }
     }
-    const wordEntry = lookupWord(m, w);
+    const wordEntry = lookupWord(m, w, opts);
     if (wordEntry) {
       steps.push(makeStep('word', w, wordEntry.gloss || w, wi, wordEntry));
       return;
@@ -230,7 +241,8 @@ export function buildSequence(text: string, m: SignManifest | null): SignStep[] 
 export function buildSequenceFromGloss(
   text: string,
   gloss: { items: { key: string; word: string; from: number; to: number; spell?: string }[] },
-  m: SignManifest | null
+  m: SignManifest | null,
+  opts?: SequenceOptions
 ): SignStep[] {
   const steps: SignStep[] = [];
   const words = (text || '').match(WORD_RE) || [];
@@ -238,7 +250,7 @@ export function buildSequenceFromGloss(
     const from = Math.max(0, Math.min(words.length - 1, it.from | 0));
     const to = Math.max(from, Math.min(words.length - 1, it.to | 0));
     const span = to - from + 1;
-    const entry = it.key ? lookupWord(m, it.key) : undefined;
+    const entry = it.key ? lookupWord(m, it.key, opts) : undefined;
     const glyph = it.word || words.slice(from, to + 1).join(' ');
     if (entry) {
       steps.push({ ...makeStep('word', glyph, entry.gloss || glyph, from, entry), span });
