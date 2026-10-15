@@ -13,6 +13,19 @@ const API = 'https://generativelanguage.googleapis.com/v1beta';
 
 let cached: string | null = null;
 let inflight: Promise<string> | null = null;
+// نماذج مستبعدة مؤقّتًا ليُختار التالي: «ضغط عالٍ» (503) لـ30 دقيقة، أو نفاد الحصّة
+// اليومية للنموذج (429؛ الطبقة المجانية ~20 طلبًا يوميًّا لكل نموذج) حتى موعد التجديد.
+const DEMOTE_MS = 30 * 60 * 1000;
+const demotedUntil = new Map<string, number>();
+function isDemoted(id: string): boolean {
+  const t = demotedUntil.get(id);
+  if (t === undefined) return false;
+  if (Date.now() > t) {
+    demotedUntil.delete(id);
+    return false;
+  }
+  return true;
+}
 
 interface ModelInfo {
   name?: string; // "models/gemini-x.y-flash"
@@ -46,6 +59,7 @@ async function discover(key: string): Promise<string> {
       const id = (m.name ?? '').replace(/^models\//, '');
       if (
         /^gemini-[\d.]+-flash/.test(id) &&
+        !isDemoted(id) &&
         !/image|audio|tts|live|thinking|embedding/.test(id) &&
         (m.supportedGenerationMethods ?? []).includes('generateContent')
       ) {
@@ -78,6 +92,23 @@ export async function resolveGeminiModel(key: string): Promise<string> {
 /** يُستدعى عند 404 من النموذج المختار: يمسح الاختيار ليُعاد الاكتشاف. */
 export function forgetGeminiModel(): void {
   cached = null;
+}
+
+/**
+ * يستبعد نموذجًا مثقلًا (503) أو نفدت حصّته اليومية (429) ويمسح الاختيار، فيُختار
+ * في الاستدعاء التالي أفضل نموذج Flash متاح غيره (الإصدار السابق أو نسخة lite).
+ * يعيد false إن كان النموذج مثبّتًا يدويًّا (لا تبديل).
+ */
+export function demoteGeminiModel(id: string, ms = DEMOTE_MS): boolean {
+  if (process.env.GEMINI_MODEL?.trim()) return false; // نموذج مثبّت يدويًّا: لا تبديل
+  demotedUntil.set(id, Date.now() + ms);
+  cached = null;
+  return true;
+}
+
+/** هل النموذج مستبعد حاليًّا؟ (حين لا يبقى بديل يعيد الاكتشاف الاسم المستعار نفسه). */
+export function isGeminiModelDemoted(id: string): boolean {
+  return isDemoted(id);
 }
 
 /** اسم النموذج المعروف حاليًّا (للعرض فقط؛ قد يكون فارغًا قبل أول استدعاء). */
