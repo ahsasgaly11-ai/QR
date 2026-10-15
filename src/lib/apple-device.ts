@@ -33,8 +33,14 @@ export function detectAppleDevice(): AppleDevice | null {
   const ua = navigator.userAgent || '';
   if (/iPhone|iPod/i.test(ua)) return 'iphone';
   if (/iPad/i.test(ua)) return 'ipad';
-  // iPadOS بوضع «سطح المكتب»: Macintosh مع لمس متعدّد
-  if (/Macintosh/i.test(ua) && (navigator.maxTouchPoints ?? 0) > 1) return 'ipad';
+  // iPadOS 13+ بوضع «سطح المكتب» (الافتراضي في سفاري على iPad): يقدّم نفسه
+  // كـMac، والفارق الوحيد شاشة اللمس — أجهزة Mac لا تعلن عن أي نقطة لمس.
+  if (/Macintosh/i.test(ua)) {
+    const touch =
+      (navigator.maxTouchPoints ?? 0) > 0 ||
+      (typeof document !== 'undefined' && 'ontouchend' in document);
+    if (touch) return 'ipad';
+  }
   return null;
 }
 
