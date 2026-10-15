@@ -11,8 +11,8 @@ MOTION.scene({ id: 'p4',
     // النصّ يمين
     vo(ctx, X, t, 'l6', 'وَالأَهَمُّ:', 1800, 330, { size: 64, align: 'right', color: P.hi, family: 'body', weight: 600, maxWidth: 800 });
     vo(ctx, X, t, 'l6', 'بَعدَ النَّشاطِ،', 1800, 440, { size: 64, align: 'right', color: '#fbf6ee', family: 'body', weight: 500, maxWidth: 800, map: [1, 2] });
-    vo(ctx, X, t, 'l6', 'هَل تَعَلَّمَ الطّالِبُ فِعلًا؟', 1800, 580, { size: 104, align: 'right', color: '#fbf6ee', maxWidth: 850, map: [3, 4, 5, 6] });
-    vo(ctx, X, t, 'l6', 'لا أَحَدَ يَعرِف.', 1800, 740, { size: 84, align: 'right', color: P.hi, maxWidth: 850, map: [7, 8, 9] });
+    vo(ctx, X, t, 'l6', 'هَل تَعَلَّمَ الطّالِبُ فِعلًا؟', 1800, 590, { size: 96, align: 'right', color: '#fbf6ee', maxWidth: 1000, map: [3, 4, 5, 6] });
+    vo(ctx, X, t, 'l6', 'لا أَحَدَ يَعرِف.', 1800, 770, { size: 84, align: 'right', color: P.hi, maxWidth: 850, map: [7, 8, 9] });
     // لوحة إحصاءات فارغة: أعمدة متقطّعة بلا بيانات، تظهر عند «لا أحد يعرف»
     const ek = ctx.at(t, L(7).s, L(7).s + .6, 'expoOut'); if (ek > 0) { X.save(); X.globalAlpha = ek; X.translate(0, (1 - ek) * 30);
       X.fillStyle = 'rgba(255,255,255,.08)'; rr(X, 300, 720, 560, 230, 24); X.fill(); X.setLineDash([12, 12]); X.strokeStyle = 'rgba(251,246,238,.55)'; X.lineWidth = 4;

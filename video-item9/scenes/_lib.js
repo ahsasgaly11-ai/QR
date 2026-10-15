@@ -33,15 +33,20 @@ export function sadu(ctx, X, y, k = 1, onDark = false) {
 /* ── نص متزامن مع الصوت: الكلمة تطلع من تحت خط الأساس لحظة نطقها ── */
 const LC = new Map();
 export function layoutOf(ctx, X, str, o) { const k = str + '|' + o.family + o.weight + o.size + (o.maxWidth || '') + (o.lineHeight || ''); if (!LC.has(k)) LC.set(k, ctx.text.layout(X, str, o)); return LC.get(k); }
+export const WRAPPED = new Set();
 export function vo(ctx, X, t, lineId, str, x, y, o = {}) {
-  const L = layoutOf(ctx, X, str, { family: o.family || 'display', weight: o.weight || 700, size: o.size || 72, maxWidth: o.maxWidth || 1500, lineHeight: o.lineHeight || 1.45 });
+  const base = { family: o.family || 'display', weight: o.weight || 700, maxWidth: o.maxWidth || 1500, lineHeight: o.lineHeight || 1.45 };
+  let size = o.size || 72, L = layoutOf(ctx, X, str, { ...base, size });
+  while (L.lines.length > 1 && size > (o.size || 72) * .55) { size = Math.round(size * .95); L = layoutOf(ctx, X, str, { ...base, size }); }
+  if (L.lines.length > 1 && !WRAPPED.has(str)) { WRAPPED.add(str); console.warn('WRAP ' + lineId + ': ' + str); }
+  o = { ...o, size };
   const lead = o.lead ?? .08, dur = o.dur ?? .32, map = o.map, hold = o.hold;       // map: فهرس الكلمة المرسومة → فهرس كلمة الصوت
   return ctx.text.drawLayout(X, L, x, y, { align: o.align || 'center', color: o.color, perWord: (i, w, box) => {
     const vi = map ? map[i] : i, wt = ctx.wordTime(lineId, Math.min(vi, ctx.wordsOf(lineId).length - 1));
     const k = ctx.at(t, wt.s - lead, wt.s - lead + dur, 'expoOut');
-    let alpha = k > 0 ? 1 : 0; if (o.fadeAt != null) alpha *= 1 - ctx.at(t, o.fadeAt, o.fadeAt + .3);
+    let alpha = Math.min(1, k * 2.5); if (o.fadeAt != null) alpha *= 1 - ctx.at(t, o.fadeAt, o.fadeAt + .3);
     const sz = o.size || 72;
-    const st = { clip: { x: box.x - 30, y: box.y - sz * .35, w: box.w + 60, h: sz * 1.62 }, dy: (1 - k) * sz * 1.25, alpha };
+    const st = { clip: { x: box.x - 30, y: box.y - sz * .45, w: box.w + 60, h: sz * 1.75 }, dy: (1 - k) * sz * 2.2, alpha };
     if (o.emph && o.emph.includes(i)) st.color = o.emphColor || ctx.P.acc;
     return st; } });
 }

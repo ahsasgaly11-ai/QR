@@ -15,7 +15,7 @@ MOTION.scene({ id: 'p2',
       X.save(); X.globalAlpha = Math.sin(kk * Math.PI) * .8; X.filter = `blur(${kk * 10}px)`; ctx.text(X, g, bx + (i - 1) * 150, by - 380 - kk * 260, { family: 'display', weight: 700, size: 46 + kk * 30, color: P.acc }); X.restore(); });
     vo(ctx, X, t, 'l3', 'مَفاهيمُ العُلومِ في الصَّفِّ الثّالِثِ', 1680, 430, { size: 66, align: 'right', maxWidth: 1300 });
     vo(ctx, X, t, 'l3', 'مُجَرَّدَةٌ', 1680, 600, { size: 150, align: 'right', color: P.acc, map: [5] });
-    vo(ctx, X, t, 'l3', 'عَلى طِفلٍ في الثّامِنَة.', 1680, 740, { size: 66, align: 'right', map: [6, 7, 8, 9], family: 'body', weight: 500, maxWidth: 1300 });
+    vo(ctx, X, t, 'l3', 'عَلى طِفلٍ في الثّامِنَة.', 1680, 775, { size: 66, align: 'right', map: [6, 7, 8, 9], family: 'body', weight: 500, maxWidth: 1300 });
     // خطّ ذهبي يتمدّد تحت «مجرّدة»
-    const u = ctx.at(t, w5.s + .1, w5.s + .7, 'expoOut'); if (u > 0) { X.fillStyle = P.hi; rr(X, 1680 - 520 * u, 625, 520 * u, 10, 5); X.fill(); }
+    const u = ctx.at(t, w5.s + .1, w5.s + .7, 'expoOut'); if (u > 0) { X.fillStyle = P.hi; rr(X, 1680 - 520 * u, 668, 520 * u, 10, 5); X.fill(); }
   } });

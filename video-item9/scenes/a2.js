@@ -6,7 +6,7 @@ MOTION.scene({ id: 'a2',
     const L = i => ctx.wordTime('l16', i);
     let im = ctx.img('subjectFull'), sy = 1750; if (t >= L(5).s) { im = ctx.img('playObj'); sy = 0; } this.dev.setScreen(im, { sy });
     const kIn = ctx.at(lt, 0, 1.2, 'expoOut'), z = ctx.at(t, L(5).s - .2, L(5).s + .8, 'expoInOut');
-    this.dev.pose({ ry: -30 + 20 * kIn, rx: 9 - 3 * z, s: .7 + .05 * kIn + .3 * z, fx: .55, fy: .42, px: -.46, py: -.04 });
+    this.dev.pose({ ry: -30 + 20 * kIn, rx: 9 - 3 * z, s: .62 + .04 * kIn + .14 * z, fx: .55, fy: .42, px: -.56, py: -.04 });
     blob(X, 660, 905, 1000, 180, .2 * kIn); this.dev.draw(X);
     chip(ctx, X, t, { s: ctx.scene.start + .1, x: 1560, y: 170, w: 460, h: 96, text: '1 · قَبلَ الحِصَّة', icon: 'clock', size: 40, family: 'display', fill: P.acc, color: '#fbf6ee', iconBg: 'rgba(255,255,255,.18)', iconColor: P.hi });
     vo(ctx, X, t, 'l16', 'يَفتَحُ المُعَلِّمُ الدَّرسَ،', 1800, 340, { size: 60, align: 'right', maxWidth: 800, map: [2, 3, 4] });
