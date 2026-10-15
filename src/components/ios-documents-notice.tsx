@@ -11,19 +11,32 @@ import {
 } from '@/lib/apple-device';
 import { DocumentsAppIcon } from './documents-app-icon';
 
-const DISMISS_KEY = 'qa-ios-docs-dismissed';
-/** بعد الإغلاق لا تعود التوصية قبل أسبوعين (إرشاد ما بعد التحميل يظهر دائمًا). */
-const DISMISS_DAYS = 14;
+/**
+ * لا يستطيع سفاري معرفة التطبيقات المثبّتة على الجهاز، لذا يؤكّد المستخدم
+ * بنفسه أنه ثبّت Documents؛ عندها فقط تتوقّف التوصية نهائيًا. أمّا «لاحقًا»
+ * والإغلاق فيخفيانها في الصفحة الحالية فقط، فتعود في كل صفحة وكل زيارة.
+ */
+const INSTALLED_KEY = 'qa-ios-docs-installed';
+/** مفتاح الإصدار السابق (إخفاء أسبوعين) — يُحذف حتى لا يحجب التوصية. */
+const LEGACY_DISMISS_KEY = 'qa-ios-docs-dismissed';
 
 /** الصفحات التي لا تُعرض فيها التوصية (لا ألعاب فيها). */
 const SKIP_PREFIXES = ['/admin', '/dashboard', '/heatmap', '/privacy', '/accessibility'];
 
-function isDismissed(): boolean {
+function isInstalled(): boolean {
   try {
-    const at = Number(localStorage.getItem(DISMISS_KEY) || 0);
-    return at > 0 && Date.now() - at < DISMISS_DAYS * 86_400_000;
+    localStorage.removeItem(LEGACY_DISMISS_KEY);
+    return localStorage.getItem(INSTALLED_KEY) === '1';
   } catch {
     return false;
+  }
+}
+
+function markInstalled(): void {
+  try {
+    localStorage.setItem(INSTALLED_KEY, '1');
+  } catch {
+    /* لا شيء */
   }
 }
 
@@ -32,7 +45,8 @@ const DEVICE_LABEL: Record<AppleDevice, string> = { iphone: 'iPhone', ipad: 'iPa
 /**
  * إشعار لأصحاب iPhone وiPad فقط: سفاري يحفظ اللعبة كملف HTML ولا يشغّلها
  * من تطبيق «الملفات»، فنوصي بتطبيق Documents (مجاني) الذي يشغّلها كاملةً.
- * يظهر بوضعين: توصية عامة قابلة للإغلاق، وإرشاد فوري بعد كل تحميل.
+ * يظهر بوضعين: توصية عامة في كل صفحة وكل زيارة ما لم يؤكّد المستخدم أنه
+ * ثبّت التطبيق، وإرشاد فوري بعد كل تحميل.
  *
  * - `fixed` (في التخطيط العام): بطاقة عائمة أسفل الشاشة في صفحات التصفّح.
  * - `inline` (في صفحة التشغيل تحت المشغّل): ضمن تدفّق الصفحة حتى لا يغطّي
@@ -49,7 +63,6 @@ export function IosDocumentsNotice({ variant = 'fixed' }: { variant?: 'fixed' | 
     const d = detectAppleDevice();
     setDevice(d);
     if (!d) return;
-    setMode(isDismissed() ? 'hidden' : 'intro');
 
     const onDownload = (e: Event) => {
       setDownloaded((e as CustomEvent<{ title?: string }>).detail?.title ?? '');
@@ -58,6 +71,12 @@ export function IosDocumentsNotice({ variant = 'fixed' }: { variant?: 'fixed' | 
     window.addEventListener(IOS_DOWNLOAD_EVENT, onDownload);
     return () => window.removeEventListener(IOS_DOWNLOAD_EVENT, onDownload);
   }, []);
+
+  // التوصية تعود مع كل صفحة يفتحها المستخدم (ما لم يكن قد ثبّت التطبيق)
+  useEffect(() => {
+    if (!device) return;
+    setMode(isInstalled() ? 'hidden' : 'intro');
+  }, [device, pathname]);
 
   const inline = variant === 'inline';
   const onPlayPage = Boolean(pathname?.startsWith('/play/'));
@@ -78,14 +97,9 @@ export function IosDocumentsNotice({ variant = 'fixed' }: { variant?: 'fixed' | 
   // صفحة التشغيل تعرض نسختها ضمن التدفّق فقط، وبقيّة الصفحات النسخة العائمة
   if (inline !== onPlayPage) return null;
 
-  const close = () => {
-    if (mode === 'intro') {
-      try {
-        localStorage.setItem(DISMISS_KEY, String(Date.now()));
-      } catch {
-        /* لا شيء */
-      }
-    }
+  const close = () => setMode('hidden');
+  const installed = () => {
+    markInstalled();
     setMode('hidden');
   };
 
@@ -144,6 +158,11 @@ export function IosDocumentsNotice({ variant = 'fixed' }: { variant?: 'fixed' | 
           {after ? 'حسنًا' : 'لاحقًا'}
         </button>
       </div>
+      {!after && (
+        <button type="button" onClick={installed} className="ios-docs-installed">
+          <CheckCircle2 className="h-4 w-4" aria-hidden /> ثبّتُّ التطبيق بالفعل — لا تُظهر هذا مجدّدًا
+        </button>
+      )}
     </aside>
   );
 }
