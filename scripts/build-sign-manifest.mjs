@@ -4,6 +4,9 @@
 // في المنصّة إلا ما تمتلكه من إشارات موثّقة — دون روابط مكسورة ولا تلفيق.
 //
 //   الاستخدام:  node scripts/build-sign-manifest.mjs   (أو: npm run sign:manifest)
+//
+//   --commercial: نسخة الطرح التجاري — يُسقط كل إشارة من مصدر غير مُجاز تجاريًّا
+//   (src/data/sign-licenses.json: commercial=false). المنصّة التعليمية المجّانية تبني بلا هذا الخيار.
 // ---------------------------------------------------------------------------
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
@@ -14,6 +17,12 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SIGN_DIR = join(ROOT, 'public', 'sign');
 const PLAN = join(SIGN_DIR, 'dictionary-plan.json');
 const OUT = join(SIGN_DIR, 'manifest.json');
+const LICENSES = JSON.parse(readFileSync(join(ROOT, 'src', 'data', 'sign-licenses.json'), 'utf8'));
+const COMMERCIAL = process.argv.includes('--commercial');
+/** هل يُسمح بإشارة من هذا المصدر في هذه النسخة؟ (بلا مصدر = تصوير المنصّة نفسها) */
+const allowed = (source) => !COMMERCIAL || LICENSES[source || 'local']?.commercial === true;
+const excluded = {};
+const exclude = (source) => (excluded[source || 'local'] = (excluded[source || 'local'] || 0) + 1);
 
 const VIDEO_EXT = ['.mp4', '.webm'];
 const IMG_EXT = ['.png', '.jpg', '.jpeg', '.webp', '.svg', '.gif'];
@@ -72,6 +81,10 @@ function main() {
     const entry = { [mediaKey(file)]: file };
     if (hasPose(file)) entry.pose = 1;
     const source = sourceOf(l);
+    if (!allowed(source)) {
+      exclude(source);
+      continue;
+    }
     if (source) entry.source = source;
     manifest.letters[l.key] = entry;
     haveL++;
@@ -91,6 +104,10 @@ function main() {
         : { [mediaKey(file)]: file, gloss: w.gloss || w.key };
       if (file && hasPose(file)) entry.pose = 1;
       const source = sourceOf(w);
+      if (!allowed(source)) {
+        exclude(source);
+        continue;
+      }
       if (source) entry.source = source;
       manifest.words[normalizeKey(w.key)] = entry;
       haveW++;
@@ -106,7 +123,12 @@ function main() {
 
   writeFileSync(OUT, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
 
-  console.log('✅ تم بناء manifest.json');
+  console.log(`✅ تم بناء manifest.json${COMMERCIAL ? ' (نسخة الطرح التجاري)' : ''}`);
+  if (COMMERCIAL) {
+    for (const [src, n] of Object.entries(excluded)) {
+      console.log(`   ⛔ أُسقط ${n} عنصرًا من «${src}» — يلزم: ${LICENSES[src]?.clearance || 'ترخيص صريح'}`);
+    }
+  }
   console.log(`   الحروف : ${haveL}/${totalL}`);
   console.log(`   الكلمات: ${haveW}/${totalW} (+${aliases} اسمًا مستعارًا)`);
   if (haveL + haveW === 0) {

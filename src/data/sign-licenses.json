@@ -1,0 +1,47 @@
+{
+  "_doc": "ترخيص كل مصدر إشارات. commercial=true فقط بنصّ ترخيص صريح أو إذن مكتوب محفوظ مع المشروع. يقرؤه build-sign-manifest.mjs (--commercial) ومشغّل الإشارة.",
+  "local": {
+    "license": "تصوير المنصّة نفسها مع مترجم قطري معتمد",
+    "commercial": true
+  },
+  "aslad": {
+    "license": "CC BY 4.0 — ASLAD-190K (Mendeley Data, doi:10.17632/2fgpn5dwgc.2)",
+    "commercial": true,
+    "attribution": "ASLAD-190K: Arabic Sign Language Alphabet Dataset (CC BY 4.0) — أشكال اليد في التهجئة مشتقّة منه بالمتوسّط عبر العيّنات."
+  },
+  "karsl": {
+    "license": "لا رخصة مكتوبة على صفحة القاعدة؛ إذن من الباحث المسؤول (د. حمزة لقمان) باستخدامها في المنصّة التعليمية",
+    "commercial": false,
+    "clearance": "إذن مكتوب صريح بالاستخدام التجاري من د. حمزة لقمان (hluqman@kfupm.edu.sa)"
+  },
+  "menasy": {
+    "license": "«جميع الموارد متاحة للتحميل المجاني للاستخدام التعليمي والشخصي» — menasy.com/downloads",
+    "commercial": false,
+    "clearance": "إذن مكتوب من أصحاب القاموس (الأستاذ صالح بوسعد الجميعة / نموذج التواصل في menasy.com)"
+  },
+  "sshi": {
+    "license": "مقاطع منشورة للجمهور بلا رخصة إعادة استخدام",
+    "commercial": false,
+    "clearance": "إذن مكتوب من الجمعية السعودية للإعاقة السمعية"
+  },
+  "kisr-unified": {
+    "license": "تضمين يوتيوب فقط (لا تنزيل)",
+    "commercial": false,
+    "clearance": "إذن مكتوب من معهد الكويت للأبحاث العلمية"
+  },
+  "kisr-kuwaiti": {
+    "license": "تضمين يوتيوب فقط (لا تنزيل)",
+    "commercial": false,
+    "clearance": "إذن مكتوب من معهد الكويت للأبحاث العلمية"
+  },
+  "kisr-preschool": {
+    "license": "تضمين يوتيوب فقط (لا تنزيل)",
+    "commercial": false,
+    "clearance": "إذن مكتوب من معهد الكويت للأبحاث العلمية"
+  },
+  "kisr-scout": {
+    "license": "تضمين يوتيوب فقط (لا تنزيل)",
+    "commercial": false,
+    "clearance": "إذن مكتوب من معهد الكويت للأبحاث العلمية"
+  }
+}
