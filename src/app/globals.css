@@ -3384,6 +3384,19 @@ html[data-play] .floating-mascot { display: none !important; }
   color: var(--maroon);
 }
 .dark .ios-docs-later { color: #f0b9c8; }
+.ios-docs-installed {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 40px;
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.ios-docs-installed:hover { color: var(--maroon); }
 /* ضمن تدفّق صفحة التشغيل (تحت شريط الأدوات) بدل الطفو فوقه */
 .ios-docs-notice--inline {
   position: relative;
