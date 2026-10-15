@@ -8,7 +8,11 @@
 //   الاستخدام:
 //     node scripts/import-signs.mjs --map map.csv --src <مجلّد المقاطع> \
 //          --source <معرّف المصدر> --category <معرّف الفئة> [--title <عنوان الفئة>] \
-//          [--crop auto|none|W:H:X:Y] [--speed 1.0] [--size 400] [--force]
+//          [--crop auto|none|W:H:X:Y] [--speed 1.0] [--size 400] [--fps 30|native] [--force]
+//
+//   --fps native: يُبقي معدّل إطارات المصدر (للصور المتحرّكة 4–6 إطارات/ث) بدل تكرار
+//   الإطار نفسه حتى 30/ث، فيستخرج extract-poses الإطارات الحقيقية وحدها ويُنعّم المترجم
+//   بينها بدل أن يتوقّف ثم يقفز.
 //
 //   صيغة map.csv (الرأس إلزامي، الفاصل فاصلة؛ الأعمدة الاختيارية تُترك فارغة):
 //     key,gloss,file,aliases,category
@@ -45,7 +49,7 @@ const normalize = (s) =>
     .replace(/ة/g, 'ه');
 
 function parseArgs(argv) {
-  const o = { map: null, src: null, source: null, category: null, title: null, crop: 'auto', speed: 1, size: 400, force: false };
+  const o = { map: null, src: null, source: null, category: null, title: null, crop: 'auto', speed: 1, size: 400, fps: '30', force: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const v = () => argv[++i];
@@ -57,6 +61,7 @@ function parseArgs(argv) {
     else if (a === '--crop') o.crop = v();
     else if (a === '--speed') o.speed = Number(v());
     else if (a === '--size') o.size = Number(v());
+    else if (a === '--fps') o.fps = v();
     else if (a === '--force') o.force = true;
   }
   return o;
@@ -122,7 +127,7 @@ function convert(src, dst, o) {
   }
   if (o.speed && o.speed !== 1) parts.push(`setpts=${(1 / o.speed).toFixed(4)}*PTS`);
   parts.push('format=yuv420p');
-  const r = spawnSync('ffmpeg', ['-v', 'error', '-y', '-i', src, '-an', '-vf', parts.join(','), '-r', '30', '-c:v', 'libx264', '-preset', 'slow', '-crf', '27', '-profile:v', 'main', '-movflags', '+faststart', dst], { stdio: 'inherit' });
+  const r = spawnSync('ffmpeg', ['-v', 'error', '-y', '-i', src, '-an', '-vf', parts.join(','), ...(o.fps === 'native' ? [] : ['-r', String(o.fps)]), '-c:v', 'libx264', '-preset', 'slow', '-crf', '27', '-profile:v', 'main', '-movflags', '+faststart', dst], { stdio: 'inherit' });
   return r.status === 0;
 }
 
@@ -156,6 +161,9 @@ function main() {
     if (!existsSync(srcFile)) { missing++; continue; }
 
     let item = byKey.get(key)?.w;
+    // عنصر لا يملك إلا تضمين يوتيوب (بلا مقطع محلي) لا يؤدّيه المترجم ثلاثي الأبعاد؛
+    // نضيف له إشارة محلية من هذا المصدر (تتقدّم في القاموس لأن فئتها تأتي بعده).
+    if (item && item.yt && !item.file) item = undefined;
     if (!item) {
       const cat = catFor(catId);
       item = { key, gloss: r.gloss || r.key, file: `words/${catId}/${fileNameFor(o.source, key)}`, source: o.source };

@@ -47,9 +47,14 @@ async function main() {
   const pauseMs = provider === 'gemini' ? 7000 : 500;
 
   const manifest = JSON.parse(readFileSync(join(ROOT, 'public', 'sign', 'manifest.json'), 'utf8')) as {
-    words?: Record<string, unknown>;
+    words?: Record<string, { video?: string; pose?: number }>;
   };
-  const keys = Object.keys(manifest.words ?? {}).sort();
+  // المترجم ثلاثي الأبعاد يؤدّي ما له مقطع محلي (حركة مستخلصة) فقط؛ فالمفردات المتاحة
+  // للنموذج هي هذه، ليختار أقرب إشارة متاحة بدل مفتاح لا يُؤدّى فيُهجّى.
+  const keys = Object.entries(manifest.words ?? {})
+    .filter(([, e]) => !!e.video && !!e.pose)
+    .map(([k]) => k)
+    .sort();
   const vocab = new Set(keys);
 
   let cache: { version: number; items: Record<string, Gloss & { text: string; model?: string }> } = {
@@ -58,7 +63,8 @@ async function main() {
   };
   try {
     const prev = JSON.parse(readFileSync(OUT, 'utf8'));
-    if (prev.version === GLOSS_VERSION && !force) cache = prev;
+    // مع --force يبقى القديم حتى يُستبدل كلّ عنصر، فلا يضيع شيء إن توقّف التشغيل (نفاد الحصّة)
+    if (prev.version === GLOSS_VERSION) cache = prev;
   } catch {
     /* لا ملف سابق */
   }
@@ -69,7 +75,7 @@ async function main() {
     failed = 0;
   for (const text of all) {
     const key = glossCacheKey(text);
-    if (cache.items[key]) {
+    if (cache.items[key] && !force) {
       reused++;
       continue;
     }

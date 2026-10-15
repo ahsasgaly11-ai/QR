@@ -5,7 +5,11 @@
 # الأفاتار الموحّد أداءه في المتصفّح (SignSkeleton) بدل عرض فيديو المصدر.
 #
 #   python3 scripts/extract-poses.py --model /path/holistic_landmarker.task \
-#       [--only words/health] [--fps 15] [--force]
+#       [--only words/health] [--fps 15] [--force] [--hand-model hand_landmarker.task]
+#
+#   --hand-model: «إنقاذ اليد» للمصادر الصغيرة (صور متحرّكة 180×135): حين يرى Holistic
+#   المعصم ولا يرى أصابعه، يُقصّ مربّع حول المعصم ويُكبَّر ويُمرَّر إلى كاشف اليد
+#   المتخصّص، ثم تُعاد المعالم إلى إحداثيات الإطار. اليد تُنسب إلى المعصم الذي قُصّ حوله.
 #
 # المخرج: public/sign/poses/<مسار المقطع بلا امتداد>.json
 #   { "v":3, "fps":15, "ar":1 (عرض/ارتفاع), "src":"words/health/karsl-148.mp4", "fk":[أسماء تعابير الوجه],
@@ -57,11 +61,59 @@ def landmarks_to_list(lms, with_vis=False, nd=3, idx=None):
     return out
 
 
+class _P:  # نقطة بواجهة معالم MediaPipe (x, y, z)
+    __slots__ = ('x', 'y', 'z')
+
+    def __init__(self, x, y, z):
+        self.x, self.y, self.z = x, y, z
+
+
+def rescue_hand(rgb, pose, wi, ei, hands):
+    """يد المعصم wi (15 يسار، 16 يمين) من قصّ مكبَّر حوله، أو (None, None).
+    يجرّب ثلاثة أحجام للقصّ: اليد الضبابية تُكشف أحيانًا في قصّ أوسع (سياق أكثر) أو أضيق."""
+    for sc in (1.0, 1.5, 0.8):
+        img, world = _rescue_at(rgb, pose, wi, ei, hands, sc)
+        if img:
+            return img, world
+    return None, None
+
+
+def _rescue_at(rgb, pose, wi, ei, hands, sc):
+    H, W = rgb.shape[:2]
+    wr, el = pose[wi], pose[ei]
+    if (getattr(wr, 'visibility', 1.0) or 0) < 0.3:
+        return None, None
+    wx, wy, ex, ey = wr.x * W, wr.y * H, el.x * W, el.y * H
+    fore = max(((wx - ex) ** 2 + (wy - ey) ** 2) ** 0.5, 0.06 * W)
+    # الكفّ امتداد الساعد بعد المعصم: مركز القصّ أبعد قليلًا من المعصم
+    cx, cy = wx + 0.45 * (wx - ex), wy + 0.45 * (wy - ey)
+    half = 1.15 * sc * fore
+    x0, y0 = int(round(cx - half)), int(round(cy - half))
+    size = int(round(2 * half))
+    pad = cv2.copyMakeBorder(rgb, size, size, size, size, cv2.BORDER_REPLICATE)
+    crop = pad[y0 + size:y0 + 2 * size, x0 + size:x0 + 2 * size]
+    if crop.size == 0:
+        return None, None
+    crop = cv2.resize(crop, (256, 256), interpolation=cv2.INTER_CUBIC)
+    res = hands.detect(mp.Image(image_format=mp.ImageFormat.SRGB, data=crop.copy()))
+    best, bd = None, 0.6 * fore
+    for k, lms in enumerate(res.hand_landmarks or []):
+        hx, hy = x0 + lms[0].x * size, y0 + lms[0].y * size
+        d = ((hx - wx) ** 2 + (hy - wy) ** 2) ** 0.5
+        if d < bd:
+            best, bd = k, d
+    if best is None:
+        return None, None
+    img = [_P((x0 + q.x * size) / W, (y0 + q.y * size) / H, q.z * size / W) for q in res.hand_landmarks[best]]
+    world = res.hand_world_landmarks[best] if res.hand_world_landmarks else None
+    return img, world
+
+
 # الطابع الزمني يجب أن يتزايد عبر كل المقاطع في جلسة الكاشف الواحدة (وضع VIDEO).
 _ts_base = 0
 
 
-def extract(path, landmarker, fps_target):
+def extract(path, landmarker, fps_target, hands=None):
     global _ts_base
     cap = cv2.VideoCapture(path)
     src_fps = cap.get(cv2.CAP_PROP_FPS) or 30
@@ -96,6 +148,11 @@ def extract(path, landmarker, fps_target):
                 sr = near(rh) if rh else None
                 if (sl == 'r' and sr != 'r') or (sr == 'l' and sl != 'l'):
                     lh, rh, lw, rw = rh, lh, rw, lw
+            if hands is not None and pose:
+                if not lh:
+                    lh, lw = rescue_hand(rgb, pose, 15, 13, hands)
+                if not rh:
+                    rh, rw = rescue_hand(rgb, pose, 16, 14, hands)
             face = res.face_landmarks or None
             bs = None
             if res.face_blendshapes:
@@ -129,6 +186,7 @@ def main():
     ap.add_argument('--only', default='', help='مسار فرعي داخل public/sign (مثل words/health)')
     ap.add_argument('--fps', type=float, default=15)
     ap.add_argument('--force', action='store_true')
+    ap.add_argument('--hand-model', default='', help='hand_landmarker.task لإنقاذ اليد في المصادر الصغيرة')
     a = ap.parse_args()
 
     base = mp_python.BaseOptions(model_asset_path=a.model)
@@ -138,6 +196,11 @@ def main():
     done = skipped = failed = 0
     # الكاشف يتعطّل بعد أي خطأ داخلي في الرسم البياني؛ نعيد إنشاءه عند الفشل.
     landmarker = vision.HolisticLandmarker.create_from_options(opts)
+    hands = None
+    if a.hand_model:
+        hands = vision.HandLandmarker.create_from_options(vision.HandLandmarkerOptions(
+            base_options=mp_python.BaseOptions(model_asset_path=a.hand_model), num_hands=2,
+            min_hand_detection_confidence=0.3, min_hand_presence_confidence=0.3))
     try:
         for clip in clips:
             rel = os.path.relpath(clip, SIGN_DIR)
@@ -146,7 +209,7 @@ def main():
                 skipped += 1
                 continue
             try:
-                frames, fps, ar = extract(clip, landmarker, a.fps)
+                frames, fps, ar = extract(clip, landmarker, a.fps, hands)
                 detected = sum(1 for f in frames if f['p'])
                 if not frames or detected < len(frames) * 0.5:
                     print(f'⚠️ {rel}: كُشف الجسم في {detected}/{len(frames)} إطارًا فقط — تُخطّى', file=sys.stderr)
@@ -170,6 +233,8 @@ def main():
                 landmarker = vision.HolisticLandmarker.create_from_options(opts)
     finally:
         landmarker.close()
+        if hands is not None:
+            hands.close()
     print(f'\n✅ بنك الحركات: {done} جديد، {skipped} موجود، {failed} فشل. المخرج: {OUT_DIR}')
 
 

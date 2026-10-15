@@ -408,6 +408,9 @@ export function prepareMotion(input: PoseFileAny, RIG: RigDims = DEFAULT_RIG): M
   const frames = file.frames || [];
   if (!frames.length) return null;
   const ar = file.ar || 1;
+  // تمريرات التنعيم بحسب معدّل الإطارات: مصادر الصور المتحرّكة (4–6 إطارات/ث) إطارها
+  // الواحد ربع ثانية تقريبًا، فتمريرتان تمحوان ذروة الحركة.
+  const SP = (file.fps || 15) < 10 ? 1 : 2;
   const hasZ = (row?: number[] | null) => !!row && row.length >= 4;
   // نقطة الجسم i كمتّجه في فضاء الصورة (x بمقياس العرض، y للأعلى، z نحو الكاميرا)
   const P = (f: (typeof frames)[number], i: number): MaybeV3 => {
@@ -471,10 +474,10 @@ export function prepareMotion(input: PoseFileAny, RIG: RigDims = DEFAULT_RIG): M
   };
   const L = liftArm(11, 13, 15, SL);
   const R = liftArm(12, 14, 16, SR);
-  let lw = smoothV(L.w.map((x) => x ?? rest.lw));
-  let rw = smoothV(R.w.map((x) => x ?? rest.rw));
-  const le = smoothV(L.e.map((x) => x ?? rest.lp));
-  const re = smoothV(R.e.map((x) => x ?? rest.rp));
+  let lw = smoothV(L.w.map((x) => x ?? rest.lw), SP);
+  let rw = smoothV(R.w.map((x) => x ?? rest.rw), SP);
+  const le = smoothV(L.e.map((x) => x ?? rest.lp), SP);
+  const re = smoothV(R.e.map((x) => x ?? rest.rp), SP);
 
   const pushFront = (w: V3): V3 => {
     const [x, y] = w;
@@ -522,7 +525,7 @@ export function prepareMotion(input: PoseFileAny, RIG: RigDims = DEFAULT_RIG): M
       wts.push(1 - smoothstep(0.38, 0.72, dist));
       tgt.push([mouthA[0] + (w0[0] - m[0]) * k, mouthA[1] + (w0[1] - m[1]) * k, mouthA[2] + 0.035]);
     });
-    return { tgt, w: smoothN(wts, 2) };
+    return { tgt, w: smoothN(wts, SP) };
   };
   const fl = faceAnchor(15, 'l'),
     fr = faceAnchor(16, 'r');
@@ -552,8 +555,8 @@ export function prepareMotion(input: PoseFileAny, RIG: RigDims = DEFAULT_RIG): M
     const restLoc = handLocalOf(RIG, side);
     const pf: (PalmFrame | null)[] = raw.map((h) => (h ? palmFrame(h, side) : null));
     const ang: (HandAngles | null)[] = raw.map((h) => (h ? measureHand(localHand(h, side), restLoc) : null));
-    const frs = smoothFrames(fill(pf) as PalmFrame[], 2);
-    const angs = smoothAngles(fill(ang) as HandAngles[], 2);
+    const frs = smoothFrames(fill(pf) as PalmFrame[], SP);
+    const angs = smoothAngles(fill(ang) as HandAngles[], SP);
     return frs.map((f, i) => handToWorld(buildHand(angs[i], restLoc), f));
   };
   const lhS = handSeries('L');
@@ -585,7 +588,7 @@ export function prepareMotion(input: PoseFileAny, RIG: RigDims = DEFAULT_RIG): M
   if (haveHead) {
     const filled = fill(headAngles) as V3[];
     const med: V3 = [0, 1, 2].map((a) => median(filled.map((e) => e[a]))) as V3;
-    const sm = smoothV(filled, 2);
+    const sm = smoothV(filled, SP);
     heads = sm.map((e) =>
       quatFromEuler(
         clamp((e[0] - med[0]) * 0.8, -0.6, 0.6),
@@ -598,13 +601,14 @@ export function prepareMotion(input: PoseFileAny, RIG: RigDims = DEFAULT_RIG): M
   const rolls = smoothN(
     (fill(shoulders.map((s) => (s ? Math.atan2(s.l[1] - s.r[1], s.l[0] - s.r[0]) : null))) as number[]).map(
       (v) => v ?? 0
-    )
+    ),
+    SP
   );
   const yaws = smoothN(
     (fill(shoulders.map((s) => (s ? Math.atan2(s.l[2] - s.r[2], s.l[0] - s.r[0]) : null))) as number[]).map(
       (v) => v ?? 0
     ),
-    3
+    SP + 1
   );
   const rollMed = median(rolls),
     yawMed = median(yaws);
@@ -631,8 +635,8 @@ export function prepareMotion(input: PoseFileAny, RIG: RigDims = DEFAULT_RIG): M
   } else faces = frames.map(() => FACE.map(() => 0));
 
   const out: AvatarState[] = [];
-  const actL = smoothN(lw.map(activity), 2);
-  const actR = smoothN(rw.map(activity), 2);
+  const actL = smoothN(lw.map(activity), SP);
+  const actR = smoothN(rw.map(activity), SP);
   for (let i = 0; i < n; i++) {
     const lp = pole(le[i], 1),
       rp = pole(re[i], -1);
@@ -666,5 +670,8 @@ export function prepareMotion(input: PoseFileAny, RIG: RigDims = DEFAULT_RIG): M
     start = Math.max(0, start - 1);
     end = Math.min(n - 1, end + 1);
   }
-  return { fps: file.fps || 15, frames: out, start, end };
+  // مقاطع KArSL مُبطّأة مرّتين عند الاستيراد (لوضوح شكل اليد في الفيديو)؛ المترجم
+  // يؤدّيها أسرع قليلًا من ذلك لتتّصل الجملة بإيقاع طبيعي مع بقائها واضحة.
+  const rate = /karsl/i.test(file.src || '') ? 1.6 : 1;
+  return { fps: (file.fps || 15) * rate, frames: out, start, end };
 }

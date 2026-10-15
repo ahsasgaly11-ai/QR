@@ -1,36 +1,1808 @@
-key,gloss,file,aliases,category
-حافله,حافلة (باص),20/20017.gif,,menasy
-اسرع,الأسرع,33/b0014.gif,,menasy
-عدم,العدم (لا شيء),33/b0033.gif,,menasy
-اثر,أثر,33/b0055.gif,,menasy
-اثناء,أثناء,33/b0056.gif,,menasy
-اداه,أداة,33/b0063.gif,,menasy
-المنيوم,ألمنيوم,33/b0115.gif,,menasy
-اجراء,إجراء,29/b0146.gif,,menasy
-ازاله,إزالة,30/b0174.gif,,menasy
-تاثير,تأثير,29/b0455.gif,,menasy
-تفكير,تفكير,31/b0602.gif,,menasy
-تقريبا,تقريبا,31/b0611.gif,,menasy
-تمدد,تمدد,31/b0631.gif,,menasy
-تنفس,تنفس,31/b0644.gif,,menasy
-توقع,توقع,31/b0671.gif,,menasy
-ثقل,ثقل,29/b0695.gif,,menasy
-ثني,ثنى,30/b0706.gif,,menasy
-يجذب,جذاب / يجذب,31/b0754.gif,,menasy
-جرح,جرح,31/b0756.gif,,menasy
-حاول,حاول / محاولة,35/b0846.gif,,menasy
-حديد,حديد,34/b0865.gif,,menasy
-حظ,حظ (نصيب),34/b0905.gif,,menasy
-ساخن,ساخن,29/b1253.gif,,menasy
-ساعد,ساعد,29/b1254.gif,,menasy
-ساق,ساق (الشجرة),29/b1255.gif,,menasy
-صحيح,صحيح,32/b1461.gif,,menasy
-كامل,كامل / مكتمل,36/b2012.gif,,menasy
-كشف,كشف (يرفع الغموض),36/b2025.gif,,menasy
-بسكويت,كعك / بسكويت,36/b2032.gif,,menasy
-جميع,كل / جميع / معظم,36/b2041.gif,,menasy
-كيس,كيس,36/b2046.gif,,menasy
-لا شيء,لا شيء,37/b2054.gif,,menasy
-لاحظ,لاحظ,37/b2061.gif,,menasy
-لان,لأن,37/b2066.gif,,menasy
-لمس,لمس,37/b2104.gif,,menasy
+key,gloss,file,aliases,category,en,menasy_category
+أسرة,أسرة,01/01001.gif,,menasy,family,family
+جدة,جدة,01/01002.gif,,menasy,grandmother,family
+جد,جد,01/01003.gif,,menasy,grandfather,family
+أب,أب,01/01004.gif,,menasy,father,family
+أم,أم,01/01005.gif,,menasy,mother,family
+أخت,أخت,01/01006.gif,,menasy,sister,family
+أخ,أخ,01/01007.gif,,menasy,brother,family
+بنت,بنت,01/01008.gif,,menasy,girl,family
+رضيع,رضيع,01/01009.gif,,menasy,baby,family
+مسن,مسن / عجوز,01/01010.gif,عجوز,menasy,old man,family
+مسنة,مسنة,01/01011.gif,,menasy,old woman,family
+توأم,توأم,01/01012.gif,,menasy,twin,family
+رجل,رجل,01/01013.gif,,menasy,man,family
+شاب,شاب,01/01014.gif,,menasy,young man,family
+شابة,شابة,01/01015.gif,,menasy,young woman,family
+حفيد,حفيد,01/01016.gif,,menasy,grandchild,family
+زواج,زواج,01/01017.gif,,menasy,wedding,family
+حمل,حمل,01/01018.gif,,menasy,pregnant,family
+ولادة,ولادة,01/01019.gif,,menasy,childbirth,family
+عم,عم,01/01020.gif,,menasy,uncle,family
+عمة,عمة,01/01021.gif,,menasy,aunt,family
+خال,خال,01/01022.gif,,menasy,maternal uncle,family
+خالة,خالة,01/01023.gif,,menasy,maternal aunt,family
+ابن الأخ,ابن الأخ,01/01024.gif,,menasy,nephew,family
+ابن الأخت,ابن الأخت,01/01025.gif,,menasy,nephew,family
+ابن العم,ابن العم,01/01026.gif,,menasy,cousin,family
+ابن,ابن,01/01027.gif,,menasy,sun,family
+ابنة,ابنة,01/01028.gif,,menasy,daughter,family
+ناس,ناس,01/01029.gif,,menasy,people,family
+طلاق,طلاق,01/01030.gif,,menasy,divorce,family
+خطوبة,خطوبة,01/01031.gif,,menasy,engagement,family
+حفلة,حفلة,01/01032.gif,,menasy,party,family
+وفاة,وفاة / موت,01/01033.gif,موت,menasy,death,family
+طفل,طفل,01/01034.gif,,menasy,child,family
+الله تعالي,الله تعالي,02/02001.gif,,menasy,God,religion-02
+محمد رسول الله,محمد رسول الله,02/02002.gif,,menasy,Prophet Mohamed,religion-02
+عيسى المسيح,عيسى المسيح,02/02003.gif,,menasy,Jesus Christ,religion-02
+القرآن الكريم,القرآن الكريم,02/02004.gif,,menasy,The Holy Quran,religion-02
+الخلفاء الراشدين,الخلفاء الراشدين,02/02005.gif,,menasy,the orthodox caliphs,religion-02
+السنة النبوية,السنة النبوية,02/02006.gif,,menasy,Sunna of the Prophet,religion-02
+أركان الإسلام,أركان الإسلام,02/02007.gif,,menasy,basis of islam,religion-02
+أركان الإيمان,أركان الإيمان,02/02008.gif,,menasy,basis of believe,religion-02
+الشهادتين,الشهادتين,02/02009.gif,,menasy,Two Testimonies of Faith,religion-02
+يصلي,يصلي / الصلاة,02/02010.gif,الصلاة,menasy,Prays / Prayer,religion-02
+الزكاة,الزكاة,02/02011.gif,,menasy,Zakat,religion-02
+الصوم,الصوم,02/02012.gif,,menasy,Fasting,religion-02
+العمرة,العمرة,02/02013.gif,,menasy,Umrah,religion-02
+الحج,الحج,02/02014.gif,,menasy,Hajj,religion-02
+ملائكة,ملائكة,02/02015.gif,,menasy,Angels,religion-02
+رسول,رسول,02/02016.gif,,menasy,Messenger,religion-02
+يوم القيامة,يوم القيامة,02/02017.gif,,menasy,Day of Judgment,religion-02
+القضاء والقدر,القضاء والقدر,02/02018.gif,,menasy,Divine Decree and Destiny,religion-02
+أركان الصلاة,أركان الصلاة,02/02019.gif,,menasy,Pillars of Prayer,religion-02
+خير,خير,02/02020.gif,,menasy,Good,religion-02
+النية,النية,02/02021.gif,,menasy,Intention,religion-02
+شر,شر,02/02022.gif,,menasy,Evil,religion-02
+طهارة,طهارة,02/02023.gif,,menasy,Ritual Purity,religion-02
+مبطلات الصلاة,مبطلات الصلاة,02/02024.gif,,menasy,Acts That Invalidate Prayer,religion-02
+تيمم,تيمم,02/02025.gif,,menasy,Tayammum (Dry Ablution),religion-02
+يتوضأ,يتوضأ / وضوء,02/02026.gif,وضوء,menasy,Performs Ablution / Ablution,religion-02
+يؤذن,يؤذن,02/02027.gif,,menasy,Calls to Prayer,religion-02
+مسح على الخفين,مسح على الخفين,02/02028.gif,,menasy,Wiping Over Leather Socks,religion-02
+صلاة الفجر,صلاة الفجر,02/02029.gif,,menasy,Fajr Prayer,religion-02
+صلاة الظهر,صلاة الظهر,02/02030.gif,,menasy,Dhuhr Prayer,religion-02
+صلاة العصر,صلاة العصر,02/02031.gif,,menasy,Asr Prayer,religion-02
+صلاة المغرب,صلاة المغرب,02/02032.gif,,menasy,Maghrib Prayer,religion-02
+صلاة العشاء,صلاة العشاء,02/02033.gif,,menasy,Isha Prayer,religion-02
+خطبة,خطبة,02/02034.gif,,menasy,Sermon,religion-02
+خطبة الجمعة,خطبة الجمعة,02/02035.gif,,menasy,Friday Sermon,religion-02
+خطيب,خطيب,02/02036.gif,,menasy,Preacher,religion-02
+خطبة العيد,خطبة العيد,02/02037.gif,,menasy,Eid Sermon,religion-02
+مسجد,مسجد,02/02038.gif,,menasy,Mosque,religion-02
+سورة,سورة,02/02039.gif,,menasy,Surah,religion-02
+إمام,إمام,02/02040.gif,,menasy,Imam,religion-02
+سورة الفاتحة,سورة الفاتحة,02/02041.gif,,menasy,Surah Al-Fatiha,religion-02
+آية,آية,02/02042.gif,,menasy,Quranic Verse,religion-02
+ليلة القدر,ليلة القدر,02/02043.gif,,menasy,Laylat al-Qadr,religion-02
+عيد,عيد,02/02044.gif,,menasy,Eid,religion-02
+عيد الفطر,عيد الفطر,02/02045.gif,,menasy,Eid al-Fitr,religion-02
+عيد الأضحى,عيد الأضحى,02/02046.gif,,menasy,Eid al-Adha,religion-02
+إحرام,إحرام,02/02047.gif,,menasy,Ihram,religion-02
+مكة,مكة,02/02048.gif,,menasy,Mecca,religion-02
+الكعبة,الكعبة,02/02049.gif,,menasy,Kaaba,religion-02
+المدينة المنورة,المدينة المنورة,02/02050.gif,,menasy,Medina,religion-02
+منى,منى,02/02051.gif,,menasy,Mina,religion-02
+جبل عرفات,جبل عرفات,02/02052.gif,,menasy,Mount Arafat,religion-02
+الصفا والمروة,الصفا والمروة,02/02053.gif,,menasy,As-Safa and Al-Marwah,religion-02
+مزدلفة,مزدلفة,02/02054.gif,,menasy,Muzdalifah,religion-02
+رمي الجمرات,رمي الجمرات,02/02055.gif,,menasy,Stoning the Jamarat,religion-02
+طواف,طواف,02/02056.gif,,menasy,Tawaf,religion-02
+ماء زمزم,ماء زمزم,02/02057.gif,,menasy,Zamzam Water,religion-02
+الأضحية,الأضحية,02/02058.gif,,menasy,Sacrificial Offering,religion-02
+فك الإحرام,فك الإحرام,02/02059.gif,,menasy,Exiting Ihram,religion-02
+طواف الوداع,طواف الوداع,02/02060.gif,,menasy,Farewell Tawaf,religion-02
+المسجد الأقصى,المسجد الأقصى,02/02061.gif,,menasy,Al-Aqsa Mosque,religion-02
+يسبح,يسبح,02/02062.gif,,menasy,Recites Tasbih,religion-02
+الحمد لله,الحمد لله,02/02063.gif,,menasy,Praise Be to God,religion-02
+سبحان الله,سبحان الله,02/02064.gif,,menasy,Glory Be to God,religion-02
+إيمان,إيمان,02/02065.gif,,menasy,Faith,religion-02
+الشرك بالله,الشرك بالله,02/02066.gif,,menasy,Associating Partners with God,religion-02
+أعوذ بالله,أعوذ بالله,02/02067.gif,,menasy,I Seek Refuge in God,religion-02
+شيطان,شيطان,02/02068.gif,,menasy,Devil,religion-02
+جن,جن,02/02069.gif,,menasy,Jinn,religion-02
+الضالون,الضالون,02/02070.gif,,menasy,Those Who Went Astray,religion-02
+المغضوب عليهم,المغضوب عليهم,02/02071.gif,,menasy,Those Who Incurred Wrath,religion-02
+صنم,صنم,02/02072.gif,,menasy,Idol,religion-02
+زنى,زنى,02/02073.gif,,menasy,Adultery,religion-02
+الجنة,الجنة,02/02074.gif,,menasy,Paradise,religion-02
+النار,النار,02/02075.gif,,menasy,Hell,religion-02
+روح,روح,02/02076.gif,,menasy,Soul,religion-02
+حقوق,حقوق,02/02077.gif,,menasy,Rights,religion-02
+واجبات,واجبات,02/02078.gif,,menasy,Duties,religion-02
+حسنات,حسنات,02/02079.gif,,menasy,Good Deeds,religion-02
+سيئات,سيئات,02/02080.gif,,menasy,Bad Deeds,religion-02
+حلال,حلال,02/02081.gif,,menasy,Permissible (Halal),religion-02
+حرام,حرام,02/02082.gif,,menasy,Forbidden (Haram),religion-02
+مغفرة,مغفرة,02/02083.gif,,menasy,Forgiveness,religion-02
+دين,دين,02/02084.gif,,menasy,Religion,religion-02
+مسيحي,مسيحي,02/02085.gif,,menasy,Christian,religion-02
+يهودي,يهودي,02/02086.gif,,menasy,Jewish,religion-02
+كنيسة,كنيسة,02/02087.gif,,menasy,Church,religion-02
+إسراء ومعراج,إسراء ومعراج,02/02088.gif,,menasy,Night Journey and Ascension,religion-02
+حواء,حواء,02/02089.gif,,menasy,Eve,religion-02
+آدم,آدم,02/02090.gif,,menasy,Adam,religion-02
+صدقة,صدقة,02/02091.gif,,menasy,Charity,religion-02
+نبي,نبي,02/02092.gif,,menasy,Prophet,religion-02
+هداية,هداية,02/02093.gif,,menasy,Guidance,religion-02
+أمانة,أمانة,02/02094.gif,,menasy,Trustworthiness,religion-02
+شهيد,شهيد,02/02095.gif,,menasy,Martyr,religion-02
+حقوق الوالدين,حقوق الوالدين,02/02096.gif,,menasy,Parents' Rights,religion-02
+عقوق الوالدين,عقوق الوالدين,02/02097.gif,,menasy,Disobedience to Parents,religion-02
+مسلم,مسلم,02/02098.gif,,menasy,Muslim,religion-02
+رحمة,رحمة,02/02099.gif,,menasy,Mercy,religion-02
+عيد رأس السنة,عيد رأس السنة,02/02100.gif,,menasy,New Year's Day,religion-02
+فروض,فروض,02/02101.gif,,menasy,Religious Obligations,religion-02
+قبة الصخرة,قبة الصخرة,02/02102.gif,,menasy,Dome of the Rock,religion-02
+خلق,خلق,02/02103.gif,,menasy,creation,religion-02
+بيت,بيت,03/03001.gif,,menasy,house,home-03
+جدار,جدار,03/03002.gif,,menasy,wall,home-03
+سقف,سقف,03/03003.gif,,menasy,roof,home-03
+باب,باب,03/03004.gif,,menasy,door,home-03
+شباك,شباك (نافذة),03/03005.gif,نافذة,menasy,window,home-03
+غرفة,غرفة,03/03006.gif,,menasy,room,home-03
+غرفة نوم,غرفة نوم,03/03007.gif,,menasy,bedroom,home-03
+سرير,سرير,03/03008.gif,,menasy,bed,home-03
+مرتبة سرير,مرتبة سرير (حشيّة),03/03009.gif,حشيّة,menasy,mattress,home-03
+شرشف,شرشف (غطاء السرير),03/03010.gif,غطاء السرير,menasy,bedsheet,home-03
+وسادة,وسادة (مخدة),03/03011.gif,مخدة,menasy,pillow,home-03
+شماعة,شماعة (مشجب),03/03012.gif,مشجب,menasy,clothes rail,home-03
+خزانة ملابس,خزانة ملابس,03/03013.gif,,menasy,wardrobe,home-03
+مطبخ,مطبخ,03/03014.gif,,menasy,kitchen,home-03
+فرن غازي,فرن غازي,03/03015.gif,,menasy,cooker,home-03
+بوتاغاز,بوتاغاز (طابخ),03/03016.gif,طابخ,menasy,cooker,home-03
+صحن,(صحن),03/03017.gif,,menasy,dish,home-03
+سكين,سكين,03/03018.gif,,menasy,knife,home-03
+شوكة,شوكة,03/03019.gif,,menasy,fork,home-03
+ملعقة,ملعقة,03/03020.gif,,menasy,spoon,home-03
+فنجان,فنجان,03/03021.gif,,menasy,cupful,home-03
+مجمد,مجمد (فريزر),03/03022.gif,فريزر,menasy,freezer,home-03
+كوب,كوب (كأس),03/03023.gif,كأس,menasy,cup,home-03
+حافظ حرارة,حافظ حرارة (ترمس),03/03024.gif,ترمس,menasy,thermos,home-03
+غرفة طعام,غرفة طعام,03/03025.gif,,menasy,food room,home-03
+إبريق,إبريق,03/03026.gif,,menasy,pitcher,home-03
+طاولة,طاولة,03/03027.gif,,menasy,table,home-03
+كنكة,كنكة (دلة),03/03028.gif,دلة,menasy,dalah,home-03
+دورة مياه,دورة مياه (حمام),03/03029.gif,حمام,menasy,bathroom,home-03
+كرسي,كرسي,03/03030.gif,,menasy,chair,home-03
+غسالة,غسالة,03/03031.gif,,menasy,washing machine,home-03
+منشفة,منشفة,03/03032.gif,,menasy,towel,home-03
+سجادة,سجادة (زربية),03/03033.gif,زربية,menasy,carpet,home-03
+موكيت,موكيت (فرش أرضي),03/03034.gif,فرش أرضي,menasy,moquette,home-03
+ثريا,ثريا (نجفة),03/03035.gif,نجفة,menasy,chandelier,home-03
+شريط كاست,شريط كاست,03/03037.gif,,menasy,cassette tape,home-03
+تلفزيون,تلفزيون (تلفاز),03/03038.gif,تلفاز,menasy,television,home-03
+طبق هوائي,طبق هوائي (دش),03/03039.gif,دش,menasy,satellite,home-03
+شريط فيديو,شريط فيديو,03/03040.gif,,menasy,video tape,home-03
+كاميرا فيديو,كاميرا فيديو,03/03041.gif,,menasy,video camera,home-03
+كاميرا فوتوغرافية,كاميرا فوتوغرافية,03/03042.gif,,menasy,photo camera,home-03
+هاتف,هاتف (تلفون),03/03043.gif,تلفون,menasy,telephone,home-03
+غرفة ضيوف,غرفة ضيوف,03/03044.gif,,menasy,guests room,home-03
+فيديو,فيديو,03/03045.gif,,menasy,video,home-03
+مبخرة,مبخرة,03/03046.gif,,menasy,censer,home-03
+مدفأة,مدفأة,03/03047.gif,,menasy,heater,home-03
+مفتاح,مفتاح,03/03048.gif,,menasy,key,home-03
+مروحة,مروحة,03/03049.gif,,menasy,fan,home-03
+تدفئة مركزية,تدفئة مركزية,03/03050.gif,,menasy,central heater,home-03
+كهرباء,كهرباء,03/03051.gif,,menasy,electrics,home-03
+مكيف,مكيف,03/03052.gif,,menasy,air conditioner,home-03
+سلك كهربائي,سلك كهربائي,03/03053.gif,,menasy,wire,home-03
+قابس كهربائي,قابس كهربائي (فيش),03/03054.gif,فيش,menasy,plug,home-03
+حقيبة سفر,حقيبة سفر,03/03055.gif,,menasy,bag,home-03
+مكواة,مكواة,03/03056.gif,,menasy,iron,home-03
+ميزان حرارة جوي,ميزان حرارة جوي,03/03057.gif,,menasy,thermometer,home-03
+ملابس,ملابس,04/04001.gif,,menasy,clothes,home-and-furniture
+جلابية,جلابية (جلباب),04/04002.gif,جلباب,menasy,galabia,home-and-furniture
+عباءة,عباءة (جبة),04/04003.gif,جبة,menasy,cloak,home-and-furniture
+كندورة,كندورة (دشداشة - ثوب),04/04004.gif,دشداشة - ثوب,menasy,dress,home-and-furniture
+معطف,معطف,04/04005.gif,,menasy,coat,home-and-furniture
+فستان,فستان,04/04006.gif,,menasy,dress,home-and-furniture
+قميص,قميص,04/04007.gif,,menasy,shirt,home-and-furniture
+سترة,سترة (جاكتة),04/04008.gif,جاكتة,menasy,jacket,home-and-furniture
+غترة,غترة,04/04009.gif,,menasy,ghotra,home-and-furniture
+تي شيرت,تي شيرت,04/04010.gif,,menasy,shirt,home-and-furniture
+سروال,سروال (بنطلون),04/04011.gif,بنطلون,menasy,trousers,home-and-furniture
+عقال,عقال,04/04012.gif,,menasy,headband,home-and-furniture
+نقاب,نقاب,04/04013.gif,,menasy,veil,home-and-furniture
+حزام,حزام,04/04014.gif,,menasy,belt,home-and-furniture
+سروال قصير,سروال قصير (تبان),04/04015.gif,تبان,menasy,underpants,home-and-furniture
+تنورة,تنورة,04/04016.gif,,menasy,skirt,home-and-furniture
+ملابس داخلية,ملابس داخلية,04/04017.gif,,menasy,underwear,home-and-furniture
+ملابس نوم,ملابس نوم,04/04018.gif,,menasy,sleeping wear,home-and-furniture
+حذاء رياضي,حذاء رياضي,04/04019.gif,,menasy,sport shoe,home-and-furniture
+جورب,جورب,04/04020.gif,,menasy,sock,home-and-furniture
+ربطة عنق,ربطة عنق,04/04021.gif,,menasy,necktie,home-and-furniture
+شبشب,شبشب (خف),04/04022.gif,خف,menasy,slipper,home-and-furniture
+ساعة يد,ساعة يد,04/04023.gif,,menasy,watch,home-and-furniture
+قفاز,قفاز,04/04024.gif,,menasy,glove,home-and-furniture
+نظارة طبية,نظارة طبية,04/04025.gif,,menasy,eyeglasses,home-and-furniture
+نظارة شمسية,نظارة شمسية,04/04026.gif,,menasy,sunglasses,home-and-furniture
+سحاب,سحاب,04/04027.gif,,menasy,zipper,home-and-furniture
+خس,خس,05/05001.gif,,menasy,lettuce,food-05
+فجل,فجل,05/05002.gif,,menasy,radishes,food-05
+نعناع,نعناع,05/05003.gif,,menasy,mint,food-05
+بقدونس,بقدونس,05/05004.gif,,menasy,parsley,food-05
+زبادي,زبادي / ياغرت,05/05005.gif,ياغرت,menasy,yogurt,food-05
+سمن,سمن,05/05006.gif,,menasy,fat,food-05
+تين,تين,05/05007.gif,,menasy,fig,food-05
+شمام,شمام / بطيخ أصفر,05/05008.gif,بطيخ أصفر,menasy,muskmelon,food-05
+جوز هند,جوز هند,05/05009.gif,,menasy,coconut,food-05
+تين شوكي,تين شوكي,05/05010.gif,,menasy,prickly pear,food-05
+بامية,بامية,05/05011.gif,,menasy,okra,food-05
+خيار,خيار,05/05012.gif,,menasy,cucumber,food-05
+قرنبيط,قرنبيط,05/05013.gif,,menasy,cauliflower,food-05
+ملفوف,ملفوف / كرنب,05/05014.gif,كرنب,menasy,cabbage,food-05
+ملوخية,ملوخية,05/05015.gif,,menasy,Molokhia,food-05
+سبانخ,سبانخ,05/05016.gif,,menasy,spinach,food-05
+بطاطس,بطاطس,05/05017.gif,,menasy,potato,food-05
+دقيق,دقيق / طحين,05/05018.gif,طحين,menasy,fine,food-05
+جبنة,جبنة,05/05019.gif,,menasy,cheese,food-05
+طماطم,طماطم / بندورة,05/05020.gif,بندورة,menasy,tomatoes,food-05
+كيك,كيك,05/05021.gif,,menasy,cakes,food-05
+ثوم,ثوم,05/05022.gif,,menasy,garlic,food-05
+أرز,أرز,05/05023.gif,,menasy,rice,food-05
+سكر,سكر,05/05024.gif,,menasy,sugar,food-05
+تمر,تمر,05/05025.gif,,menasy,dates,food-05
+فول,فول,05/05026.gif,,menasy,broad bean,food-05
+جزر,جزر,05/05027.gif,,menasy,carrot,food-05
+باذنجان,باذنجان,05/05028.gif,,menasy,eggplant,food-05
+همبرجر,همبرجر,05/05029.gif,,menasy,hamburger,food-05
+سندوتش,سندوتش,05/05030.gif,,menasy,sandwich,food-05
+زبدة,زبدة,05/05031.gif,,menasy,butter,food-05
+موز,موز,05/05032.gif,,menasy,bananas,food-05
+مكرونة,مكرونة,05/05033.gif,,menasy,pasta,food-05
+الفطور,الفطور,05/05034.gif,,menasy,breakfast,food-05
+ملح,ملح,05/05035.gif,,menasy,salt,food-05
+حساء,حساء,05/05036.gif,,menasy,soap,food-05
+خبز,خبز,05/05037.gif,,menasy,bread,food-05
+زيت,زيت,05/05038.gif,,menasy,oil,food-05
+شكولاتة,شكولاتة,05/05039.gif,,menasy,chocolate,food-05
+شاي,شاي,05/05040.gif,,menasy,tea,food-05
+حليب,حليب,05/05041.gif,,menasy,milk,food-05
+فلفل,فلفل,05/05042.gif,,menasy,pepper,food-05
+بازلا,بازلا / جلبان,05/05043.gif,جلبان,menasy,chickling vetch,food-05
+تفاح,تفاح,05/05044.gif,,menasy,apples,food-05
+قهوة,قهوة,05/05045.gif,,menasy,coffee,food-05
+كوسة,كوسة,05/05046.gif,,menasy,zucchini,food-05
+عنب,عنب,05/05047.gif,,menasy,grape,food-05
+ليمون,ليمون,05/05048.gif,,menasy,lemon,food-05
+فلفل حار,فلفل حار,05/05049.gif,,menasy,hot pepper,food-05
+بطيخ أحمر,بطيخ أحمر,05/05050.gif,,menasy,watermelon,food-05
+بارد,بارد,05/05051.gif,,menasy,cold,food-05
+حلو المذاق,حلو المذاق,05/05052.gif,,menasy,sweet,food-05
+برتقال,برتقال,05/05053.gif,,menasy,orange,food-05
+تذوق,تذوق,05/05054.gif,,menasy,to taste,food-05
+كمثرى,كمثرى / أجاص,05/05055.gif,أجاص,menasy,pears,food-05
+عسل,عسل,05/05056.gif,,menasy,honey,food-05
+لبان,لبان / علكة,05/05057.gif,علكة,menasy,gum,food-05
+ماء,ماء,05/05058.gif,,menasy,water,food-05
+بصل,بصل,05/05059.gif,,menasy,onion,food-05
+مانجو,مانجو,05/05060.gif,,menasy,mango,food-05
+لحم,لحم,05/05061.gif,,menasy,meat,food-05
+بيض,بيض,05/05062.gif,,menasy,eggs,food-05
+وزارة الإعلام,وزارة الإعلام,06/06001.gif,,menasy,Ministry of Information,arab-ministries-institutions-a-06
+وزارة الإسكان,وزارة الإسكان,06/06002.gif,,menasy,Ministry of Housing,arab-ministries-institutions-a-06
+وزارة التجارة,وزارة التجارة,06/06003.gif,,menasy,Ministry of Commerce,arab-ministries-institutions-a-06
+وزارة البلديات,وزارة البلديات,06/06004.gif,,menasy,Ministry of municipalities,arab-ministries-institutions-a-06
+وزارة البريد والبرق والهاتف,وزارة البريد والبرق والهاتف,06/06005.gif,,menasy,"Ministry of Posts, Telegraphs and Telephones",arab-ministries-institutions-a-06
+وزارة التعليم العالي,وزارة التعليم العالي,06/06006.gif,,menasy,Ministry of High Education,arab-ministries-institutions-a-06
+وزارة الثقافة,وزارة الثقافة,06/06007.gif,,menasy,Ministry of Culture,arab-ministries-institutions-a-06
+وزارة الداخلية,وزارة الداخلية,06/06008.gif,,menasy,Ministry of the Interior,arab-ministries-institutions-a-06
+وزارة التربية والتعليم \n,وزارة التربية والتعليم \n  (المعارف),06/06009.gif,المعارف,menasy,Ministry of Education,arab-ministries-institutions-a-06
+وزارة الخدمة المدنية,وزارة الخدمة المدنية,06/06010.gif,,menasy,Ministry of Service Board,arab-ministries-institutions-a-06
+وزارة الخارجية,وزارة الخارجية,06/06011.gif,,menasy,Ministry of Foreign Affairs,arab-ministries-institutions-a-06
+وزارة الدفاع,وزارة الدفاع,06/06012.gif,,menasy,Ministry of Defense,arab-ministries-institutions-a-06
+وزارة الأشغال العامة,وزارة الأشغال العامة,06/06013.gif,,menasy,Ministry of Public Works,arab-ministries-institutions-a-06
+وزارة الزراعة,وزارة الزراعة,06/06014.gif,,menasy,Ministry of Agriculture,arab-ministries-institutions-a-06
+وزارة الشئون الاجتماعية,وزارة الشئون الاجتماعية,06/06015.gif,,menasy,Ministry of Social Affairs,arab-ministries-institutions-a-06
+وزارة العدل,وزارة العدل,06/06016.gif,,menasy,Ministry of Justice,arab-ministries-institutions-a-06
+وزارة الصحة,وزارة الصحة,06/06017.gif,,menasy,Ministry of Health,arab-ministries-institutions-a-06
+التأمينات الاجتماعية والضمان \n  الاجتماعي,التأمينات الاجتماعية والضمان \n  الاجتماعي,06/06018.gif,,menasy,Social Insurance and Social Security,arab-ministries-institutions-a-06
+وزارة الصناعة,وزارة الصناعة,06/06019.gif,,menasy,Ministry of Industry,arab-ministries-institutions-a-06
+المنظمة العربية للتربية \n  والثقافة والعلوم,المنظمة العربية للتربية \n  والثقافة والعلوم,06/06020.gif,,menasy,"Arab League Educational, Cultural and Scientific Organization",arab-ministries-institutions-a-06
+جامعة الدول العربية,جامعة الدول العربية,06/06021.gif,,menasy,League of Arab States,arab-ministries-institutions-a-06
+الإتحاد العربي للهيئات \n  العاملة في رعاية الصم,الإتحاد العربي للهيئات \n  العاملة في رعاية الصم,06/06022.gif,,menasy,Arab Federation of Organizations Working for the Care of the Deaf,arab-ministries-institutions-a-06
+مجلس التعاون الخليجي,مجلس التعاون الخليجي,06/06023.gif,,menasy,cooperation council for the Arab states of the gulf secretariat general,arab-ministries-institutions-a-06
+إدارة برامج التربية,إدارة برامج التربية,06/06024.gif,,menasy,administration of education programs,arab-ministries-institutions-a-06
+إدارة التنمية الاجتماعية,إدارة التنمية الاجتماعية,06/06025.gif,,menasy,administration of sociality development,arab-ministries-institutions-a-06
+الاتحاد العالمي للصم,الاتحاد العالمي للصم,06/06026.gif,,menasy,global union of deafs,arab-ministries-institutions-a-06
+مجلس وزراء الشؤون الاجتماعية \n  العرب,مجلس وزراء الشؤون الاجتماعية \n  العرب,06/06027.gif,,menasy,arabian council of sociality affairs ministers,arab-ministries-institutions-a-06
+الهيئة الدولية للصليب الأحمر,الهيئة الدولية للصليب الأحمر,06/06028.gif,,menasy,International Committee of the Red Cross,arab-ministries-institutions-a-06
+منظمة الأمم المتحدة,منظمة الأمم المتحدة,06/06029.gif,,menasy,united nation,arab-ministries-institutions-a-06
+سفارة,سفارة,06/06030.gif,,menasy,embassy,arab-ministries-institutions-a-06
+فرع شركة,فرع شركة,06/06031.gif,,menasy,branch,arab-ministries-institutions-a-06
+علم,علم,06/06032.gif,,menasy,flag,arab-ministries-institutions-a-06
+جمعية,جمعية,06/06033.gif,,menasy,general meeting,arab-ministries-institutions-a-06
+وزارة الأوقاف,وزارة الأوقاف,06/06034.gif,,menasy,Ministry of Religious Endowments,arab-ministries-institutions-a-06
+وزارة,وزارة,06/06035.gif,,menasy,ministry,arab-ministries-institutions-a-06
+وكالة الغوث,وكالة الغوث,06/06036.gif,,menasy,aid agency,arab-ministries-institutions-a-06
+الاتحاد المغاربي,الاتحاد المغاربي,06/06037.gif,,menasy,the Maghrebi union,arab-ministries-institutions-a-06
+سجن,سجن,06/06038.gif,,menasy,prison,arab-ministries-institutions-a-06
+فندق,فندق,06/06039.gif,,menasy,hotel,arab-ministries-institutions-a-06
+متحف,متحف,06/06040.gif,,menasy,museum,arab-ministries-institutions-a-06
+بلدية,بلدية,06/06041.gif,,menasy,municipality,arab-ministries-institutions-a-06
+ثورة,ثورة,06/06042.gif,,menasy,revolution,arab-ministries-institutions-a-06
+مظاهرة,مظاهرة,06/06043.gif,,menasy,demonstration,arab-ministries-institutions-a-06
+اعتقال,اعتقال,06/06044.gif,,menasy,arrest,arab-ministries-institutions-a-06
+مقاومة,مقاومة,06/06045.gif,,menasy,resistance,arab-ministries-institutions-a-06
+استقلال,استقلال,06/06046.gif,,menasy,independence,arab-ministries-institutions-a-06
+حصار,حصار,06/06047.gif,,menasy,blockade,arab-ministries-institutions-a-06
+مشرف,مشرف,06/06048.gif,,menasy,supervisor,arab-ministries-institutions-a-06
+احتلال,احتلال,06/06049.gif,,menasy,occupation,arab-ministries-institutions-a-06
+مركز,مركز,06/06050.gif,,menasy,position,arab-ministries-institutions-a-06
+معرض,معرض,06/06051.gif,,menasy,exhibition,arab-ministries-institutions-a-06
+نادي,نادي,06/06052.gif,,menasy,club,arab-ministries-institutions-a-06
+مكتب بريد,مكتب بريد,06/06053.gif,,menasy,mail office,arab-ministries-institutions-a-06
+انتشار,انتشار,06/06054.gif,,menasy,spread,arab-ministries-institutions-a-06
+مقهى,مقهى,06/06055.gif,,menasy,cafe,arab-ministries-institutions-a-06
+أمين سر,أمين سر,06/06056.gif,,menasy,secretary,arab-ministries-institutions-a-06
+انقلاب,انقلاب,06/06057.gif,,menasy,Coup,arab-ministries-institutions-a-06
+دار حضانة,دار حضانة,07/07001.gif,,menasy,nursery school,education-07
+روضة أطفال,روضة أطفال,07/07002.gif,,menasy,kindergarten,education-07
+مرحلة ابتدائية,مرحلة ابتدائية,07/07003.gif,,menasy,elementary school,education-07
+مرحلة إعداية,مرحلة إعداية (متوسطة),07/07004.gif,متوسطة,menasy,preparatory school,education-07
+مرحلة ثانوية,مرحلة ثانوية,07/07005.gif,,menasy,secondary school,education-07
+مدرسة,مدرسة,07/07006.gif,,menasy,school,education-07
+صف مدرسي,صف مدرسي,07/07007.gif,,menasy,classroom,education-07
+لغة عربية,لغة عربية,07/07008.gif,,menasy,Arabic language,education-07
+رياضيات,رياضيات,07/07009.gif,,menasy,math,education-07
+علوم,علوم,07/07010.gif,,menasy,sciences,education-07
+جغرافيا,جغرافيا,07/07011.gif,,menasy,geography,education-07
+تاريخ,تاريخ,07/07012.gif,,menasy,history,education-07
+تربية بدنية,تربية بدنية,07/07013.gif,,menasy,sports,education-07
+لغة إنجليزية,لغة إنجليزية,07/07014.gif,,menasy,English language,education-07
+كتاب,كتاب,07/07015.gif,,menasy,book,education-07
+دفتر,دفتر (كراسة),07/07016.gif,كراسة,menasy,note book,education-07
+مبراة,مبراة,07/07017.gif,,menasy,pencil sharpener,education-07
+مسطرة,مسطرة,07/07018.gif,,menasy,ruler,education-07
+ممحاة ورق,ممحاة ورق,07/07019.gif,,menasy,eraser,education-07
+سبورة,سبورة,07/07020.gif,,menasy,board,education-07
+طباشير,طباشير,07/07021.gif,,menasy,chalk,education-07
+ممحاة سبورة,ممحاة سبورة (طلاسة),07/07022.gif,طلاسة,menasy,board eraser,education-07
+حقيبة مدرسة,حقيبة مدرسة,07/07023.gif,,menasy,suitcase,education-07
+مكتبة,مكتبة,07/07024.gif,,menasy,library,education-07
+امتحان,امتحان,07/07025.gif,,menasy,test,education-07
+شهادة,شهادة,07/07026.gif,,menasy,degree,education-07
+ناجح,ناجح,07/07027.gif,,menasy,successful,education-07
+راسب,راسب,07/07028.gif,,menasy,failing,education-07
+ممتاز,ممتاز,07/07029.gif,,menasy,excellent,education-07
+جيدجداً,جيدجداً,07/07030.gif,,menasy,very good,education-07
+جيد,جيد,07/07031.gif,,menasy,good,education-07
+مقبول,مقبول,07/07032.gif,,menasy,accepted,education-07
+الأول,الأول,07/07033.gif,,menasy,first,education-07
+الأخير,الأخير,07/07034.gif,,menasy,the last,education-07
+تعلم,تعلم/ تعليم,07/07035.gif,تعليم,menasy,educating,education-07
+سؤال,سؤال,07/07036.gif,,menasy,question,education-07
+جواب,جواب,07/07037.gif,,menasy,answer,education-07
+إعادة,إعادة / تكرار,07/07038.gif,تكرار,menasy,repeat,education-07
+بسرعة,بسرعة,07/07039.gif,,menasy,fast,education-07
+ببطء,ببطء,07/07040.gif,,menasy,slow,education-07
+بصوت عال,بصوت عال,07/07041.gif,,menasy,loud,education-07
+مدير مدرسة,مدير مدرسة,07/07042.gif,,menasy,manager,education-07
+وكيل مدرسة,وكيل مدرسة,07/07043.gif,,menasy,under secretary,education-07
+روزنامة,روزنامة,07/07044.gif,,menasy,package,education-07
+جرس,جرس,07/07045.gif,,menasy,bell,education-07
+جدول مدرسي,جدول مدرسي,07/07046.gif,,menasy,timetable,education-07
+مستطيل,مستطيل,07/07047.gif,,menasy,rectangle,education-07
+شعاع,شعاع,07/07048.gif,,menasy,ray,education-07
+مثلث,مثلث,07/07049.gif,,menasy,triangle,education-07
+قسمة,قسمة,07/07050.gif,,menasy,division,education-07
+ضرب,ضرب,07/07051.gif,,menasy,multiplying,education-07
+مستقيم,مستقيم,07/07052.gif,,menasy,rectum,education-07
+عمودي,عمودي,07/07053.gif,,menasy,vertical,education-07
+جمع,جمع,07/07054.gif,,menasy,adding up,education-07
+أكبر من,أكبر من,07/07055.gif,,menasy,bigger than,education-07
+أصغر من,أصغر من,07/07056.gif,,menasy,smaller then,education-07
+خط,خط,07/07057.gif,,menasy,line,education-07
+طرح,طرح,07/07058.gif,,menasy,subtract,education-07
+ناتج,ناتج,07/07059.gif,,menasy,output,education-07
+معين,معين,07/07060.gif,,menasy,rhombus,education-07
+محيط الدائرة,محيط الدائرة,07/07061.gif,,menasy,A circumference,education-07
+قطر الدائرة,قطر الدائرة,07/07062.gif,,menasy,diameter,education-07
+نصف قطر الدائرة,نصف قطر الدائرة,07/07063.gif,,menasy,radius,education-07
+مركز الدائرة,مركز الدائرة,07/07064.gif,,menasy,center,education-07
+ثقافة,ثقافة,07/07065.gif,,menasy,culture,education-07
+قانون,قانون,07/07066.gif,,menasy,law,education-07
+رحلة,رحلة,07/07067.gif,,menasy,journey,education-07
+دائرة,دائرة,07/07068.gif,,menasy,circle,education-07
+متعلم,متعلم,07/07069.gif,,menasy,educated,education-07
+أمي,أمي,07/07070.gif,,menasy,illiterate,education-07
+هدف شخصي,هدف شخصي,07/07071.gif,,menasy,aim,education-07
+جامعة,جامعة,07/07072.gif,,menasy,university,education-07
+كلية,كلية,07/07073.gif,,menasy,college,education-07
+كلية آداب,كلية آداب,07/07074.gif,,menasy,faculty of arts,education-07
+كلية تجارة واقتصاد,كلية تجارة واقتصاد,07/07075.gif,,menasy,Faculty of Commerce and Economics,education-07
+كلية تربية,كلية تربية,07/07076.gif,,menasy,faculty of education,education-07
+كلية تربية رياضية,كلية تربية رياضية,07/07077.gif,,menasy,faculty of sporting,education-07
+كلية تكنولوجيا,كلية تكنولوجيا,07/07078.gif,,menasy,faculty of technology,education-07
+كلية حقوق,كلية حقوق,07/07079.gif,,menasy,faculty of law,education-07
+كلية صحافة وإعلام,كلية صحافة وإعلام,07/07080.gif,,menasy,Faculty of Journalism and Mass Communication,education-07
+كلية صيدلة,كلية صيدلة,07/07081.gif,,menasy,faculty of pharmacy,education-07
+كلية طب,كلية طب,07/07082.gif,,menasy,faculty of medicine,education-07
+كلية طب أسنان,كلية طب أسنان,07/07083.gif,,menasy,faculty of dentistry,education-07
+كلية عسكرية,كلية عسكرية,07/07084.gif,,menasy,faculty of militarism,education-07
+كلية علوم,كلية علوم,07/07085.gif,,menasy,faculty of science,education-07
+كلية فنون,كلية فنون,07/07086.gif,,menasy,faculty of fine arts,education-07
+معهد,معهد,07/07087.gif,,menasy,institute,education-07
+معهد تمريض,معهد تمريض,07/07088.gif,,menasy,institute of nursing,education-07
+كلية الهندسة,كلية الهندسة,07/07089.gif,,menasy,faculty of engineering,education-07
+طابور,طابور / صف,07/07090.gif,صف,menasy,row,education-07
+أبداً,أبداً,07/07091.gif,,menasy,never,education-07
+كل شيء,كل شيء,07/07092.gif,,menasy,everything,education-07
+توحيد لغة الإشارة,توحيد لغة الإشارة,07/07093.gif,,menasy,union the signs language,education-07
+مختلف,مختلف,07/07094.gif,,menasy,different,education-07
+ربما,ربما,07/07095.gif,,menasy,perhaps,education-07
+جميل,جميل,08/08001.gif,,menasy,beautiful,attributes-conditions-08
+قبيح,قبيح,08/08002.gif,,menasy,ugly,attributes-conditions-08
+طويل,طويل,08/08003.gif,,menasy,long,attributes-conditions-08
+قصير,قصير,08/08004.gif,,menasy,short,attributes-conditions-08
+نحيف,نحيف,08/08005.gif,,menasy,thin,attributes-conditions-08
+سمين,سمين,08/08006.gif,,menasy,fat,attributes-conditions-08
+غني,غني,08/08007.gif,,menasy,rich,attributes-conditions-08
+فقير,فقير,08/08008.gif,,menasy,poor,attributes-conditions-08
+محبط,محبط,08/08009.gif,,menasy,offended,attributes-conditions-08
+مشمئز,مشمئز,08/08010.gif,,menasy,disgusted,attributes-conditions-08
+مرتبك,مرتبك,08/08011.gif,,menasy,confused,attributes-conditions-08
+قلق,قلق,08/08012.gif,,menasy,worried,attributes-conditions-08
+مشوش,مشوش,08/08013.gif,,menasy,deranged,attributes-conditions-08
+خائف,خائف,08/08014.gif,,menasy,afraid,attributes-conditions-08
+سعيد,سعيد (مسرور),08/08015.gif,مسرور,menasy,happy,attributes-conditions-08
+حزين,حزين,08/08016.gif,,menasy,sad,attributes-conditions-08
+شجاع,شجاع,08/08017.gif,,menasy,courageous,attributes-conditions-08
+جبان,جبان,08/08018.gif,,menasy,coward,attributes-conditions-08
+طموح,طموح,08/08019.gif,,menasy,ambitious,attributes-conditions-08
+معجب,معجب,08/08020.gif,,menasy,admirable,attributes-conditions-08
+غائر من,غائر من,08/08021.gif,,menasy,to be jealous of,attributes-conditions-08
+غائر على,غائر على,08/08022.gif,,menasy,to protect jealously,attributes-conditions-08
+ودود,ودود,08/08023.gif,,menasy,affectionate,attributes-conditions-08
+كريم,كريم,08/08024.gif,,menasy,generous,attributes-conditions-08
+بخيل,بخيل,08/08025.gif,,menasy,miserly,attributes-conditions-08
+طماع,طماع,08/08026.gif,,menasy,greedy,attributes-conditions-08
+كذاب,كذاب,08/08027.gif,,menasy,liar,attributes-conditions-08
+أناني,أناني,08/08028.gif,,menasy,selfish,attributes-conditions-08
+متكبر,متكبر,08/08029.gif,,menasy,proud,attributes-conditions-08
+متواضع,متواضع,08/08030.gif,,menasy,humble,attributes-conditions-08
+شعور,شعور,08/08031.gif,,menasy,feeling,attributes-conditions-08
+تعب,تعب,08/08032.gif,,menasy,tired,attributes-conditions-08
+بكاء,بكاء,08/08033.gif,,menasy,crying,attributes-conditions-08
+احتقار,احتقار,08/08034.gif,,menasy,contempt,attributes-conditions-08
+اعتماد على الذات,اعتماد على الذات,08/08035.gif,,menasy,Self-Reliance,attributes-conditions-08
+خفيف,خفيف,08/08036.gif,,menasy,light,attributes-conditions-08
+ثقيل,ثقيل,08/08037.gif,,menasy,heavy,attributes-conditions-08
+قديم,قديم,08/08038.gif,,menasy,old,attributes-conditions-08
+حسد,حسد,08/08039.gif,,menasy,envy,attributes-conditions-08
+صدق,صدق,08/08040.gif,,menasy,believe,attributes-conditions-08
+غدر,غدر,08/08041.gif,,menasy,betrayal,attributes-conditions-08
+صبر,صبر,08/08042.gif,,menasy,patient,attributes-conditions-08
+لوم,لوم,08/08043.gif,,menasy,blame,attributes-conditions-08
+الحق,الحق,08/08044.gif,,menasy,truth,attributes-conditions-08
+خيانة,خيانة,08/08045.gif,,menasy,treason,attributes-conditions-08
+إيثار,إيثار,08/08046.gif,,menasy,preference,attributes-conditions-08
+تضحية,تضحية,08/08047.gif,,menasy,self sacrifice,attributes-conditions-08
+شفقة,شفقة,08/08048.gif,,menasy,pity,attributes-conditions-08
+ذكي,ذكي,08/08049.gif,,menasy,intelligent,attributes-conditions-08
+كرة القدم,كرة القدم,09/09001.gif,,menasy,football,sports-and-games
+كرة يد,كرة يد,09/09002.gif,,menasy,handball,sports-and-games
+كرة سلة,كرة سلة,09/09003.gif,,menasy,basketball,sports-and-games
+كرة ماء,كرة ماء,09/09004.gif,,menasy,water ball,sports-and-games
+كرة الجرس,كرة الجرس,09/09005.gif,,menasy,bell ball,sports-and-games
+تنس,تنس,09/09006.gif,,menasy,tennis,sports-and-games
+تنس طاولة,تنس طاولة,09/09007.gif,,menasy,table tennis,sports-and-games
+العاب قوى,العاب قوى,09/09008.gif,,menasy,track and field,sports-and-games
+رفع أثقال,رفع أثقال,09/09009.gif,,menasy,weight lifting,sports-and-games
+الملاكمة,الملاكمة,09/09010.gif,,menasy,boxing,sports-and-games
+المصارعة,المصارعة,09/09011.gif,,menasy,wrestling,sports-and-games
+كارتيه,كارتيه,09/09012.gif,,menasy,karate,sports-and-games
+سباحة,سباحة,09/09013.gif,,menasy,swimming,sports-and-games
+سباق هجن,سباق هجن,09/09014.gif,,menasy,camels race,sports-and-games
+سباق السيارات,سباق السيارات,09/09015.gif,,menasy,cars race,sports-and-games
+ملعب,ملعب,09/09016.gif,,menasy,stadium,sports-and-games
+مسبح,مسبح,09/09017.gif,,menasy,swimming pool,sports-and-games
+شبكة,شبكة,09/09018.gif,,menasy,grid,sports-and-games
+حكم,حكم,09/09019.gif,,menasy,arbitrator,sports-and-games
+مراقب خط,مراقب خط,09/09020.gif,,menasy,observer,sports-and-games
+صفارة,صفارة,09/09021.gif,,menasy,whistle,sports-and-games
+هدف,هدف,09/09022.gif,,menasy,goal,sports-and-games
+تسلل,تسلل,09/09023.gif,,menasy,offside,sports-and-games
+كأس البطولة,كأس البطولة,09/09024.gif,,menasy,cup,sports-and-games
+أولمبياد,أولمبياد,09/09025.gif,,menasy,Olympic,sports-and-games
+دورة رياضية \n  عربية,دورة رياضية \n  عربية,09/09026.gif,,menasy,Arabian sport tournament,sports-and-games
+اتحاد,اتحاد,09/09027.gif,,menasy,union,sports-and-games
+كرة طائرة,كرة طائرة,09/09028.gif,,menasy,volleyball,sports-and-games
+شطرنج,شطرنج,09/09029.gif,,menasy,chess,sports-and-games
+رمي الجلة,رمي الجلة,09/09030.gif,,menasy,shot put,sports-and-games
+طبل,طبل,10/10001.gif,,menasy,drums,arts-10
+طبلة,طبلة,10/10002.gif,,menasy,drum,arts-10
+دف,دف,10/10003.gif,,menasy,tambourine,arts-10
+عود,عود,10/10004.gif,,menasy,lute,arts-10
+كمان,كمان / كمنجة,10/10005.gif,كمنجة,menasy,fiddle,arts-10
+قانون,قانون,10/10006.gif,,menasy,zither,arts-10
+بيانو,بيانو,10/10007.gif,,menasy,piano,arts-10
+أورج,أورج,10/10008.gif,,menasy,Organ,arts-10
+أوكورديون,أوكورديون,10/10009.gif,,menasy,accordion,arts-10
+مزمار,مزمار,10/10010.gif,,menasy,pipe,arts-10
+سلم موسيقي,سلم موسيقي,10/10011.gif,,menasy,musical scale,arts-10
+نوتة موسيقية,نوتة موسيقية,10/10012.gif,,menasy,musical note,arts-10
+أغنية,أغنية,10/10013.gif,,menasy,song,arts-10
+مسرح,مسرح,10/10014.gif,,menasy,stage,arts-10
+مسرحية,مسرحية,10/10015.gif,,menasy,play,arts-10
+فلم سينمائي,فلم سينمائي,10/10017.gif,,menasy,movie,arts-10
+مسلسل,مسلسل,10/10018.gif,,menasy,series,arts-10
+يغني,يغني,10/10019.gif,,menasy,singing,arts-10
+يمثل,يمثل,10/10020.gif,,menasy,acting,arts-10
+مدينة الملاهي,مدينة الملاهي,10/10021.gif,,menasy,entertainment park,arts-10
+نحت,نحت,10/10022.gif,,menasy,carve,arts-10
+هيكل عظمي,هيكل عظمي,11/11001.gif,,menasy,skeleton,health-11
+جمجمة,جمجمة,11/11002.gif,,menasy,skull,health-11
+عمود فقري,عمود فقري,11/11003.gif,,menasy,spine,health-11
+قفص صدري,قفص صدري,11/11004.gif,,menasy,thorax,health-11
+جهاز تنفسي,جهاز تنفسي,11/11005.gif,,menasy,respiratory system,health-11
+قصبة هوائية,قصبة هوائية,11/11006.gif,,menasy,windpipe,health-11
+رئتان,رئتان,11/11007.gif,,menasy,lung,health-11
+شهيق,شهيق / زفير,11/11008.gif,زفير,menasy,Inhalation / exhalation,health-11
+جهاز هضمي,جهاز هضمي,11/11009.gif,,menasy,digestive system,health-11
+وجه,وجه,11/11010.gif,,menasy,face,health-11
+بلعوم,بلعوم,11/11011.gif,,menasy,pharynx,health-11
+كبد,كبد,11/11012.gif,,menasy,liver,health-11
+البنكرياس,البنكرياس / \n  معثكلة,11/11013.gif,\n  معثكلة,menasy,pancreas,health-11
+الأمعاء الدقيقة,الأمعاء الدقيقة,11/11014.gif,,menasy,intestine,health-11
+الأمعاء الغليظة,الأمعاء الغليظة,11/11015.gif,,menasy,large intestine,health-11
+جهاز عصبي,جهاز عصبي,11/11017.gif,,menasy,nervous system,health-11
+قلب,قلب,11/11018.gif,,menasy,heart,health-11
+حواس خمس,حواس خمس,11/11019.gif,,menasy,the five senses,health-11
+عضلة,عضلة,11/11020.gif,,menasy,muscle,health-11
+أنسجة,أنسجة,11/11021.gif,,menasy,tissue,health-11
+مستشفى,مستشفى,11/11022.gif,,menasy,hospital,health-11
+إسعافات أولية,إسعافات أولية,11/11023.gif,,menasy,first aid,health-11
+جرح نازف,جرح نازف,11/11024.gif,,menasy,wound,health-11
+حروق,حروق,11/11025.gif,,menasy,burning,health-11
+مخدر,مخدر / بنج,11/11026.gif,بنج,menasy,anesthetist,health-11
+عملية جراحية,عملية جراحية,11/11027.gif,,menasy,surgery,health-11
+شاش,شاش / ضمادة,11/11028.gif,ضمادة,menasy,dressing,health-11
+شريط لاصق,شريط لاصق / بلاستر,11/11029.gif,بلاستر,menasy,adhesive tape,health-11
+صيدلية,صيدلية,11/11030.gif,,menasy,pharmacy,health-11
+تحليل دم,تحليل دم,11/11031.gif,,menasy,blood analysis,health-11
+فحص سريري,فحص سريري,11/11032.gif,,menasy,physical examination,health-11
+فحص النظر,فحص النظر,11/11033.gif,,menasy,sight examination,health-11
+ميزان حرارة,ميزان حرارة,11/11034.gif,,menasy,thermometer,health-11
+سماعة أذن,سماعة أذن,11/11035.gif,,menasy,stethoscope,health-11
+جهاز قياس الضغط,جهاز قياس الضغط,11/11036.gif,,menasy,sphygmometroscope,health-11
+نبض القلب,نبض القلب,11/11037.gif,,menasy,pulse,health-11
+تحليل طبي,تحليل طبي,11/11038.gif,,menasy,analysis,health-11
+معمل التحاليل,معمل التحاليل / مختبر,11/11039.gif,مختبر,menasy,analysis laboratory,health-11
+صورة أشعة,صورة أشعة,11/11040.gif,,menasy,ray photo,health-11
+التهاب,التهاب,11/11041.gif,,menasy,inflammation,health-11
+تورم,تورم,11/11042.gif,,menasy,swelling,health-11
+زكام,زكام,11/11043.gif,,menasy,cold,health-11
+عدوى,عدوى,11/11044.gif,,menasy,infection,health-11
+صداع,صداع,11/11045.gif,,menasy,headache,health-11
+ألم,ألم,11/11046.gif,,menasy,pain,health-11
+حمى,حمى,11/11047.gif,,menasy,fever,health-11
+إسهال,إسهال,11/11048.gif,,menasy,diarrhea,health-11
+إمساك,إمساك,11/11049.gif,,menasy,constipation,health-11
+مغص,مغص,11/11050.gif,,menasy,colic,health-11
+مرض السكر,مرض السكر / السكري,11/11051.gif,السكري,menasy,diabetes,health-11
+أزمة قلبية,أزمة قلبية,11/11052.gif,,menasy,heart attack,health-11
+سرطان,سرطان,11/11053.gif,,menasy,cancer,health-11
+مرض فقدان المناعة,مرض فقدان المناعة / الإيدز,11/11054.gif,الإيدز,menasy,aids,health-11
+تساقط الشعر,تساقط الشعر,11/11055.gif,,menasy,loss of hair,health-11
+سكتة قلبية,سكتة قلبية,11/11056.gif,,menasy,heart failure,health-11
+شلل نصفي,شلل نصفي,11/11057.gif,,menasy,hemiplegia,health-11
+شلل دماغي,شلل دماغي,11/11058.gif,,menasy,cerebral paralysis,health-11
+ضغط الدم,ضغط الدم,11/11059.gif,,menasy,blood pressure,health-11
+حساسية,حساسية,11/11060.gif,,menasy,allergy,health-11
+حكة,حكة / هرش,11/11061.gif,هرش,menasy,itch,health-11
+دواء,دواء,11/11062.gif,,menasy,medicine,health-11
+دورة شهرية,دورة شهرية,11/11063.gif,,menasy,monthly circulation,health-11
+مريض,مريض / مرض,11/11064.gif,مرض,menasy,sick,health-11
+كبسولة,كبسولة,11/11065.gif,,menasy,capsule,health-11
+دواء شراب,دواء شراب,11/11066.gif,,menasy,liquid medicine,health-11
+مرهم,مرهم,11/11067.gif,,menasy,ointment,health-11
+قطارة,قطارة,11/11068.gif,,menasy,dropper,health-11
+أخذ إبرة,أخذ إبرة,11/11069.gif,,menasy,acupuncture,health-11
+تلقيح,تلقيح,11/11070.gif,,menasy,pollination,health-11
+تطعيم,تطعيم,11/11071.gif,,menasy,inoculation,health-11
+أشعة ليزر,أشعة ليزر,11/11072.gif,,menasy,laser ray,health-11
+مخدرات,مخدرات,11/11073.gif,,menasy,Drugs,health-11
+إدمان,إدمان,11/11074.gif,,menasy,addiction,health-11
+توحد,توحد / أوتيزم,11/11075.gif,أوتيزم,menasy,oneness,health-11
+منغولي,منغولي,11/11076.gif,,menasy,mongoloid,health-11
+بكتريا,بكتريا,11/11077.gif,,menasy,bacterium,health-11
+جرثومة,جرثومة,11/11078.gif,,menasy,microbe,health-11
+فيروس,فيروس,11/11079.gif,,menasy,virus,health-11
+إنتشار,إنتشار,11/11080.gif,,menasy,spread,health-11
+إعاقة,إعاقة,11/11081.gif,,menasy,hindrance,health-11
+إعاقة ذهنية,إعاقة ذهنية,11/11082.gif,,menasy,mentality hindrance,health-11
+إعاقة سمعية,إعاقة سمعية,11/11085.gif,,menasy,hearing hindrance,health-11
+وباء,وباء,11/11086.gif,,menasy,epidemic,health-11
+مناعة,مناعة,11/11087.gif,,menasy,immunity,health-11
+عصب,عصب,11/11088.gif,,menasy,nerve,health-11
+معافى,معافى,11/11089.gif,,menasy,healthy,health-11
+سماء,سماء,12/12001.gif,,menasy,sky,environment-and-surroundings-12
+شمس,شمس,12/12002.gif,,menasy,sun,environment-and-surroundings-12
+قمر,قمر,12/12003.gif,,menasy,moon,environment-and-surroundings-12
+هلال,هلال,12/12004.gif,,menasy,new moon,environment-and-surroundings-12
+نجم,نجم,12/12005.gif,,menasy,star,environment-and-surroundings-12
+كوكب,كوكب,12/12006.gif,,menasy,planet,environment-and-surroundings-12
+أرض,أرض,12/12007.gif,,menasy,earth,environment-and-surroundings-12
+بحر,بحر,12/12008.gif,,menasy,sea,environment-and-surroundings-12
+قاع البحر,قاع البحر,12/12009.gif,,menasy,bottom,environment-and-surroundings-12
+محيط,محيط,12/12010.gif,,menasy,ocean,environment-and-surroundings-12
+بحيرة,بحيرة,12/12011.gif,,menasy,lake,environment-and-surroundings-12
+جزيرة,جزيرة,12/12012.gif,,menasy,island,environment-and-surroundings-12
+شبه جزيرة,شبه جزيرة,12/12013.gif,,menasy,peninsula,environment-and-surroundings-12
+نهر,نهر,12/12014.gif,,menasy,river,environment-and-surroundings-12
+شلال,شلال,12/12015.gif,,menasy,waterfall,environment-and-surroundings-12
+جبل,جبل,12/12016.gif,,menasy,mountain,environment-and-surroundings-12
+وادي,وادي,12/12017.gif,,menasy,vally,environment-and-surroundings-12
+صحراء,صحراء,12/12018.gif,,menasy,desert,environment-and-surroundings-12
+رمل,رمل,12/12019.gif,,menasy,sand,environment-and-surroundings-12
+تربة رملية,تربة رملية,12/12020.gif,,menasy,sand soil,environment-and-surroundings-12
+غابة,غابة,12/12021.gif,,menasy,jungle,environment-and-surroundings-12
+تربة زراعية,تربة زراعية,12/12022.gif,,menasy,agricultural soil,environment-and-surroundings-12
+حقل,حقل,12/12023.gif,,menasy,field,environment-and-surroundings-12
+منخفض,منخفض,12/12024.gif,,menasy,depression,environment-and-surroundings-12
+مرتفع,مرتفع,12/12025.gif,,menasy,height,environment-and-surroundings-12
+مطر,مطر,12/12026.gif,,menasy,rain,environment-and-surroundings-12
+قوس قزح,قوس قزح,12/12027.gif,,menasy,rainbow,environment-and-surroundings-12
+رياح,رياح,12/12028.gif,,menasy,winds,environment-and-surroundings-12
+إعصار,إعصار,12/12029.gif,,menasy,tornado,environment-and-surroundings-12
+فصول أربعة,فصول أربعة,12/12030.gif,,menasy,four seasons,environment-and-surroundings-12
+الشتاء,الشتاء,12/12031.gif,,menasy,winter,environment-and-surroundings-12
+الربيع,الربيع,12/12032.gif,,menasy,spring,environment-and-surroundings-12
+الصيف,الصيف,12/12033.gif,,menasy,summer,environment-and-surroundings-12
+الخريف,الخريف,12/12034.gif,,menasy,autumn,environment-and-surroundings-12
+ليل,ليل,12/12035.gif,,menasy,night,environment-and-surroundings-12
+نهار,نهار,12/12036.gif,,menasy,day,environment-and-surroundings-12
+ظلام,ظلام,12/12037.gif,,menasy,dark,environment-and-surroundings-12
+الجاذبية الأرضية,الجاذبية الأرضية,12/12038.gif,,menasy,gravity,environment-and-surroundings-12
+بوصلة,بوصلة,12/12039.gif,,menasy,compass,environment-and-surroundings-12
+كسوف الشمس,كسوف الشمس,12/12040.gif,,menasy,solar eclipse,environment-and-surroundings-12
+خسوف القمر,خسوف القمر,12/12041.gif,,menasy,lunar eclipse,environment-and-surroundings-12
+مادة,مادة,12/12042.gif,,menasy,material,environment-and-surroundings-12
+مادة صلبة,مادة صلبة,12/12043.gif,,menasy,solid,environment-and-surroundings-12
+سائل,سائل,12/12044.gif,,menasy,liquid,environment-and-surroundings-12
+غاز,غاز,12/12045.gif,,menasy,gas,environment-and-surroundings-12
+تجمد,تجمد,12/12046.gif,,menasy,to freeze,environment-and-surroundings-12
+زلزال,زلزال,12/12047.gif,,menasy,earthquake,environment-and-surroundings-12
+قرية,قرية,12/12048.gif,,menasy,village,environment-and-surroundings-12
+مدينة,مدينة,12/12049.gif,,menasy,city,environment-and-surroundings-12
+مخيم,مخيم,12/12050.gif,,menasy,camp,environment-and-surroundings-12
+خيمة,خيمة,12/12051.gif,,menasy,tent,environment-and-surroundings-12
+فرن,فرن / فران,12/12052.gif,فران,menasy,bakery,environment-and-surroundings-12
+مقبرة,مقبرة,12/12053.gif,,menasy,graveyard,environment-and-surroundings-12
+قبر,قبر,12/12054.gif,,menasy,tomb,environment-and-surroundings-12
+مغارة,مغارة / غار,12/12055.gif,غار,menasy,cave,environment-and-surroundings-12
+شمال,شمال,12/12056.gif,,menasy,north,environment-and-surroundings-12
+جنوب,جنوب,12/12057.gif,,menasy,south,environment-and-surroundings-12
+شرق,شرق,12/12058.gif,,menasy,east,environment-and-surroundings-12
+غرب,غرب,12/12059.gif,,menasy,west,environment-and-surroundings-12
+رائد فضاء,رائد فضاء,12/12060.gif,,menasy,astronaut,environment-and-surroundings-12
+مركبة فضائية,مركبة فضائية,12/12061.gif,,menasy,spacecraft,environment-and-surroundings-12
+الاتجاهات \n  الأصلية,الاتجاهات \n  الأصلية,12/12062.gif,,menasy,main directions,environment-and-surroundings-12
+قرى,قرى,12/12063.gif,,menasy,villages,environment-and-surroundings-12
+أسد,أسد,13/13001.gif,,menasy,lion,animals-13
+ثعلب,ثعلب,13/13002.gif,,menasy,fox,animals-13
+ذئب,ذئب,13/13003.gif,,menasy,wolf,animals-13
+قطة,قطة / هر,13/13004.gif,هر,menasy,cat,animals-13
+ثعبان,ثعبان,13/13005.gif,,menasy,snake,animals-13
+حية,حية / أفعى,13/13006.gif,أفعى,menasy,snake,animals-13
+عقرب,عقرب,13/13007.gif,,menasy,scorpion,animals-13
+سرطان,سرطان,13/13008.gif,,menasy,crab,animals-13
+فيل,فيل,13/13009.gif,,menasy,elephant,animals-13
+خنزير,خنزير,13/13010.gif,,menasy,pig,animals-13
+زرافة,زرافة,13/13011.gif,,menasy,giraffe,animals-13
+غوريلا,غوريلا,13/13012.gif,,menasy,gorilla,animals-13
+دلفين,دلفين,13/13013.gif,,menasy,dolphin,animals-13
+سمك القرش,سمك القرش,13/13014.gif,,menasy,shark,animals-13
+حوت,حوت,13/13015.gif,,menasy,whale,animals-13
+دب,دب,13/13016.gif,,menasy,bear,animals-13
+دجاجة,دجاجة,13/13017.gif,,menasy,chicken,animals-13
+ببغاء,ببغاء,13/13018.gif,,menasy,parrot,animals-13
+صقر,صقر,13/13019.gif,,menasy,falcon,animals-13
+نسر,نسر,13/13020.gif,,menasy,eagle,animals-13
+نحلة,نحلة,13/13021.gif,,menasy,bee,animals-13
+ذبابة,ذبابة,13/13022.gif,,menasy,fly,animals-13
+بعوضة,بعوضة,13/13023.gif,,menasy,mosquito,animals-13
+دودة,دودة,13/13024.gif,,menasy,worm,animals-13
+سمك,سمك,13/13025.gif,,menasy,fish,animals-13
+قرد,قرد,13/13026.gif,,menasy,monkey,animals-13
+بطة,بطة,13/13027.gif,,menasy,duck,animals-13
+حمار,حمار,13/13028.gif,,menasy,donkey,animals-13
+جمل,جمل,13/13029.gif,,menasy,camel,animals-13
+ديك,ديك,13/13030.gif,,menasy,rooster,animals-13
+عصفور,عصفور,13/13031.gif,,menasy,bird,animals-13
+سلحفاء,سلحفاء,13/13032.gif,,menasy,turtle,animals-13
+كلب,كلب,13/13033.gif,,menasy,dog,animals-13
+بقرة,بقرة,13/13034.gif,,menasy,cow,animals-13
+تمساح,تمساح,13/13035.gif,,menasy,crocodile,animals-13
+حصان,حصان,13/13036.gif,,menasy,horse,animals-13
+حمام,حمام,13/13037.gif,,menasy,pigeon,animals-13
+فأر,فأر,13/13038.gif,,menasy,mouse,animals-13
+ربيان,ربيان / جمبري,13/13039.gif,جمبري,menasy,shrimp,animals-13
+المملكة الأردنية الهاشمية,المملكة الأردنية الهاشمية,14/14001.gif,,menasy,Jordan,arab-countries-14
+عمان,عمان (عاصمة الأردن),14/14002.gif,عاصمة الأردن,menasy,Amman,arab-countries-14
+دولة الإمارات العربية \n  المتحدة,دولة الإمارات العربية \n  المتحدة,14/14003.gif,,menasy,Emirates,arab-countries-14
+أبو ظبي,أبو ظبي (عاصمة الإمارات),14/14004.gif,عاصمة الإمارات,menasy,Abo Dabi,arab-countries-14
+مملكة البحرين,مملكة البحرين,14/14005.gif,,menasy,Bahrain,arab-countries-14
+المنامة,المنامة (عاصمة البحرين),14/14006.gif,عاصمة البحرين,menasy,al Manamah,arab-countries-14
+الجمهورية التونسية,الجمهورية التونسية,14/14007.gif,,menasy,Tunisia,arab-countries-14
+تونس,تونس (عاصمة تونس),14/14008.gif,عاصمة تونس,menasy,Tunisia,arab-countries-14
+الجزائر,الجزائر,14/14009.gif,,menasy,Algeria,arab-countries-14
+الجزائر,الجزائر (عاصمة الجزائر),14/14010.gif,عاصمة الجزائر,menasy,Algeria,arab-countries-14
+المملكة العربية السعودية,المملكة العربية السعودية,14/14011.gif,,menasy,Saudi Arabia,arab-countries-14
+الرياض,الرياض (عاصمة السعودية),14/14012.gif,عاصمة السعودية,menasy,Riyadh,arab-countries-14
+جمهورية السودان,جمهورية السودان,14/14013.gif,,menasy,Sudan,arab-countries-14
+الخرطوم,الخرطوم (عاصمة السودان),14/14014.gif,عاصمة السودان,menasy,Khartoum,arab-countries-14
+الجمهورية العربية السورية,الجمهورية العربية السورية,14/14015.gif,,menasy,Syria,arab-countries-14
+دمشق,دمشق (عاصمة سوريا),14/14016.gif,عاصمة سوريا,menasy,Damascus,arab-countries-14
+جمهورية العراق,جمهورية العراق,14/14017.gif,,menasy,Iraq,arab-countries-14
+بغداد,بغداد (عاصمة \n  العراق),14/14018.gif,عاصمة \n  العراق,menasy,Baghdad,arab-countries-14
+سلطنة عمان,سلطنة عمان,14/14019.gif,,menasy,Oman,arab-countries-14
+مسقط,مسقط (عاصمة \n  سلطنة عمان),14/14020.gif,عاصمة \n  سلطنة عمان,menasy,Muscat,arab-countries-14
+دولة فلسطين,دولة فلسطين,14/14021.gif,,menasy,Palestine,arab-countries-14
+القدس,القدس,14/14022.gif,,menasy,Jerusalem,arab-countries-14
+دولة قطر,دولة قطر,14/14023.gif,,menasy,Qatar,arab-countries-14
+الدوحة,الدوحة (عاصمة \n  قطر),14/14024.gif,عاصمة \n  قطر,menasy,Doha,arab-countries-14
+دولة الكويت,دولة الكويت,14/14025.gif,,menasy,Kuwait,arab-countries-14
+الكويت,الكويت (عاصمة \n  دولة الكويت),14/14026.gif,عاصمة \n  دولة الكويت,menasy,Kuwait,arab-countries-14
+الجمهورية \n  اللبنانية,الجمهورية \n  اللبنانية,14/14027.gif,,menasy,Lebanon,arab-countries-14
+بيروت,بيروت (عاصمة \n  لبنان),14/14028.gif,عاصمة \n  لبنان,menasy,Beirut,arab-countries-14
+الجمهورية \n  العربية الليبية الشعبية الاشتراكية العظمى,الجمهورية \n  العربية الليبية الشعبية الاشتراكية العظمى,14/14029.gif,,menasy,Libya,arab-countries-14
+طرابلس,طرابلس (عاصمة \n  ليبيا),14/14030.gif,عاصمة \n  ليبيا,menasy,Tarables,arab-countries-14
+جمهورية مصر \n  العربية,جمهورية مصر \n  العربية,14/14031.gif,,menasy,Egypt,arab-countries-14
+القاهرة,القاهرة (عاصمة \n  مصر),14/14032.gif,عاصمة \n  مصر,menasy,Cairo,arab-countries-14
+المملكة \n  المغربية,المملكة \n  المغربية,14/14033.gif,,menasy,Morocco,arab-countries-14
+الرباط,الرباط (عاصمة \n  المغرب),14/14034.gif,عاصمة \n  المغرب,menasy,Rabat,arab-countries-14
+الجمهورية \n  اليمنية,الجمهورية \n  اليمنية,14/14035.gif,,menasy,Yemen,arab-countries-14
+صنعاء,صنعاء (عاصمة \n  اليمن),14/14036.gif,عاصمة \n  اليمن,menasy,Sana,arab-countries-14
+الصومال,الصومال,14/14037.gif,,menasy,Somalia,arab-countries-14
+افريقيا,افريقيا,15/15001.gif,,menasy,Africa,continents-foreign-countries-s-15
+آسيا,آسيا,15/15002.gif,,menasy,Asia,continents-foreign-countries-s-15
+أوربا,أوربا,15/15003.gif,,menasy,Europe,continents-foreign-countries-s-15
+أمريكا الشمالية,أمريكا الشمالية,15/15004.gif,,menasy,north America,continents-foreign-countries-s-15
+أمريكا الجنوبية,أمريكا الجنوبية,15/15005.gif,,menasy,south America,continents-foreign-countries-s-15
+استرليا,استرليا,15/15006.gif,,menasy,Austria,continents-foreign-countries-s-15
+الأرجنتين,الأرجنتين,15/15007.gif,,menasy,Argentina,continents-foreign-countries-s-15
+بوليفيا,بوليفيا,15/15008.gif,,menasy,Bolivia,continents-foreign-countries-s-15
+النمسا,النمسا,15/15009.gif,,menasy,Austria,continents-foreign-countries-s-15
+البرازيل,البرازيل,15/15010.gif,,menasy,brazil,continents-foreign-countries-s-15
+بلغاريا,بلغاريا,15/15011.gif,,menasy,Bulgaria,continents-foreign-countries-s-15
+كندا,كندا,15/15012.gif,,menasy,Canada,continents-foreign-countries-s-15
+تشيلي,تشيلي,15/15013.gif,,menasy,Chile,continents-foreign-countries-s-15
+الصين,الصين,15/15014.gif,,menasy,China,continents-foreign-countries-s-15
+كولومبيا,كولومبيا,15/15015.gif,,menasy,Colombia,continents-foreign-countries-s-15
+تشيكا,تشيكا,15/15016.gif,,menasy,Czech,continents-foreign-countries-s-15
+سلوفاكيا,سلوفاكيا,15/15017.gif,,menasy,Slovakia,continents-foreign-countries-s-15
+الدنمارك,الدنمارك,15/15018.gif,,menasy,Denmark,continents-foreign-countries-s-15
+أثيوبيا,أثيوبيا,15/15019.gif,,menasy,Ethiopia,continents-foreign-countries-s-15
+رومانيا,رومانيا,15/15020.gif,,menasy,Romania,continents-foreign-countries-s-15
+جنوب أفريقيا,جنوب أفريقيا,15/15021.gif,,menasy,south Africa,continents-foreign-countries-s-15
+ألمانيا,ألمانيا,15/15022.gif,,menasy,Germany,continents-foreign-countries-s-15
+غانا,غانا,15/15023.gif,,menasy,Ghana,continents-foreign-countries-s-15
+اليونان,اليونان,15/15024.gif,,menasy,Greece,continents-foreign-countries-s-15
+هنجاريا,هنجاريا / المجر,15/15025.gif,المجر,menasy,Hungary,continents-foreign-countries-s-15
+الهند,الهند,15/15026.gif,,menasy,India,continents-foreign-countries-s-15
+إيران,إيران,15/15027.gif,,menasy,Iran,continents-foreign-countries-s-15
+إيطاليا,إيطاليا,15/15028.gif,,menasy,Italy,continents-foreign-countries-s-15
+اليابان,اليابان,15/15029.gif,,menasy,Japan,continents-foreign-countries-s-15
+مالطا,مالطا,15/15030.gif,,menasy,Malta,continents-foreign-countries-s-15
+هولندا,هولندا,15/15031.gif,,menasy,Holland,continents-foreign-countries-s-15
+نيوزلندا,نيوزلندا,15/15032.gif,,menasy,New Zealand,continents-foreign-countries-s-15
+النرويج,النرويج,15/15033.gif,,menasy,Norway,continents-foreign-countries-s-15
+بيرو,بيرو,15/15034.gif,,menasy,Peru,continents-foreign-countries-s-15
+الفلبين,الفلبين,15/15035.gif,,menasy,Philippines,continents-foreign-countries-s-15
+بولندا,بولندا / \n  بولونيا,15/15036.gif,\n  بولونيا,menasy,Poland,continents-foreign-countries-s-15
+البرتغال,البرتغال,15/15037.gif,,menasy,Portugal,continents-foreign-countries-s-15
+اسبانيا,اسبانيا,15/15038.gif,,menasy,Spain,continents-foreign-countries-s-15
+السويد,السويد,15/15039.gif,,menasy,Sweden,continents-foreign-countries-s-15
+سويسرا,سويسرا,15/15040.gif,,menasy,Switzerland,continents-foreign-countries-s-15
+اوكرانيا,اوكرانيا,15/15041.gif,,menasy,Ukraine,continents-foreign-countries-s-15
+المملكة المتحدة \n,المملكة المتحدة \n  / بريطانيا,15/15042.gif,بريطانيا,menasy,Britain,continents-foreign-countries-s-15
+الولايات \n  المتحدة الأمريكية,الولايات \n  المتحدة الأمريكية,15/15043.gif,,menasy,United States of America,continents-foreign-countries-s-15
+أورغواي,أورغواي,15/15044.gif,,menasy,Uruguay,continents-foreign-countries-s-15
+فنزويلا,فنزويلا,15/15045.gif,,menasy,Venezuela,continents-foreign-countries-s-15
+بلجيكا,بلجيكا,15/15046.gif,,menasy,Belgium,continents-foreign-countries-s-15
+زامبيا,زامبيا,15/15047.gif,,menasy,Zambia,continents-foreign-countries-s-15
+يوغسلافيا,يوغسلافيا,15/15048.gif,,menasy,Yugoslavia,continents-foreign-countries-s-15
+فنلندا,فنلندا,15/15049.gif,,menasy,Finland,continents-foreign-countries-s-15
+فرنسا,فرنسا,15/15050.gif,,menasy,France,continents-foreign-countries-s-15
+روسيا,روسيا,15/15051.gif,,menasy,Russia,continents-foreign-countries-s-15
+تركيا,تركيا,15/15052.gif,,menasy,Turkey,continents-foreign-countries-s-15
+البحر الأحمر,البحر الأحمر,15/15053.gif,,menasy,Red sea,continents-foreign-countries-s-15
+البحر الأبيض \n  المتوسط,البحر الأبيض \n  المتوسط,15/15054.gif,,menasy,the Mediterranean sea,continents-foreign-countries-s-15
+البحر الأسود,البحر الأسود,15/15055.gif,,menasy,black sea,continents-foreign-countries-s-15
+البحر الميت,البحر الميت,15/15056.gif,,menasy,dead sea,continents-foreign-countries-s-15
+بحر العرب,بحر العرب,15/15057.gif,,menasy,Arabian sea,continents-foreign-countries-s-15
+الخليج العربي,الخليج العربي,15/15058.gif,,menasy,Arabian gulf,continents-foreign-countries-s-15
+المحيط الهندي,المحيط الهندي,15/15059.gif,,menasy,Indian ocean,continents-foreign-countries-s-15
+المحيط الهادي,المحيط الهادي,15/15060.gif,,menasy,Pacific ocean,continents-foreign-countries-s-15
+المحيط الأطلسي,المحيط الأطلسي,15/15061.gif,,menasy,Atlantic ocean,continents-foreign-countries-s-15
+المحيط المتجمد \n  الشمالي,المحيط المتجمد \n  الشمالي,15/15062.gif,,menasy,north pole,continents-foreign-countries-s-15
+المحيط المتجمد \n  الجنوبي,المحيط المتجمد \n  الجنوبي,15/15063.gif,,menasy,south pole,continents-foreign-countries-s-15
+خط الطول,خط الطول,15/15064.gif,,menasy,longitude,continents-foreign-countries-s-15
+خط العرض,خط العرض,15/15065.gif,,menasy,latitude,continents-foreign-countries-s-15
+خط جرنتش,خط جرنتش,15/15066.gif,,menasy,Greenwich Meridian,continents-foreign-countries-s-15
+خط الإستواء,خط الإستواء,15/15067.gif,,menasy,equator,continents-foreign-countries-s-15
+ريال,ريال,16/16001.gif,,menasy,riyal,arab-and-foreign-currencies-16
+درهم,درهم,16/16002.gif,,menasy,dirham,arab-and-foreign-currencies-16
+دينار,دينار,16/16003.gif,,menasy,dinar,arab-and-foreign-currencies-16
+جنيه,جنيه,16/16004.gif,,menasy,pound,arab-and-foreign-currencies-16
+ليرة,ليرة,16/16005.gif,,menasy,lira,arab-and-foreign-currencies-16
+مارك,مارك,16/16006.gif,,menasy,mark,arab-and-foreign-currencies-16
+ين,ين,16/16007.gif,,menasy,yen,arab-and-foreign-currencies-16
+دولار,دولار,16/16008.gif,,menasy,dollar,arab-and-foreign-currencies-16
+فرنك,فرنك,16/16009.gif,,menasy,franc,arab-and-foreign-currencies-16
+يورو,يورو,16/16010.gif,,menasy,euro,arab-and-foreign-currencies-16
+مهندس,مهندس,17/17001.gif,,menasy,engineer,titles-jobs-and-professions-17
+مصور فوتوغرافي,مصور فوتوغرافي,17/17002.gif,,menasy,photographer,titles-jobs-and-professions-17
+جزار,جزار / قصاب,17/17003.gif,قصاب,menasy,meat man,titles-jobs-and-professions-17
+سائق,سائق,17/17004.gif,,menasy,driver,titles-jobs-and-professions-17
+صائغ,صائغ,17/17005.gif,,menasy,jeweler,titles-jobs-and-professions-17
+خادم,خادم,17/17006.gif,,menasy,servant,titles-jobs-and-professions-17
+رئيس قسم,رئيس قسم,17/17007.gif,,menasy,chairman,titles-jobs-and-professions-17
+حداد,حداد,17/17008.gif,,menasy,blacksmith,titles-jobs-and-professions-17
+لحام كهربائي,لحام كهربائي,17/17009.gif,,menasy,to weld,titles-jobs-and-professions-17
+مترجم لغة الإشارة,مترجم لغة الإشارة,17/17010.gif,,menasy,sings language translator,titles-jobs-and-professions-17
+مذيع,مذيع,17/17011.gif,,menasy,announcer,titles-jobs-and-professions-17
+مترجم لغات,مترجم لغات,17/17012.gif,,menasy,translator,titles-jobs-and-professions-17
+مدير,مدير,17/17013.gif,,menasy,manager,titles-jobs-and-professions-17
+سفير,سفير,17/17014.gif,,menasy,ambassador,titles-jobs-and-professions-17
+وزير,وزير,17/17015.gif,,menasy,minister,titles-jobs-and-professions-17
+ملك,ملك / سلطان,17/17016.gif,سلطان,menasy,king,titles-jobs-and-professions-17
+أمير البلاد,أمير البلاد / رئيس \n  الجمهورية,17/17017.gif,رئيس \n  الجمهورية,menasy,premier minister,titles-jobs-and-professions-17
+شيخ,شيخ,17/17018.gif,,menasy,sheikh,titles-jobs-and-professions-17
+محافظ,محافظ / وال,17/17019.gif,وال,menasy,governor,titles-jobs-and-professions-17
+ولي عهد,ولي عهد / وكيل وزارة,17/17020.gif,وكيل وزارة,menasy,under secretary of state,titles-jobs-and-professions-17
+رئيس مجلس الشعب,رئيس مجلس الشعب (النواب),17/17021.gif,النواب,menasy,speaker,titles-jobs-and-professions-17
+أمين عام,أمين عام,17/17022.gif,,menasy,general secretary,titles-jobs-and-professions-17
+صحفي,صحفي,17/17023.gif,,menasy,journalist,titles-jobs-and-professions-17
+رسام,رسام,17/17024.gif,,menasy,draftsman,titles-jobs-and-professions-17
+خياط,خياط / تارزي,17/17025.gif,تارزي,menasy,tailor,titles-jobs-and-professions-17
+ضابط,ضابط,17/17026.gif,,menasy,policeman,titles-jobs-and-professions-17
+طيار,طيار,17/17027.gif,,menasy,pilot,titles-jobs-and-professions-17
+جندي,جندي,17/17028.gif,,menasy,soldier,titles-jobs-and-professions-17
+حلاق,حلاق,17/17029.gif,,menasy,barber,titles-jobs-and-professions-17
+صباغ,صباغ,17/17030.gif,,menasy,dyer,titles-jobs-and-professions-17
+رجل إطفاء,رجل إطفاء / دفاع مدني,17/17031.gif,دفاع مدني,menasy,fireman,titles-jobs-and-professions-17
+نجار,نجار,17/17032.gif,,menasy,carpenter,titles-jobs-and-professions-17
+معلم,معلم,17/17033.gif,,menasy,teacher,titles-jobs-and-professions-17
+طباخ,طباخ,17/17034.gif,,menasy,chef,titles-jobs-and-professions-17
+فلاح,فلاح,17/17035.gif,,menasy,farmer,titles-jobs-and-professions-17
+موظف,موظف,17/17036.gif,,menasy,agent,titles-jobs-and-professions-17
+أمين صندوق,أمين صندوق,17/17037.gif,,menasy,treasurer,titles-jobs-and-professions-17
+صيدلي,صيدلي,17/17038.gif,,menasy,pharmacist,titles-jobs-and-professions-17
+طبيب,طبيب,17/17039.gif,,menasy,doctor,titles-jobs-and-professions-17
+ممرضة,ممرضة,17/17040.gif,,menasy,nurse,titles-jobs-and-professions-17
+ممرض,ممرض,17/17041.gif,,menasy,orderly,titles-jobs-and-professions-17
+محام,محام,17/17042.gif,,menasy,lawyer,titles-jobs-and-professions-17
+انتقال,انتقال,17/17043.gif,,menasy,traveling,titles-jobs-and-professions-17
+تعيين,تعيين,17/17044.gif,,menasy,appointment,titles-jobs-and-professions-17
+مشروع,مشروع,18/18001.gif,,menasy,project,trade-and-business-18
+ميزانية,ميزانية,18/18002.gif,,menasy,budget,trade-and-business-18
+إفلاس,إفلاس,18/18003.gif,,menasy,insolvency,trade-and-business-18
+تدقيق حسابات,تدقيق حسابات,18/18004.gif,,menasy,audit,trade-and-business-18
+يحسب,يحسب,18/18005.gif,,menasy,to draw,trade-and-business-18
+تجارة,تجارة,18/18006.gif,,menasy,commerce,trade-and-business-18
+يشتري,يشتري,18/18007.gif,,menasy,buy,trade-and-business-18
+يبيع,يبيع,18/18008.gif,,menasy,sell,trade-and-business-18
+يتسوق,يتسوق,18/18009.gif,,menasy,purchase,trade-and-business-18
+استغلال,استغلال,18/18010.gif,,menasy,exploitation,trade-and-business-18
+رأس المال,رأس المال,18/18011.gif,,menasy,capital,trade-and-business-18
+بخس,بخس / رخيص,18/18012.gif,رخيص,menasy,cheap,trade-and-business-18
+غال,غال,18/18013.gif,,menasy,expensive,trade-and-business-18
+اعتماد مالي,اعتماد مالي,18/18014.gif,,menasy,credit,trade-and-business-18
+ينتخب,ينتخب,18/18015.gif,,menasy,electing,trade-and-business-18
+انتخابات,انتخابات,18/18016.gif,,menasy,elections,trade-and-business-18
+مدين,مدين,18/18017.gif,,menasy,debtor,trade-and-business-18
+دائن,دائن,18/18018.gif,,menasy,loaner,trade-and-business-18
+توكيل,توكيل,18/18019.gif,,menasy,power of attorney,trade-and-business-18
+توكيل عام,توكيل عام,18/18020.gif,,menasy,universal attorney ship,trade-and-business-18
+توكيل خاص,توكيل خاص,18/18021.gif,,menasy,private attorney ship,trade-and-business-18
+نقود,نقود,18/18022.gif,,menasy,money,trade-and-business-18
+صرافة,صرافة / صرف,18/18023.gif,صرف,menasy,exchange,trade-and-business-18
+بنك,بنك,18/18024.gif,,menasy,bank,trade-and-business-18
+دكان,دكان,18/18025.gif,,menasy,shop,trade-and-business-18
+شيك,شيك,18/18026.gif,,menasy,check,trade-and-business-18
+جدول أعمال,جدول أعمال,18/18027.gif,,menasy,agenda,trade-and-business-18
+تأمين,تأمين,18/18028.gif,,menasy,insurance,trade-and-business-18
+شهر,شهر,19/19001.gif,,menasy,month,units-of-measurement-19
+شهر محرم,شهر محرم,19/19002.gif,,menasy,Muharram,units-of-measurement-19
+شهر صفر,شهر صفر,19/19003.gif,,menasy,Safar,units-of-measurement-19
+شهر ربيع أول,شهر ربيع أول,19/19004.gif,,menasy,Rabi al-Awwal,units-of-measurement-19
+شهر ربيع الثاني,شهر ربيع الثاني,19/19005.gif,,menasy,Rabi al-Thani,units-of-measurement-19
+شهر جمادي الأول,شهر جمادي الأول,19/19006.gif,,menasy,Jumada al-Awwal,units-of-measurement-19
+شهر جمادي الآخرة,شهر جمادي الآخرة,19/19007.gif,,menasy,Jumada al-Thani,units-of-measurement-19
+شهر رجب,شهر رجب,19/19008.gif,,menasy,Rajab,units-of-measurement-19
+شهر شعبان,شهر شعبان,19/19009.gif,,menasy,Shaaban,units-of-measurement-19
+شهر رمضان,شهر رمضان,19/19010.gif,,menasy,Ramadan,units-of-measurement-19
+شهر شوال,شهر شوال,19/19011.gif,,menasy,Shawwal,units-of-measurement-19
+شهر ذوالقعدة,شهر ذوالقعدة,19/19012.gif,,menasy,Dhu al-Qadah,units-of-measurement-19
+شهر ذوالحجة,شهر ذوالحجة,19/19013.gif,,menasy,Dhu al-Hijjah,units-of-measurement-19
+يناير,يناير / كانون الثاني,19/19014.gif,كانون الثاني,menasy,January,units-of-measurement-19
+فبراير,فبراير / شباط,19/19015.gif,شباط,menasy,February,units-of-measurement-19
+مارس,مارس / آذار,19/19016.gif,آذار,menasy,March,units-of-measurement-19
+أبريل,أبريل / نيسان,19/19017.gif,نيسان,menasy,April,units-of-measurement-19
+مايو,مايو / أيار,19/19018.gif,أيار,menasy,May,units-of-measurement-19
+يونيو,يونيو / حزيران,19/19019.gif,حزيران,menasy,June,units-of-measurement-19
+يوليو,يوليو / تموز,19/19020.gif,تموز,menasy,July,units-of-measurement-19
+أغسطس,أغسطس / آب,19/19021.gif,آب,menasy,August,units-of-measurement-19
+سبتمبر,سبتمبر / أيلول,19/19022.gif,أيلول,menasy,September,units-of-measurement-19
+أكتوبر,أكتوبر / تشرين الأول,19/19023.gif,تشرين الأول,menasy,October,units-of-measurement-19
+نوفمبر,نوفمبر / تشرين الثاني,19/19024.gif,تشرين الثاني,menasy,November,units-of-measurement-19
+ديسمبر,ديسمبر / كانون أول,19/19025.gif,كانون أول,menasy,December,units-of-measurement-19
+الفجر,الفجر,19/19026.gif,,menasy,dawn,units-of-measurement-19
+الظهر,الظهر,19/19027.gif,,menasy,midday,units-of-measurement-19
+العصر,العصر,19/19028.gif,,menasy,afternoon,units-of-measurement-19
+المغرب,المغرب,19/19029.gif,,menasy,sunset,units-of-measurement-19
+العشاء,العشاء,19/19030.gif,,menasy,evening,units-of-measurement-19
+ساعة,ساعة,19/19031.gif,,menasy,hour,units-of-measurement-19
+ربع ساعة,ربع ساعة,19/19032.gif,,menasy,quarter hour,units-of-measurement-19
+عدة ساعات,عدة ساعات,19/19033.gif,,menasy,several hours,units-of-measurement-19
+قرن,قرن,19/19034.gif,,menasy,century,units-of-measurement-19
+عقد,عقد,19/19035.gif,,menasy,tens,units-of-measurement-19
+سنة,سنة,19/19036.gif,,menasy,year,units-of-measurement-19
+أسبوع,أسبوع,19/19037.gif,,menasy,week,units-of-measurement-19
+يوم,يوم,19/19038.gif,,menasy,day,units-of-measurement-19
+غداً,غداً,19/19039.gif,,menasy,tomorrow,units-of-measurement-19
+أمس,أمس,19/19040.gif,,menasy,yesterday,units-of-measurement-19
+مبكر,مبكر,19/19041.gif,,menasy,early,units-of-measurement-19
+متأخر,متأخر,19/19042.gif,,menasy,late,units-of-measurement-19
+وقت,وقت,19/19043.gif,,menasy,time,units-of-measurement-19
+السبت,السبت,19/19044.gif,,menasy,Saturday,units-of-measurement-19
+الأحد,الأحد,19/19045.gif,,menasy,Sunday,units-of-measurement-19
+الأثنين,الأثنين,19/19046.gif,,menasy,Monday,units-of-measurement-19
+الثلاثاء,الثلاثاء,19/19047.gif,,menasy,Tuesday,units-of-measurement-19
+الأربعاء,الأربعاء,19/19048.gif,,menasy,Wednesday,units-of-measurement-19
+الخميس,الخميس,19/19049.gif,,menasy,Thursday,units-of-measurement-19
+الجمعة,الجمعة,19/19050.gif,,menasy,Friday,units-of-measurement-19
+كيلومتر,كيلومتر,19/19051.gif,,menasy,kilometer,units-of-measurement-19
+متر,متر,19/19052.gif,,menasy,meter,units-of-measurement-19
+سنتيمتر,سنتيمتر,19/19053.gif,,menasy,centimeter,units-of-measurement-19
+ملليمتر,ملليمتر,19/19054.gif,,menasy,millimeter,units-of-measurement-19
+ديسيمتر,ديسيمتر,19/19055.gif,,menasy,decimeter,units-of-measurement-19
+طن,طن,19/19056.gif,,menasy,ton,units-of-measurement-19
+كيلوغرام,كيلوغرام,19/19057.gif,,menasy,kilogram,units-of-measurement-19
+غرام,غرام / جرام,19/19058.gif,جرام,menasy,gram,units-of-measurement-19
+ليتر,ليتر,19/19059.gif,,menasy,liter,units-of-measurement-19
+سنتليتر,سنتليتر,19/19060.gif,,menasy,centiliter,units-of-measurement-19
+ديسليتر,ديسليتر,19/19061.gif,,menasy,deciliter,units-of-measurement-19
+مليليتر,مليليتر,19/19062.gif,,menasy,milliliter,units-of-measurement-19
+متر مربع,متر مربع,19/19063.gif,,menasy,Square Meter,units-of-measurement-19
+متر مكعب,متر مكعب,19/19064.gif,,menasy,Cubic Meter,units-of-measurement-19
+ميل,ميل,19/19065.gif,,menasy,mile,units-of-measurement-19
+ياردة,ياردة,19/19066.gif,,menasy,yard,units-of-measurement-19
+قدم,قدم,19/19067.gif,,menasy,foot,units-of-measurement-19
+بوصة,بوصة,19/19068.gif,,menasy,inch,units-of-measurement-19
+دقيقة,دقيقة,19/19069.gif,,menasy,minute,units-of-measurement-19
+ثانية,ثانية,19/19070.gif,,menasy,second,units-of-measurement-19
+قنطار,قنطار,19/19071.gif,,menasy,hundredweight,units-of-measurement-19
+طريق,طريق,20/20001.gif,,menasy,road,roads-and-transportation-20
+طريق ممهد,طريق ممهد (معبد),20/20002.gif,معبد,menasy,paved road,roads-and-transportation-20
+طريق غير ممهد,طريق غير ممهد (غير معبد),20/20003.gif,غير معبد,menasy,non paved road,roads-and-transportation-20
+إشارة ضوئية,إشارة ضوئية,20/20004.gif,,menasy,traffic light,roads-and-transportation-20
+إشارة خضراء,إشارة خضراء,20/20005.gif,,menasy,green light,roads-and-transportation-20
+إشارة حمراء,إشارة حمراء,20/20006.gif,,menasy,red light,roads-and-transportation-20
+ممنوع الانتظار,ممنوع الانتظار,20/20008.gif,,menasy,no waiting,roads-and-transportation-20
+نفق,نفق,20/20009.gif,,menasy,tunnel,roads-and-transportation-20
+رصيف,رصيف,20/20011.gif,,menasy,sidewalk,roads-and-transportation-20
+جسر,جسر,20/20012.gif,,menasy,bridge,roads-and-transportation-20
+قطار,قطار,20/20013.gif,,menasy,train,roads-and-transportation-20
+طائرة مروحية,طائرة مروحية,20/20014.gif,,menasy,helicopter,roads-and-transportation-20
+طائرة,طائرة,20/20015.gif,,menasy,airplane,roads-and-transportation-20
+تاكسي,تاكسي (سيارة أجرة),20/20016.gif,سيارة أجرة,menasy,taxi,roads-and-transportation-20
+حافلة,حافلة (باص),20/20017.gif,باص,menasy,bus,roads-and-transportation-20
+شاحنة,شاحنة (سيارة نقل بضائع),20/20018.gif,سيارة نقل بضائع,menasy,truck,roads-and-transportation-20
+دراجة نارية,دراجة نارية,20/20019.gif,,menasy,motorcycle,roads-and-transportation-20
+دراجة هوائية,دراجة هوائية,20/20020.gif,,menasy,bicycle,roads-and-transportation-20
+سيارة,سيارة,20/20021.gif,,menasy,car,roads-and-transportation-20
+ميناء بحري,ميناء بحري,20/20022.gif,,menasy,port,roads-and-transportation-20
+مطار,مطار,20/20023.gif,,menasy,airport,roads-and-transportation-20
+محطة حافلات,محطة حافلات (محطة باصات),20/20024.gif,محطة باصات,menasy,bus station,roads-and-transportation-20
+محطة وقود,محطة وقود,20/20025.gif,,menasy,fuel station,roads-and-transportation-20
+سيارة إسعاف,سيارة إسعاف,20/20026.gif,,menasy,ambulance,roads-and-transportation-20
+سيارة شرطة,سيارة شرطة,20/20027.gif,,menasy,police car,roads-and-transportation-20
+جرافة,جرافة,20/20028.gif,,menasy,bulldozer,roads-and-transportation-20
+مركب,مركب (سفينة),20/20029.gif,سفينة,menasy,ship,roads-and-transportation-20
+محطة انتظار,محطة انتظار,20/20030.gif,,menasy,wait station,roads-and-transportation-20
+جملة,جملة,21/21001.gif,,menasy,Sentence,arabic-grammar
+جملة إسمية,جملة إسمية,21/21002.gif,,menasy,Nominal Sentence,arabic-grammar
+مبتدأ,مبتدأ,21/21003.gif,,menasy,Topic (Mubtada),arabic-grammar
+خبر,خبر,21/21004.gif,,menasy,Predicate,arabic-grammar
+جملة فعلية,جملة فعلية,21/21005.gif,,menasy,Verbal Sentence,arabic-grammar
+فعل,فعل,21/21006.gif,,menasy,Verb,arabic-grammar
+فاعل,فاعل,21/21007.gif,,menasy,Subject (Agent),arabic-grammar
+مفعول به,مفعول به,21/21008.gif,,menasy,Direct Object,arabic-grammar
+فعل ماض,فعل ماض,21/21009.gif,,menasy,Past-Tense Verb,arabic-grammar
+فعل مضارع,فعل مضارع,21/21010.gif,,menasy,Present-Tense Verb,arabic-grammar
+فعل أمر,فعل أمر,21/21011.gif,,menasy,Imperative Verb,arabic-grammar
+اسم علم,اسم علم,21/21012.gif,,menasy,Proper Noun,arabic-grammar
+اسم حيوان,اسم حيوان,21/21013.gif,,menasy,Animal Noun,arabic-grammar
+اسم جماد,اسم جماد,21/21014.gif,,menasy,Inanimate Noun,arabic-grammar
+الرفع بالضمة,الرفع بالضمة,21/21015.gif,,menasy,Nominative Case Marked by Damma,arabic-grammar
+النصب بالفتحة,النصب بالفتحة,21/21016.gif,,menasy,Accusative Case Marked by Fatha,arabic-grammar
+الجر بالكسرة,الجر بالكسرة,21/21017.gif,,menasy,Genitive Case Marked by Kasra,arabic-grammar
+الجزم بالسكون,الجزم بالسكون,21/21018.gif,,menasy,Jussive Mood Marked by Sukun,arabic-grammar
+أنا,أنا,21/21019.gif,,menasy,I,arabic-grammar
+نحن,نحن,21/21020.gif,,menasy,We,arabic-grammar
+أنت,أنت,21/21021.gif,,menasy,You (Masculine Singular),arabic-grammar
+أنتِ,أنتِ,21/21022.gif,,menasy,You (Feminine Singular),arabic-grammar
+أنتما,أنتما,21/21023.gif,,menasy,You (Dual),arabic-grammar
+أنتم,أنتم,21/21024.gif,,menasy,You (Masculine Plural),arabic-grammar
+أنتن,أنتن,21/21025.gif,,menasy,You (Feminine Plural),arabic-grammar
+هو,هو,21/21026.gif,,menasy,He,arabic-grammar
+هي,هي,21/21027.gif,,menasy,She,arabic-grammar
+هما,هما,21/21028.gif,,menasy,They (Dual),arabic-grammar
+هم,هم,21/21029.gif,,menasy,They (Masculine),arabic-grammar
+هن,هن,21/21030.gif,,menasy,They (Feminine),arabic-grammar
+من,من,21/21031.gif,,menasy,From,arabic-grammar
+إلى,إلى,21/21032.gif,,menasy,To,arabic-grammar
+عن,عن,21/21033.gif,,menasy,About,arabic-grammar
+على,على,21/21034.gif,,menasy,On,arabic-grammar
+في,في,21/21035.gif,,menasy,In,arabic-grammar
+الباء,الباء,21/21036.gif,,menasy,The Letter Ba,arabic-grammar
+اللام,اللام,21/21037.gif,,menasy,The Letter Lam,arabic-grammar
+لي,لي,21/21038.gif,,menasy,For Me,arabic-grammar
+لنا,لنا,21/21039.gif,,menasy,For Us,arabic-grammar
+لك,لك,21/21040.gif,,menasy,For You (Masculine Singular),arabic-grammar
+لكما,لكما,21/21041.gif,,menasy,For You (Dual),arabic-grammar
+لكم,لكم,21/21042.gif,,menasy,For You (Masculine Plural),arabic-grammar
+له,له,21/21043.gif,,menasy,For Him,arabic-grammar
+لها,لها,21/21044.gif,,menasy,For Her,arabic-grammar
+لهما,لهما,21/21045.gif,,menasy,For Them (Dual),arabic-grammar
+لهم,لهم,21/21046.gif,,menasy,For Them (Masculine),arabic-grammar
+لهن,لهن,21/21047.gif,,menasy,For Them (Feminine),arabic-grammar
+الذي,الذي,21/21048.gif,,menasy,Who (Masculine Singular),arabic-grammar
+التي,التي,21/21049.gif,,menasy,Who (Feminine Singular),arabic-grammar
+اللذان,اللذان,21/21050.gif,,menasy,Who (Masculine Dual),arabic-grammar
+اللتان,اللتان,21/21051.gif,,menasy,Who (Feminine Dual),arabic-grammar
+اللذين,اللذين,21/21052.gif,,menasy,Whom (Masculine Dual),arabic-grammar
+اللواتي,اللواتي,21/21053.gif,,menasy,Who (Feminine Plural),arabic-grammar
+هذا,هذا,21/21054.gif,,menasy,This (Masculine),arabic-grammar
+هذه,هذه,21/21055.gif,,menasy,This (Feminine),arabic-grammar
+هذان,هذان,21/21056.gif,,menasy,These Two (Masculine),arabic-grammar
+هاتان,هاتان,21/21057.gif,,menasy,These Two (Feminine),arabic-grammar
+هؤلاء,هؤلاء,21/21058.gif,,menasy,These (Plural),arabic-grammar
+كم,كم,21/21059.gif,,menasy,How Many?,arabic-grammar
+لماذا,لماذا / السبب,21/21061.gif,السبب,menasy,Why? / Reason,arabic-grammar
+ماذا ؟,ماذا ؟,21/21062.gif,,menasy,What?,arabic-grammar
+كيف ؟,كيف ؟,21/21063.gif,,menasy,How?,arabic-grammar
+متى ؟,متى ؟,21/21064.gif,,menasy,When?,arabic-grammar
+أين ؟,أين ؟,21/21065.gif,,menasy,Where?,arabic-grammar
+لا,لا,21/21066.gif,,menasy,No,arabic-grammar
+حتى,حتى,21/21067.gif,,menasy,Until,arabic-grammar
+مؤنث,مؤنث,21/21068.gif,,menasy,Feminine,arabic-grammar
+مذكر,مذكر,21/21069.gif,,menasy,Masculine,arabic-grammar
+يأكل,يأكل,22/22001.gif,,menasy,eat,verbs
+يشرب,يشرب,22/22002.gif,,menasy,drink,verbs
+ينام,ينام,22/22003.gif,,menasy,sleep,verbs
+يستيقظ,يستيقظ,22/22004.gif,,menasy,wake up,verbs
+يسمع,يسمع,22/22005.gif,,menasy,hear,verbs
+يسكت,يسكت,22/22006.gif,,menasy,silence,verbs
+يشم,يشم,22/22007.gif,,menasy,inhale,verbs
+يصعد,يصعد,22/22008.gif,,menasy,rise,verbs
+ينزل,ينزل,22/22009.gif,,menasy,descend,verbs
+يفتح,يفتح,22/22010.gif,,menasy,open,verbs
+يقفل,يقفل,22/22011.gif,,menasy,close,verbs
+يبني,يبني,22/22012.gif,,menasy,build,verbs
+يكسر,يكسر,22/22013.gif,,menasy,break,verbs
+يمشي,يمشي,22/22014.gif,,menasy,walk,verbs
+يحب,يحب,22/22015.gif,,menasy,love,verbs
+يكره,يكره,22/22016.gif,,menasy,hate,verbs
+يشوي,يشوي,22/22017.gif,,menasy,grill,verbs
+يحرث,يحرث,22/22018.gif,,menasy,plow,verbs
+يزرع,يزرع,22/22019.gif,,menasy,plant,verbs
+يسقي,يسقي,22/22020.gif,,menasy,irrigate,verbs
+يحصد,يحصد,22/22021.gif,,menasy,harvest,verbs
+يفكر,يفكر,22/22022.gif,,menasy,think,verbs
+يساعد,يساعد,22/22023.gif,,menasy,help,verbs
+يدخن,يدخن,22/22024.gif,,menasy,smoke,verbs
+يدعم,يدعم,22/22025.gif,,menasy,support,verbs
+يختار,يختار,22/22026.gif,,menasy,choose,verbs
+ينادي,ينادي,22/22027.gif,,menasy,call,verbs
+يتنامى,يتنامى,22/22028.gif,,menasy,grow,verbs
+يصبغ,يصبغ,22/22029.gif,,menasy,dye,verbs
+يقف,يقف,22/22030.gif,,menasy,stop,verbs
+يستحم,يستحم,22/22031.gif,,menasy,bathe,verbs
+يدخل,يدخل,22/22032.gif,,menasy,enter,verbs
+0 - صفر,0 - صفر,23/23001.gif,,menasy,zero,social-relations
+1 - واحد,1 - واحد,23/23002.gif,,menasy,one,social-relations
+-,-,23/23003.gif,,menasy,two,social-relations
+3,3 / ثلاثة,23/23004.gif,ثلاثة,menasy,three,social-relations
+4,4 / أربعة,23/23005.gif,أربعة,menasy,four,social-relations
+5,5 / خمسة,23/23006.gif,خمسة,menasy,five,social-relations
+6,6 / ستة,23/23007.gif,ستة,menasy,six,social-relations
+7,7 / سبعة,23/23008.gif,سبعة,menasy,seven,social-relations
+8,8 / ثمانية,23/23009.gif,ثمانية,menasy,eight,social-relations
+9,9 / تسعة,23/23010.gif,تسعة,menasy,nine,social-relations
+10,10 / عشرة,23/23011.gif,عشرة,menasy,ten,social-relations
+11 - أحد عشر,11 - أحد عشر,23/23012.gif,,menasy,eleven,social-relations
+12 - اثنا عشر,12 - اثنا عشر,23/23013.gif,,menasy,twelve,social-relations
+13 - ثلاثة عشر,13 - ثلاثة عشر,23/23014.gif,,menasy,thirteen,social-relations
+14 - أربعة عشر,14 - أربعة عشر,23/23015.gif,,menasy,fourteen,social-relations
+15 - خمسة عشر,15 - خمسة عشر,23/23016.gif,,menasy,fifteen,social-relations
+16 - ستة عشر,16 - ستة عشر,23/23017.gif,,menasy,sixteen,social-relations
+17 - سبعة عشر,17 - سبعة عشر,23/23018.gif,,menasy,seventeen,social-relations
+18 - ثمانية عشر,18 - ثمانية عشر,23/23019.gif,,menasy,eighteen,social-relations
+19 - تسعة عشر,19 - تسعة عشر,23/23020.gif,,menasy,nineteen,social-relations
+20 - عشرون,20 - عشرون,23/23021.gif,,menasy,thirty,social-relations
+21 - واحد وعشرون,21 - واحد وعشرون,23/23022.gif,,menasy,thirty one,social-relations
+22 - اثنان وعشرون,22 - اثنان وعشرون,23/23023.gif,,menasy,thirty two,social-relations
+23 - ثلاثة وعشرون,23 - ثلاثة وعشرون,23/23024.gif,,menasy,thirty three,social-relations
+30 - ثلاثون,30 - ثلاثون,23/23025.gif,,menasy,thirty,social-relations
+40 - أربعون,40 - أربعون,23/23026.gif,,menasy,forty,social-relations
+50 - خمسون,50 - خمسون,23/23027.gif,,menasy,fifty,social-relations
+60 - ستون,60 - ستون,23/23028.gif,,menasy,sixty,social-relations
+70 - سبعون,70 - سبعون,23/23029.gif,,menasy,seventy,social-relations
+80 - ثمانون,80 - ثمانون,23/23030.gif,,menasy,eighty,social-relations
+90 - تسعون,90 - تسعون,23/23031.gif,,menasy,ninety,social-relations
+100 - مائة,100 - مائة,23/23032.gif,,menasy,hundred,social-relations
+200 - مائتان,200 - مائتان,23/23033.gif,,menasy,tow hundred,social-relations
+300 - ثلاثمائة,300 - ثلاثمائة,23/23034.gif,,menasy,three hundred,social-relations
+400 - أربعمائة,400 - أربعمائة,23/23035.gif,,menasy,four hundred,social-relations
+500 - خمسمائة,500 - خمسمائة,23/23036.gif,,menasy,five hundred,social-relations
+600 - ستمائة,600 - ستمائة,23/23037.gif,,menasy,six hundred,social-relations
+700 - سبعمائة,700 - سبعمائة,23/23038.gif,,menasy,seven hundred,social-relations
+800 - ثمانمائة,800 - ثمانمائة,23/23039.gif,,menasy,eight hundred,social-relations
+900 - تسعمائة,900 - تسعمائة,23/23040.gif,,menasy,nine hundred,social-relations
+1000 - ألف,1000 - ألف,23/23041.gif,,menasy,one thousand,social-relations
+10000 - عشرة آلاف,10000 - عشرة آلاف,23/23042.gif,,menasy,ten thousand,social-relations
+100000 - مائة ألف,100000 - مائة ألف,23/23043.gif,,menasy,one hundred thousand,social-relations
+1000000 - مليون,1000000 - مليون,23/23044.gif,,menasy,million,social-relations
+1000000000 - مليار,1000000000 - مليار,23/23045.gif,,menasy,billion,social-relations
+أسود,أسود,24/24001.gif,,menasy,black,colors-24
+بنفسجي,بنفسجي,24/24002.gif,,menasy,violet,colors-24
+رمادي,رمادي,24/24003.gif,,menasy,gray,colors-24
+وردي,وردي,24/24004.gif,,menasy,pink,colors-24
+أزرق,أزرق,24/24005.gif,,menasy,blue,colors-24
+بني,بني,24/24006.gif,,menasy,brown,colors-24
+أصفر,أصفر,24/24007.gif,,menasy,yellow,colors-24
+أحمر,أحمر,24/24008.gif,,menasy,red,colors-24
+أبيض,أبيض,24/24009.gif,,menasy,white,colors-24
+لون,لون,24/24010.gif,,menasy,color,colors-24
+أخضر,أخضر,24/24011.gif,,menasy,green,colors-24
+ذهبي,ذهبي,24/24012.gif,,menasy,golden,colors-24
+فضي,فضي,24/24013.gif,,menasy,silver,colors-24
+برتقالي,برتقالي,24/24014.gif,,menasy,orange,colors-24
+أمام,أمام,25/25001.gif,,menasy,in front of,directions-and-positions-25
+خلف,خلف,25/25002.gif,,menasy,back,directions-and-positions-25
+يمين,يمين,25/25003.gif,,menasy,right,directions-and-positions-25
+يسار,يسار,25/25004.gif,,menasy,left,directions-and-positions-25
+قريب,قريب,25/25005.gif,,menasy,near,directions-and-positions-25
+بعيد,بعيد,25/25006.gif,,menasy,far,directions-and-positions-25
+فوق,فوق,25/25007.gif,,menasy,up,directions-and-positions-25
+تحت,تحت,25/25008.gif,,menasy,under,directions-and-positions-25
+بجانب,بجانب,25/25009.gif,,menasy,side,directions-and-positions-25
+داخل,داخل,25/25010.gif,,menasy,inside,directions-and-positions-25
+خارج,خارج,25/25011.gif,,menasy,outside,directions-and-positions-25
+بين,بين,25/25012.gif,,menasy,between,directions-and-positions-25
+من خلال,من خلال,25/25013.gif,,menasy,through,directions-and-positions-25
+هنا,هنا,25/25014.gif,,menasy,here,directions-and-positions-25
+هناك,هناك,25/25015.gif,,menasy,there,directions-and-positions-25
+حول,حول,25/25016.gif,,menasy,around,directions-and-positions-25
+صديق,صديق,26/26001.gif,,menasy,friend,social-relationships-26
+جار,جار,26/26002.gif,,menasy,neighbor,social-relationships-26
+ضيف,ضيف,26/26003.gif,,menasy,guest,social-relationships-26
+هدية,هدية,26/26004.gif,,menasy,gift,social-relationships-26
+عدو,عدو,26/26005.gif,,menasy,enemy,social-relationships-26
+السلام عليكم,السلام عليكم,26/26006.gif,,menasy,greeting,social-relationships-26
+أهلا وسهلا,أهلا وسهلا,26/26007.gif,,menasy,welcome,social-relationships-26
+شكرا,شكرا,26/26008.gif,,menasy,thanks,social-relationships-26
+تفضل,تفضل,26/26009.gif,,menasy,here you are,social-relationships-26
+عيب,عيب,26/26010.gif,,menasy,fault,social-relationships-26
+الشاشة,الشاشة,27/27001.gif,,menasy,monitor,computers
+لوحة المفاتيح,لوحة المفاتيح,27/27002.gif,,menasy,keyboard,computers
+الماوس,الماوس (الفأرة),27/27003.gif,الفأرة,menasy,mouse,computers
+وحدة المعالجة المركزية,وحدة المعالجة المركزية,27/27004.gif,,menasy,CPU,computers
+الذاكرة المؤقتة,الذاكرة المؤقتة,27/27005.gif,,menasy,Ram,computers
+الذاكرة الدائمة,الذاكرة الدائمة,27/27006.gif,,menasy,Rom,computers
+الرقاقة,الرقاقة,27/27007.gif,,menasy,chip,computers
+وحدة تشغيل القرص المدمج,وحدة تشغيل القرص المدمج,27/27008.gif,,menasy,rom,computers
+وحدة تشغيل القرص المرن,وحدة تشغيل القرص المرن,27/27009.gif,,menasy,floppy,computers
+بطاقة الشبكة,بطاقة الشبكة,27/27010.gif,,menasy,network card,computers
+القرص الصلب,القرص الصلب,27/27011.gif,,menasy,hard disc,computers
+القرص المدمج,القرص المدمج,27/27012.gif,,menasy,compact disc,computers
+القرص المرن,القرص المرن,27/27013.gif,,menasy,floppy disc,computers
+الطابعة,الطابعة,27/27014.gif,,menasy,printer,computers
+الماسحة الضوئية,الماسحة الضوئية,27/27015.gif,,menasy,scanner,computers
+السماعة,السماعة,27/27016.gif,,menasy,speaker,computers
+المكروفون,المكروفون,27/27017.gif,,menasy,microphone,computers
+مفتاح,مفتاح,27/27018.gif,,menasy,key,computers
+مفتاح الهروب,مفتاح الهروب,27/27019.gif,,menasy,ESC,computers
+مفتاح الحروف الكبيرة,مفتاح الحروف الكبيرة,27/27020.gif,,menasy,caps lock,computers
+الذاكرة,الذاكرة,27/27021.gif,,menasy,memory,computers
+مفتاح العالي,مفتاح العالي,27/27022.gif,,menasy,shift key,computers
+مفتح التحكم يمين ويسار,مفتح التحكم يمين ويسار,27/27023.gif,,menasy,control key,computers
+مفتح الجدولة,مفتح الجدولة,27/27024.gif,,menasy,tab key,computers
+مفتح الجدولة,مفتح الجدولة,27/27025.gif,,menasy,ALT key,computers
+مفتح الحذف,مفتح الحذف,27/27026.gif,,menasy,delete key,computers
+مفتح الحذف للخلف,مفتح الحذف للخلف,27/27027.gif,,menasy,Back Space key,computers
+مفتح الحشر,مفتح الحشر,27/27028.gif,,menasy,Insert key,computers
+مفتح الكتابة الفوقية,مفتح الكتابة الفوقية,27/27029.gif,,menasy,Over key,computers
+مفاتيح الأسهم,مفاتيح الأسهم,27/27030.gif,,menasy,Arrows keys,computers
+قضيب المسافة,قضيب المسافة,27/27031.gif,,menasy,space bar,computers
+مفتاح الإدخال,مفتاح الإدخال,27/27032.gif,,menasy,Enter key,computers
+مفتاح البداية,مفتاح البداية,27/27033.gif,,menasy,Home key,computers
+مفتاح النهاية,مفتاح النهاية,27/27034.gif,,menasy,End key,computers
+مفتاح صفحة لأعلى,مفتاح صفحة لأعلى,27/27035.gif,,menasy,Page up key,computers
+مفتاح صفحة لأسفل,مفتاح صفحة لأسفل,27/27036.gif,,menasy,Page down key,computers
+مفتاح التجمد الثبات,مفتاح التجمد الثبات,27/27037.gif,,menasy,Pause key,computers
+مفتاح قفل الأرقام,مفتاح قفل الأرقام,27/27038.gif,,menasy,Num lock key,computers
+مفاتيح الوظائف الخاصة من,مفاتيح الوظائف الخاصة من,27/27039.gif,,menasy,Function Keys F1–F12,computers
+برنامج,برنامج,27/27040.gif,,menasy,program,computers
+ملف,ملف,27/27041.gif,,menasy,file,computers
+مجلد,مجلد,27/27042.gif,,menasy,directory,computers
+المجلد الأصلي,المجلد الأصلي,27/27043.gif,,menasy,primary directory,computers
+المجلد الأبوي,المجلد الأبوي,27/27044.gif,,menasy,main directory,computers
+برنامج ويندوز,برنامج ويندوز,27/27045.gif,,menasy,Windows,computers
+برنامج مستكشف ويندوز,برنامج مستكشف ويندوز,27/27046.gif,,menasy,Windows Explorer,computers
+المجلد الفرعي,المجلد الفرعي,27/27047.gif,,menasy,subdirectory,computers
+الأوامر,الأوامر,27/27048.gif,,menasy,orders,computers
+مدخلات,مدخلات,27/27049.gif,,menasy,input,computers
+مخرجات,مخرجات,27/27050.gif,,menasy,output,computers
+تشغيل,تشغيل,27/27051.gif,,menasy,run,computers
+نسخ,نسخ,27/27052.gif,,menasy,copy,computers
+نقل,نقل,27/27053.gif,,menasy,transport,computers
+الأشرطة,الأشرطة,27/27054.gif,,menasy,tapes,computers
+الأدوات,الأدوات,27/27055.gif,,menasy,tools,computers
+التنسيق,التنسيق,27/27056.gif,,menasy,coordination,computers
+القياسي,القياسي,27/27057.gif,,menasy,standard,computers
+الجداول,الجداول,27/27058.gif,,menasy,tables,computers
+العمليات الحسابية,العمليات الحسابية,27/27059.gif,,menasy,arithmetic process,computers
+عرض,عرض,27/27060.gif,,menasy,show,computers
+زر,زر,27/27061.gif,,menasy,button,computers
+المؤشر,المؤشر,27/27062.gif,,menasy,pointer,computers
+برنامج وورد,برنامج وورد,27/27063.gif,,menasy,Microsoft word,computers
+فيروس,فيروس,27/27064.gif,,menasy,virus,computers
+حفظ على قرص صلب,حفظ على قرص صلب,27/27065.gif,,menasy,save in hard disc,computers
+خلفية الشاشة,خلفية الشاشة,27/27066.gif,,menasy,background,computers
+سلة المحذوفات,سلة المحذوفات,27/27067.gif,,menasy,recycle bin,computers
+إستدعاء للمحكمة,إستدعاء للمحكمة,33/b0011.gif,,menasy,subpoena,vocabulary-bousaad
+استهلاك,استهلاك,33/b0012.gif,,menasy,consumption,vocabulary-bousaad
+اقتدى ب,اقتدى ب (حَذا حذوه ),33/b0013.gif,حَذا حذوه,menasy,to imitate,vocabulary-bousaad
+الأسرع,الأسرع,33/b0014.gif,,menasy,the fastest,vocabulary-bousaad
+الأسوأ,الأسوأ / سيء,33/b0015.gif,سيء,menasy,bad / the worst,vocabulary-bousaad
+الأوعية الدموية,الأوعية الدموية,33/b0016.gif,,menasy,blood vessel,vocabulary-bousaad
+البرزخ,البرزخ,33/b0021.gif,,menasy,Al-Barzakh,vocabulary-bousaad
+البعث,البعث (بعد الموت),33/b0022.gif,بعد الموت,menasy,resurrection,vocabulary-bousaad
+الجاهلية,الجاهلية (فترة ما قبل الإسلام),33/b0023.gif,فترة ما قبل الإسلام,menasy,pre - Islamic,vocabulary-bousaad
+الجنس,الجنس (ذكر أو أنثى),33/b0024.gif,ذكر أو أنثى,menasy,"sex (male , female",vocabulary-bousaad
+الجنس,الجنس (ذكر أو أنثى),33/b0025.gif,ذكر أو أنثى,menasy,"sex (male , female",vocabulary-bousaad
+الرحيم,الرحيم,33/b0026.gif,,menasy,"cursed , damned",vocabulary-bousaad
+الزمن الماضي,الزمن الماضي,33/b0031.gif,,menasy,the past,vocabulary-bousaad
+العدل,العدل,33/b0032.gif,,menasy,justice,vocabulary-bousaad
+العدم,العدم (لا شيء),33/b0033.gif,لا شيء,menasy,nonexistence,vocabulary-bousaad
+القوات الجوية,القوات الجوية,33/b0034.gif,,menasy,air force,vocabulary-bousaad
+الله الغفور,الله الغفور,33/b0035.gif,,menasy,"Allah , the forgiving",vocabulary-bousaad
+الله المدبر,الله المدبر,33/b0036.gif,,menasy,Allah the provider,vocabulary-bousaad
+الله تعالى,الله تعالى,33/b0041.gif,,menasy,"Allah , the exalted",vocabulary-bousaad
+المحافظة على,المحافظة على (شيء),33/b0042.gif,شيء,menasy,keeping protection maintenance,vocabulary-bousaad
+النخاع الشوكي,النخاع الشوكي,33/b0043.gif,,menasy,spinal cord,vocabulary-bousaad
+الهجرة من مكة,الهجرة من مكة (زمن الرسول),33/b0044.gif,زمن الرسول,menasy,Hegira ( the flight of prophet Mohamed from Mecca to Medina,vocabulary-bousaad
+انتحار,انتحار,33/b0045.gif,,menasy,suicide,vocabulary-bousaad
+أثار قديمة,أثار قديمة,33/b0046.gif,,menasy,ancient monument ruins,vocabulary-bousaad
+آفة,آفة,33/b0051.gif,,menasy,epidemic,vocabulary-bousaad
+ابرم اتفاق,ابرم اتفاق / عقد اتفاق,33/b0053.gif,عقد اتفاق,menasy,to enter on agreement (to conclude a contract,vocabulary-bousaad
+أتم,أتم / إتمام / انتهاء,33/b0054.gif,إتمام|انتهاء,menasy,"to complete , conclude , finish",vocabulary-bousaad
+أثر,أثر,33/b0055.gif,,menasy,trace,vocabulary-bousaad
+أثناء,أثناء,33/b0056.gif,,menasy,during,vocabulary-bousaad
+أجرة,أجرة (بدل أتعاب),33/b0061.gif,بدل أتعاب,menasy,wage,vocabulary-bousaad
+أخبار,أخبار / خبر,33/b0062.gif,خبر,menasy,news,vocabulary-bousaad
+أداة,أداة,33/b0063.gif,,menasy,"tool , instrument",vocabulary-bousaad
+أدلة,أدلة / دليل,33/b0064.gif,دليل,menasy,"evidence (s , proof (s",vocabulary-bousaad
+أدوات,أدوات / معدات,33/b0065.gif,معدات,menasy,tools / equipment (s,vocabulary-bousaad
+أذكار,أذكار,33/b0066.gif,,menasy,invocations,vocabulary-bousaad
+أراد,أراد,33/b0071.gif,,menasy,"to wont , wish",vocabulary-bousaad
+أرق,أرق,33/b0072.gif,,menasy,insomnia,vocabulary-bousaad
+أرملة,أرملة,33/b0073.gif,,menasy,widow,vocabulary-bousaad
+أساس,أساس,33/b0074.gif,,menasy,"basis , foundation",vocabulary-bousaad
+أساليب,أساليب,33/b0075.gif,,menasy,style (s way (s method (s,vocabulary-bousaad
+أسطورة,أسطورة,33/b0076.gif,,menasy,"legend , myth",vocabulary-bousaad
+أسلوب,أسلوب,33/b0081.gif,,menasy,style,vocabulary-bousaad
+أسير حرب,أسير حرب,33/b0082.gif,,menasy,prisoner of war,vocabulary-bousaad
+أصالة,أصالة / عراقة,33/b0083.gif,عراقة,menasy,originality,vocabulary-bousaad
+أصبح,أصبح,33/b0084.gif,,menasy,to become,vocabulary-bousaad
+أصل,أصل / أصلي,33/b0085.gif,أصلي,menasy,"origin , original",vocabulary-bousaad
+أضعف,أضعف,33/b0086.gif,,menasy,weaken,vocabulary-bousaad
+أضلاع الجسم,أضلاع الجسم,33/b0091.gif,,menasy,ribs,vocabulary-bousaad
+أطل على,أطل على,33/b0092.gif,,menasy,"to command , dominate",vocabulary-bousaad
+أعاق,أعاق,33/b0093.gif,,menasy,"to hinder , to hamper",vocabulary-bousaad
+أعباء,أعباء / عبء,33/b0094.gif,عبء,menasy,"burden (s, charge (s",vocabulary-bousaad
+أعطى,أعطى,33/b0095.gif,,menasy,to give,vocabulary-bousaad
+أفحم,أفحم / إفحام,33/b0096.gif,إفحام,menasy,to confute,vocabulary-bousaad
+أفرغ,أفرغ,33/b0101.gif,,menasy,to empty,vocabulary-bousaad
+أفضل,أفضل,33/b0102.gif,,menasy,better,vocabulary-bousaad
+أفق,أفق,33/b0103.gif,,menasy,horizon,vocabulary-bousaad
+أفنى,أفنى,33/b0104.gif,,menasy,"to annihilate , destroy",vocabulary-bousaad
+أقارب,أقارب,33/b0105.gif,,menasy,relatives / family,vocabulary-bousaad
+أكبر,أكبر (الحجم),33/b0106.gif,الحجم,menasy,bigger,vocabulary-bousaad
+ألصق,ألصق,33/b0111.gif,,menasy,"to attach , paste",vocabulary-bousaad
+ألفة,ألفة,33/b0112.gif,,menasy,familiarity,vocabulary-bousaad
+ألم,ألم,33/b0113.gif,,menasy,pain,vocabulary-bousaad
+ألماس,ألماس,33/b0114.gif,,menasy,diamond,vocabulary-bousaad
+ألمنيوم,ألمنيوم,33/b0115.gif,,menasy,aluminum,vocabulary-bousaad
+أمانة,أمانة,33/b0116.gif,,menasy,honesty,vocabulary-bousaad
+أمة,أمة,29/b0121.gif,,menasy,nation,general-vocabulary-samer
+أمتعة,أمتعة,29/b0122.gif,,menasy,luggage,general-vocabulary-samer
+أًن,أًن / أنين,29/b0123.gif,أنين,menasy,"to moan , groan moaning",general-vocabulary-samer
+أنثى,أنثى,29/b0124.gif,,menasy,female,general-vocabulary-samer
+أهلك,أهلك ( قضى على),29/b0125.gif,قضى على,menasy,"to destroy , run",general-vocabulary-samer
+أولي الأمر,أولي الأمر,29/b0126.gif,,menasy,guardian . custodian,general-vocabulary-samer
+ابتزاز,ابتزاز,29/b0131.gif,,menasy,blackmailing,general-vocabulary-samer
+إبحار,إبحار,29/b0132.gif,,menasy,sailing,general-vocabulary-samer
+أبداع فكري,أبداع فكري,29/b0133.gif,,menasy,intellectual creativity,general-vocabulary-samer
+إبعاد,إبعاد,29/b0136.gif,,menasy,"removal , taking away",general-vocabulary-samer
+اتحد,اتحد / اتحاد,29/b0141.gif,اتحاد,menasy,to unite,general-vocabulary-samer
+إثم,إثم,29/b0142.gif,,menasy,sin,general-vocabulary-samer
+إثم,إثم,29/b0143.gif,,menasy,sin,general-vocabulary-samer
+إجبار,إجبار,29/b0144.gif,,menasy,compulsion,general-vocabulary-samer
+اجتاز بنجاح,اجتاز بنجاح,29/b0145.gif,,menasy,passing,general-vocabulary-samer
+إجراء,إجراء,29/b0146.gif,,menasy,"measure, procedure",general-vocabulary-samer
+اجهاد,اجهاد,30/b0151.gif,,menasy,exhaustion . strain,vocabulary-al-rashid
+احترام,احترام,31/b0152.gif,,menasy,respect,vocabulary-al-rashid
+إحساس,إحساس,31/b0153.gif,,menasy,feeling,vocabulary-al-rashid
+اختراع,اختراع,31/b0154.gif,,menasy,invention,vocabulary-al-rashid
+اختراق,اختراق / اخترق,31/b0155.gif,اخترق,menasy,"penetration, to penetrate",vocabulary-al-rashid
+اختصاص,اختصاص,31/b0156.gif,,menasy,specialization . field,vocabulary-al-rashid
+اختفاء,اختفاء,30/b0161.gif,,menasy,disappearance,vocabulary-al-rashid
+اختلاف الأجناس,اختلاف الأجناس,30/b0162.gif,,menasy,cosmopolitism,vocabulary-al-rashid
+إخلال,إخلال / أخل بـ,30/b0163.gif,أخل بـ,menasy,to break / breach,vocabulary-al-rashid
+أدعى,أدعى (زعم),30/b0164.gif,زعم,menasy,to allege,vocabulary-al-rashid
+إذن,إذن,30/b0165.gif,,menasy,permission,vocabulary-al-rashid
+إرث,إرث ( ميراث),30/b0166.gif,ميراث,menasy,inheritance,vocabulary-al-rashid
+إرسال,إرسال / أرسل,30/b0171.gif,أرسل,menasy,sending / to send,vocabulary-al-rashid
+إرشاد,إرشاد / أرشد,30/b0172.gif,أرشد,menasy,guidance / to guide,vocabulary-al-rashid
+إرضاع breast,إرضاع breast,30/b0173.gif,,menasy,feeding,vocabulary-al-rashid
+إزالة,إزالة,30/b0174.gif,,menasy,removal,vocabulary-al-rashid
+إزعاج,إزعاج,30/b0175.gif,,menasy,disturbance,vocabulary-al-rashid
+إساءة,إساءة (أساء إلى ),30/b0176.gif,أساء إلى,menasy,"offense , harm",general-vocabulary-naji
+استئصال,استئصال,31/b0181.gif,,menasy,eradication,vocabulary-al-rashid
+استبداد,استبداد,31/b0182.gif,,menasy,despotism,vocabulary-al-rashid
+استبيان,استبيان,31/b0183.gif,,menasy,questionnaire,vocabulary-al-rashid
+استثمار,استثمار,31/b0184.gif,,menasy,investment,vocabulary-al-rashid
+استثناء,استثناء,31/b0185.gif,,menasy,exception,vocabulary-al-rashid
+استجابة,استجابة,31/b0186.gif,,menasy,response,vocabulary-al-rashid
+استجابة الله,استجابة الله,31/b0191.gif,,menasy,"Allah, answer to the prayers",vocabulary-al-rashid
+استجداء,استجداء / توسل,31/b0192.gif,توسل,menasy,begging,vocabulary-al-rashid
+استخبارات,استخبارات / مخابرات,31/b0193.gif,مخابرات,menasy,intelligence,vocabulary-al-rashid
+استخدام,استخدام / استعمال,31/b0194.gif,استعمال,menasy,use,vocabulary-al-rashid
+استخراج,استخراج,31/b0195.gif,,menasy,extracting,vocabulary-al-rashid
+استخفاف,استخفاف / استهزاء,31/b0196.gif,استهزاء,menasy,underestimation,vocabulary-al-rashid
+بؤس,بؤس,30/b0371.gif,,menasy,misery,general-vocabulary-naji
+بئر,بئر,30/b0372.gif,,menasy,well,general-vocabulary-naji
+باح,باح / بوح,30/b0373.gif,بوح,menasy,"to reveal , disclose",general-vocabulary-naji
+تاجر,تاجر,29/b0451.gif,,menasy,merchant,general-vocabulary-samer
+تاريخ اليوم,تاريخ اليوم,29/b0452.gif,,menasy,date,general-vocabulary-samer
+تافه,تافه,29/b0453.gif,,menasy,trivial,general-vocabulary-samer
+تاه,تاه,29/b0454.gif,,menasy,to get lost,general-vocabulary-samer
+تأثير,تأثير,29/b0455.gif,,menasy,influence,general-vocabulary-samer
+تأجيل,تأجيل,29/b0461.gif,,menasy,"postponement , delaying",general-vocabulary-samer
+تأديب,تأديب,29/b0462.gif,,menasy,discipline,general-vocabulary-samer
+تأرجح,تأرجح,29/b0463.gif,,menasy,swinging - octillion,general-vocabulary-samer
+تاريخ,تاريخ,29/b0464.gif,,menasy,"historiography, dating",general-vocabulary-samer
+تأكيد,تأكيد,29/b0465.gif,,menasy,confirmation,general-vocabulary-samer
+تألم لـ,تألم لـ,29/b0466.gif,,menasy,to suffer,general-vocabulary-samer
+تفسير مختلف,تفسير مختلف,31/b0601.gif,,menasy,interpretation,vocabulary-al-rashid
+تفكير,تفكير,31/b0602.gif,,menasy,thinking,vocabulary-al-rashid
+تفَوق,تفَوق,31/b0603.gif,,menasy,"excellence, distinction",vocabulary-al-rashid
+تقاليد,تقاليد,31/b0604.gif,,menasy,"customs, traditions",vocabulary-al-rashid
+تقدم,تقدم,31/b0605.gif,,menasy,progress,vocabulary-al-rashid
+تقدير,تقدير,31/b0606.gif,,menasy,"appreciation, estimation",vocabulary-al-rashid
+تقريبا,تقريبا,31/b0611.gif,,menasy,"almost, approximately",vocabulary-al-rashid
+تقرير,تقرير,31/b0612.gif,,menasy,report,vocabulary-al-rashid
+تقوى,تقوى (خوف من الله ),31/b0613.gif,خوف من الله,menasy,fear of Allah,vocabulary-al-rashid
+تكاثر,تكاثر,31/b0614.gif,,menasy,reproduction,vocabulary-al-rashid
+تكاليف,تكاليف / تكلفة,31/b0615.gif,تكلفة,menasy,cost,vocabulary-al-rashid
+تكفير الذنوب,تكفير الذنوب,31/b0616.gif,,menasy,expiation,vocabulary-al-rashid
+تلاعب,تلاعب / تحايل,31/b0621.gif,تحايل,menasy,"manipulation, fraud",vocabulary-al-rashid
+تلامس,تلامس,31/b0622.gif,,menasy,touching each other,vocabulary-al-rashid
+تلطخ,تلطخ,31/b0623.gif,,menasy,to be stained with,vocabulary-al-rashid
+تلوث,تلوث,31/b0624.gif,,menasy,pollution,vocabulary-al-rashid
+تمادي,تمادي,31/b0625.gif,,menasy,persist in,vocabulary-al-rashid
+تمثيل,تمثيل (فني),31/b0626.gif,فني,menasy,acting,vocabulary-al-rashid
+تمدد,تمدد,31/b0631.gif,,menasy,"extension, expansion",vocabulary-al-rashid
+تمرد,تمرد / متمرد,31/b0632.gif,متمرد,menasy,to rebel / rebellious,vocabulary-al-rashid
+تملق,تملق,31/b0633.gif,,menasy,to fatter,vocabulary-al-rashid
+تمنيات,تمنيات,31/b0634.gif,,menasy,"wishes, hopes",vocabulary-al-rashid
+تمويل,تمويل (دعم مادي),31/b0635.gif,دعم مادي,menasy,financing,vocabulary-al-rashid
+تنبؤ,تنبؤ,31/b0636.gif,,menasy,prediction,vocabulary-al-rashid
+تنسيق,تنسيق,31/b0641.gif,,menasy,coordination,vocabulary-al-rashid
+تنشئة,تنشئة (تربية),31/b0642.gif,تربية,menasy,"raising, bringing up",vocabulary-al-rashid
+تنظيم,تنظيم (سياسي),31/b0643.gif,سياسي,menasy,political organization,vocabulary-al-rashid
+تنفس,تنفس,31/b0644.gif,,menasy,to breathe,vocabulary-al-rashid
+تنفس,تنفس (شهيق-زفير),31/b0645.gif,شهيق-زفير,menasy,breath,vocabulary-al-rashid
+تنمية بشرية,تنمية بشرية,31/b0646.gif,,menasy,human development,vocabulary-al-rashid
+تهجئة,تهجئة / تهجى,31/b0651.gif,تهجى,menasy,spelling / to spell,vocabulary-al-rashid
+تهديد,تهديد,31/b0652.gif,,menasy,threat,vocabulary-al-rashid
+تهنئة,تهنئة,31/b0653.gif,,menasy,congratulation,vocabulary-al-rashid
+تهور,تهور,31/b0654.gif,,menasy,recklessness,vocabulary-al-rashid
+توازن,توازن,31/b0655.gif,,menasy,balance,vocabulary-al-rashid
+تواق,تواق / توق,31/b0656.gif,توق,menasy,"anxious, eager",vocabulary-al-rashid
+توبة,توبة,31/b0661.gif,,menasy,repentance,vocabulary-al-rashid
+توتر,توتر,31/b0662.gif,,menasy,tension,vocabulary-al-rashid
+توحيد,توحيد (وحدة),31/b0663.gif,وحدة,menasy,"unification, union",vocabulary-al-rashid
+توسع,توسع,31/b0664.gif,,menasy,expansion,vocabulary-al-rashid
+توضيح,توضيح / شرح,31/b0665.gif,شرح,menasy,"clarification, explanation",vocabulary-al-rashid
+توفيق,توفيق,31/b0666.gif,,menasy,"success, progress",vocabulary-al-rashid
+توقع,توقع,31/b0671.gif,,menasy,expect,vocabulary-al-rashid
+توقف,توقف,31/b0672.gif,,menasy,stoppage / cessation,vocabulary-al-rashid
+توكأ,توكأ,31/b0673.gif,,menasy,to lean on,vocabulary-al-rashid
+تولى,تولى / تولي,31/b0674.gif,تولي,menasy,"to manage, undertake",vocabulary-al-rashid
+تولى القيادة,تولى القيادة,31/b0675.gif,,menasy,to assume leadership,vocabulary-al-rashid
+ثابت,ثابت,29/b0691.gif,,menasy,fixed,general-vocabulary-samer
+ثابر,ثابر / مثابرة,29/b0692.gif,مثابرة,menasy,to persist,general-vocabulary-samer
+ثأر,ثأر,29/b0693.gif,,menasy,revenge,general-vocabulary-samer
+ثروة,ثروة,29/b0694.gif,,menasy,wealth,general-vocabulary-samer
+ثقل,ثقل,29/b0695.gif,,menasy,"weight , load",general-vocabulary-samer
+ثلث,ثلث,30/b0701.gif,,menasy,third,general-vocabulary-naji
+ثلج,ثلج,30/b0702.gif,,menasy,ice,general-vocabulary-naji
+ثمار,ثمار,30/b0703.gif,,menasy,fruit,general-vocabulary-naji
+ثمن,ثمن / قيمة,30/b0704.gif,قيمة,menasy,"price , cost",general-vocabulary-naji
+ثمين,ثمين (مادياً),30/b0705.gif,مادياً,menasy,expensive,general-vocabulary-naji
+ثنى,ثنى,30/b0706.gif,,menasy,"bending , twisting",general-vocabulary-naji
+جائزة,جائزة,29/b0731.gif,,menasy,prize,general-vocabulary-samer
+جاد,جاد / جدي,29/b0732.gif,جدي,menasy,serious,general-vocabulary-samer
+جاري,جاري / يجاري,29/b0733.gif,يجاري,menasy,to keep up with,general-vocabulary-samer
+جاهز,جاهز,29/b0736.gif,,menasy,ready,general-vocabulary-samer
+جاهزية,جاهزية,31/b0741.gif,,menasy,"readiness, viability",vocabulary-al-rashid
+جبرائيل,جبرائيل (من الملائكة),31/b0743.gif,من الملائكة,menasy,Gabriel,vocabulary-al-rashid
+جبين,جبين,31/b0744.gif,,menasy,forehead,vocabulary-al-rashid
+جثا,جثا / جثو,31/b0745.gif,جثو,menasy,to kneel,vocabulary-al-rashid
+جدارة,جدارة,31/b0746.gif,,menasy,"worth, merit",vocabulary-al-rashid
+جدال,جدال,31/b0751.gif,,menasy,argument,vocabulary-al-rashid
+جدد,جدد / تجديد,31/b0752.gif,تجديد,menasy,to renew / renovation,vocabulary-al-rashid
+جدير,جدير,31/b0753.gif,,menasy,worthy,vocabulary-al-rashid
+جذاب,جذاب / يجذب,31/b0754.gif,يجذب,menasy,"attractive, to attract",vocabulary-al-rashid
+جذور,جذور,31/b0755.gif,,menasy,roots,vocabulary-al-rashid
+جرح,جرح,31/b0756.gif,,menasy,"wound, injury",vocabulary-al-rashid
+جرس,جرس,31/b0761.gif,,menasy,bell,vocabulary-al-rashid
+جرس الباب,جرس الباب,31/b0762.gif,,menasy,doorbell,vocabulary-al-rashid
+جرعة,جرعة (للدواء),31/b0763.gif,للدواء,menasy,dose,vocabulary-al-rashid
+جري,جري / ركض,31/b0764.gif,ركض,menasy,running / to run,vocabulary-al-rashid
+جريدة,جريدة,31/b0765.gif,,menasy,newspaper,vocabulary-al-rashid
+جريمة,جريمة,31/b0766.gif,,menasy,crime,vocabulary-al-rashid
+جزء,جزء,31/b0771.gif,,menasy,part,vocabulary-al-rashid
+جزاء,جزاء (مكافأة),31/b0772.gif,مكافأة,menasy,reward,vocabulary-al-rashid
+جزر,جزر (جزر البحر),31/b0773.gif,جزر البحر,menasy,ebb,vocabulary-al-rashid
+جسم,جسم,31/b0774.gif,,menasy,body,vocabulary-al-rashid
+جسور,جسور / جسارة / مقدام,31/b0775.gif,جسارة|مقدام,menasy,brave,vocabulary-al-rashid
+جفا,جفا,31/b0781.gif,,menasy,"to abandon, desert",vocabulary-al-rashid
+جلب,جلب,31/b0782.gif,,menasy,bringing,vocabulary-al-rashid
+حاجب العين,حاجب العين,29/b0831.gif,,menasy,eyebrow,general-vocabulary-samer
+حاجة,حاجة,29/b0832.gif,,menasy,need,general-vocabulary-samer
+حاد,حاد (نأى عن),29/b0833.gif,نأى عن,menasy,"to be far from , remote from",general-vocabulary-samer
+حادث,حادث,29/b0834.gif,,menasy,accident,general-vocabulary-samer
+حار,حار,29/b0835.gif,,menasy,spicy,general-vocabulary-samer
+حارس,حارس,29/b0836.gif,,menasy,guard,general-vocabulary-samer
+حافز,حافز,35/b0841.gif,,menasy,motive,vocabulary-al-dhikair
+حالاً,حالاً (الآن),35/b0842.gif,الآن,menasy,immediately,vocabulary-al-dhikair
+حالة,حالة,35/b0843.gif,,menasy,case,vocabulary-al-dhikair
+حالة,حالة (للشخص),35/b0844.gif,للشخص,menasy,"case, solution",vocabulary-al-dhikair
+حامض,حامض,35/b0845.gif,,menasy,acid,vocabulary-al-dhikair
+حاول,حاول / محاولة,35/b0846.gif,محاولة,menasy,to try / trial,vocabulary-al-dhikair
+حبر,حبر,35/b0851.gif,,menasy,ink,vocabulary-al-dhikair
+حتى الآن,حتى الآن,35/b0852.gif,,menasy,"until now, so far",vocabulary-al-dhikair
+حث,حث,35/b0853.gif,,menasy,to urge,vocabulary-al-dhikair
+حجر,حجر (عليه),35/b0854.gif,عليه,menasy,to restrain,vocabulary-al-dhikair
+حجز,حجز,35/b0855.gif,,menasy,reservation,vocabulary-al-dhikair
+حجم,حجم,35/b0856.gif,,menasy,volume,vocabulary-al-dhikair
+حد,حد (للتعامل),34/b0861.gif,للتعامل,menasy,limit,vocabulary-al-otaibi
+حدد,حدد / تحديد,34/b0862.gif,تحديد,menasy,"to identify, define",vocabulary-al-otaibi
+حدس,حدس,34/b0863.gif,,menasy,intuition,vocabulary-al-otaibi
+حديث قدسي,حديث قدسي,34/b0864.gif,,menasy,divine,vocabulary-al-otaibi
+حديد,حديد,34/b0865.gif,,menasy,IRON,vocabulary-al-otaibi
+حديقة,حديقة,34/b0866.gif,,menasy,garden,vocabulary-al-otaibi
+حديقة حيوانات,حديقة حيوانات,34/b0871.gif,,menasy,zoo,vocabulary-al-otaibi
+حزر,حزر,34/b0872.gif,,menasy,"caution, carefulness",vocabulary-al-otaibi
+حر,حر,34/b0873.gif,,menasy,free,vocabulary-al-otaibi
+حراسة,حراسة,34/b0874.gif,,menasy,guarding,vocabulary-al-otaibi
+حرب,حرب,34/b0875.gif,,menasy,war,vocabulary-al-otaibi
+حرر,حرر / فك قيده,34/b0876.gif,فك قيده,menasy,"to liberate, set free",vocabulary-al-otaibi
+حرف,حرف / تحريف,35/b0881.gif,تحريف,menasy,to distort / distortion,vocabulary-al-dhikair
+حرق,حرق,35/b0882.gif,,menasy,burn,vocabulary-al-dhikair
+حركة,حركة,35/b0883.gif,,menasy,"movement, motion",vocabulary-al-dhikair
+حركة,حركة (سياسية),35/b0884.gif,سياسية,menasy,political movement,vocabulary-al-dhikair
+حرمة,حرمة,35/b0885.gif,,menasy,"sanctity, holiness",vocabulary-al-dhikair
+حرية,حرية,35/b0886.gif,,menasy,freedom,vocabulary-al-dhikair
+حرير,حرير,35/b0891.gif,,menasy,silk,vocabulary-al-dhikair
+حزب,حزب,35/b0892.gif,,menasy,party,vocabulary-al-dhikair
+حساس,حساس,35/b0893.gif,,menasy,sensitive,vocabulary-al-dhikair
+حشد من الناس,حشد من الناس,35/b0894.gif,,menasy,crowd,vocabulary-al-dhikair
+حشرة,حشرة,35/b0895.gif,,menasy,insect,vocabulary-al-dhikair
+حشيش,حشيش,35/b0896.gif,,menasy,hashish,vocabulary-al-dhikair
+حصاد,حصاد,34/b0901.gif,,menasy,harvesting,vocabulary-al-otaibi
+حصل على,حصل على ( استحوذ على),34/b0902.gif,استحوذ على,menasy,"to get, obtain, own",vocabulary-al-otaibi
+حضور,حضور (قدوم),34/b0903.gif,قدوم,menasy,"presence, attendance",vocabulary-al-otaibi
+حطم,حطم (تحطيم),34/b0904.gif,تحطيم,menasy,"to smash, break",vocabulary-al-otaibi
+حظ,حظ (نصيب),34/b0905.gif,نصيب,menasy,luck,vocabulary-al-otaibi
+حظيرة حيوانات,حظيرة حيوانات,34/b0906.gif,,menasy,"pen, yard",vocabulary-al-otaibi
+حفظ,حفظ (بالذاكرة),34/b0911.gif,بالذاكرة,menasy,memorization,vocabulary-al-otaibi
+حقا,حقا,34/b0912.gif,,menasy,really,vocabulary-al-otaibi
+حقق,حقق (تحقيق غاية),34/b0913.gif,تحقيق غاية,menasy,"to achieve, accomplish",vocabulary-al-otaibi
+حقن,حقن ( حقنة),34/b0914.gif,حقنة,menasy,to inject,vocabulary-al-otaibi
+حقيقي,حقيقي,34/b0915.gif,,menasy,"actual, real, true",vocabulary-al-otaibi
+حكم,حكم,34/b0916.gif,,menasy,"judgment, verdict",vocabulary-al-otaibi
+خاتم,خاتم,32/b0971.gif,,menasy,ring,vocabulary-al-hazani
+خالف,خالف / اختلف عن,32/b0972.gif,اختلف عن,menasy,disagree with,vocabulary-al-hazani
+خالق,خالق,32/b0973.gif,,menasy,creator,vocabulary-al-hazani
+خبر,خبر,32/b0974.gif,,menasy,news,vocabulary-al-hazani
+خبرة,خبرة,32/b0975.gif,,menasy,experience,vocabulary-al-hazani
+ختم,ختم,32/b0976.gif,,menasy,stamp,vocabulary-al-hazani
+ختم,ختم / انهي / انتهى,32/b0981.gif,انهي|انتهى,menasy,"to finish , end",vocabulary-al-hazani
+خجل,خجل,32/b0982.gif,,menasy,shyness,vocabulary-al-hazani
+خد,خد,32/b0983.gif,,menasy,cheek,vocabulary-al-hazani
+خداع,خداع,32/b0984.gif,,menasy,"deception, deceit",vocabulary-al-hazani
+خدمة,خدمة / منح,32/b0985.gif,منح,menasy,"service, favor",vocabulary-al-hazani
+خريطة,خريطة / خارطة,32/b0986.gif,خارطة,menasy,"map , drawing",vocabulary-al-hazani
+خزي,خزي,32/b0991.gif,,menasy,shame,vocabulary-al-hazani
+خسارة,خسارة,32/b0992.gif,,menasy,loss,vocabulary-al-hazani
+خشب,خشب,32/b0993.gif,,menasy,wood,vocabulary-al-hazani
+خشوع,خشوع,32/b0994.gif,,menasy,"piety , submission",vocabulary-al-hazani
+خصم بنسبة,خصم بنسبة,32/b0995.gif,,menasy,discount,vocabulary-al-hazani
+خضار,خضار,32/b0996.gif,,menasy,vegetables,vocabulary-al-hazani
+دائم,دائم,29/b1051.gif,,menasy,permanent,general-vocabulary-samer
+داس,داس (سحق),29/b1052.gif,سحق,menasy,to step on,general-vocabulary-samer
+دافئ,دافئ,29/b1053.gif,,menasy,worm,general-vocabulary-samer
+دافع,دافع,29/b1054.gif,,menasy,"incentive , motive",general-vocabulary-samer
+دحرج,دحرج,29/b1055.gif,,menasy,to roll,general-vocabulary-samer
+دخان,دخان,29/b1056.gif,,menasy,smoke,general-vocabulary-samer
+ذاب,ذاب / ذوبان,33/b1111.gif,ذوبان,menasy,"to melt , dissolution",vocabulary-bousaad
+ذاكرة,ذاكرة,33/b1112.gif,,menasy,memory,vocabulary-bousaad
+ذبح,ذبح / نحر,33/b1113.gif,نحر,menasy,to slaughter,vocabulary-bousaad
+ذراع,ذراع,33/b1114.gif,,menasy,arm,vocabulary-bousaad
+ذقن,ذقن,33/b1115.gif,,menasy,chin,vocabulary-bousaad
+ذكر,ذكر,33/b1116.gif,,menasy,male,vocabulary-bousaad
+ذل,ذل,33/b1121.gif,,menasy,humiliation,vocabulary-bousaad
+ذنب,ذنب,33/b1122.gif,,menasy,offense,vocabulary-bousaad
+ذهب,ذهب / ذهاب,33/b1123.gif,ذهاب,menasy,to go,vocabulary-bousaad
+ذهول,ذهول / مذهل,33/b1124.gif,مذهل,menasy,Astonishment / Amazing,vocabulary-bousaad
+رئيسي,رئيسي,33/b1131.gif,,menasy,"essential , man",vocabulary-bousaad
+رائع,رائع,33/b1132.gif,,menasy,"wonderful , merveilleux",vocabulary-bousaad
+رابطة,رابطة,33/b1133.gif,,menasy,association,vocabulary-bousaad
+راحة,راحة,33/b1134.gif,,menasy,rest,vocabulary-bousaad
+راسخ,راسخ,33/b1135.gif,,menasy,deep-rooted,vocabulary-bousaad
+رأي,رأي,33/b1136.gif,,menasy,opinion,vocabulary-bousaad
+زائد,زائد / زيادة,29/b1211.gif,زيادة,menasy,additional / addition,general-vocabulary-samer
+زبالة,زبالة / نفاية,29/b1212.gif,نفاية,menasy,garbage,general-vocabulary-samer
+زحف,زحف,29/b1213.gif,,menasy,crawl,general-vocabulary-samer
+زحمة,زحمة / ازدحام,29/b1214.gif,ازدحام,menasy,crowdedness,general-vocabulary-samer
+زخارف,زخارف / زخرف,29/b1215.gif,زخرف,menasy,decorations,general-vocabulary-samer
+زر,زر (للملابس),29/b1216.gif,للملابس,menasy,button,general-vocabulary-samer
+ساحة,ساحة,29/b1251.gif,,menasy,courtyard,general-vocabulary-samer
+ساحر,ساحر,29/b1252.gif,,menasy,magician,general-vocabulary-samer
+ساخن,ساخن,29/b1253.gif,,menasy,hot,general-vocabulary-samer
+ساعد,ساعد,29/b1254.gif,,menasy,to help,general-vocabulary-samer
+ساق,ساق (الشجرة),29/b1255.gif,الشجرة,menasy,trunk,general-vocabulary-samer
+ساق إلى,ساق إلى / قاد إلى (أخذ بيده),29/b1256.gif,قاد إلى|أخذ بيده,menasy,"to drive , guide",general-vocabulary-samer
+صابون,صابون,32/b1451.gif,,menasy,soap,vocabulary-al-hazani
+صاح,صاح,32/b1452.gif,,menasy,"to yell , cry",vocabulary-al-hazani
+صارم,صارم,32/b1453.gif,,menasy,"firm , strict",vocabulary-al-hazani
+صاف,صاف,32/b1454.gif,,menasy,clear,vocabulary-al-hazani
+صب,صب,32/b1455.gif,,menasy,pour,vocabulary-al-hazani
+صحن,صحن,32/b1456.gif,,menasy,plate,vocabulary-al-hazani
+صحيح,صحيح,32/b1461.gif,,menasy,"right , true , correct",vocabulary-al-hazani
+صخرة,صخرة,32/b1462.gif,,menasy,rock,vocabulary-al-hazani
+صد عن,صد عن,32/b1463.gif,,menasy,"to repel , rebuff",vocabulary-al-hazani
+صدأ,صدأ,32/b1464.gif,,menasy,rust,vocabulary-al-hazani
+صدمة,صدمة,32/b1465.gif,,menasy,shock,vocabulary-al-hazani
+صدى الصوت,صدى الصوت,32/b1466.gif,,menasy,echo,vocabulary-al-hazani
+صديق السوء,صديق السوء,32/b1471.gif,,menasy,evil company,vocabulary-al-hazani
+صراحة,صراحة / صريح,32/b1472.gif,صريح,menasy,"openness . frank , honest",vocabulary-al-hazani
+صراخ,صراخ,32/b1473.gif,,menasy,"screaming , shouting",vocabulary-al-hazani
+صرة,صرة,32/b1474.gif,,menasy,"bundle , package",vocabulary-al-hazani
+صرف النظر,صرف النظر,32/b1475.gif,,menasy,changing one's mind,vocabulary-al-hazani
+صعب,صعب,32/b1476.gif,,menasy,difficult . hard,vocabulary-al-hazani
+قبة,قبة,36/b1931.gif,,menasy,dome,vocabulary-al-zahrani
+قًبَلَ,قًبَلَ,36/b1932.gif,,menasy,to kiss,vocabulary-al-zahrani
+قَدَرَ,قَدَرَ,36/b1933.gif,,menasy,to estimate,vocabulary-al-zahrani
+قَدّّم,قَدّّم,36/b1934.gif,,menasy,"to offer, give",vocabulary-al-zahrani
+قَدم,قَدم / جاء,36/b1935.gif,جاء,menasy,"to arrive, come",vocabulary-al-zahrani
+قدم بدل,قدم بدل (بديل),36/b1936.gif,بديل,menasy,"to exchange, reciprocate",vocabulary-al-zahrani
+قدمين,قدمين / أرجل,36/b1941.gif,أرجل,menasy,feet,vocabulary-al-zahrani
+قدوة,قدوة,36/b1942.gif,,menasy,"example, model",vocabulary-al-zahrani
+قذر,قذر / قذارة,36/b1943.gif,قذارة,menasy,"dirty, dirt",vocabulary-al-zahrani
+قراءة الشفاه,قراءة الشفاه,36/b1944.gif,,menasy,lip reading,vocabulary-al-zahrani
+قرر,قرر / قرار,36/b1945.gif,قرار,menasy,"to decide, decision",vocabulary-al-zahrani
+قرض,قرض / إقراض / سلفه,36/b1946.gif,إقراض|سلفه,menasy,loan / to borrow,vocabulary-al-zahrani
+قريبا,قريبا,36/b1951.gif,,menasy,"soon, shortly",vocabulary-al-zahrani
+قِسمْ,قِسمْ,36/b1952.gif,,menasy,department,vocabulary-al-zahrani
+قِسمْ,قِسمْ (أقسم بالله),36/b1953.gif,أقسم بالله,menasy,oath,vocabulary-al-zahrani
+قَسَمَ,قَسَمَ / تقسيم,36/b1954.gif,تقسيم,menasy,to divide,vocabulary-al-zahrani
+قسيس,قسيس,36/b1955.gif,,menasy,priest,vocabulary-al-zahrani
+قشرة,قشرة,36/b1956.gif,,menasy,"outer layer, husk",vocabulary-al-zahrani
+قص,قص / قطع,36/b1961.gif,قطع,menasy,to cut,vocabulary-al-zahrani
+قص الشعر,قص الشعر,36/b1962.gif,,menasy,to have one's hair cut,vocabulary-al-zahrani
+قصة,قصة / حكاية,36/b1963.gif,حكاية,menasy,story,vocabulary-al-zahrani
+قصر,قصر,36/b1964.gif,,menasy,palace,vocabulary-al-zahrani
+قصيدة,قصيدة,36/b1965.gif,,menasy,poem,vocabulary-al-zahrani
+قطعة,قطعة,36/b1966.gif,,menasy,piece,vocabulary-al-zahrani
+قطعة نقدية,قطعة نقدية,36/b1971.gif,,menasy,coin,vocabulary-al-zahrani
+قطن,قطن,36/b1972.gif,,menasy,cotton,vocabulary-al-zahrani
+قفز,قفز,36/b1973.gif,,menasy,jump,vocabulary-al-zahrani
+قفل,قفل,36/b1974.gif,,menasy,lock,vocabulary-al-zahrani
+قلب,قلب,36/b1975.gif,,menasy,heart,vocabulary-al-zahrani
+قلد,قلد / منح وسام,36/b1976.gif,منح وسام,menasy,to award,vocabulary-al-zahrani
+قلم حبر,قلم حبر,36/b1981.gif,,menasy,pen,vocabulary-al-zahrani
+قلي,قلي,36/b1982.gif,,menasy,frying,vocabulary-al-zahrani
+قليل,قليل,36/b1983.gif,,menasy,few,vocabulary-al-zahrani
+قمار,قمار,36/b1984.gif,,menasy,gambling,vocabulary-al-zahrani
+قماش,قماش,36/b1985.gif,,menasy,cloth,vocabulary-al-zahrani
+قمة,قمة,36/b1986.gif,,menasy,top,vocabulary-al-zahrani
+قمر صناعي,قمر صناعي,36/b1991.gif,,menasy,satellite,vocabulary-al-zahrani
+قمع,قمع,36/b1992.gif,,menasy,"oppression, despotism",vocabulary-al-zahrani
+قناعة,قناعة,36/b1993.gif,,menasy,"satisfaction, contentment",vocabulary-al-zahrani
+قهوة,قهوة (مشروب),36/b1994.gif,مشروب,menasy,coffee,vocabulary-al-zahrani
+قواعد,قواعد,36/b1995.gif,,menasy,bases,vocabulary-al-zahrani
+قوة,قوة / قوي,36/b1996.gif,قوي,menasy,power / strong / powerful,vocabulary-al-zahrani
+قوقعة,قوقعة (للأذن),36/b2001.gif,للأذن,menasy,Cochlear implant,vocabulary-al-zahrani
+قومي,قومي,36/b2002.gif,,menasy,national,vocabulary-al-zahrani
+قياس السمع,قياس السمع,36/b2003.gif,,menasy,measuring hearing,vocabulary-al-zahrani
+قيام الليل,قيام الليل,36/b2004.gif,,menasy,night vigil prayer,vocabulary-al-zahrani
+قيمة مادية,قيمة مادية,36/b2005.gif,,menasy,value,vocabulary-al-zahrani
+كاثوليك,كاثوليك,36/b2011.gif,,menasy,catholic,vocabulary-al-zahrani
+كامل,كامل / مكتمل,36/b2012.gif,مكتمل,menasy,complete,vocabulary-al-zahrani
+كان,كان,36/b2013.gif,,menasy,was,vocabulary-al-zahrani
+كأس رياضي,كأس رياضي,36/b2014.gif,,menasy,cup,vocabulary-al-zahrani
+كبريت,كبريت,36/b2015.gif,,menasy,matches,vocabulary-al-zahrani
+كبير,كبير,36/b2016.gif,,menasy,big,vocabulary-al-zahrani
+كتلة,كتلة,36/b2021.gif,,menasy,mass,vocabulary-al-zahrani
+كراهية,كراهية,36/b2022.gif,,menasy,hatred,vocabulary-al-zahrani
+كسب,كسب / ربح,36/b2023.gif,ربح,menasy,"gain, profit",vocabulary-al-zahrani
+كَسَلْ,كَسَلْ,36/b2024.gif,,menasy,laziness,vocabulary-al-zahrani
+كشف,كشف (يرفع الغموض),36/b2025.gif,يرفع الغموض,menasy,to uncover,vocabulary-al-zahrani
+كشف الحقيقة,كشف الحقيقة,36/b2026.gif,,menasy,to uncover the truth,vocabulary-al-zahrani
+كعب القدم,كعب القدم,36/b2031.gif,,menasy,heel,vocabulary-al-zahrani
+كعك,كعك / بسكويت,36/b2032.gif,بسكويت,menasy,"cookies, biscuits",vocabulary-al-zahrani
+كفء,كفء,36/b2033.gif,,menasy,"qualified, competent",vocabulary-al-zahrani
+كفاح,كفاح,36/b2034.gif,,menasy,strive,vocabulary-al-zahrani
+كفارة,كفارة,36/b2035.gif,,menasy,atonement,vocabulary-al-zahrani
+كفر,كفر,36/b2036.gif,,menasy,infidelity,vocabulary-al-zahrani
+كل,كل / جميع / معظم,36/b2041.gif,جميع|معظم,menasy,all,vocabulary-al-zahrani
+كل شخص,كل شخص,36/b2042.gif,,menasy,everybody,vocabulary-al-zahrani
+كمية,كمية,36/b2043.gif,,menasy,quantity,vocabulary-al-zahrani
+كنز,كنز,36/b2044.gif,,menasy,treasure,vocabulary-al-zahrani
+كوع,كوع,36/b2045.gif,,menasy,elbow,vocabulary-al-zahrani
+كيس,كيس,36/b2046.gif,,menasy,bag,vocabulary-al-zahrani
+لا,لا,37/b2051.gif,,menasy,no,vocabulary-amro
+لا أحد,لا أحد,37/b2052.gif,,menasy,nobody,vocabulary-amro
+لا بُد,لا بُد,37/b2053.gif,,menasy,"it is necessary, inevitable",vocabulary-amro
+لا شيء,لا شيء,37/b2054.gif,,menasy,nothing,vocabulary-amro
+لا قيمة له,لا قيمة له,37/b2055.gif,,menasy,worthless,vocabulary-amro
+لائق,لائق,37/b2056.gif,,menasy,fit,vocabulary-amro
+لاحظ,لاحظ,37/b2061.gif,,menasy,"to notice, observe",vocabulary-amro
+لاحق,لاحق,37/b2062.gif,,menasy,next,vocabulary-amro
+لازم,لازم / التزام (وجوب الأداء),37/b2063.gif,التزام|وجوب الأداء,menasy,"must, should",vocabulary-amro
+لام,لام / لوم,37/b2064.gif,لوم,menasy,to reprimand / blame,vocabulary-amro
+لامع,لامع,37/b2065.gif,,menasy,shiny,vocabulary-amro
+لأن,لأن,37/b2066.gif,,menasy,because,vocabulary-amro
+لبس,لبس,37/b2071.gif,,menasy,confusion,vocabulary-amro
+لبق,لبق,37/b2072.gif,,menasy,tactful,vocabulary-amro
+لثة,لثة,37/b2073.gif,,menasy,gum,vocabulary-amro
+لجنة,لجنة,37/b2074.gif,,menasy,committee,vocabulary-amro
+لجوء سياسي,لجوء سياسي,37/b2075.gif,,menasy,political asylum,vocabulary-amro
+لحظة,لحظة,37/b2076.gif,,menasy,moment,vocabulary-amro
+لطيف,لطيف,37/b2081.gif,,menasy,"gentle, nice",vocabulary-amro
+لطيف,لطيف,37/b2082.gif,,menasy,"gentle, nice",vocabulary-amro
+لعب الورق,لعب الورق,37/b2083.gif,,menasy,card play,vocabulary-amro
+لُعبة,لُعبة,37/b2084.gif,,menasy,toy,vocabulary-amro
+لغز,لغز,37/b2085.gif,,menasy,puzzle,vocabulary-amro
+لف,لف,37/b2086.gif,,menasy,to wrap,vocabulary-amro
+لَفَظ,لَفَظ / نُطق pronounce,37/b2091.gif,نُطق pronounce,menasy,articulate,vocabulary-amro
+لفظ أنفاسه,لفظ أنفاسه (موت),37/b2092.gif,موت,menasy,"to die, pass away",vocabulary-amro
+لقاء,لقاء,37/b2093.gif,,menasy,meeting,vocabulary-amro
+لقب,لقب,37/b2094.gif,,menasy,title,vocabulary-amro
+لقف,لقف / التقاط,37/b2095.gif,التقاط,menasy,to catch / catching,vocabulary-amro
+لكن,لكن,37/b2096.gif,,menasy,"but, however, whereas",vocabulary-amro
+للأبد,للأبد,37/b2101.gif,,menasy,forever,vocabulary-amro
+للأمام,للأمام,37/b2102.gif,,menasy,forward,vocabulary-amro
+للتو,للتو,37/b2103.gif,,menasy,"right now, immediately",vocabulary-amro
+لمس,لمس,37/b2104.gif,,menasy,touching,vocabulary-amro
+لمعان,لمعان ( بريق ) / وهج,37/b2105.gif,بريق|وهج,menasy,shine,vocabulary-amro
+لهب,لهب,37/b2106.gif,,menasy,flame,vocabulary-amro
+لوح خشبي,لوح خشبي,37/b2111.gif,,menasy,board,vocabulary-amro
+ليس مسئولا,ليس مسئولا,37/b2112.gif,,menasy,not responsible,vocabulary-amro
+مؤتمر,مؤتمر,30/b2131.gif,,menasy,conference,general-vocabulary-naji
+مؤدب,مؤدب,30/b2132.gif,,menasy,polite,general-vocabulary-naji
+مؤسس,مؤسس,30/b2133.gif,,menasy,founder,general-vocabulary-naji
+مؤسسة,مؤسسة,30/b2134.gif,,menasy,establishment,general-vocabulary-naji
+مؤقتاً,مؤقتاً,30/b2135.gif,,menasy,temporary,general-vocabulary-naji
+مؤلف,مؤلف,30/b2136.gif,,menasy,author,general-vocabulary-naji
+ما شاء الله,ما شاء الله,30/b2141.gif,,menasy,it is will of Allah,general-vocabulary-naji
+ماكينة,ماكينة,30/b2142.gif,,menasy,machine,general-vocabulary-naji
+مالك,مالك,30/b2143.gif,,menasy,master,general-vocabulary-naji
+مأساة,مأساة,30/b2144.gif,,menasy,tragedy,general-vocabulary-naji
+مبادرة,مبادرة,30/b2145.gif,,menasy,inactive,general-vocabulary-naji
+مباريات أولمبية,مباريات أولمبية (ألعاب أولمبية),30/b2146.gif,ألعاب أولمبية,menasy,Olympic games,general-vocabulary-naji
+مبالغة,مبالغة,30/b2151.gif,,menasy,exaggeration,general-vocabulary-naji
+مبدأ,مبدأ,30/b2152.gif,,menasy,principle,general-vocabulary-naji
+مبلول,مبلول,30/b2153.gif,,menasy,wet,general-vocabulary-naji
+متأكد,متأكد,30/b2154.gif,,menasy,"sure , certain",general-vocabulary-naji
+متبادل,متبادل,30/b2155.gif,,menasy,mutual,general-vocabulary-naji
+متردد,متردد / تردد (للشخص),30/b2156.gif,تردد|للشخص,menasy,hesitant,general-vocabulary-naji
+نائب,نائب (ولي عهد),30/b2451.gif,ولي عهد,menasy,successor,general-vocabulary-naji
+نادر,نادر,30/b2452.gif,,menasy,unique,general-vocabulary-naji
+ناشد,ناشد,30/b2453.gif,,menasy,to appeal to,general-vocabulary-naji
+ناعم,ناعم,30/b2454.gif,,menasy,soft,general-vocabulary-naji
+نافس بشرف,نافس بشرف,30/b2455.gif,,menasy,noble competition,general-vocabulary-naji
+نال,نال (مكافأة),30/b2456.gif,مكافأة,menasy,reward,general-vocabulary-naji
+وابل,وابل,30/b2591.gif,,menasy,downpour,general-vocabulary-naji
+وازع,وازع (دافع داخلي),30/b2592.gif,دافع داخلي,menasy,motif,general-vocabulary-naji
+واسطة,واسطة,30/b2593.gif,,menasy,favoritism,general-vocabulary-naji
+واضح,واضح,30/b2594.gif,,menasy,"clear , obvious",general-vocabulary-naji
+وجبة,وجبة,30/b2595.gif,,menasy,meal,general-vocabulary-naji
+وجد,وجد (عثر على ),30/b2596.gif,عثر على,menasy,to find,general-vocabulary-naji
+يأكل,يأكل,30/b2651.gif,,menasy,to eat,general-vocabulary-naji
+يبدو,يبدو,30/b2652.gif,,menasy,seem,general-vocabulary-naji
+يتبرأ,يتبرأ,30/b2653.gif,,menasy,"to renounce, repudiate",general-vocabulary-naji
+يتحصن,يتحصن,30/b2654.gif,,menasy,to be fortified protected,general-vocabulary-naji
+يتميز بـ,يتميز بـ (يمتاز بـ),30/b2655.gif,يمتاز بـ,menasy,to be characterized by,general-vocabulary-naji
+يسن,يسن,30/b2656.gif,,menasy,to legislate,general-vocabulary-naji
+الأرجنتين,الأرجنتين,28/b2721.gif,,menasy,Argentina,countries-al-benaly
+الأردن,الأردن,28/b2722.gif,,menasy,Jordan,countries-al-benaly
+الإمارات العربية المتحدة,الإمارات العربية المتحدة,28/b2723.gif,,menasy,UAE,countries-al-benaly
+البحرين,البحرين,28/b2724.gif,,menasy,Bahrain,countries-al-benaly
+البرتغال,البرتغال,28/b2725.gif,,menasy,Portugal,countries-al-benaly
+البوسنة والهرسك,البوسنة والهرسك,28/b2726.gif,,menasy,Bosnia and Herzegovina,countries-al-benaly
+الجزائر,الجزائر,28/b2731.gif,,menasy,Algeria,countries-al-benaly
+الدنمارك,الدنمارك,28/b2732.gif,,menasy,Denmark,countries-al-benaly
+السعودية,السعودية,28/b2733.gif,,menasy,Saudi Arabia,countries-al-benaly
+السودان,السودان,28/b2734.gif,,menasy,Sudan,countries-al-benaly
+الصومال,الصومال,28/b2735.gif,,menasy,Somalia,countries-al-benaly
+الصين,الصين,28/b2736.gif,,menasy,China,countries-al-benaly
+العراق,العراق,28/b2741.gif,,menasy,Iraq,countries-al-benaly
+الفلبين,الفلبين,28/b2743.gif,,menasy,Philippines,countries-al-benaly
+الكويت,الكويت,28/b2744.gif,,menasy,Kuwait,countries-al-benaly
+المغرب,المغرب,28/b2745.gif,,menasy,Morocco,countries-al-benaly
+المكسيك,المكسيك,28/b2746.gif,,menasy,Mexico,countries-al-benaly
+المملكة المتحدة,المملكة المتحدة,28/b2751.gif,,menasy,United Kingdom,countries-al-benaly
+نرويج,نرويج,28/b2752.gif,,menasy,Norway,countries-al-benaly
+النمسا,النمسا,28/b2753.gif,,menasy,Austria,countries-al-benaly
+الهند,الهند,28/b2754.gif,,menasy,India,countries-al-benaly
+الولايات المتحدة الأمريكية,الولايات المتحدة الأمريكية,28/b2755.gif,,menasy,United State Of America,countries-al-benaly
+اليابان,اليابان,28/b2756.gif,,menasy,Japan,countries-al-benaly
+اليمن,اليمن,28/b2761.gif,,menasy,Yemen,countries-al-benaly
+اليونان,اليونان,28/b2762.gif,,menasy,Greece,countries-al-benaly
+أثيوبيا,أثيوبيا,28/b2763.gif,,menasy,Ethiopia,countries-al-benaly
+استراليا,استراليا,28/b2764.gif,,menasy,Australia,countries-al-benaly
+أفغانستان,أفغانستان,28/b2765.gif,,menasy,Afghanistan,countries-al-benaly
+ألبانيا,ألبانيا,28/b2766.gif,,menasy,Albania,countries-al-benaly
+انجولا,انجولا,28/b2771.gif,,menasy,Angola,countries-al-benaly
+إريتريا,إريتريا,28/b2772.gif,,menasy,Eritrea,countries-al-benaly
+اسبانيا,اسبانيا,28/b2773.gif,,menasy,Spain,countries-al-benaly
+إندونيسيا,إندونيسيا,28/b2774.gif,,menasy,Indonesia,countries-al-benaly
+إيران,إيران,28/b2775.gif,,menasy,Iran,countries-al-benaly
+إيطاليا,إيطاليا,28/b2776.gif,,menasy,Italy,countries-al-benaly
+باكستان,باكستان,28/b2781.gif,,menasy,Pakistan,countries-al-benaly
+بلجيكا,بلجيكا,28/b2782.gif,,menasy,Belgium,countries-al-benaly
+بلغاريا,بلغاريا,28/b2783.gif,,menasy,Bulgaria,countries-al-benaly
+تايلاند,تايلاند,28/b2786.gif,,menasy,Thailand,countries-al-benaly
+تركيا,تركيا,28/b2791.gif,,menasy,Turkey,countries-al-benaly
+تشيك,تشيك,28/b2792.gif,,menasy,Czech,countries-al-benaly
+تونس,تونس,28/b2793.gif,,menasy,Tunisia,countries-al-benaly
+جزر القمر,جزر القمر,28/b2794.gif,,menasy,Comoros,countries-al-benaly
+جنوب أفريقيا,جنوب أفريقيا,28/b2795.gif,,menasy,South Africa,countries-al-benaly
+جيبوتي,جيبوتي,28/b2796.gif,,menasy,Djibouti,countries-al-benaly
+روسيا,روسيا,28/b2801.gif,,menasy,Russia,countries-al-benaly
+رومانيا,رومانيا,28/b2802.gif,,menasy,Romania,countries-al-benaly
+سنغافورة,سنغافورة,28/b2803.gif,,menasy,Singapore,countries-al-benaly
+سوريا,سوريا,28/b2804.gif,,menasy,Syria,countries-al-benaly
+صربيا,صربيا,28/b2806.gif,,menasy,Serbia,countries-al-benaly
+سلطنة عمان,سلطنة عمان,28/b2811.gif,,menasy,Oman,countries-al-benaly
+فرنسا,فرنسا,28/b2812.gif,,menasy,France,countries-al-benaly
+فلسطين,فلسطين,28/b2813.gif,,menasy,Palestine,countries-al-benaly
+فلندا,فلندا,28/b2814.gif,,menasy,Finland,countries-al-benaly
+قبرص,قبرص,28/b2815.gif,,menasy,Cyprus,countries-al-benaly
+قطر,قطر,28/b2816.gif,,menasy,Qatar,countries-al-benaly
+كندا,كندا,28/b2821.gif,,menasy,Canada,countries-al-benaly
+كوبا,كوبا,28/b2822.gif,,menasy,Cuba,countries-al-benaly
+كوريا الجنوبية,كوريا الجنوبية,28/b2823.gif,,menasy,South Korea,countries-al-benaly
+لبنان,لبنان,28/b2824.gif,,menasy,Lebanon,countries-al-benaly
+لوكسمبروغ,لوكسمبروغ,28/b2825.gif,,menasy,Luxembourg,countries-al-benaly
+ليبيا,ليبيا,28/b2826.gif,,menasy,Libya,countries-al-benaly
+ماليزيا,ماليزيا,28/b2831.gif,,menasy,Malaysia,countries-al-benaly
+مصر,مصر,28/b2832.gif,,menasy,Egypt,countries-al-benaly
+موريتانيا,موريتانيا,28/b2833.gif,,menasy,Mauritania,countries-al-benaly
+نيجيريا,نيجيريا,28/b2834.gif,,menasy,Nigeria,countries-al-benaly
+نيوزيلاندا,نيوزيلاندا,28/b2835.gif,,menasy,New Zealand,countries-al-benaly
+هولندا,هولندا,28/b2836.gif,,menasy,Netherlands,countries-al-benaly
