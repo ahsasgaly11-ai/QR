@@ -46,6 +46,12 @@ function normalizeKey(s) {
     .toLowerCase();
 }
 
+/** هل لهذا المقطع حركة مستخلصة سليمة في بنك الحركات (يؤدّيها المترجم ثلاثي الأبعاد)؟ */
+function hasPose(file) {
+  if (!/\.(mp4|webm)$/i.test(file)) return false;
+  return existsSync(join(SIGN_DIR, 'poses', file.replace(/\.(mp4|webm)$/i, '.json')));
+}
+
 function mediaKey(file) {
   return VIDEO_EXT.includes(extname(file).toLowerCase()) ? 'video' : 'img';
 }
@@ -64,6 +70,7 @@ function main() {
     const file = resolveFile(l.file);
     if (!file) continue;
     const entry = { [mediaKey(file)]: file };
+    if (hasPose(file)) entry.pose = 1;
     const source = sourceOf(l);
     if (source) entry.source = source;
     manifest.letters[l.key] = entry;
@@ -82,6 +89,7 @@ function main() {
       const entry = w.yt
         ? { yt: w.yt, gloss: w.gloss || w.key }
         : { [mediaKey(file)]: file, gloss: w.gloss || w.key };
+      if (file && hasPose(file)) entry.pose = 1;
       const source = sourceOf(w);
       if (source) entry.source = source;
       manifest.words[normalizeKey(w.key)] = entry;

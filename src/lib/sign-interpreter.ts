@@ -23,6 +23,8 @@ export interface SignEntry {
   gloss?: string;
   /** مصدر الإشارة إن لم تكن تصويرًا محليًّا (مثل "karsl") — يُنسَب في المشغّل. */
   source?: string;
+  /** للمقطع حركة مستخلصة سليمة يؤدّيها المترجم ثلاثي الأبعاد */
+  pose?: number;
 }
 
 /** أسماء مصادر القاموس الخارجية كما تُعرض للطالب. */
@@ -132,7 +134,7 @@ function lookupWord(m: SignManifest | null, raw: string, opts?: SequenceOptions)
   const has = (k: string) => {
     const e = words[k];
     if (!e) return undefined;
-    if (opts?.avatarOnly) return e.video ? e : undefined;
+    if (opts?.avatarOnly) return e.video && e.pose ? e : undefined;
     return e.img || e.video || e.yt ? e : undefined;
   };
   const n = normalizeWord(raw);
@@ -155,8 +157,42 @@ function lookupWord(m: SignManifest | null, raw: string, opts?: SequenceOptions)
     const e = has(c);
     if (e) return e;
   }
+  // جذع الكلمة: نزع لواحق الجمع والضمائر الشائعة (الطلاب ← طالب لا، لكن «العضلات»
+  // ← «عضله»، «معلمون» ← «معلم»، «كتابه» ← «كتاب») — محافظ: يبقى 3 أحرف فأكثر.
+  if (!n.includes(' ')) {
+    const bases = new Set(candidates);
+    for (const base of bases) {
+      for (const [suf, rep] of SUFFIXES) {
+        if (base.length - suf.length >= 3 && base.endsWith(suf)) {
+          const e = has(base.slice(0, base.length - suf.length) + rep);
+          if (e) return e;
+        }
+      }
+    }
+  }
   return undefined;
 }
+
+// [اللاحقة، البديل]: ترتيب من الأطول إلى الأقصر
+const SUFFIXES: [string, string][] = [
+  ['اتها', 'ه'],
+  ['اته', 'ه'],
+  ['ات', 'ه'],
+  ['ات', ''],
+  ['ون', ''],
+  ['ين', ''],
+  ['ان', ''],
+  ['تان', 'ه'],
+  ['تين', 'ه'],
+  ['هما', ''],
+  ['هم', ''],
+  ['ها', ''],
+  ['نا', ''],
+  ['كم', ''],
+  ['ه', ''],
+  ['ي', ''],
+  ['ك', ''],
+];
 
 function assetUrl(path?: string): string | undefined {
   if (!path) return undefined;
@@ -250,13 +286,21 @@ export function buildSequenceFromGloss(
     const from = Math.max(0, Math.min(words.length - 1, it.from | 0));
     const to = Math.max(from, Math.min(words.length - 1, it.to | 0));
     const span = to - from + 1;
-    const entry = it.key ? lookupWord(m, it.key, opts) : undefined;
+    // إشارة مركّبة لا تحلّ محلّ كلمة مفردة («أسنان» ليست «كلية طب أسنان»): المفتاح
+    // الذي كلماته أكثر من الكلمات التي يغطّيها يغيّر المعنى، فيُردّ.
+    const keyOk = !!it.key && it.key.trim().split(/\s+/).length <= span;
     const glyph = it.word || words.slice(from, to + 1).join(' ');
+    // قبل التهجئة: الكلمة نفسها قد تكون في القاموس (بعد نزع «ال» والتصريف) وإن لم
+    // يعرفها النموذج — مطابقة حرفية آمنة لا تغيّر المعنى.
+    const entry =
+      (keyOk ? lookupWord(m, it.key, opts) : undefined) ?? (span === 1 ? lookupWord(m, glyph, opts) : undefined);
     if (entry) {
       steps.push({ ...makeStep('word', glyph, entry.gloss || glyph, from, entry), span });
       continue;
     }
     const bare = stripMarks(it.spell || glyph);
+    // الكلمات الوظيفية لا تُهجّى أبدًا (القاعدة 7 في موجّه النموذج)
+    if (!keyOk && span === 1 && GLOSS_FUNCTION.has(normalizeWord(bare))) continue;
     if (!ARABIC.test(bare)) {
       steps.push({ ...makeStep('raw', glyph, glyph, from), span });
       continue;
@@ -275,6 +319,12 @@ export function buildSequenceFromGloss(
 
 // أدوات تُحذف عمدًا في الغلوس (القاعدة 4 في موجّه النموذج) فلا تُستعاد.
 const GLOSS_DROPPABLE = new Set(['ان', 'قد', 'كان', 'يكون', 'كانت', 'تكون', 'هو', 'هي', 'ما', 'ثم']);
+// حروف الجرّ والعطف والضمائر والأدوات: تُحذف إن لم تكن لها إشارة، ولا تُهجّى.
+const GLOSS_FUNCTION = new Set([
+  ...GLOSS_DROPPABLE,
+  'من', 'مع', 'في', 'عن', 'الي', 'علي', 'او', 'ام', 'و', 'ف', 'ب', 'ل', 'ك', 'ثم', 'حتي', 'لكن', 'بل',
+  'هذا', 'هذه', 'ذلك', 'تلك', 'التي', 'الذي', 'الذين', 'انت', 'انا', 'نحن', 'هم', 'كن', 'كي', 'لكي', 'اي', 'ايها', 'يا',
+]);
 
 /**
  * شبكة أمان فوق الغلوس: النموذج (وخاصة نسخ lite) قد يُسقط كلمات ذات معنى. كل كلمة
