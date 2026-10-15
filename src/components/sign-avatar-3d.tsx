@@ -152,8 +152,8 @@ async function createEngine(canvas: HTMLCanvasElement, meta: SignerMeta, rig: Ri
   camera.lookAt(0, lookY, 0);
 
   // إضاءة استوديو: رئيسية دافئة ناعمة، تعبئة باردة، حافّة ذهبية بهوية المنصّة
-  scene.add(new THREE.HemisphereLight(0xfff4ea, 0x3a0b1a, 0.5));
-  const key = new THREE.DirectionalLight(0xfff0dc, 2.4);
+  scene.add(new THREE.HemisphereLight(0xfff4ea, 0x3a0b1a, 0.65));
+  const key = new THREE.DirectionalLight(0xfff0dc, 2.0);
   key.position.set(0.9, 2.7, 2.3);
   key.target.position.set(0, headY - 0.3, 0);
   key.castShadow = shadows;
@@ -166,9 +166,9 @@ async function createEngine(canvas: HTMLCanvasElement, meta: SignerMeta, rig: Ri
   key.shadow.camera.far = 6;
   key.shadow.bias = -0.00025;
   key.shadow.normalBias = 0.02;
-  key.shadow.radius = 4;
+  key.shadow.radius = 8;
   scene.add(key, key.target);
-  const fill = new THREE.DirectionalLight(0xdfe8ff, 0.7);
+  const fill = new THREE.DirectionalLight(0xe6ecff, 1.15);
   fill.position.set(-2.0, 1.9, 1.8);
   scene.add(fill);
   const rim = new THREE.DirectionalLight(0xe8c27a, 1.3);
@@ -195,7 +195,8 @@ async function createEngine(canvas: HTMLCanvasElement, meta: SignerMeta, rig: Ri
     }
     const m = o as T.Mesh;
     if (m.isMesh) {
-      m.castShadow = true;
+      // العقال لا يلقي ظلًّا (يحجب نصف الجبهة بظلّ قاتم)
+      m.castShadow = !m.name.startsWith('Egal');
       m.receiveShadow = true;
       m.frustumCulled = false;
       if (m.morphTargetDictionary) morphs.push({ mesh: m, dict: m.morphTargetDictionary });
@@ -435,7 +436,8 @@ async function createEngine(canvas: HTMLCanvasElement, meta: SignerMeta, rig: Ri
         const idx = dict[FACE[i]];
         if (idx === undefined) continue;
         let v = s.face[i] ?? 0;
-        if (i === F.eyeBlinkLeft || i === F.eyeBlinkRight) v = Math.max(v, blink);
+        // جفن مسترخٍ: الجفن العلوي يغطّي أعلى القزحية قليلًا (نظرة هادئة لا محدّقة)
+        if (i === F.eyeBlinkLeft || i === F.eyeBlinkRight) v = Math.max(v, blink, 0.26);
         inf[idx] = Math.min(1, v);
       }
     }

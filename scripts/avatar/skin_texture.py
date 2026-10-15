@@ -101,7 +101,7 @@ def main():
     below_lip = 1 - smoothstep(mouth[1] - 0.28, mouth[1] - 0.08, y)  # تحت الشفة السفلى
     cheek_line = 1 - smoothstep(mouth[1] + 0.15, mouth[1] + 0.55, y)  # تتلاشى صعودًا نحو الوجنتين
     side = smoothstep(0.75, 1.15, np.abs(x))  # السوالف/اللحية الجانبية
-    beard = np.clip(below_lip * under_jaw + cheek_line * side * under_jaw, 0, 1) * smoothstep(head[2] - 1.2, head[2] - 0.5, z)
+    beard = np.clip(below_lip * under_jaw + cheek_line * side * under_jaw * 0.75, 0, 1) * smoothstep(head[2] - 1.2, head[2] - 0.5, z)
     # الشارب: بين الأنف والشفة العليا
     mustache = np.exp(-((y - (mouth[1] + 0.28)) / 0.09) ** 2) * np.exp(-(x / 0.42) ** 4) * front
     # السوالف فوق الفكّ أمام الأذنين
@@ -158,7 +158,7 @@ def main():
     lipc = np.array(C['lips'], np.float32)
     img = img * (1 - M_lips[..., None] * 0.85) + lipc * M_lips[..., None] * 0.85
     # خطّ الرموش/حافّة الجفن
-    img *= (1 - M_lids[..., None] * 0.55)
+    img *= (1 - M_lids[..., None] * 0.7)
     # داخل الفم
     img = img * (1 - M_mouth[..., None]) + np.array([92, 28, 30], np.float32) * M_mouth[..., None]
     # الأظافر
@@ -170,7 +170,7 @@ def main():
     img = img * (1 - bro[..., None]) + hairc * bro[..., None]
     # اللحية: كثافة بحبيبات (شعر قصير مشذّب)
     grain = np.clip(noise(W, 2, 11) * 1.5 - 0.3, 0, 1) * (0.6 + 0.4 * np.clip(noise(W, 6, 12) * 1.4 - 0.2, 0, 1))
-    be = np.clip(M_hair * (0.45 + 0.4 * grain), 0, 0.88)
+    be = np.clip(M_hair * (0.5 + 0.4 * grain), 0, 0.92)
     beardc = hairc * 0.55 + base * 0.45
     img = img * (1 - be[..., None]) + beardc * be[..., None]
     # الوجه أنعم قليلًا من بقية الجسم (المناطق الأخرى أغمق بدرجة)
@@ -187,7 +187,7 @@ def main():
     u = (np.arange(S) + 0.5) / S
     A, U = np.meshgrid(ang, u, indexing='ij')
     iris_r, pupil_r, limbus = 27.0, 8.5, 3.5
-    eye = np.ones((S, S, 3), np.float32) * np.array([247, 243, 238], np.float32)
+    eye = np.ones((S, S, 3), np.float32) * np.array([228, 222, 214], np.float32)
     # أوردة خفيفة جدًّا قرب الحافّة
     vein = (noise(S, 4, 21) > 0.78) * smoothstep(40, 90, A)
     eye -= vein[..., None] * np.array([10, 40, 40], np.float32) * 0.5

@@ -10,6 +10,8 @@
 | `character.py` | هوية الشخصية: مقادير الشكل (الجنس، العمر، البنية، الملامح) والألوان (البشرة، الشفاه، الشعر، القزحية، الثوب، الغترة، العقال) |
 | `mh_common.py` | قراءة `base.obj` وتطبيق الأهداف ومراكز المفاصل، وخريطة تعابير الوجه (23 تعبيرًا ← وحدات MakeHuman) |
 | `skin_texture.py` | يولّد نسيج البشرة `skin.jpg` (الحاجبان، اللحية القصيرة، الشفاه، الاحمرار، الأظافر…) ونسيج العين `iris.png` |
+| `render_front.py` | داخل Blender: رسم الرأس من الأمام بكاميرا متعامدة معروفة (لاستخراج معالم وجه الشخصية) |
+| `face_from_photo.py` | يُسقط وجه الصورة المرجعية `reference/signer-ref.png` على نسيج الرأس: معالم MediaPipe في الصورة وفي الرسم الأمامي → تشويه TPS → لون كل تكسل من الصورة، ممزوجًا مع النسيج المولَّد بحسب مواجهة السطح وداخل بيضوي الوجه |
 | `build_signer.py` | داخل Blender: الجسم + الهيكل (أذرع وأصابع ورقبة ورأس وعينان) + 23 مفتاح شكل للوجه + الثوب والغترة والعقال + التصدير إلى GLB مع `signer.json` (مواضع المفاصل المرجعية للمحرّك) |
 
 ## إعادة البناء
@@ -23,12 +25,21 @@ unzip -q mpfb.zip -d mpfb && export MHDATA=$PWD/mpfb/data
 curl -L -o blender.tar.xz https://download.blender.org/release/Blender4.2/blender-4.2.23-linux-x64.tar.xz
 tar -xJf blender.tar.xz && export BLENDER=$PWD/blender-4.2.23-linux-x64/blender
 
-# 3) النسيج ثم الشخصية
+# 3) النسيج المولَّد، ثم بناء أوّلي، ثم إسقاط وجه الصورة المرجعية، ثم البناء النهائي
+curl -L -o face_landmarker.task https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task
 python3 scripts/avatar/skin_texture.py --mhdata $MHDATA --out public/sign/avatar
+$BLENDER -b --python scripts/avatar/build_signer.py -- --mhdata $MHDATA --out public/sign/avatar
+$BLENDER -b --python scripts/avatar/render_front.py -- --glb public/sign/avatar/signer.glb --out /tmp/front
+python3 scripts/avatar/face_from_photo.py --mhdata $MHDATA --photo scripts/avatar/reference/signer-ref.png \
+    --front /tmp/front --model face_landmarker.task --out public/sign/avatar
 $BLENDER -b --python scripts/avatar/build_signer.py -- --mhdata $MHDATA --out public/sign/avatar
 ```
 
-يستغرق البناء ثوانيَ. عدّل `character.py` لتغيير الملامح أو الألوان ثم أعد الخطوة 3.
+**الصورة المرجعية** (`reference/signer-ref.png`) هي هوية الشخصية: ملامح الوجه والبشرة
+تُؤخذ منها، وتُقاس نسب الوجه (العرض/الطول، الفكّ، الفم، الأنف) لضبط أهداف الشكل في
+`character.py`. استبدلها بصورة أمامية أخرى وأعد الخطوة 3 لتغيير الشخصية.
+
+يستغرق البناء دقيقة تقريبًا. عدّل `character.py` لتغيير الشكل أو الألوان ثم أعد الخطوة 3.
 
 ## كيف يتحرّك
 

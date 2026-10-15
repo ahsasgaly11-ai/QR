@@ -236,7 +236,8 @@ wristL, wristR = J('joint-l-hand'), J('joint-r-hand')
 shoulderL, shoulderR = J('joint-l-shoulder'), J('joint-r-shoulder')
 body_idx = np.arange(BODY_VERTS)
 x, y, z = VB[:, 0], VB[:, 1], VB[:, 2]
-collar_z = neck_c[2] + 0.012  # قاعدة الرقبة: الياقة
+clav_z = (J('joint-l-clavicle')[2] + J('joint-r-clavicle')[2]) / 2
+collar_z = clav_z + 0.012  # قاعدة الرقبة (مفصل الترقوة): الياقة — لا مفصل «الرقبة» فهو أعلاها
 hip_z = pelvis_c[2] - 0.02
 brow_z = eyeL[2] + 0.028
 # كتلة الرأس: نصف قطر تقريبي
@@ -254,8 +255,8 @@ for i in body_idx:
     b = dom[i]
     if b in HAND_BONES or d_wrist[i] < 0.04:
         visible[i] = True
-    elif b in ('head', 'neck_01') and z[i] > collar_z - 0.012:
-        visible[i] = True
+    elif (b in ('head', 'neck_01') or math.hypot(x[i], y[i] - neck_c[1]) < 0.1) and z[i] > collar_z - 0.012:
+        visible[i] = True  # الرأس والرقبة (عمود الرقبة كلّه فوق الياقة، أيًّا كانت عظمته)
 thobe_v = np.zeros(N, bool)
 for i in body_idx:
     b = dom[i]
@@ -268,8 +269,20 @@ for i in body_idx:
 # 5) الجسم المرئي (رأس ورقبة وكفّان) + مفاتيح الشكل
 # ---------------------------------------------------------------------------
 skin = material('skin', C['skin'], rough=0.52, tex=os.path.join(OUT, 'skin.jpg'), spec=0.35)
+head_v = np.zeros(N, bool)
+yb0 = head_c[1]
+for i in body_idx:
+    head_v[i] = visible[i] and dom[i] in ('head', 'neck_01', 'spine_03')
+    # ما تغطّيه الغترة (قمّة الرأس ومؤخّرته) يُحذف — أخفّ للتحميل
+    if head_v[i] and dom[i] == 'head':
+        hidden_top = z[i] > brow_z + 0.03 - 0.15 * (y[i] - yb0) + 0.012
+        hidden_back = y[i] > yb0 + 0.02 and z[i] > J('joint-jaw')[2] - 0.03
+        if hidden_top or hidden_back:
+            head_v[i] = False
 body_ob, body_used, body_P, body_faces = body_subset(
-    lambda vi: sum(visible[v] for v in vi) >= 2, 'Body', skin)
+    lambda vi: all(head_v[v] for v in vi), 'Head', skin)
+hands_ob, _, _, _ = body_subset(
+    lambda vi: sum(visible[v] for v in vi) >= 2 and not any(dom[v] in ('head', 'neck_01') for v in vi), 'Hands', skin)
 loc_body = {v: i for i, v in enumerate(body_used)}
 
 # مفاتيح الشكل
@@ -319,6 +332,54 @@ for name in FACE_ORDER:
         delta = full
     add_key(name, delta)
 
+def subdivide_with_keys(ob, levels=1):
+    """تقسيم فرعي (Catmull-Clark) لشبكة تحمل مفاتيح شكل: نقيّم الشبكة المقسّمة لكل
+    مفتاح على حدة ونعيد بناء الكائن بالطوبولوجيا الجديدة ومفاتيحه وأوزانه وخريطة UV."""
+    mod = ob.modifiers.new('Subd', 'SUBSURF')
+    mod.levels = levels
+    mod.render_levels = levels
+    kb = ob.data.shape_keys.key_blocks if ob.data.shape_keys else None
+    names = [k.name for k in kb][1:] if kb else []
+    if kb:
+        for k in kb:
+            k.value = 0.0
+    bpy.context.view_layer.update()
+    dg = bpy.context.evaluated_depsgraph_get()
+    new_me = bpy.data.meshes.new_from_object(ob.evaluated_get(dg), preserve_all_data_layers=True, depsgraph=dg)
+    key_co = {}
+    for name in names:
+        kb[name].value = 1.0
+        bpy.context.view_layer.update()
+        dg = bpy.context.evaluated_depsgraph_get()
+        ev = ob.evaluated_get(dg)
+        me = ev.to_mesh()
+        arr = np.empty(len(me.vertices) * 3, dtype=np.float32)
+        me.vertices.foreach_get('co', arr)
+        key_co[name] = arr.copy()
+        ev.to_mesh_clear()
+        kb[name].value = 0.0
+    name0 = ob.name
+    ob.name = name0 + '_lo'
+    ob.data.name = name0 + '_lo'
+    new_me.name = name0
+    new_ob = bpy.data.objects.new(name0, new_me)
+    scene.collection.objects.link(new_ob)
+    for g in ob.vertex_groups:
+        new_ob.vertex_groups.new(name=g.name)
+    new_me.polygons.foreach_set('use_smooth', [True] * len(new_me.polygons))
+    if names:
+        new_ob.shape_key_add(name='Basis', from_mix=False)
+        new_me.shape_keys.use_relative = True
+        for name in names:
+            sk = new_ob.shape_key_add(name=name, from_mix=False)
+            sk.data.foreach_set('co', key_co[name])
+            sk.value = 0.0
+    bpy.data.objects.remove(ob, do_unlink=True)
+    return new_ob
+
+
+body_ob = subdivide_with_keys(body_ob, 1)
+
 # ---------------------------------------------------------------------------
 # 6) العينان والأسنان واللسان
 # ---------------------------------------------------------------------------
@@ -327,7 +388,8 @@ eye_mat = material('eye', (255, 255, 255), rough=0.12, tex=os.path.join(OUT, 'ir
 
 def make_eye(name, center, helper):
     hp = VB[group_indices(vg, helper)]
-    R = np.max(np.linalg.norm(hp - center, axis=1)) * 0.985
+    R = np.max(np.linalg.norm(hp - center, axis=1)) * 0.93
+    center = center + np.array([0, 0.0015, 0])  # إلى الخلف قليلًا تحت الجفون
     seg, rings = 40, 28
     P = []
     uvs = []
@@ -425,18 +487,68 @@ for i in body_idx:
         if bone in ARM_BONES:
             arm_w[i] += w
 arm_w = np.clip(arm_w, 0, 1)
+# مقطع الرقبة عند جزئها الضيّق: الياقة تلتفّ حوله وفتحة الثوب تُقصّ بحجمه
+neck_pts = VB[[i for i in body_idx if abs(z[i] - (collar_z + 0.035)) < 0.012 and abs(x[i]) < 0.09 and z[i] < J('joint-jaw')[2] - 0.02]]
+ncx, ncy = neck_pts[:, 0].mean(), neck_pts[:, 1].mean()
+# الياقة خارج سطح الثوب المُزاح (0.017) بقليل، وحافّة فتحة الثوب تنتهي داخلها
+nrx = (neck_pts[:, 0].max() - neck_pts[:, 0].min()) / 2 + 0.023
+nry = (neck_pts[:, 1].max() - neck_pts[:, 1].min()) / 2 + 0.023
 torso_v = np.zeros(N, bool)
 for i in body_idx:
     b = dom[i]
-    if (b in (TORSO_BONES - ARM_BONES) or b in ('upperarm_l', 'upperarm_r')) and z[i] > hip_z + 0.02 and arm_w[i] < 0.78:
-        if b == 'neck_01' and z[i] > collar_z + 0.012:
+    if b in TORSO_BONES and z[i] > hip_z + 0.02 and d_wrist[i] > 0.012:
+        # فتحة العنق: أصغر من الياقة بقدر إزاحة القماش (0.017) حتى تقع حافّتها داخل الياقة
+        if z[i] > collar_z + 0.014 and ((x[i] - ncx) / (nrx - 0.027)) ** 2 + ((y[i] - ncy) / (nry - 0.027)) ** 2 < 1:
             continue
         torso_v[i] = True
 
 
 def thobe_offset(gidx, P):
-    # قماش فضفاض: أكبر على الصدر والبطن، أقل قرب الياقة
-    return 0.017 + 0.004 * smoothstep(collar_z - 0.3, collar_z - 0.08, P[:, 2]) * (1 - smoothstep(collar_z - 0.06, collar_z, P[:, 2]))
+    # قماش فضفاض: على الصدر والبطن، وأكثر قليلًا على الأكمام، أقل قرب الياقة
+    base = 0.017 + 0.004 * smoothstep(collar_z - 0.3, collar_z - 0.08, P[:, 2]) * (1 - smoothstep(collar_z - 0.06, collar_z, P[:, 2]))
+    return base + 0.006 * smoothstep(0.3, 0.7, arm_w[gidx])
+
+
+elbowL, elbowR = J('joint-l-elbow'), J('joint-r-elbow')
+
+
+def sleeve_wrap(gidx, P):
+    """الكمّ أنبوب قماش حول محور الذراع (كتف→مرفق→رسغ): نصف قطر كل حلقة = أعلى نصف
+    قطر للذراع في نافذة ±4.5سم على طوله، فيختفي تشريح العضلات ويبقى الكمّ مستديرًا."""
+    out = P.copy()
+    aw = arm_w[gidx]
+    armdom = np.array([dom[g] in ARM_BONES for g in gidx])
+    for sgn, S_, E_, W_ in ((1, shoulderL, elbowL, wristL), (-1, shoulderR, elbowR, wristR)):
+        idx = np.where(armdom & (aw > 0.5) & (np.sign(P[:, 0]) == sgn))[0]
+        if not len(idx):
+            continue
+        Q = P[idx]
+        d1 = E_ - S_
+        L1 = np.linalg.norm(d1)
+        d1 = d1 / L1
+        d2 = W_ - E_
+        L2 = np.linalg.norm(d2)
+        d2 = d2 / L2
+        t1 = np.clip(((Q - S_) @ d1) / L1, 0, 1)
+        c1 = S_ + np.outer(t1 * L1, d1)
+        dist1 = np.linalg.norm(Q - c1, axis=1)
+        t2 = np.clip(((Q - E_) @ d2) / L2, 0, 1)
+        c2 = E_ + np.outer(t2 * L2, d2)
+        dist2 = np.linalg.norm(Q - c2, axis=1)
+        use1 = dist1 <= dist2
+        c = np.where(use1[:, None], c1, c2)
+        u = np.where(use1, t1 * L1, L1 + t2 * L2)
+        r = np.where(use1, dist1, dist2)
+        radial = Q - c
+        rn = np.linalg.norm(radial, axis=1) + 1e-9
+        newr = r.copy()
+        for k in range(len(idx)):
+            w = np.abs(u - u[k]) < 0.045
+            newr[k] = np.percentile(r[w], 90)
+        b = smoothstep(0.5, 0.8, aw[idx])
+        r2 = r + (newr - r) * b
+        out[idx] = c + radial / rn[:, None] * r2[:, None]
+    return out
 
 
 def cloth_wrap(gidx, P):
@@ -444,26 +556,37 @@ def cloth_wrap(gidx, P):
     فضفاض): يزيل الصدر والسرّة والتجاويف دون أن ينفخ الجذع إلى عرض الكتفين.
     المصادر: رؤوس العمود الفقري فقط (لا الكتفان)."""
     cz = P[:, 2]
+    # المصادر: رؤوس الجذع تحت منطقة الكتفين (لا شبه المنحرف ولا الترقوتان)
+    src = np.array([dom[g] in ('spine_01', 'spine_02', 'spine_03', 'pelvis') for g in gidx]) & (cz < collar_z - 0.06)
+    # محور الجذع لكل شريحة من رؤوس الجذع فقط (لا الذراعين المتدلّيتين أمامه)
     centers = {}
-    for v in P:
+    for v in P[src]:
         centers.setdefault(round(v[2] / 0.02), []).append(v[:2])
     cen = {k: np.mean(vs, axis=0) for k, vs in centers.items()}
-    C_ = np.array([cen[round(v[2] / 0.02)] for v in P])
+    keys_sorted = sorted(cen)
+
+    def center_of(zz):
+        k = round(zz / 0.02)
+        if k in cen:
+            return cen[k]
+        k2 = min(keys_sorted, key=lambda q: abs(q - k))
+        return cen[k2]
+    C_ = np.array([center_of(v[2]) for v in P])
     rel = P[:, :2] - C_
     ang = np.arctan2(rel[:, 0], rel[:, 1])
     rad = np.hypot(rel[:, 0], rel[:, 1])
-    src = np.array([dom[g] in ('spine_01', 'spine_02', 'spine_03', 'pelvis') for g in gidx])
     tgt = src.copy()
     newr = rad.copy()
     for i in np.where(tgt)[0]:
         dth = np.abs((ang - ang[i] + math.pi) % (2 * math.pi) - math.pi)
-        m = src & (dth < math.radians(12)) & (cz > cz[i] - 0.12) & (cz < min(cz[i] + 0.14, collar_z - 0.07))
+        m = src & (dth < math.radians(12)) & (cz > cz[i] - 0.12) & (cz < min(cz[i] + 0.1, collar_z - 0.07))
         if m.any():
             # القماش مشدود فوق النتوءات من الجهتين (خيمة بميل محدود)
             val = rad[m] - 0.3 * np.abs(cz[m] - cz[i])
             newr[i] = max(rad[i], float(val.max()))
     keep = smoothstep(collar_z - 0.03, collar_z - 0.09, cz)
     r2 = rad + (newr - rad) * keep
+    print('cloth_wrap: sources', int(src.sum()), 'moved>2mm', int((np.abs(r2 - rad) > 0.002).sum()), 'max', round(float(np.abs(r2 - rad).max()), 4))
     out = P.copy()
     out[:, 0] = C_[:, 0] + rel[:, 0] / (rad + 1e-9) * r2
     out[:, 1] = C_[:, 1] + rel[:, 1] / (rad + 1e-9) * r2
@@ -472,39 +595,28 @@ def cloth_wrap(gidx, P):
 
 thobe_ob, thobe_used, thobe_P, thobe_faces = body_subset(
     lambda vi: all(torso_v[v] for v in vi), 'Thobe', cloth, offset_fn=thobe_offset, smooth_iters=60, keep_uv=False,
-    pre_offset=cloth_wrap)
-
-# الأكمام: أنابيب فضفاضة على طول العضد والساعد
-for side_, S_, E_, W_, up_b, lo_b in (
-        ('L', shoulderL, J('joint-l-elbow'), wristL, 'upperarm_l', 'lowerarm_l'),
-        ('R', shoulderR, J('joint-r-elbow'), wristR, 'upperarm_r', 'lowerarm_r')):
-    d1 = (E_ - S_) / np.linalg.norm(E_ - S_)
-    d2 = (W_ - E_) / np.linalg.norm(W_ - E_)
-    pts, rad, grp = [], [], []
-    n1, n2 = 9, 8
-    L1 = np.linalg.norm(E_ - S_)
-    for k in range(n1):
-        t = 0.08 + (1.0 - 0.08) * k / (n1 - 1)
-        pts.append(S_ + d1 * t * L1)
-        rad.append(0.062 - 0.013 * t)
-        grp.append({up_b: 1.0} if t < 0.8 else {up_b: 1 - (t - 0.8) / 0.2 * 0.5, lo_b: (t - 0.8) / 0.2 * 0.5})
-    for k in range(1, n2):
-        t = k / (n2 - 1)
-        pts.append(E_ + d2 * t * (np.linalg.norm(W_ - E_) - 0.012))
-        rad.append(0.055 - 0.013 * t)
-        grp.append({lo_b: 1.0} if t > 0.25 else {up_b: 0.5 - t / 0.25 * 0.5, lo_b: 0.5 + t / 0.25 * 0.5})
-    Q, rings = tube(np.array(pts), rad, 28, None)
-    grid_object(f'Sleeve{side_}', Q, 28, rings, cloth, lambda i, j, g=grp: g[j], close_u=True, flip=True)
+    pre_offset=lambda g, P: sleeve_wrap(g, cloth_wrap(g, P)))
 
 # التنّورة: أنبوب يبدأ مخفيًّا داخل الجذع، لا يضيق عنه في أي ارتفاع، ويتّسع إلى الكاحل
-seg, rings = 56, 36
+seg, rings = 56, 60
 z_top, z_bot = hip_z + 0.11, 0.06
 band = thobe_P[np.abs(thobe_P[:, 2] - z_top) < 0.012]
 cx, cy = band[:, 0].mean(), band[:, 1].mean()
 
 
+torso_low = thobe_P[(thobe_P[:, 2] < z_top + 0.03) & (np.abs(thobe_P[:, 0]) < 0.3)]
+tl_ang = np.arctan2(torso_low[:, 0] - cx, torso_low[:, 1] - cy)
+tl_rad = np.hypot(torso_low[:, 0] - cx, torso_low[:, 1] - cy)
+
+
+def torso_radius_at(theta, zz):
+    dth = np.abs((tl_ang - theta + math.pi) % (2 * math.pi) - math.pi)
+    m = (dth < math.radians(8)) & (np.abs(torso_low[:, 2] - zz) < 0.012)
+    return float(tl_rad[m].max()) if m.any() else None
+
+
 def torso_ext(zz):
-    b = thobe_P[np.abs(thobe_P[:, 2] - zz) < 0.012]
+    b = torso_low[np.abs(torso_low[:, 2] - zz) < 0.012]
     if len(b) < 8:
         return None
     return (b[:, 0].max() - b[:, 0].min()) / 2, (b[:, 1].max() - b[:, 1].min()) / 2
@@ -528,25 +640,33 @@ for jr in range(rings):
     rx_prev, ry_prev = rx, ry
     ring_r.append((rx, ry, zz))
 P = []
+prev = {}
 for i in range(seg):
     th = 2 * math.pi * i / seg
     px, py = math.cos(th), math.sin(th)
     k = 1.0 / (abs(px) ** 2.4 + abs(py) ** 2.4) ** (1 / 2.4)
-    for (rx, ry, zz) in ring_r:
-        P.append([cx + rx * px * k, cy + ry * py * k, zz])
+    r_last = 0.0
+    for jr, (rx, ry, zz) in enumerate(ring_r):
+        # نصف القطر الأساسي (بيضوي مربّع) ثم لا يقلّ عن سطح الجذع المكسوّ في منطقة التداخل
+        ex, ey = rx * px * k, ry * py * k
+        r_el = math.hypot(ex, ey)
+        tr = torso_radius_at(math.atan2(ex, ey), zz)
+        if tr is not None:
+            r_el = max(r_el, tr + (-0.004 if jr == 0 else 0.004))
+        r_el = max(r_el, r_last)
+        r_last = r_el
+        sc = r_el / (math.hypot(ex, ey) + 1e-9)
+        P.append([cx + ex * sc, cy + ey * sc, zz])
 grid_object('Skirt', np.array(P), seg, rings, cloth, lambda i, j: {'pelvis': 1.0}, close_u=True, flip=True)
 
 # الياقة: شريط قائم حول قاعدة الرقبة
-neck_pts = VB[[i for i in body_idx if abs(z[i] - collar_z) < 0.012 and dom[i] in ('neck_01', 'spine_03', 'head')]]
-ncx, ncy = neck_pts[:, 0].mean(), neck_pts[:, 1].mean()
-nrx = (neck_pts[:, 0].max() - neck_pts[:, 0].min()) / 2 + 0.007
-nry = (neck_pts[:, 1].max() - neck_pts[:, 1].min()) / 2 + 0.007
 cseg = 48
 P = []
 for i in range(cseg):
     th = 2 * math.pi * i / cseg
     px, py = math.cos(th), math.sin(th)
-    for (rr, zz) in ((1.0, collar_z - 0.006), (1.0, collar_z + 0.02), (0.78, collar_z + 0.022), (0.78, collar_z - 0.004)):
+    # ياقة قائمة رقيقة (قماش 3 مم): جدار خارجي يتّسع قليلًا من الأسفل ليغطّي حافّة الثوب، وجدار داخلي ملاصق
+    for (rr, zz) in ((1.1, collar_z - 0.022), (1.0, collar_z + 0.028), (0.95, collar_z + 0.029), (0.95, collar_z - 0.009)):
         P.append([ncx + nrx * rr * px, ncy + nry * rr * py, zz])
 grid_object('Collar', np.array(P), cseg, 4, cloth,
             lambda i, j: {'neck_01': 0.55, 'spine_03': 0.45}, close_u=True, flip=True)
@@ -570,12 +690,12 @@ P = []
 nz = 12
 for i in range(2):
     for jz in range(nz):
-        zz = collar_z - 0.002 - jz * 0.16 / (nz - 1)
+        zz = collar_z - 0.002 - jz * 0.19 / (nz - 1)
         P.append([(-0.016 if i == 0 else 0.016), front_at(zz) - 0.0035, zz])
 grid_object('Placket', np.array(P), 2, nz, plk_mat,
             lambda i, j: {'spine_03': 1 - j / (nz - 1), 'spine_02': j / (nz - 1)})
 btn_mat = material('button', (215, 196, 150), rough=0.35, metal=0.5)
-for n_, zz in enumerate([collar_z - 0.035, collar_z - 0.085, collar_z - 0.135]):
+for n_, zz in enumerate([collar_z - 0.03 - k * 0.033 for k in range(5)]):
     bpy.ops.mesh.primitive_cylinder_add(vertices=16, radius=0.0055, depth=0.003, location=(0.0, front_at(zz) - 0.0055, zz), rotation=(math.pi / 2, 0, 0))
     b = bpy.context.active_object
     b.name = f'Button{n_}'
@@ -583,13 +703,35 @@ for n_, zz in enumerate([collar_z - 0.035, collar_z - 0.085, collar_z - 0.135]):
     g = b.vertex_groups.new(name='spine_03')
     g.add(list(range(len(b.data.vertices))), 1.0, 'REPLACE')
 
+# جيب الصدر (على يسار الشخصية كما في الصورة المرجعية)، يتبع انحناء الصدر
+def surface_y(xx, zz):
+    m = (np.abs(thobe_P[:, 0] - xx) < 0.02) & (np.abs(thobe_P[:, 2] - zz) < 0.02)
+    return float(thobe_P[m][:, 1].min()) if m.any() else front_at(zz)
+
+
+pocket = []
+nx_, nz_ = 6, 6
+for ix in range(nx_):
+    xx = 0.075 + 0.085 * ix / (nx_ - 1)
+    for iz in range(nz_):
+        zz = collar_z - 0.085 - 0.11 * iz / (nz_ - 1)
+        pocket.append([xx, surface_y(xx, zz) - 0.0035, zz])
+grid_object('Pocket', np.array(pocket), nx_, nz_, cloth, lambda i, j: {'spine_03': 0.6, 'spine_02': 0.4}, flip=True)
 # الأساور عند المعصمين
 for side_, wrist, elbow_name, bone in (('L', wristL, 'joint-l-elbow', 'lowerarm_l'), ('R', wristR, 'joint-r-elbow', 'lowerarm_r')):
     elbow = J(elbow_name)
     axis = (wrist - elbow) / np.linalg.norm(wrist - elbow)
-    pts = [wrist + axis * t for t in (-0.05, 0.004)]
-    Q, rings = tube(np.array(pts), [0.047, 0.047], 28, None)
-    grid_object(f'Cuff{side_}', Q, 28, rings, cloth, lambda i, j: {bone: 1.0}, close_u=True, flip=True)
+    tmp = np.array([0, 0, 1.0]) if abs(axis[2]) < 0.9 else np.array([1.0, 0, 0])
+    u_ = np.cross(axis, tmp)
+    u_ /= np.linalg.norm(u_)
+    w_ = np.cross(axis, u_)
+    P = []
+    for i in range(28):
+        th = 2 * math.pi * i / 28
+        d = math.cos(th) * u_ + math.sin(th) * w_
+        for (rr, t_) in ((0.047, -0.05), (0.047, 0.004), (0.035, 0.006), (0.035, -0.045)):
+            P.append(wrist + axis * t_ + d * rr)
+    grid_object(f'Cuff{side_}', np.array(P), 28, 4, cloth, lambda i, j: {bone: 1.0}, close_u=True, flip=True)
 
 # ---------------------------------------------------------------------------
 # 8) الغترة والعقال (مقاسة على شكل الرأس الفعلي)
@@ -616,7 +758,7 @@ def head_radius_at(theta, zz, band=0.02, sector=math.radians(9)):
 
 def cap_line(yy):
     # خطّ العقال: عند منبت الشعر من الأمام، يميل للأسفل قليلًا نحو الخلف
-    return brow_z + 0.04 - 0.15 * (yy - yb)
+    return brow_z + 0.046 - 0.15 * (yy - yb)
 
 
 z0 = cap_line(yb)
@@ -631,8 +773,7 @@ cap_ob, cap_used, cap_P, cap_faces = body_subset(lambda vi: all(cap_sel[v] for v
 nth, nt = 64, 22
 shoulder_z = (shoulderL[2] + shoulderR[2]) / 2
 th_max = math.radians(136)
-sleeve_pts = np.vstack([np.array([v.co[:] for v in o.data.vertices]) for o in bpy.data.objects if o.name.startswith('Sleeve')])
-torso_pts = np.vstack([thobe_P, sleeve_pts, VB[[i for i in body_idx if dom[i] in ('clavicle_l', 'clavicle_r', 'spine_03', 'neck_01')]]])
+torso_pts = np.vstack([thobe_P, VB[[i for i in body_idx if dom[i] in ('clavicle_l', 'clavicle_r', 'spine_03', 'neck_01')]]])
 t_ang = np.arctan2(torso_pts[:, 0] - hx, torso_pts[:, 1] - hy)
 t_rad = np.hypot(torso_pts[:, 0] - hx, torso_pts[:, 1] - hy)
 
@@ -665,10 +806,10 @@ for th in thetas:
     w_back = max(0.0, 1 - w_side - w_front)
     rb_back = body_radius_at(0.0, shoulder_z - 0.1) + 0.014
     rb_front = body_radius_at(th, shoulder_z - 0.12) + 0.014
-    rb_side = min(body_radius_at(th, shoulder_z + 0.03) + 0.014, head_r + 0.065)
+    rb_side = body_radius_at(th, shoulder_z - 0.08) + 0.016
     R_bot.append(w_back * rb_back + w_side * rb_side + w_front * rb_front)
-    Z_bot.append(w_back * (shoulder_z - 0.1) + w_side * (shoulder_z + 0.035) + w_front * (shoulder_z - 0.16))
-R_bot, Z_bot = smooth1d(np.array(R_bot), 11), smooth1d(np.array(Z_bot), 11)
+    Z_bot.append(w_back * (shoulder_z - 0.1) + w_side * (shoulder_z - 0.09) + w_front * (shoulder_z - 0.17))
+R_bot, Z_bot = smooth1d(np.array(R_bot), 15), smooth1d(np.array(Z_bot), 15)
 Z_bot = Z_bot + 0.004 * np.sin(np.array(thetas) * 9.0)
 grid = np.zeros((nth, nt, 3))
 for i, th in enumerate(thetas):
@@ -714,7 +855,7 @@ if A.sim:
           w = 1.0 if t < 0.12 else (0.0 if t > 0.3 else 1 - (t - 0.12) / 0.18)
           if w > 0:
               pin.add([i * nt + jt], float(w), 'REPLACE')
-  for ob in (body_ob, thobe_ob, cap_ob) + tuple(o for o in bpy.data.objects if o.name.startswith(('Sleeve', 'Collar'))):
+  for ob in (body_ob, thobe_ob, cap_ob) + tuple(o for o in bpy.data.objects if o.name.startswith('Collar')):
       ob.modifiers.new('Collision', 'COLLISION')
       ob.collision.thickness_outer = 0.003
       ob.collision.thickness_inner = 0.003
@@ -757,7 +898,7 @@ if A.sim:
               if w > 0:
                   g = sim_ob.vertex_groups.get(bone) or sim_ob.vertex_groups.new(name=bone)
                   g.add([i * nt + jt], float(w), 'REPLACE')
-  for ob in (body_ob, thobe_ob, cap_ob) + tuple(o for o in bpy.data.objects if o.name.startswith(('Sleeve', 'Collar'))):
+  for ob in (body_ob, thobe_ob, cap_ob) + tuple(o for o in bpy.data.objects if o.name.startswith('Collar')):
       ob.modifiers.remove(ob.modifiers['Collision'])
   bpy.data.objects.remove(drape_ob, do_unlink=True)
   scene.frame_set(1)
@@ -770,25 +911,25 @@ for i in range(nf):
     dx, dy = math.sin(th), math.cos(th)
     zc = cap_line(hy + 0.09 * dy)
     r0 = head_radius_at(th, zc)
-    for (dr, dz) in ((0.011, -0.02), (0.022, -0.012), (0.023, 0.01), (0.013, 0.02)):
+    for (dr, dz) in ((0.012, -0.012), (0.016, -0.006), (0.016, 0.012), (0.012, 0.02)):
         rr = r0 + dr
         P.append([hx + rr * dx, hy + rr * dy, zc + dz])
 grid_object('GhutraFold', np.array(P), nf, 4, ghutra, lambda i, j: {'head': 1.0})
 
 # العقال: حلقتان تتبعان محيط الرأس المغطّى
-for k, dz in enumerate((0.027, 0.045)):
+for k, dz in enumerate((0.03, 0.052)):
     nth_e, nc = 64, 12
     P = []
     for i in range(nth_e):
         th = 2 * math.pi * i / nth_e
         dx, dy = math.sin(th), math.cos(th)
         zc = cap_line(hy + 0.09 * dy) + dz
-        rr = head_radius_at(th, zc) + 0.012 + 0.0075
+        rr = head_radius_at(th, zc) + 0.012 + 0.011
         c = np.array([hx + rr * dx, hy + rr * dy, zc])
         radial = np.array([dx, dy, 0.0])
         for jc in range(nc):
             ph = 2 * math.pi * jc / nc
-            P.append(c + 0.0095 * (math.cos(ph) * radial + math.sin(ph) * np.array([0, 0, 1.0])))
+            P.append(c + 0.0115 * (math.cos(ph) * radial + math.sin(ph) * np.array([0, 0, 1.0])))
     grid_object(f'Egal{k}', np.array(P), nth_e, nc, egal_mat, lambda i, j: {'head': 1.0}, close_u=True)
 # ذيلا العقال من الخلف
 for sx in (-1, 1):

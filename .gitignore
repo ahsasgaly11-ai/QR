@@ -35,3 +35,6 @@ public/vendor/
 # فيديو البند 9 (ملفات كبيرة — تُسلَّم خارج git)
 video-item9/*.mp4
 video-item9/*.wav
+
+# Python
+__pycache__/
