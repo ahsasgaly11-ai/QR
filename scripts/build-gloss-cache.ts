@@ -63,7 +63,8 @@ async function main() {
   };
   try {
     const prev = JSON.parse(readFileSync(OUT, 'utf8'));
-    if (prev.version === GLOSS_VERSION && !force) cache = prev;
+    // مع --force يبقى القديم حتى يُستبدل كلّ عنصر، فلا يضيع شيء إن توقّف التشغيل (نفاد الحصّة)
+    if (prev.version === GLOSS_VERSION) cache = prev;
   } catch {
     /* لا ملف سابق */
   }
@@ -74,7 +75,7 @@ async function main() {
     failed = 0;
   for (const text of all) {
     const key = glossCacheKey(text);
-    if (cache.items[key]) {
+    if (cache.items[key] && !force) {
       reused++;
       continue;
     }
