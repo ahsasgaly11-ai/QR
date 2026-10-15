@@ -17,6 +17,21 @@
 // وحدة واحدة بلا تبعيات (تُختبر وتُشغَّل خارج WebGL).
 // ---------------------------------------------------------------------------
 
+import {
+  buildHand,
+  frameFrom,
+  handToWorld,
+  localHand,
+  measureHand,
+  palmFrame,
+  relaxedAngles,
+  smoothAngles,
+  smoothFrames,
+  type HandAngles,
+  type PalmFrame,
+  type Side,
+} from './sign-hand';
+
 export type V3 = [number, number, number];
 export type Quat = [number, number, number, number]; // x, y, z, w
 
@@ -33,6 +48,9 @@ export interface PoseFileAny {
     r: number[][] | null;
     h?: number[][] | null;
     f?: number[] | null;
+    /** اليدان بالمتر (الإصدار 3) */
+    L?: number[][] | null;
+    R?: number[][] | null;
   }[];
 }
 
@@ -76,6 +94,10 @@ export interface RigDims {
   headR: V3;
   torsoR: [number, number];
   hipY: number;
+  /** يد الشخصية في الراحة بإطار كفّها المحلي (sign-hand.ts) */
+  handLocal?: { L: V3[]; R: V3[] };
+  /** موضع الفم (مرجع إشارات التلامس مع الوجه) */
+  mouth?: V3;
 }
 export const DEFAULT_RIG: RigDims = {
   shoulderY: 1.45,
@@ -134,6 +156,10 @@ export const lerp = (a: V3, b: V3, t: number): V3 => [
   a[2] + (b[2] - a[2]) * t,
 ];
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+const smoothstep = (a: number, b: number, x: number) => {
+  const t = clamp((x - a) / (b - a), 0, 1);
+  return t * t * (3 - 2 * t);
+};
 const median = (xs: number[]) => {
   if (!xs.length) return 0;
   const s = [...xs].sort((a, b) => a - b);
@@ -227,6 +253,19 @@ export function orientedHand(up: V3, thumb: V3, palm: V3, handLen = DEFAULT_RIG.
   return HAND_TEMPLATE.map(([x, y, z]) => mul(add(add(mul(thumb, x), mul(up, y)), mul(palm, z)), k));
 }
 
+/** يد الراحة المحلية: من أبعاد الشخصية إن توفّرت، وإلا القالب (يمنى؛ اليسرى مرآتها). */
+export function handLocalOf(RIG: RigDims, side: Side): V3[] {
+  if (RIG.handLocal) return RIG.handLocal[side];
+  const k = RIG.hand / 0.088;
+  return HAND_TEMPLATE.map(([x, y, z]) => [side === 'R' ? x * k : -x * k, y * k, z * k] as V3);
+}
+
+/** يد مرتخية موجّهة (الأصابع نحو up، الباطن نحو palm) بهندسة يد الشخصية. */
+export function relaxedHand(RIG: RigDims, side: Side, up: V3, palm: V3): V3[] {
+  const loc = handLocalOf(RIG, side);
+  return handToWorld(buildHand(relaxedAngles(loc), loc), frameFrom(up, palm));
+}
+
 /** وضع الراحة: الذراعان منسدلتان قليلًا للأمام، والكفّان نحو الجسم. */
 export function restState(RIG: RigDims = DEFAULT_RIG): AvatarState {
   const y = RIG.shoulderY;
@@ -237,8 +276,8 @@ export function restState(RIG: RigDims = DEFAULT_RIG): AvatarState {
     rw: [-sx - 0.03, y - 0.5, 0.1],
     rp: [-sx - 0.32, y - 0.3, -0.2],
     // اليسرى (عند +x): الباطن نحو -x — قالب اليمنى معكوس
-    lh: orientedHand(norm([0.05, -1, 0.15]), norm([0, 0.05, 1]), [-1, 0, 0], RIG.hand),
-    rh: orientedHand(norm([-0.05, -1, 0.15]), norm([0, 0.05, 1]), [1, 0, 0], RIG.hand),
+    lh: relaxedHand(RIG, 'L', norm([0.05, -1, 0.15]), [-1, 0, 0]),
+    rh: relaxedHand(RIG, 'R', norm([-0.05, -1, 0.15]), [1, 0, 0]),
     head: [0, 0, 0, 1],
     torso: [0, 0],
     face: FACE.map(() => 0),
@@ -350,10 +389,13 @@ export function mirrorPoseFile(file: PoseFileAny): PoseFileAny {
       }
       let h = f.h ? f.h.map(mx) : null;
       if (h && h.length >= 3) h = [h[0], h[2], h[1], ...h.slice(3)];
+      const nx = (r: number[]) => [-r[0], ...r.slice(1)];
       return {
         p,
         l: f.r ? f.r.map(mx) : null,
         r: f.l ? f.l.map(mx) : null,
+        L: f.R ? f.R.map(nx) : null,
+        R: f.L ? f.L.map(nx) : null,
         h,
         f: f.f ? faceMap.map((j, i) => f.f![j >= 0 ? j : i] ?? 0) : null,
       };
@@ -451,6 +493,41 @@ export function prepareMotion(input: PoseFileAny, RIG: RigDims = DEFAULT_RIG): M
     if (q < 1 && d[0] * d[0] + d[1] * d[1] + d[2] * d[2] < 1) z = hc[2] + (hr[2] + 0.035) * Math.sqrt(1 - q);
     return [x, y, z];
   };
+  // إشارات التلامس مع الوجه (الفم، الذقن، العين، الأنف): حين تقترب اليد من وجه
+  // المؤدّي نقيس موضعها نسبةً إلى فمه لا إلى كتفيه، فتصل يد الشخصية إلى المكان
+  // نفسه من وجهها مهما انحنى رأس المؤدّي أو اختلفت نسب جسمه.
+  const mouthA: V3 = RIG.mouth ?? [RIG.headCenter[0], RIG.headCenter[1] - 0.05, RIG.headCenter[2] + RIG.headR[2]];
+  const mouthD = frames.map((f) => {
+    const a = P(f, 9),
+      b = P(f, 10);
+    return a && b ? lerp(a, b, 0.5) : null;
+  });
+  const faceAnchor = (wi: number, hk: 'l' | 'r') => {
+    const tgt: (V3 | null)[] = [];
+    const wts: number[] = [];
+    frames.forEach((f, i) => {
+      const m = mouthD[i];
+      const h = f[hk];
+      // مركز اليد (منتصف الكفّ) أدقّ من معصم هيكل الجسم
+      const c = h && h.length >= 21 ? ([((h[0][0] + h[9][0]) / 2) * ar, -(h[0][1] + h[9][1]) / 2, 0] as V3) : P(f, wi);
+      const w0 = P(f, wi);
+      if (!m || !c || !w0) {
+        tgt.push(null);
+        wts.push(0);
+        return;
+      }
+      // تحت الفم تُحسب المسافة أطول (اليد على الصدر أسفل الذقن ليست تلامسًا مع الوجه)
+      const below = Math.max(0, m[1] - c[1]);
+      const dist = Math.hypot(c[0] - m[0], Math.min(0, m[1] - c[1]) + below * 1.8) / W;
+      wts.push(1 - smoothstep(0.38, 0.72, dist));
+      tgt.push([mouthA[0] + (w0[0] - m[0]) * k, mouthA[1] + (w0[1] - m[1]) * k, mouthA[2] + 0.035]);
+    });
+    return { tgt, w: smoothN(wts, 2) };
+  };
+  const fl = faceAnchor(15, 'l'),
+    fr = faceAnchor(16, 'r');
+  lw = lw.map((w, i) => (fl.tgt[i] && fl.w[i] > 0.01 ? lerp(w, fl.tgt[i]!, fl.w[i]) : w));
+  rw = rw.map((w, i) => (fr.tgt[i] && fr.w[i] > 0.01 ? lerp(w, fr.tgt[i]!, fr.w[i]) : w));
   lw = lw.map(pushFront);
   rw = rw.map(pushFront);
   // الموجّه: مرفق المؤدّي مدفوعًا قليلًا للخارج والخلف (مرفق طبيعي)
@@ -460,45 +537,30 @@ export function prepareMotion(input: PoseFileAny, RIG: RigDims = DEFAULT_RIG): M
   const activity = (w: V3) => clamp((w[1] - (RIG.shoulderY - 0.47)) / 0.11, 0, 1);
 
   // ---- اليدان ----
-  const handSeries = (key: 'l' | 'r') => {
+  // اليدان: زوايا مفاصل تشريحية (sign-hand.ts) تُبنى على يد الشخصية نفسها
+  const handSeries = (side: Side) => {
+    const key = side === 'L' ? 'l' : 'r';
     const raw: (V3[] | null)[] = frames.map((f) => {
+      // المعالم بالمتر أدقّ عمقًا؛ وإلا المطبَّعة
+      const w = f[side];
+      if (w && w.length >= 21) return w.map((r) => [r[0], -r[1], -r[2]] as V3);
       const h = f[key];
       if (!h || h.length < 21) return null;
       return h.map((r) => [r[0] * ar, -r[1], -(r.length >= 3 ? r[2] : 0) * ar] as V3);
     });
-    const present = raw.filter(Boolean) as V3[][];
-    if (!present.length) return null;
-    // أطوال العظام = وسيط المقطع، بمقياس يجعل (0→9) بطول يد الشخصية
-    const scale = RIG.hand / (median(present.map((h) => len(sub(h[9], h[0])))) || 1);
-    const boneLen = HAND_BONES.map(([a, b]) => median(present.map((h) => len(sub(h[b], h[a])))) * scale);
-    const rel = raw.map((h) => {
-      if (!h) return null;
-      const out: V3[] = new Array(21);
-      out[0] = [0, 0, 0];
-      HAND_BONES.forEach(([a, b], bi) => {
-        out[b] = add(out[a], mul(norm(sub(h[b], h[a])), boneLen[bi]));
-      });
-      return out;
-    });
-    const filled = fill(rel) as V3[][];
-    // تنعيم كل مفصل زمنيًّا (خفيف: الأصابع سريعة)
-    const out: V3[][] = filled.map((h) => h.map((p) => [...p] as V3));
-    for (let j = 0; j < 21; j++) {
-      const s = smoothV(filled.map((h) => h[j]), 1);
-      s.forEach((p, i) => (out[i][j] = p));
-    }
-    return out;
+    if (!raw.some(Boolean)) return null;
+    const restLoc = handLocalOf(RIG, side);
+    const pf: (PalmFrame | null)[] = raw.map((h) => (h ? palmFrame(h, side) : null));
+    const ang: (HandAngles | null)[] = raw.map((h) => (h ? measureHand(localHand(h, side), restLoc) : null));
+    const frs = smoothFrames(fill(pf) as PalmFrame[], 2);
+    const angs = smoothAngles(fill(ang) as HandAngles[], 2);
+    return frs.map((f, i) => handToWorld(buildHand(angs[i], restLoc), f));
   };
-  const lhS = handSeries('l');
-  const rhS = handSeries('r');
-  // يد غائبة طوال المقطع: يد مرتخية على امتداد الساعد
-  const relaxedAlong = (w: V3, e: V3, side: number): V3[] => {
-    const up = norm(sub(w, e));
-    const palm = norm(cross(up, [0, 0, side]));
-    // القالب يد يمنى (إطار يميني)؛ اليسرى مرآتها
-    const thumb = norm(cross(up, palm));
-    return orientedHand(up, side > 0 ? mul(thumb, -1) : thumb, palm, RIG.hand);
-  };
+  const lhS = handSeries('L');
+  const rhS = handSeries('R');
+  // يد غائبة طوال المقطع: يد مرتخية على امتداد الساعد، باطنها نحو الجسم
+  const relaxedAlong = (w: V3, e: V3, side: number): V3[] =>
+    relaxedHand(RIG, side > 0 ? 'L' : 'R', norm(sub(w, e)), [-side, 0, 0.2]);
 
   // ---- الرأس والجذع ----
   const headAngles = frames.map((f) => {

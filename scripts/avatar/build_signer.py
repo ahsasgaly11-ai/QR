@@ -132,6 +132,12 @@ def laplacian_smooth(P, faces, iters=10, lam=0.5, mu=-0.53):
     return Q
 
 
+def smooth1d(a, w=5, wrap=False):
+    k = np.ones(w) / w
+    pad = np.pad(a, (w // 2, w // 2), mode='wrap' if wrap else 'edge')
+    return np.convolve(pad, k, mode='valid')
+
+
 MATS = {}
 
 
@@ -660,14 +666,40 @@ for i in range(seg):
 grid_object('Skirt', np.array(P), seg, rings, cloth, lambda i, j: {'pelvis': 1.0}, close_u=True, flip=True)
 
 # الياقة: شريط قائم حول قاعدة الرقبة
-cseg = 48
+cseg = 64
+neck_ring = VB[[i for i in body_idx if collar_z - 0.005 < z[i] < collar_z + 0.05 and math.hypot(x[i] - ncx, y[i] - ncy) < 0.11]]
+nr_ang = np.arctan2(neck_ring[:, 0] - ncx, neck_ring[:, 1] - ncy)
+nr_rad = np.hypot(neck_ring[:, 0] - ncx, neck_ring[:, 1] - ncy)
+th_ang = np.arctan2(thobe_P[:, 0] - ncx, thobe_P[:, 1] - ncy)
+th_rad = np.hypot(thobe_P[:, 0] - ncx, thobe_P[:, 1] - ncy)
+
+
+def ring_radius(ang_arr, rad_arr, zarr, theta, zz, band, sector=math.radians(9), pick=np.max):
+    dth = np.abs((ang_arr - theta + math.pi) % (2 * math.pi) - math.pi)
+    m = (dth < sector) & (np.abs(zarr - zz) < band)
+    return float(pick(rad_arr[m])) if m.any() else None
+
+
+neck_r = []
+hole_r = []
+for i in range(cseg):
+    th = 2 * math.pi * i / cseg
+    r = ring_radius(nr_ang, nr_rad, neck_ring[:, 2], th, collar_z + 0.02, 0.025)
+    neck_r.append(r if r is not None else 0.06)
+    # حافّة فتحة الثوب (أقرب نقاطه للعنق قرب الياقة)
+    h = ring_radius(th_ang, th_rad, thobe_P[:, 2], th, collar_z, 0.02, pick=np.min)
+    hole_r.append(h if h is not None else neck_r[-1] + 0.02)
+neck_r = smooth1d(np.array(neck_r), 5, wrap=True)
+hole_r = smooth1d(np.array(hole_r), 5, wrap=True)
 P = []
 for i in range(cseg):
     th = 2 * math.pi * i / cseg
-    px, py = math.cos(th), math.sin(th)
-    # ياقة قائمة رقيقة (قماش 3 مم): جدار خارجي يتّسع قليلًا من الأسفل ليغطّي حافّة الثوب، وجدار داخلي ملاصق
-    for (rr, zz) in ((1.1, collar_z - 0.022), (1.0, collar_z + 0.028), (0.95, collar_z + 0.029), (0.95, collar_z - 0.009)):
-        P.append([ncx + nrx * rr * px, ncy + nry * rr * py, zz])
+    dx, dy = math.sin(th), math.cos(th)
+    rin = neck_r[i] + 0.006
+    rout = rin + 0.004
+    rflare = max(rout + 0.006, hole_r[i] + 0.008)  # يغطّي حافّة فتحة الثوب
+    for (rr, zz) in ((rflare, collar_z - 0.012), (rout, collar_z + 0.03), (rin, collar_z + 0.031), (rin, collar_z - 0.006)):
+        P.append([ncx + rr * dx, ncy + rr * dy, zz])
 grid_object('Collar', np.array(P), cseg, 4, cloth,
             lambda i, j: {'neck_01': 0.55, 'spine_03': 0.45}, close_u=True, flip=True)
 
@@ -729,7 +761,7 @@ for side_, wrist, elbow_name, bone in (('L', wristL, 'joint-l-elbow', 'lowerarm_
     for i in range(28):
         th = 2 * math.pi * i / 28
         d = math.cos(th) * u_ + math.sin(th) * w_
-        for (rr, t_) in ((0.047, -0.05), (0.047, 0.004), (0.035, 0.006), (0.035, -0.045)):
+        for (rr, t_) in ((0.043, -0.055), (0.043, 0.002), (0.036, 0.004), (0.036, -0.05)):
             P.append(wrist + axis * t_ + d * rr)
     grid_object(f'Cuff{side_}', np.array(P), 28, 4, cloth, lambda i, j: {bone: 1.0}, close_u=True, flip=True)
 
@@ -758,7 +790,7 @@ def head_radius_at(theta, zz, band=0.02, sector=math.radians(9)):
 
 def cap_line(yy):
     # خطّ العقال: عند منبت الشعر من الأمام، يميل للأسفل قليلًا نحو الخلف
-    return brow_z + 0.046 - 0.15 * (yy - yb)
+    return brow_z + 0.024 - 0.15 * (yy - yb)
 
 
 z0 = cap_line(yb)
@@ -770,10 +802,14 @@ cap_ob, cap_used, cap_P, cap_faces = body_subset(lambda vi: all(cap_sel[v] for v
                                                  offset_fn=lambda g, P: np.full(len(P), 0.012), smooth_iters=4, keep_uv=False)
 
 # السدل: من خطّ العقال إلى الكتفين والصدر، يلامس الجسم ولا ينفرج عنه
-nth, nt = 64, 22
+nth, nt = 72, 30
 shoulder_z = (shoulderL[2] + shoulderR[2]) / 2
-th_max = math.radians(136)
-torso_pts = np.vstack([thobe_P, VB[[i for i in body_idx if dom[i] in ('clavicle_l', 'clavicle_r', 'spine_03', 'neck_01')]]])
+th_max = math.radians(134)
+# العائق للسدل: الجذع والكتفان دون الذراعين (تتحرّكان؛ السدل لا يغطّيهما فلا تخترقانه)
+# الكتفان حتى رأس العضد داخلة في العائق (تكاد لا تتحرّك)، وما دونها من الذراع خارجه
+thobe_arm = np.array([arm_w[v] > 0.3 and min(np.linalg.norm(VB[v] - shoulderL), np.linalg.norm(VB[v] - shoulderR)) > 0.09
+                      for v in thobe_used])
+torso_pts = np.vstack([thobe_P[~thobe_arm], VB[[i for i in body_idx if dom[i] in ('clavicle_l', 'clavicle_r', 'spine_03', 'neck_01')]]])
 t_ang = np.arctan2(torso_pts[:, 0] - hx, torso_pts[:, 1] - hy)
 t_rad = np.hypot(torso_pts[:, 0] - hx, torso_pts[:, 1] - hy)
 
@@ -784,62 +820,62 @@ def body_radius_at(theta, zz, band=0.02, sector=math.radians(10)):
     return float(t_rad[m].max()) if m.any() else 0.0
 
 
-def smooth1d(a, w=5):
-    k = np.ones(w) / w
-    pad = np.pad(a, (w // 2, w // 2), mode='edge')
-    return np.convolve(pad, k, mode='valid')
-
-
-shoulder_tip = max(abs(shoulderL[0]), abs(shoulderR[0])) + 0.055
-thetas = []
-for i in range(nth):
-    u = i / (nth - 1)
-    # الحافّة الأمامية تميل نحو منتصف الصدر كلّما نزلت (طرفا الغترة على الصدر)
-    thetas.append(-th_max + 2 * th_max * u)
-R_top = np.array([head_radius_at(th, z0 - 0.01) + 0.013 for th in thetas])
-# نقطة القاع لكل زاوية: الظهر (ينسدل خلف الكتفين)، الجانبان (على الكتفين)، الأمام (على الصدر)
-R_bot, Z_bot = [], []
+thetas = [-th_max + 2 * th_max * i / (nth - 1) for i in range(nth)]  # 0 = الخلف
+# الحاشية: الظهر أسفل لوحَي الكتف، الجانبان على أعلى العضد، الطرفان الأماميان على الصدر
+Z_bot = []
 for th in thetas:
     a_ = abs(th)
-    w_side = math.exp(-((a_ - math.radians(88)) / math.radians(30)) ** 2)
-    w_front = smoothstep(math.radians(112), math.radians(136), a_)
+    w_front = smoothstep(math.radians(105), th_max, a_)
+    w_side = math.exp(-((a_ - math.radians(88)) / math.radians(24)) ** 2) * (1 - w_front)
     w_back = max(0.0, 1 - w_side - w_front)
-    rb_back = body_radius_at(0.0, shoulder_z - 0.1) + 0.014
-    rb_front = body_radius_at(th, shoulder_z - 0.12) + 0.014
-    rb_side = body_radius_at(th, shoulder_z - 0.08) + 0.016
-    R_bot.append(w_back * rb_back + w_side * rb_side + w_front * rb_front)
-    Z_bot.append(w_back * (shoulder_z - 0.1) + w_side * (shoulder_z - 0.09) + w_front * (shoulder_z - 0.17))
-R_bot, Z_bot = smooth1d(np.array(R_bot), 15), smooth1d(np.array(Z_bot), 15)
-Z_bot = Z_bot + 0.004 * np.sin(np.array(thetas) * 9.0)
-grid = np.zeros((nth, nt, 3))
+    # الجانبان: طيّتان عريضتان على الكتفين حتى أعلى العضد كما في الصورة المرجعية
+    Z_bot.append(w_back * (shoulder_z - 0.15) + w_side * (shoulder_z - 0.055) + w_front * (shoulder_z - 0.19))
+Z_bot = smooth1d(np.array(Z_bot), 15)
+
+# القماش يتدلّى: يبدأ ملاصقًا للرأس عند العقال، وينزل عموديًّا ما لم يدفعه عائق
+# (الوجنة، الكتف، العضد، الصدر) إلى الخارج، فلا يضيق تحت بروز ولا يطير كالجناح.
+grid = np.zeros((nth, nt, 2))  # (نصف القطر، الارتفاع)
 for i, th in enumerate(thetas):
-    dx, dy = math.sin(th), math.cos(th)
+    r_prev = head_radius_at(th, z0 - 0.01) + 0.013
     for jt in range(nt):
         t = jt / (nt - 1)
         zz = z0 - t * (z0 - Z_bot[i])
-        rr = R_top[i] + (R_bot[i] - R_top[i]) * smoothstep(0.3, 1.0, t)
-        # طيّات عمودية خفيفة تزداد نحو الحاشية، وتموّج ناعم في الحاشية
-        rr += (0.0025 * math.sin(th * 7.0 + 0.8) + 0.0015 * math.sin(th * 11.0)) * smoothstep(0.25, 0.9, t)
-        rr = max(rr, head_radius_at(th, zz) + 0.012)
+        env = head_radius_at(th, zz) + 0.012 if zz > neck_c[2] - 0.02 else 0.0
         rb = body_radius_at(th, zz)
-        if rb > 0 and t > 0.3:
-            rr = max(rr, rb + 0.012)
-        grid[i, jt] = [rr, 0, zz]
-# تنعيم نصف القطر على طول الزاوية لكل حلقة (يزيل تعرّج أخذ العيّنات)
-for jt in range(nt):
-    grid[:, jt, 0] = smooth1d(grid[:, jt, 0], 5)
+        if rb > 0:
+            env = max(env, rb + 0.013)
+        r = max(r_prev, env)
+        grid[i, jt] = (r, zz)
+        r_prev = r
+# تنعيم عموديًّا ثم حول الرأس، مع بقاء القماش خارج العوائق
+env_grid = grid[:, :, 0].copy()
+for _ in range(3):
+    for i in range(nth):
+        col = grid[i, :, 0]
+        sm = col.copy()
+        sm[1:-1] = (col[:-2] + 2 * col[1:-1] + col[2:]) / 4
+        grid[i, :, 0] = np.maximum(sm, env_grid[i] - 0.004)
+    for jt in range(nt):
+        grid[:, jt, 0] = np.maximum(smooth1d(grid[:, jt, 0], 5), env_grid[:, jt] - 0.004)
 P = []
 for i, th in enumerate(thetas):
     dx, dy = math.sin(th), math.cos(th)
     for jt in range(nt):
-        rr, _, zz = grid[i, jt]
+        rr, zz = grid[i, jt]
+        # طيّات عمودية خفيفة تزداد نحو الحاشية
+        t = jt / (nt - 1)
+        rr += (0.002 * math.sin(th * 7.0 + 0.8) + 0.0012 * math.sin(th * 11.0)) * smoothstep(0.4, 1.0, t)
         P.append([hx + rr * dx, hy + rr * dy, zz])
 
 
 def drape_groups(i, j):
     t = j / (nt - 1)
     h = 1 - smoothstep(0.45, 0.95, t)
-    return {'head': float(h), 'spine_03': float(1 - h)}
+    th = thetas[i]
+    side_w = math.exp(-((abs(th) - math.radians(88)) / math.radians(26)) ** 2) * (1 - h)
+    cl = 'clavicle_l' if math.sin(th) > 0 else 'clavicle_r'
+    return {'head': float(h), 'spine_03': float((1 - h) * (1 - 0.6 * side_w / max(1e-6, 1 - h))) if h < 1 else 0.0,
+            cl: float(0.6 * side_w)}
 
 
 # الغترة كقماش فعلي: نبدأ من الشكل المفصَّل أعلاه (قريب من الجسم) ونحاكي سقوطه
@@ -1015,6 +1051,44 @@ def hand_landmarks(side):
     return out
 
 
+def build_collider(na=48, dy=0.01):
+    """مجسّم تصادم شعاعي للملابس والرأس (بإحداثيات glTF): لكل ارتفاع وزاوية حول محور
+    الجذع أبعد نقطة من الثوب والياقة والغترة والوجه. الذراعان مستثناتان (تتحرّكان)."""
+    pts = []
+    arm_groups = ('upperarm_l', 'upperarm_r', 'lowerarm_l', 'lowerarm_r', 'hand_l', 'hand_r')
+    for ob in bpy.data.objects:
+        if ob.type != 'MESH' or ob.name.startswith(('Hands', 'Cuff', 'EyeL', 'EyeR', 'Teeth', 'Tongue')):
+            continue
+        gi = {g.index: g.name for g in ob.vertex_groups}
+        for v in ob.data.vertices:
+            aw = sum(e.weight for e in v.groups if gi.get(e.group) in arm_groups)
+            if aw > 0.35:
+                continue
+            pts.append(v.co[:])
+    Pc = np.array([gl(p) for p in pts])  # (x, y↑, z أمام)
+    chest = Pc[(Pc[:, 1] > shoulderL[2] - 0.25) & (Pc[:, 1] < shoulderL[2] - 0.1)]
+    ax, az = 0.0, float((chest[:, 2].max() + chest[:, 2].min()) / 2)
+    y0 = float(np.floor(Pc[:, 1].min() / dy) * dy)
+    ny = int(np.ceil((Pc[:, 1].max() - y0) / dy)) + 1
+    R = np.zeros((ny, na))
+    ang = np.arctan2(Pc[:, 0] - ax, Pc[:, 2] - az)  # 0 = الأمام
+    rad = np.hypot(Pc[:, 0] - ax, Pc[:, 2] - az)
+    iy = np.clip(((Pc[:, 1] - y0) / dy).round().astype(int), 0, ny - 1)
+    ia = ((ang + math.pi) / (2 * math.pi) * na).astype(int) % na
+    np.maximum.at(R, (iy, ia), rad)
+    # سدّ الخانات الفارغة: بالجوار الزاوي ثم الرأسي
+    for _ in range(4):
+        Z = R == 0
+        if not Z.any():
+            break
+        nb = np.maximum(np.roll(R, 1, 1), np.roll(R, -1, 1))
+        R[Z] = nb[Z]
+    for k in range(1, ny):
+        R[k][R[k] == 0] = R[k - 1][R[k] == 0]
+    return {'axis': [ax, round(az, 4)], 'y0': round(y0, 3), 'dy': dy, 'na': na, 'ny': ny,
+            'r': [int(round(v * 1000)) for v in R.ravel()]}
+
+
 chest_pts = VB[[i for i in body_idx if abs(z[i] - (shoulderL[2] - 0.12)) < 0.02 and dom[i] in ('spine_02', 'spine_03')]]
 meta = {
     'version': 1,
@@ -1041,6 +1115,7 @@ meta = {
     },
     'boneRest': {k: {'head': gl(v[0]), 'tail': gl(v[1])} for k, v in bone_pos.items()},
     'face': FACE_ORDER,
+    'collider': build_collider(),
 }
 with open(os.path.join(OUT, 'signer.json'), 'w', encoding='utf8') as f:
     json.dump(meta, f, ensure_ascii=False, separators=(',', ':'))

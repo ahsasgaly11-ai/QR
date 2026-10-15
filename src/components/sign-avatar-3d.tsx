@@ -19,6 +19,8 @@ import {
   type RigDims,
   type V3,
 } from '@/lib/sign-motion';
+import { localHand } from '@/lib/sign-hand';
+import { resolvePole, resolveWrist, surfaceRadius, type RadialCollider } from '@/lib/sign-collide';
 
 // ---------------------------------------------------------------------------
 // المترجم ثلاثي الأبعاد: شخصية قطرية مجسّمة (signer.glb — مبنية من بيانات
@@ -50,6 +52,7 @@ interface SignerMeta {
   };
   boneRest: Record<string, { head: V3; tail: V3 }>;
   face: string[];
+  collider?: RadialCollider;
 }
 interface SideBones {
   clavicle: string;
@@ -87,6 +90,13 @@ function rigFromMeta(m: SignerMeta): RigDims {
     headR: [r, r * 1.25, r * 1.05],
     torsoR: [m.torso.halfWidth, m.torso.halfDepth],
     hipY: m.torso.hipZ,
+    handLocal: { L: localHand(m.hands.L, 'L'), R: localHand(m.hands.R, 'R') },
+    // الشفتان على سطح الوجه: 7.6 سم تحت العينين (مقيسة على وجه الشخصية بمعالم
+    // MediaPipe)، لا «مفصل الفم» في البيانات فهو أعلى وداخل التجويف
+    mouth: ((): V3 => {
+      const y = m.head.eyeL[1] - 0.076;
+      return [0, y, m.collider ? m.collider.axis[1] + surfaceRadius(m.collider, y, 0) : m.head.mouth[2] + 0.09];
+    })(),
   };
 }
 
@@ -331,7 +341,16 @@ async function createEngine(canvas: HTMLCanvasElement, meta: SignerMeta, rig: Ri
     setWorld(clav, deltaWorld(B.clavicle, qA, qB));
     fkBone(upper);
     const S = toV3(curP.get(B.upper)!);
-    const ik = solveArm(S, wristT, pole, rig.upperArm, rig.forearm);
+    let ik = solveArm(S, wristT, pole, rig.upperArm, rig.forearm);
+    // لا تخترق اليد ولا الساعد ولا المرفق الملابسَ والوجه
+    const col = meta.collider;
+    if (col) {
+      const solve = (t: V3) => solveArm(S, t, pole, rig.upperArm, rig.forearm);
+      const t2 = resolveWrist(col, wristT, hand, solve);
+      ik = solve(t2);
+      const p2 = resolvePole(col, S, ik.elbow, pole);
+      if (p2) ik = solveArm(S, t2, p2, rig.upperArm, rig.forearm);
+    }
     const dUp = v3(norm(sub(ik.elbow, S)));
     const dFore = v3(norm(sub(ik.wrist, ik.elbow)));
     // العضد: توجيه ثم لفّ ليواجه مفصلُ المرفق مستوى الثني
