@@ -14,14 +14,21 @@ import { DocumentsAppIcon } from './documents-app-icon';
 /**
  * لا يستطيع سفاري معرفة التطبيقات المثبّتة على الجهاز، لذا يؤكّد المستخدم
  * بنفسه أنه ثبّت Documents؛ عندها فقط تتوقّف التوصية نهائيًا. أمّا «لاحقًا»
- * والإغلاق فيخفيانها في الصفحة الحالية فقط، فتعود في كل صفحة وكل زيارة.
+ * والإغلاق فيخفيانها حتى الدخول التالي إلى الصفحة الرئيسية.
  */
 const INSTALLED_KEY = 'qa-ios-docs-installed';
 /** مفتاح الإصدار السابق (إخفاء أسبوعين) — يُحذف حتى لا يحجب التوصية. */
 const LEGACY_DISMISS_KEY = 'qa-ios-docs-dismissed';
 
-/** الصفحات التي لا تُعرض فيها التوصية (لا ألعاب فيها). */
+/** الصفحات التي لا يظهر فيها إرشاد ما بعد التحميل (لا ألعاب فيها). */
 const SKIP_PREFIXES = ['/admin', '/dashboard', '/heatmap', '/privacy', '/accessibility'];
+
+/**
+ * التوصية العامة تظهر في الصفحة الرئيسية وحدها، وبعد أن يمكث فيها الزائر
+ * هذه المدّة، فلا تقاطع التنقّل بين الأقسام ولا تزاحم الألعاب.
+ */
+const HOME_PATH = '/';
+const INTRO_DELAY_MS = 8000;
 
 function isInstalled(): boolean {
   try {
@@ -45,12 +52,14 @@ const DEVICE_LABEL: Record<AppleDevice, string> = { iphone: 'iPhone', ipad: 'iPa
 /**
  * إشعار لأصحاب iPhone وiPad فقط: سفاري يحفظ اللعبة كملف HTML ولا يشغّلها
  * من تطبيق «الملفات»، فنوصي بتطبيق Documents (مجاني) الذي يشغّلها كاملةً.
- * يظهر بوضعين: توصية عامة في كل صفحة وكل زيارة ما لم يؤكّد المستخدم أنه
- * ثبّت التطبيق، وإرشاد فوري بعد كل تحميل.
+ * يظهر بوضعين:
+ * - توصية عامة: في الصفحة الرئيسية فقط، بعد مهلة من دخولها، وفي كل زيارة لها
+ *   ما لم يؤكّد المستخدم أنه ثبّت التطبيق.
+ * - إرشاد فوري بعد كل تحميل لعبة (في أي صفحة فيها ألعاب).
  *
- * - `fixed` (في التخطيط العام): بطاقة عائمة أسفل الشاشة في صفحات التصفّح.
- * - `inline` (في صفحة التشغيل تحت المشغّل): ضمن تدفّق الصفحة حتى لا يغطّي
- *   شريط أدوات اللعبة؛ وبعد التحميل يتحوّل إلى الإرشاد ويُحضَر إلى الشاشة.
+ * - `fixed` (في التخطيط العام): بطاقة عائمة أسفل الشاشة.
+ * - `inline` (في صفحة التشغيل تحت المشغّل): لإرشاد ما بعد التحميل فقط، ضمن
+ *   تدفّق الصفحة حتى لا يغطّي شريط أدوات اللعبة، ويُحضَر إلى الشاشة.
  */
 export function IosDocumentsNotice({ variant = 'fixed' }: { variant?: 'fixed' | 'inline' }) {
   const pathname = usePathname();
@@ -72,11 +81,17 @@ export function IosDocumentsNotice({ variant = 'fixed' }: { variant?: 'fixed' | 
     return () => window.removeEventListener(IOS_DOWNLOAD_EVENT, onDownload);
   }, []);
 
-  // التوصية تعود مع كل صفحة يفتحها المستخدم (ما لم يكن قد ثبّت التطبيق)
+  // التوصية: في الصفحة الرئيسية فقط وبعد مهلة. أي تنقّل يُخفي الإشعار المفتوح
+  // ويُلغي المهلة، فلا يلاحق الزائر بين الأقسام.
   useEffect(() => {
     if (!device) return;
-    setMode(isInstalled() ? 'hidden' : 'intro');
-  }, [device, pathname]);
+    setMode('hidden');
+    if (variant !== 'fixed' || pathname !== HOME_PATH || isInstalled()) return;
+    const t = window.setTimeout(() => {
+      setMode((m) => (m === 'hidden' ? 'intro' : m));
+    }, INTRO_DELAY_MS);
+    return () => window.clearTimeout(t);
+  }, [device, pathname, variant]);
 
   const inline = variant === 'inline';
   const onPlayPage = Boolean(pathname?.startsWith('/play/'));
