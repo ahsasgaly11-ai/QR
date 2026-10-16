@@ -140,7 +140,7 @@ export function SignLanguagePlayer({ text }: { text: string }) {
   const total = steps.length;
   const step = steps[i];
   const atEnd = i >= total - 1;
-  const poseUrl = step?.media === 'video' ? poseUrlFor(step.src) : null;
+  const poseUrl = step?.motion ?? (step?.media === 'video' ? poseUrlFor(step.src) : null);
   const hasMotion = !!poseUrl && !noPose.has(poseUrl);
 
   const goto = useCallback(

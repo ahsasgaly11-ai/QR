@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 # ---------------------------------------------------------------------------
-# يجلب فهرس «القاموس الإشاري العربي للصم» (menasy.com — مشروع مفتوح المصدر
-# مجّاني لخدمة مجتمع الصمّ، يسمح بالفهرسة في robots.txt) وصوره المتحرّكة، ويكتب
-# خريطة CSV للمستورد العامّ (scripts/import-signs.mjs).
+# يجلب فهرس «القاموس الإشاري العربي للصم» (menasy.com — مجّاني لخدمة مجتمع الصمّ،
+# يسمح بالفهرسة في robots.txt) وصوره المتحرّكة، ويكتب خريطة CSV للمستورد العامّ
+# (scripts/import-signs.mjs). ترخيصه: «للاستخدام التعليمي والشخصي» — لا يُجاز تجاريًّا
+# دون إذن مكتوب من أصحابه (src/data/sign-licenses.json).
 #
 #   python3 scripts/fetch-menasy.py --out /tmp/menasy        # map.csv + gif/
 #   node scripts/import-signs.mjs --map /tmp/menasy/map.csv --src /tmp/menasy/gif \

@@ -25,6 +25,8 @@ export interface SignEntry {
   source?: string;
   /** للمقطع حركة مستخلصة سليمة يؤدّيها المترجم ثلاثي الأبعاد */
   pose?: number;
+  /** ملف حركة مستقلّ بلا مقطع مصدر (مسار داخل /sign/)، مثل أشكال حروف ASLAD */
+  motion?: string;
 }
 
 /** أسماء مصادر القاموس الخارجية كما تُعرض للطالب. */
@@ -49,9 +51,13 @@ export const SIGN_SOURCES: Record<string, { label: string; note: string }> = {
     label: 'قاموس الأطفال الإشاري — معهد الكويت للأبحاث العلمية (يوتيوب)',
     note: 'لهجة إشارية كويتية (خليجية)، يُعرض من قناة المعهد على يوتيوب.',
   },
+  aslad: {
+    label: 'شكل اليد من قاعدة ASLAD-190K (CC BY 4.0)',
+    note: 'شكل يد إجماعي محسوب من آلاف الصور لكل حرف في الأبجدية الإشارية العربية.',
+  },
   menasy: {
-    label: 'القاموس الإشاري العربي للصم (menasy.com) — مشروع مفتوح المصدر',
-    note: 'إشارات عربية موحّدة/خليجية بصور متحرّكة، متاحة مجّانًا للاستخدام التعليمي بحسب ناشرها.',
+    label: 'القاموس الإشاري العربي للصم (menasy.com)',
+    note: 'إشارات عربية موحّدة/خليجية، متاحة مجّانًا للاستخدام التعليمي والشخصي بحسب ناشرها.',
   },
   'kisr-scout': {
     label: 'القاموس الإشاري الكشفي — معهد الكويت للأبحاث العلمية (يوتيوب)',
@@ -86,6 +92,8 @@ export interface SignStep {
   word: number;
   /** مصدر الإشارة الخارجي إن وُجد (مفتاح في SIGN_SOURCES). */
   source?: string;
+  /** رابط ملف الحركة المستقلّ (يتقدّم على حركة المقطع). */
+  motion?: string;
 }
 
 // مقسّم الكلمات: حروف وأرقام **وعلامات تشكيل** (\p{M}) حتى لا تنقسم «ينفّذ» عند الشدّة.
@@ -134,7 +142,7 @@ function lookupWord(m: SignManifest | null, raw: string, opts?: SequenceOptions)
   const has = (k: string) => {
     const e = words[k];
     if (!e) return undefined;
-    if (opts?.avatarOnly) return e.video && e.pose ? e : undefined;
+    if (opts?.avatarOnly) return (e.video && e.pose) || e.motion ? e : undefined;
     return e.img || e.video || e.yt ? e : undefined;
   };
   const n = normalizeWord(raw);
@@ -208,6 +216,7 @@ function makeStep(
   entry?: SignEntry
 ): SignStep {
   const src = entry?.yt ? entry.yt : assetUrl(entry?.video || entry?.img);
+  const motion = assetUrl(entry?.motion);
   return {
     kind,
     glyph,
@@ -215,8 +224,9 @@ function makeStep(
     word,
     src,
     media: entry?.yt ? 'yt' : entry?.video ? 'video' : entry?.img ? 'img' : undefined,
-    hasAsset: !!src,
-    source: src ? entry?.source : undefined,
+    hasAsset: !!src || !!motion,
+    source: src || motion ? entry?.source : undefined,
+    ...(motion ? { motion } : {}),
   };
 }
 

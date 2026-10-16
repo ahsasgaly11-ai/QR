@@ -6,175 +6,204 @@
       "key": "ا",
       "name": "ألف",
       "file": "letters/alef.mp4",
-      "karsl": 32
+      "karsl": 32,
+      "aslad": "letters-aslad/alef.json"
     },
     {
       "key": "ب",
       "name": "باء",
       "file": "letters/ba.mp4",
-      "karsl": 33
+      "karsl": 33,
+      "aslad": "letters-aslad/ba.json"
     },
     {
       "key": "ت",
       "name": "تاء",
       "file": "letters/ta.mp4",
-      "karsl": 34
+      "karsl": 34,
+      "aslad": "letters-aslad/ta.json"
     },
     {
       "key": "ث",
       "name": "ثاء",
       "file": "letters/tha.mp4",
-      "karsl": 35
+      "karsl": 35,
+      "aslad": "letters-aslad/tha.json"
     },
     {
       "key": "ج",
       "name": "جيم",
       "file": "letters/jim.mp4",
-      "karsl": 36
+      "karsl": 36,
+      "aslad": "letters-aslad/jim.json"
     },
     {
       "key": "ح",
       "name": "حاء",
       "file": "letters/hha.mp4",
-      "karsl": 37
+      "karsl": 37,
+      "aslad": "letters-aslad/hha.json"
     },
     {
       "key": "خ",
       "name": "خاء",
       "file": "letters/kha.mp4",
-      "karsl": 38
+      "karsl": 38,
+      "aslad": "letters-aslad/kha.json"
     },
     {
       "key": "د",
       "name": "دال",
       "file": "letters/dal.mp4",
-      "karsl": 39
+      "karsl": 39,
+      "aslad": "letters-aslad/dal.json"
     },
     {
       "key": "ذ",
       "name": "ذال",
       "file": "letters/dhal.mp4",
-      "karsl": 40
+      "karsl": 40,
+      "aslad": "letters-aslad/dhal.json"
     },
     {
       "key": "ر",
       "name": "راء",
       "file": "letters/ra.mp4",
-      "karsl": 41
+      "karsl": 41,
+      "aslad": "letters-aslad/ra.json"
     },
     {
       "key": "ز",
       "name": "زاي",
       "file": "letters/zay.mp4",
-      "karsl": 42
+      "karsl": 42,
+      "aslad": "letters-aslad/zay.json"
     },
     {
       "key": "س",
       "name": "سين",
       "file": "letters/sin.mp4",
-      "karsl": 43
+      "karsl": 43,
+      "aslad": "letters-aslad/sin.json"
     },
     {
       "key": "ش",
       "name": "شين",
       "file": "letters/shin.mp4",
-      "karsl": 44
+      "karsl": 44,
+      "aslad": "letters-aslad/shin.json"
     },
     {
       "key": "ص",
       "name": "صاد",
       "file": "letters/sad.mp4",
-      "karsl": 45
+      "karsl": 45,
+      "aslad": "letters-aslad/sad.json"
     },
     {
       "key": "ض",
       "name": "ضاد",
       "file": "letters/dad.mp4",
-      "karsl": 46
+      "karsl": 46,
+      "aslad": "letters-aslad/dad.json"
     },
     {
       "key": "ط",
       "name": "طاء",
       "file": "letters/tta.mp4",
-      "karsl": 47
+      "karsl": 47,
+      "aslad": "letters-aslad/tta.json"
     },
     {
       "key": "ظ",
       "name": "ظاء",
       "file": "letters/dha.mp4",
-      "karsl": 48
+      "karsl": 48,
+      "aslad": "letters-aslad/dha.json"
     },
     {
       "key": "ع",
       "name": "عين",
       "file": "letters/ain.mp4",
-      "karsl": 49
+      "karsl": 49,
+      "aslad": "letters-aslad/ain.json"
     },
     {
       "key": "غ",
       "name": "غين",
       "file": "letters/ghain.mp4",
-      "karsl": 50
+      "karsl": 50,
+      "aslad": "letters-aslad/ghain.json"
     },
     {
       "key": "ف",
       "name": "فاء",
       "file": "letters/fa.mp4",
-      "karsl": 51
+      "karsl": 51,
+      "aslad": "letters-aslad/fa.json"
     },
     {
       "key": "ق",
       "name": "قاف",
       "file": "letters/qaf.mp4",
-      "karsl": 52
+      "karsl": 52,
+      "aslad": "letters-aslad/qaf.json"
     },
     {
       "key": "ك",
       "name": "كاف",
       "file": "letters/kaf.mp4",
-      "karsl": 53
+      "karsl": 53,
+      "aslad": "letters-aslad/kaf.json"
     },
     {
       "key": "ل",
       "name": "لام",
       "file": "letters/lam.mp4",
-      "karsl": 54
+      "karsl": 54,
+      "aslad": "letters-aslad/lam.json"
     },
     {
       "key": "م",
       "name": "ميم",
       "file": "letters/mim.mp4",
-      "karsl": 55
+      "karsl": 55,
+      "aslad": "letters-aslad/mim.json"
     },
     {
       "key": "ن",
       "name": "نون",
       "file": "letters/nun.mp4",
-      "karsl": 56
+      "karsl": 56,
+      "aslad": "letters-aslad/nun.json"
     },
     {
       "key": "ه",
       "name": "هاء",
       "file": "letters/ha.mp4",
-      "karsl": 57
+      "karsl": 57,
+      "aslad": "letters-aslad/ha.json"
     },
     {
       "key": "و",
       "name": "واو",
       "file": "letters/waw.mp4",
-      "karsl": 58
+      "karsl": 58,
+      "aslad": "letters-aslad/waw.json"
     },
     {
       "key": "ي",
       "name": "ياء",
       "file": "letters/ya.mp4",
-      "karsl": 59
+      "karsl": 59,
+      "aslad": "letters-aslad/ya.json"
     },
     {
       "key": "ة",
       "name": "تاء مربوطة",
       "file": "letters/ta-marbuta.mp4",
-      "karsl": 60
+      "karsl": 60,
+      "aslad": "letters-aslad/ta-marbuta.json"
     },
     {
       "key": "أ",
@@ -192,7 +221,8 @@
       "key": "ئ",
       "name": "ياء بهمزة",
       "file": "letters/ya-hamza.mp4",
-      "karsl": 63
+      "karsl": 63,
+      "aslad": "letters-aslad/ya-hamza.json"
     },
     {
       "key": "ء",

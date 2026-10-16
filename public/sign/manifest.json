@@ -13251,149 +13251,120 @@
   },
   "letters": {
     "ا": {
-      "video": "letters/alef.mp4",
-      "pose": 1,
-      "source": "karsl"
+      "motion": "poses/letters-aslad/alef.json",
+      "source": "aslad"
     },
     "ب": {
-      "video": "letters/ba.mp4",
-      "pose": 1,
-      "source": "karsl"
+      "motion": "poses/letters-aslad/ba.json",
+      "source": "aslad"
     },
     "ت": {
-      "video": "letters/ta.mp4",
-      "pose": 1,
-      "source": "karsl"
+      "motion": "poses/letters-aslad/ta.json",
+      "source": "aslad"
     },
     "ث": {
-      "video": "letters/tha.mp4",
-      "pose": 1,
-      "source": "karsl"
+      "motion": "poses/letters-aslad/tha.json",
+      "source": "aslad"
     },
     "ج": {
-      "video": "letters/jim.mp4",
-      "pose": 1,
-      "source": "karsl"
+      "motion": "poses/letters-aslad/jim.json",
+      "source": "aslad"
     },
     "ح": {
-      "video": "letters/hha.mp4",
-      "pose": 1,
-      "source": "karsl"
+      "motion": "poses/letters-aslad/hha.json",
+      "source": "aslad"
     },
     "خ": {
-      "video": "letters/kha.mp4",
-      "pose": 1,
-      "source": "karsl"
+      "motion": "poses/letters-aslad/kha.json",
+      "source": "aslad"
     },
     "د": {
-      "video": "letters/dal.mp4",
-      "pose": 1,
-      "source": "karsl"
+      "motion": "poses/letters-aslad/dal.json",
+      "source": "aslad"
     },
     "ذ": {
-      "video": "letters/dhal.mp4",
-      "pose": 1,
-      "source": "karsl"
+      "motion": "poses/letters-aslad/dhal.json",
+      "source": "aslad"
     },
     "ر": {
-      "video": "letters/ra.mp4",
-      "pose": 1,
-      "source": "karsl"
+      "motion": "poses/letters-aslad/ra.json",
+      "source": "aslad"
     },
     "ز": {
-      "video": "letters/zay.mp4",
-      "pose": 1,
-      "source": "karsl"
+      "motion": "poses/letters-aslad/zay.json",
+      "source": "aslad"
     },
     "س": {
-      "video": "letters/sin.mp4",
-      "pose": 1,
-      "source": "karsl"
+      "motion": "poses/letters-aslad/sin.json",
+      "source": "aslad"
     },
     "ش": {
-      "video": "letters/shin.mp4",
-      "pose": 1,
-      "source": "karsl"
+      "motion": "poses/letters-aslad/shin.json",
+      "source": "aslad"
     },
     "ص": {
-      "video": "letters/sad.mp4",
-      "pose": 1,
-      "source": "karsl"
+      "motion": "poses/letters-aslad/sad.json",
+      "source": "aslad"
     },
     "ض": {
-      "video": "letters/dad.mp4",
-      "pose": 1,
-      "source": "karsl"
+      "motion": "poses/letters-aslad/dad.json",
+      "source": "aslad"
     },
     "ط": {
-      "video": "letters/tta.mp4",
-      "pose": 1,
-      "source": "karsl"
+      "motion": "poses/letters-aslad/tta.json",
+      "source": "aslad"
     },
     "ظ": {
-      "video": "letters/dha.mp4",
-      "pose": 1,
-      "source": "karsl"
+      "motion": "poses/letters-aslad/dha.json",
+      "source": "aslad"
     },
     "ع": {
-      "video": "letters/ain.mp4",
-      "pose": 1,
-      "source": "karsl"
+      "motion": "poses/letters-aslad/ain.json",
+      "source": "aslad"
     },
     "غ": {
-      "video": "letters/ghain.mp4",
-      "pose": 1,
-      "source": "karsl"
+      "motion": "poses/letters-aslad/ghain.json",
+      "source": "aslad"
     },
     "ف": {
-      "video": "letters/fa.mp4",
-      "pose": 1,
-      "source": "karsl"
+      "motion": "poses/letters-aslad/fa.json",
+      "source": "aslad"
     },
     "ق": {
-      "video": "letters/qaf.mp4",
-      "pose": 1,
-      "source": "karsl"
+      "motion": "poses/letters-aslad/qaf.json",
+      "source": "aslad"
     },
     "ك": {
-      "video": "letters/kaf.mp4",
-      "pose": 1,
-      "source": "karsl"
+      "motion": "poses/letters-aslad/kaf.json",
+      "source": "aslad"
     },
     "ل": {
-      "video": "letters/lam.mp4",
-      "pose": 1,
-      "source": "karsl"
+      "motion": "poses/letters-aslad/lam.json",
+      "source": "aslad"
     },
     "م": {
-      "video": "letters/mim.mp4",
-      "pose": 1,
-      "source": "karsl"
+      "motion": "poses/letters-aslad/mim.json",
+      "source": "aslad"
     },
     "ن": {
-      "video": "letters/nun.mp4",
-      "pose": 1,
-      "source": "karsl"
+      "motion": "poses/letters-aslad/nun.json",
+      "source": "aslad"
     },
     "ه": {
-      "video": "letters/ha.mp4",
-      "pose": 1,
-      "source": "karsl"
+      "motion": "poses/letters-aslad/ha.json",
+      "source": "aslad"
     },
     "و": {
-      "video": "letters/waw.mp4",
-      "pose": 1,
-      "source": "karsl"
+      "motion": "poses/letters-aslad/waw.json",
+      "source": "aslad"
     },
     "ي": {
-      "video": "letters/ya.mp4",
-      "pose": 1,
-      "source": "karsl"
+      "motion": "poses/letters-aslad/ya.json",
+      "source": "aslad"
     },
     "ة": {
-      "video": "letters/ta-marbuta.mp4",
-      "pose": 1,
-      "source": "karsl"
+      "motion": "poses/letters-aslad/ta-marbuta.json",
+      "source": "aslad"
     },
     "أ": {
       "video": "letters/alef-hamza.mp4",
@@ -13406,9 +13377,8 @@
       "source": "karsl"
     },
     "ئ": {
-      "video": "letters/ya-hamza.mp4",
-      "pose": 1,
-      "source": "karsl"
+      "motion": "poses/letters-aslad/ya-hamza.json",
+      "source": "aslad"
     },
     "ء": {
       "video": "letters/hamza.mp4",
