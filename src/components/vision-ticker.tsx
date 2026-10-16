@@ -39,7 +39,7 @@ function prefersReducedMotion(): boolean {
  * شريط مثبّت أسفل الصفحة يتناوب بين رسائل يحرّرها المشرف من لوحة التحكّم
  * (رؤية الوزارة، من أقوال سمو الأمير، …): تدخل كل رسالة من الحافّة اليسرى
  * وتعبر حتى تخرج من اليمين، ثم تبدأ التالية وتتبدّل معها الشارة الذهبية.
- * يتوقّف عند المرور عليه، ولمن اختار تقليل الحركة تُعرض الرسائل ثابتة
+ * يتوقّف عند مرور الفأرة عليه (لا عند اللمس)، ولمن اختار تقليل الحركة تُعرض الرسائل ثابتة
  * وتتبدّل كل بضع ثوانٍ.
  */
 export function VisionTicker() {
@@ -110,11 +110,15 @@ export function VisionTicker() {
     <aside
       className="vision-ticker print:hidden"
       aria-label="رسائل الوزارة"
-      onMouseEnter={() => {
+      // الإيقاف عند المرور للفأرة فقط: اللمس يُطلق mouseenter مُحاكًى بلا
+      // mouseleave، فكان الضغط على الشريط في الجوال يُجمّده حتى يُلمس غيره.
+      onPointerEnter={(e) => {
+        if (e.pointerType !== 'mouse') return;
         hoverRef.current = true;
         animRef.current?.pause();
       }}
-      onMouseLeave={() => {
+      onPointerLeave={(e) => {
+        if (e.pointerType !== 'mouse') return;
         hoverRef.current = false;
         animRef.current?.play();
       }}
