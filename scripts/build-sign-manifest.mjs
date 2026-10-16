@@ -76,6 +76,12 @@ function main() {
   let haveL = 0;
   const totalL = plan.letters?.length ?? 0;
   for (const l of plan.letters ?? []) {
+    // شكل يد إجماعي من ASLAD-190K (CC BY 4.0): ملف حركة بلا مقطع، مُجاز في النسختين
+    if (l.aslad && existsSync(join(SIGN_DIR, 'poses', l.aslad)) && allowed('aslad')) {
+      manifest.letters[l.key] = { motion: `poses/${l.aslad}`, source: 'aslad' };
+      haveL++;
+      continue;
+    }
     const file = resolveFile(l.file);
     if (!file) continue;
     const entry = { [mediaKey(file)]: file };
