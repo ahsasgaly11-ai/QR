@@ -130,8 +130,9 @@
 html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
-  /* المرحلة الابتدائية: حجم أساسي كبير (معيار الوزارة 18–20px) */
-  font-size: 18px;
+  /* الأساس 16px كما في المواقع الاحترافية؛ من يحتاج خطًّا أكبر يرفعه من
+     لوحة «إمكانية الوصول» (18px و20px) فيتناسب معه كل ما يقيس بـ rem. */
+  font-size: 16px;
 }
 
 body {
@@ -474,8 +475,8 @@ body::after {
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    /* مساحة لمس مريحة للمرحلة الابتدائية (≥ 60px) */
-    min-height: 60px;
+    /* مساحة لمس مريحة دون تضخيم (أعلى من حدّ 44px للمس) */
+    min-height: 52px;
     border-radius: 0.6rem;
     background: var(--maroon);
     color: #fff;
@@ -495,7 +496,7 @@ body::after {
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    min-height: 60px;
+    min-height: 52px;
     border-radius: 0.6rem;
     border: 1.5px solid color-mix(in srgb, var(--ink) 70%, transparent);
     background: transparent;
@@ -729,9 +730,9 @@ body::after {
 }
 
 /* --- حجم الخط -------------------------------------------------------------
-   الأساس 18px (معيار الابتدائي). التكبير عبر الجذر فيتناسب كل ما يقيس بـ rem. */
-:root[data-text='lg'] { font-size: 20px; }
-:root[data-text='xl'] { font-size: 22px; }
+   الأساس 16px. التكبير عبر الجذر فيتناسب كل ما يقيس بـ rem. */
+:root[data-text='lg'] { font-size: 18px; }
+:root[data-text='xl'] { font-size: 20px; }
 
 /* --- القراءة الميسّرة (عُسر القراءة) --------------------------------------
    ملاحظة مهمّة: العربية خطّ متّصل، فزيادة تباعد الحروف (letter-spacing) تفكّك
@@ -985,8 +986,8 @@ body { padding-bottom: var(--ticker-h); }
   align-items: flex-end;
   justify-content: space-between;
   gap: 0.75rem 2rem;
-  margin-bottom: 2.25rem;
-  padding-bottom: 1rem;
+  margin-bottom: 1.75rem;
+  padding-bottom: 0.85rem;
   border-bottom: 2px solid var(--ink);
 }
 .dark .section-head { border-bottom-color: var(--hairline-strong); }
@@ -1086,7 +1087,7 @@ body { padding-bottom: var(--ticker-h); }
   align-items: center;
   gap: 0.9rem;
   width: min(100%, 26rem);
-  min-height: 60px;
+  min-height: 52px;
   padding: 0.55rem 0.7rem 0.55rem 0.7rem;
   padding-inline-start: 4.6rem;
   border-radius: 0.9rem;
@@ -1298,15 +1299,16 @@ body { padding-bottom: var(--ticker-h); }
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: clamp(1.5rem, 4vw, 3.5rem);
+  gap: clamp(1.25rem, 4vw, 3rem);
 }
 
 .heritage-door {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.1rem;
-  width: clamp(150px, 40vw, 210px);
+  gap: 0.9rem;
+  /* الباب هو محور القسم: يكبر مع الشاشة حتى لا يضيع في الجدار */
+  width: clamp(150px, 42vw, 250px);
   text-align: center;
   color: inherit;
   text-decoration: none;
@@ -1453,8 +1455,8 @@ body { padding-bottom: var(--ticker-h); }
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 .hd-caption { display: flex; flex-direction: column; gap: 0.15rem; }
-.hd-title { font-family: var(--font-display); font-weight: 600; font-size: 1.15rem; line-height: 1.5; color: var(--ink); }
-.hd-meta { font-size: 0.8rem; color: var(--muted); }
+.hd-title { font-family: var(--font-display); font-weight: 600; font-size: 1.2rem; line-height: 1.5; color: var(--ink); }
+.hd-meta { font-size: 0.85rem; color: var(--muted); }
 
 /* المرور: ينفرج الباب قليلًا ويتسرّب الضوء */
 .heritage-door:not(.is-locked):hover .hd-leaf--r,

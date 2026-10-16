@@ -45,7 +45,7 @@ export default async function BrowsePage() {
       />
 
       <section className="door-wall border-t-0">
-        <div className="relative mx-auto max-w-7xl px-5 py-14 sm:px-6 lg:py-16">
+        <div className="relative mx-auto max-w-7xl px-5 py-10 sm:px-6 lg:py-12">
           <div className="door-row">
             {rows.map(({ s, count, available, color }) => (
               <HeritageDoor
@@ -76,7 +76,7 @@ export default async function BrowsePage() {
       </section>
 
       {/* دليل مختصر يقرأ أرقام كل مادة دفعة واحدة */}
-      <section className="mx-auto max-w-7xl px-5 py-14 sm:px-6">
+      <section className="mx-auto max-w-7xl px-5 py-12 sm:px-6">
         <SectionHead kicker="دليل المواد" title="ما في كل مادة" />
         <ol className="subject-ledger">
           {rows.map(({ s, units, lessons, count, available, color }) => {

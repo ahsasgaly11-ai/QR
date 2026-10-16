@@ -54,7 +54,7 @@ export function PageCourt({
           <div className="mt-5 flex items-end gap-5">
             <div className="min-w-0 flex-1">
               {kicker && <p className="kicker">{kicker}</p>}
-              <h1 className="mt-2 font-calli text-[2.1rem] leading-[1.4] text-foreground sm:text-6xl lg:text-7xl">
+              <h1 className="mt-2 font-calli text-[2rem] leading-[1.4] text-foreground sm:text-5xl lg:text-[3.4rem]">
                 {title}
               </h1>
             </div>
