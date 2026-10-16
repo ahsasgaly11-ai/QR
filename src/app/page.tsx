@@ -62,7 +62,7 @@ export default async function HomePage() {
     <>
       {/* ===================== نافذة الدوحة ===================== */}
       <section className="home-hero" data-hero>
-        <div className="mx-auto grid max-w-7xl items-center gap-8 px-5 pb-10 pt-8 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,540px)] lg:gap-14 lg:pb-14 lg:pt-14">
+        <div className="mx-auto grid max-w-7xl items-center gap-8 px-5 pb-10 pt-8 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,540px)] lg:gap-12 lg:pb-12 lg:pt-10">
           <div className="hero-rise order-2 lg:order-1">
             <p className="kicker" style={{ '--i': 0 } as React.CSSProperties}>
               منصة تعليمية تفاعلية • دولة قطر
@@ -131,7 +131,7 @@ export default async function HomePage() {
       <div className="sadu-band" aria-hidden />
 
       {/* ============ فيديو الإطلاق + عرض نسيج المجتمع القطري ============ */}
-      <section id="naseej" className="mx-auto max-w-7xl scroll-mt-24 px-5 py-12 sm:px-6 lg:py-16">
+      <section id="naseej" className="mx-auto max-w-7xl scroll-mt-24 px-5 py-10 sm:px-6 lg:py-14">
         <SectionHead
           kicker="شاهد قبل أن تبدأ"
           title="نسيج المجتمع القطري وفيديو الإطلاق"
@@ -160,7 +160,7 @@ export default async function HomePage() {
 
       {/* ===================== أبواب المواد ===================== */}
       <section id="doors" className="door-wall scroll-mt-24">
-        <div className="relative mx-auto max-w-7xl px-5 py-14 sm:px-6 lg:py-20">
+        <div className="relative mx-auto max-w-7xl px-5 py-10 sm:px-6 lg:py-12">
           <SectionHead
             kicker="المواد الدراسية"
             title="افتح باب المادة"
@@ -203,7 +203,7 @@ export default async function HomePage() {
       </section>
 
       {/* ===================== كيف تعمل المنصّة ===================== */}
-      <section className="mx-auto max-w-7xl px-5 py-16 sm:px-6 lg:py-20">
+      <section className="mx-auto max-w-7xl px-5 py-12 sm:px-6 lg:py-16">
         <SectionHead kicker="كيف تعمل المنصّة؟" title="من الكتاب إلى التجربة في ثلاث خطوات" />
         <ol className="steps">
           <li>
@@ -238,7 +238,7 @@ export default async function HomePage() {
 
       {/* ===================== أنواع الأنشطة ===================== */}
       <section className="types-band">
-        <div className="mx-auto max-w-7xl px-5 py-16 sm:px-6 lg:py-20">
+        <div className="mx-auto max-w-7xl px-5 py-12 sm:px-6 lg:py-16">
           <SectionHead kicker="أنواع الأنشطة" title="أربع طرق لتعلّم الدرس نفسه" />
           <ul className="types-grid">
             {TYPES.map((t, i) => (
@@ -259,7 +259,7 @@ export default async function HomePage() {
 
       {/* ===================== أنشطة مميّزة (عند وجود محتوى) ========= */}
       {featured.length > 0 && (
-        <section className="mx-auto max-w-7xl px-5 py-16 sm:px-6">
+        <section className="mx-auto max-w-7xl px-5 py-12 sm:px-6 lg:py-16">
           <SectionHead
             kicker="الأكثر تفاعلًا"
             title="أنشطة مميّزة"

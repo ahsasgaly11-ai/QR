@@ -106,7 +106,7 @@ export function ImpactSection({
 
   return (
     <section id="impact" className="impact-band scroll-mt-24">
-      <div className="mx-auto max-w-7xl px-5 py-16 sm:px-6 lg:py-20">
+      <div className="mx-auto max-w-7xl px-5 py-12 sm:px-6 lg:py-16">
         <SectionHead
           kicker="أثر التعلّم"
           title="ماذا صنعت المنصّة في الصفوف؟"
