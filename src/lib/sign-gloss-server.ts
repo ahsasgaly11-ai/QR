@@ -21,6 +21,7 @@ import {
   currentGeminiModel,
   demoteGeminiModel,
   isGeminiModelDemoted,
+  readQuota,
   resolveGeminiModel,
 } from './gemini-model';
 
@@ -56,22 +57,6 @@ export class GlossError extends Error {
 
 /** أقصى عدد تنقّلات بين النماذج في الطلب الواحد (لكل نموذج Flash حصّته اليومية المستقلّة). */
 const MAX_HOPS = 8;
-
-/** يقرأ خطأ 429: هل هو نفاد حصّة يومية؟ وبعد كم ميلي ثانية تتجدّد؟ */
-async function readQuota(res: Response): Promise<{ daily: boolean; retryMs: number }> {
-  try {
-    const j = (await res.json()) as {
-      error?: { details?: { quotaId?: string; violations?: { quotaId?: string }[]; retryDelay?: string }[] };
-    };
-    const details = j.error?.details ?? [];
-    const daily = details.some((d) => (d.violations ?? []).some((v) => /PerDay/i.test(v.quotaId ?? '')));
-    const delay = details.find((d) => d.retryDelay)?.retryDelay ?? '';
-    const sec = Number(/^(\d+(?:\.\d+)?)s$/.exec(delay)?.[1] ?? NaN);
-    return { daily, retryMs: Number.isFinite(sec) ? sec * 1000 : 0 };
-  } catch {
-    return { daily: false, retryMs: 0 };
-  }
-}
 
 /** مخطّط JSON لـ Gemini (مجموعة OpenAPI الجزئية التي يدعمها responseSchema). */
 const GEMINI_SCHEMA = {

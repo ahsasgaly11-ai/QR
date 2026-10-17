@@ -115,3 +115,19 @@ export function isGeminiModelDemoted(id: string): boolean {
 export function currentGeminiModel(): string {
   return process.env.GEMINI_MODEL?.trim() || cached || 'auto';
 }
+
+/** يقرأ خطأ 429: هل هو نفاد حصّة يومية؟ وبعد كم ميلي ثانية تتجدّد؟ */
+export async function readQuota(res: Response): Promise<{ daily: boolean; retryMs: number }> {
+  try {
+    const j = (await res.json()) as {
+      error?: { details?: { quotaId?: string; violations?: { quotaId?: string }[]; retryDelay?: string }[] };
+    };
+    const details = j.error?.details ?? [];
+    const daily = details.some((d) => (d.violations ?? []).some((v) => /PerDay/i.test(v.quotaId ?? '')));
+    const delay = details.find((d) => d.retryDelay)?.retryDelay ?? '';
+    const sec = Number(/^(\d+(?:\.\d+)?)s$/.exec(delay)?.[1] ?? NaN);
+    return { daily, retryMs: Number.isFinite(sec) ? sec * 1000 : 0 };
+  } catch {
+    return { daily: false, retryMs: 0 };
+  }
+}
