@@ -1,14 +1,25 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Check, CheckCircle2, Loader2, Presentation, Sparkles, Wand2, X } from 'lucide-react';
+import { Check, CheckCircle2, Loader2, Sparkles, Wand2, X } from 'lucide-react';
 import type { Activity, Pedagogy, Subject } from '@/lib/types';
 import { isFirebaseConfigured } from '@/lib/firebase';
 import { fetchUploadedActivities, getStructure, locateActivity, updateActivity } from '@/lib/content';
 import { revalidateContent } from '@/lib/revalidate';
 import { normalizePedagogy, pedagogyStatus, PHASE_LABEL } from '@/lib/pedagogy';
 import type { PedagogyExtraction } from '@/lib/pedagogy-extract';
+import { activityKind, loadActivityHtml, requestPedagogyExtraction } from '@/lib/pedagogy-extract-client';
 import { cn } from '@/lib/utils';
+
+/** أقسام المنصّة كما تظهر في لوحة الإدارة */
+type Section = 'all' | 'presentations' | 'lessons' | 'smart' | 'reviews';
+const SECTIONS: { id: Section; label: string; match: (a: Activity) => boolean }[] = [
+  { id: 'all', label: 'كل الأقسام', match: () => true },
+  { id: 'lessons', label: 'أنشطة الدروس', match: (a) => !a.presentation && !a.unitReview && !a.smartReinforcement },
+  { id: 'presentations', label: 'العروض الذكية', match: (a) => !!a.presentation },
+  { id: 'smart', label: 'ألعاب التعزيز', match: (a) => !!a.smartReinforcement },
+  { id: 'reviews', label: 'مراجعات الوحدات', match: (a) => !!a.unitReview },
+];
 
 type RowState =
   | { kind: 'idle' }
@@ -42,12 +53,12 @@ function SourceTag({ fromDeck }: { fromDeck: boolean }) {
         fromDeck ? 'bg-[color:var(--teal)]/15 text-[color:var(--teal)]' : 'bg-[color:var(--gold)]/20 text-[color:var(--maroon)]'
       )}
     >
-      {fromDeck ? 'من العرض' : 'مقترح'}
+      {fromDeck ? 'من الملف' : 'مقترح'}
     </span>
   );
 }
 
-/** معاينة ما سيُحفظ، مع وسم كل جزء: مأخوذ من العرض أم مقترح من النموذج. */
+/** معاينة ما سيُحفظ، مع وسم كل جزء: مأخوذ من الملف أم مقترح من النموذج. */
 function ResultPreview({ result }: { result: PedagogyExtraction }) {
   const p = result.pedagogy;
   return (
@@ -109,11 +120,11 @@ function ResultPreview({ result }: { result: PedagogyExtraction }) {
 }
 
 /**
- * استخراج البيانات التربوية من العروض التقديمية الذكية: يُقرأ نصّ الشرائح في
- * المتصفّح، ويحلّله النموذج على الخادم، فتُعرض الأهداف والنواتج والأسئلة
- * للمراجعة ثم تُحفظ في حقول النشاط التربوية بضغطة.
+ * استخراج البيانات التربوية من ملفات كل الأقسام (أنشطة الدروس، العروض الذكية،
+ * ألعاب التعزيز، مراجعات الوحدات): يُقرأ نصّ الملف في المتصفّح، ويحلّله النموذج
+ * على الخادم، فتُعرض الأهداف والنواتج والأسئلة للمراجعة ثم تُحفظ بضغطة.
  */
-export function PresentationPedagogyExtract({
+export function PedagogyExtractAudit({
   activities: initial,
   structure: initialStructure,
 }: {
@@ -126,6 +137,7 @@ export function PresentationPedagogyExtract({
   const [rows, setRows] = useState<Record<string, RowState>>({});
   const [bulk, setBulk] = useState(false);
   const [notice, setNotice] = useState('');
+  const [section, setSection] = useState<Section>('all');
 
   useEffect(() => {
     let alive = true;
@@ -146,47 +158,35 @@ export function PresentationPedagogyExtract({
     };
   }, []);
 
-  const decks = useMemo(
-    () => activities.filter((a) => a.presentation).sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0)),
+  // المرفوعة فقط: الأنشطة المضمَّنة في الكود لا تُعدَّل من هنا
+  const uploaded = useMemo(
+    () =>
+      activities
+        .filter((a) => a.local || a.stored === 'firestore' || a.external)
+        .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0)),
     [activities]
   );
-  const incomplete = decks.filter((a) => !pedagogyStatus(a.pedagogy).complete);
-  const ready = decks.filter((a) => rows[a.id]?.kind === 'ready');
+  const files = uploaded.filter(SECTIONS.find((x) => x.id === section)!.match);
+  const incomplete = files.filter((a) => !pedagogyStatus(a.pedagogy).complete);
+  const ready = files.filter((a) => rows[a.id]?.kind === 'ready');
 
   const setRow = (id: string, s: RowState) => setRows((r) => ({ ...r, [id]: s }));
 
   async function extract(a: Activity): Promise<void> {
     try {
-      setRow(a.id, { kind: 'working', step: 'جارٍ قراءة العرض…' });
-      let html: string | null = null;
-      if (a.local) {
-        const { getLocalRecord } = await import('@/lib/local-store');
-        html = (await getLocalRecord(a.id))?.html ?? null;
-      } else if (a.stored === 'firestore') {
-        const { loadGameHtml } = await import('@/lib/game-store');
-        html = await loadGameHtml(a.id);
-      } else {
-        const res = await fetch(a.external ? a.file : `/games/${a.file}`);
-        html = res.ok ? await res.text() : null;
-      }
-      if (!html) throw new Error('تعذّر تحميل ملف العرض.');
-
-      const { extractDeckText } = await import('@/lib/deck-text');
-      const text = extractDeckText(html);
-
+      setRow(a.id, { kind: 'working', step: 'جارٍ قراءة الملف…' });
+      const html = await loadActivityHtml(a);
+      if (!html) throw new Error('تعذّر تحميل ملف النشاط.');
       setRow(a.id, { kind: 'working', step: 'جارٍ التحليل…' });
-      const { getIdToken } = await import('@/lib/auth');
-      const token = await getIdToken();
-      if (!token) throw new Error('سجّل الدخول بحساب المالك أولًا (يتطلّب Firebase).');
-      const { subject, grade, lesson } = locateActivity(structure, a);
-      const res = await fetch('/api/extract-pedagogy', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ text, title: a.title, subject: subject?.title, grade: grade?.title, lesson: lesson?.title }),
+      const { subject, grade, unit, lesson } = locateActivity(structure, a);
+      const result = await requestPedagogyExtraction(html, {
+        kind: activityKind(a),
+        title: a.title,
+        subject: a.smartReinforcement ? undefined : subject?.title,
+        grade: a.smartReinforcement ? undefined : grade?.title,
+        lesson: a.smartReinforcement ? undefined : a.unitReview ? unit?.title : lesson?.title,
       });
-      const json = (await res.json().catch(() => ({}))) as Partial<PedagogyExtraction> & { error?: string };
-      if (!res.ok || !json.pedagogy) throw new Error(json.error || `تعذّر التحليل (${res.status}).`);
-      setRow(a.id, { kind: 'ready', result: json as PedagogyExtraction });
+      setRow(a.id, { kind: 'ready', result });
     } catch (e) {
       setRow(a.id, { kind: 'error', message: e instanceof Error ? e.message : 'خطأ غير متوقّع.' });
     }
@@ -215,7 +215,7 @@ export function PresentationPedagogyExtract({
   async function extractAll() {
     setBulk(true);
     setNotice('');
-    // واحدًا تلو الآخر: لكل عرض ملف كبير، وحصّة النموذج المجانية محدودة
+    // واحدًا تلو الآخر: الملفات كبيرة، وحصّة النموذج المجانية محدودة
     for (const a of incomplete) await extract(a);
     setBulk(false);
   }
@@ -232,7 +232,7 @@ export function PresentationPedagogyExtract({
       }
     }
     if (ok && isFirebaseConfigured) await revalidateContent({ subjectId });
-    setNotice(`حُفظت البيانات التربوية لـ ${ok} عرضًا.`);
+    setNotice(`حُفظت البيانات التربوية لـ ${ok} ملفًا.`);
     setBulk(false);
   }
 
@@ -245,14 +245,14 @@ export function PresentationPedagogyExtract({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="flex items-center gap-2 font-display text-lg font-semibold text-foreground">
-            <Presentation className="h-5 w-5 text-[color:var(--maroon)]" />
-            العروض التقديمية الذكية: استخراج البيانات التربوية
+            <Wand2 className="h-5 w-5 text-[color:var(--maroon)]" />
+            استخراج البيانات التربوية من الملفات
             <span className="beta-pill">تجريبي</span>
           </p>
           <p className="mt-1 text-sm leading-6 text-muted-foreground">
-            يُقرأ نصّ شرائح كل عرض ويُستخرج منه الهدف التعليمي ونواتج التعلّم وأسئلة التقويم الختامي (مع
-            إجاباتها) وموضع التوظيف وطريقته، ثم تراجعها وتعتمدها فتُحفظ في حقول العرض نفسها. يوسم كل جزء بـ«من
-            العرض» أو «مقترح».
+            لكل ملف مرفوع في أي قسم يُقرأ نصّه ويُستخرج منه الهدف التعليمي ونواتج التعلّم وأسئلة التقويم الختامي
+            (مع إجاباتها) وموضع التوظيف وطريقته، ثم تراجعها وتعتمدها فتُحفظ في حقول النشاط نفسها. يوسم كل جزء
+            بـ«من الملف» أو «مقترح». ويتمّ الاستخراج تلقائيًا أيضًا عند اختيار الملف في نماذج الرفع.
           </p>
         </div>
         <label className="flex shrink-0 cursor-pointer items-center gap-2 text-sm font-bold">
@@ -266,8 +266,23 @@ export function PresentationPedagogyExtract({
         </label>
       </div>
 
+      <div className="mt-3 flex flex-wrap gap-2" role="tablist" aria-label="الأقسام">
+        {SECTIONS.map((x) => (
+          <button
+            key={x.id}
+            type="button"
+            role="tab"
+            aria-selected={section === x.id}
+            onClick={() => setSection(x.id)}
+            className={cn('level-tab', section === x.id && 'is-on')}
+          >
+            {x.label} ({uploaded.filter(x.match).length})
+          </button>
+        ))}
+      </div>
+
       <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-bold">
-        <span className="rounded-full bg-[color:var(--surface-2)] px-3 py-1.5">العروض: {decks.length}</span>
+        <span className="rounded-full bg-[color:var(--surface-2)] px-3 py-1.5">الملفات: {files.length}</span>
         <span className="rounded-full bg-[color:var(--gold)]/20 px-3 py-1.5 text-[color:var(--maroon)]">
           ناقصة البيانات: {incomplete.length}
         </span>
@@ -278,11 +293,11 @@ export function PresentationPedagogyExtract({
         )}
       </div>
 
-      {decks.length === 0 ? (
-        <p className="mt-3 text-sm text-muted-foreground">لا توجد عروض مرفوعة بعد — ارفعها من تبويب «العروض الذكية».</p>
+      {files.length === 0 ? (
+        <p className="mt-3 text-sm text-muted-foreground">لا توجد ملفات مرفوعة في هذا القسم بعد.</p>
       ) : (
         <ul className="mt-3 space-y-2">
-          {decks.map((a) => {
+          {files.map((a) => {
             const s = rows[a.id] ?? { kind: 'idle' };
             const st = pedagogyStatus(a.pedagogy);
             const { subject, lesson } = locateActivity(structure, a);
@@ -348,7 +363,7 @@ export function PresentationPedagogyExtract({
           className="btn-primary px-5 py-2.5 text-sm"
         >
           {bulk ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-          {incomplete.length > 0 ? `استخراج من ${incomplete.length} عرضًا ناقصًا` : 'كل العروض مكتملة البيانات'}
+          {incomplete.length > 0 ? `استخراج من ${incomplete.length} ملفًا ناقصًا` : 'كل الملفات هنا مكتملة البيانات'}
         </button>
         {ready.length > 0 && (
           <button type="button" onClick={() => void saveAll()} disabled={bulk} className="btn-ghost px-5 py-2.5 text-sm">

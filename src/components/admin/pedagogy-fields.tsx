@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { ClipboardCheck, Plus, Target, Trash2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { ClipboardCheck, Loader2, Plus, Target, Trash2, Wand2 } from 'lucide-react';
 import type { ExitQuestion, LessonPhase, Pedagogy } from '@/lib/types';
 import { PEDAGOGY_LIMITS, PHASES, parseOutcomes, pedagogyStatus } from '@/lib/pedagogy';
+import type { ExtractContext, PedagogyExtraction } from '@/lib/pedagogy-extract';
+import { canExtractPedagogy } from '@/lib/pedagogy-extract-client';
 
 /**
  * مسوّدة النموذج: النواتج نصّ متعدّد الأسطر والمدة نصّ، فتُكتب بحرّية ثم
@@ -56,19 +58,104 @@ export function draftToPedagogy(d: PedagogyDraft): Pedagogy {
 
 const NEW_Q: ExitQuestion = { q: '', options: ['', ''], answer: 0 };
 
+/**
+ * يملأ المسوّدة من المستخرَج. بلا `overwrite` يُكمل الحقول الفارغة فقط فلا
+ * يُمحى ما كتبه المشرف، ومعه يحلّ المستخرَج محلّ كل حقل استُخرج له شيء.
+ */
+export function fillDraft(d: PedagogyDraft, p: Pedagogy, overwrite = false): PedagogyDraft {
+  const x = pedagogyToDraft(p);
+  const pick = <K extends keyof PedagogyDraft>(k: K, empty: boolean) =>
+    (overwrite ? !isBlank(x[k]) : empty && !isBlank(x[k])) ? x[k] : d[k];
+  return {
+    objective: pick('objective', !d.objective.trim()),
+    outcomesText: pick('outcomesText', !d.outcomesText.trim()),
+    duration: pick('duration', !d.duration.trim()),
+    phase: pick('phase', !d.phase),
+    usage: pick('usage', !d.usage.trim()),
+    support: pick('support', !d.support.trim()),
+    exitTicket: pick('exitTicket', !d.exitTicket.some((q) => q.q.trim())),
+  };
+}
+
+const isBlank = (v: PedagogyDraft[keyof PedagogyDraft]) =>
+  Array.isArray(v) ? v.length === 0 : !String(v).trim();
+
+/** مصدر الاستخراج: نصّ ملف النشاط وسياقه (أو null بلا ملف بعد). */
+export type ExtractSource = () => Promise<{ html: string; ctx: ExtractContext } | null>;
+
+type ExtractState =
+  | { kind: 'idle' }
+  | { kind: 'working' }
+  | { kind: 'done'; result: PedagogyExtraction; filled: number }
+  | { kind: 'error'; message: string };
+
+/** سطر يلخّص ما استُخرج ومن أين: من الملف أم مقترح. */
+function summary(r: PedagogyExtraction): string {
+  const p = r.pedagogy;
+  const from = (b: boolean) => (b ? 'من الملف' : 'مقترح');
+  const qs = r.fromDeck.questions;
+  return [
+    p.objective && `الهدف (${from(r.fromDeck.objective)})`,
+    p.outcomes?.length && `${p.outcomes.length} نواتج (${from(r.fromDeck.outcomes)})`,
+    p.exitTicket?.length && `${p.exitTicket.length} أسئلة (${qs.filter(Boolean).length} من الملف)`,
+    (p.usage || p.phase) && 'التوظيف والفروق الفردية (مقترحة)',
+  ]
+    .filter(Boolean)
+    .join('، ');
+}
+
 export function PedagogyFields({
   value,
   onChange,
   inputClass,
   labelClass,
+  extractFrom,
+  autoExtractKey,
 }: {
   value: PedagogyDraft;
   onChange: (next: PedagogyDraft) => void;
   inputClass: string;
   labelClass: string;
+  /** يُظهر زرّ «استخراج من الملف» ويملأ الحقول من نصّ ملف النشاط */
+  extractFrom?: ExtractSource;
+  /** يتغيّر عند اختيار ملف جديد فيُستخرج تلقائيًا (نموذج الرفع) */
+  autoExtractKey?: string | null;
 }) {
   const [open, setOpen] = useState(true);
   const set = (patch: Partial<PedagogyDraft>) => onChange({ ...value, ...patch });
+
+  // أحدث قيمة ودالّة تغيير: يُدمج المستخرَج في ما كتبه المشرف أثناء التحليل
+  const latest = useRef({ value, onChange });
+  latest.current = { value, onChange };
+  const [ex, setEx] = useState<ExtractState>({ kind: 'idle' });
+
+  async function runExtract() {
+    if (!extractFrom || ex.kind === 'working') return;
+    setEx({ kind: 'working' });
+    try {
+      const src = await extractFrom();
+      if (!src) return setEx({ kind: 'error', message: 'اختر ملف HTML أولًا.' });
+      const { requestPedagogyExtraction } = await import('@/lib/pedagogy-extract-client');
+      const result = await requestPedagogyExtraction(src.html, src.ctx);
+      const before = latest.current.value;
+      const next = fillDraft(before, result.pedagogy);
+      const filled = (Object.keys(next) as (keyof PedagogyDraft)[]).filter((k) => next[k] !== before[k]).length;
+      latest.current.onChange(next);
+      setOpen(true);
+      setEx({ kind: 'done', result, filled });
+    } catch (e) {
+      setEx({ kind: 'error', message: e instanceof Error ? e.message : 'تعذّر الاستخراج.' });
+    }
+  }
+
+  // استخراج تلقائي مرّة لكل ملف يُختار في نموذج الرفع
+  const lastKey = useRef<string | null>(null);
+  useEffect(() => {
+    if (!autoExtractKey || !canExtractPedagogy || autoExtractKey === lastKey.current) return;
+    lastKey.current = autoExtractKey;
+    void runExtract();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- يُشغَّل عند تغيّر الملف وحده
+  }, [autoExtractKey]);
   const status = pedagogyStatus(draftToPedagogy(value));
 
   const setQ = (i: number, patch: Partial<ExitQuestion>) =>
@@ -99,6 +186,46 @@ export function PedagogyFields({
       >
         {status.complete ? 'البيانات التربوية مكتملة ✓' : `ناقص: ${status.missing.join('، ')}`}
       </p>
+
+      {extractFrom && (
+        <div className="mt-2 rounded-lg border border-[color:var(--hairline)] bg-[color:var(--surface)] px-3 py-2 text-xs">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => void runExtract()}
+              disabled={!canExtractPedagogy || ex.kind === 'working'}
+              className="btn-ghost btn-sm px-3 py-1.5 text-xs"
+              title={canExtractPedagogy ? 'يقرأ نصّ الملف ويستخرج منه الهدف والنواتج والأسئلة' : 'يتطلّب Firebase وحساب المالك'}
+            >
+              {ex.kind === 'working' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+              {ex.kind === 'working' ? 'جارٍ الاستخراج من الملف…' : 'استخراج من الملف'}
+            </button>
+            <span className="min-w-0 flex-1 leading-5 text-muted-foreground">
+              {!canExtractPedagogy
+                ? 'الاستخراج التلقائي متاح بعد تفعيل Firebase وتسجيل دخول المالك.'
+                : ex.kind === 'done'
+                  ? `${ex.filled === -1 ? 'استُبدلت الحقول بالمستخرَج' : ex.filled ? `مُلئ ${ex.filled} حقلًا فارغًا` : 'الحقول ممتلئة فلم يُستبدل شيء'} — استُخرج: ${summary(ex.result)}. راجعها قبل الحفظ.`
+                  : 'يملأ الحقول الفارغة من نصّ الملف (الأهداف، النواتج، أسئلة التقويم بإجاباتها، التوظيف).'}
+            </span>
+            {ex.kind === 'done' && (
+              <button
+                type="button"
+                onClick={() => {
+                  onChange(fillDraft(value, ex.result.pedagogy, true));
+                  setEx({ ...ex, filled: -1 });
+                }}
+                disabled={ex.filled === -1}
+                className="text-xs font-bold text-[color:var(--maroon)] underline-offset-4 hover:underline disabled:opacity-40"
+              >
+                {ex.filled === -1 ? 'استُبدلت الحقول' : 'استبدال الحقول بالمستخرَج'}
+              </button>
+            )}
+          </div>
+          {ex.kind === 'error' && (
+            <p role="alert" className="mt-1.5 font-bold text-[color:var(--coral)]">{ex.message}</p>
+          )}
+        </div>
+      )}
 
       {open && (
         <div className="mt-4 space-y-4">

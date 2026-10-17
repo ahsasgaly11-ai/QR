@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import type { Activity, ActivityType, Subject } from '@/lib/types';
 import { ACTIVITY_META, PRESENTATION_META } from '@/lib/types';
+import { activityKind, loadActivityHtml } from '@/lib/pedagogy-extract-client';
 import {
   updateActivity,
   deleteActivity,
@@ -508,14 +509,28 @@ export function ActivitiesManager({
                   </p>
                 </div>
 
-                {!a.smartReinforcement && (
-                  <PedagogyFields
-                    value={ped}
-                    onChange={setPed}
-                    inputClass={inp}
-                    labelClass="mb-1 block text-xs font-semibold text-[color:var(--maroon)]"
-                  />
-                )}
+                {/* في كل الأقسام؛ يُستخرج من الملف البديل إن اختير، وإلا من الملف الحالي */}
+                <PedagogyFields
+                  value={ped}
+                  onChange={setPed}
+                  inputClass={inp}
+                  labelClass="mb-1 block text-xs font-semibold text-[color:var(--maroon)]"
+                  extractFrom={async () => {
+                    const html = newFile ? await newFile.text() : await loadActivityHtml(a);
+                    if (!html) throw new Error('تعذّر تحميل ملف النشاط.');
+                    const { subject, grade, unit, lesson } = locateActivity(structure, a);
+                    return {
+                      html,
+                      ctx: {
+                        kind: activityKind(a),
+                        title: draft.title?.trim() || a.title,
+                        subject: subject?.title,
+                        grade: grade?.title,
+                        lesson: a.unitReview ? unit?.title : lesson?.title,
+                      },
+                    };
+                  }}
+                />
 
                 {!a.smartReinforcement && !a.unitReview && (
                   <div className="rounded-xl border border-[color:var(--hairline)] p-3">
