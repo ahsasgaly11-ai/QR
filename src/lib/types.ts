@@ -43,6 +43,17 @@ export function presentationsCount(n: number): string {
   return `${n} ${n <= 10 ? 'عروض' : 'عرضًا'}`;
 }
 
+/**
+ * العروض التقديمية ومراجعات الوحدات تُفتح أيضًا في صفحة مستقلة بلا رأس
+ * الموقع ولا تذييله — للسبورة أو لمشاركة رابطها مع الطلبة.
+ */
+export function opensStandalone(a: Pick<Activity, 'presentation' | 'unitReview'>): boolean {
+  return Boolean(a.presentation || a.unitReview);
+}
+
+/** رابط الصفحة المستقلة للعرض أو المراجعة. */
+export const standalonePath = (id: string) => `/view/${id}`;
+
 /** مسار قسم العروض التقديمية الذكية. */
 export const PRESENTATIONS_PATH = '/smart-presentations';
 

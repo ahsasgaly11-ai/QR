@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Play, Download, Eye, Pencil, Trash2, Check, X, Loader2 } from 'lucide-react';
-import { PRESENTATION_META, activityLabel } from '@/lib/types';
+import { Play, Download, Eye, Pencil, Trash2, Check, X, Loader2, AppWindow } from 'lucide-react';
+import { PRESENTATION_META, activityLabel, opensStandalone, standalonePath } from '@/lib/types';
 import type { Activity, ActivityStats, ActivityType } from '@/lib/types';
 import { subscribeActivityStats, trackDownload } from '@/lib/stats';
 import { HeritageIcon, activityIcon } from './heritage-icons';
@@ -322,6 +322,18 @@ export function ActivityCard({
             <Play className="h-4 w-4 fill-current" aria-hidden />
             {activity.presentation ? PRESENTATION_META.play : PLAY_LABEL[activity.type]}
           </Link>
+          {opensStandalone(activity) && (
+            <a
+              href={standalonePath(activity.id)}
+              target="_blank"
+              rel="noopener"
+              className="act-download"
+              title="فتح في صفحة مستقلة"
+              aria-label={`فتح ${activity.title} في صفحة مستقلة`}
+            >
+              <AppWindow className="h-5 w-5" />
+            </a>
+          )}
           {canDownload && (
             <a
               href={fileUrl(activity)}

@@ -9,10 +9,12 @@ import {
   Maximize2,
   Minimize2,
   ExternalLink,
+  AppWindow,
   RefreshCw,
   Loader2,
 } from 'lucide-react';
 import type { Activity } from '@/lib/types';
+import { opensStandalone, standalonePath } from '@/lib/types';
 import { trackView, trackDownload, recordMastery } from '@/lib/stats';
 import { trackSchoolPlay, trackSchoolDownload } from '@/lib/school-store';
 import { useActivityDownloadEnabled, downloadsAllowedNow } from '@/lib/site-settings';
@@ -46,6 +48,8 @@ type PlayerProps = {
   localHtml?: string;
   /** النشاط التالي في الدرس نفسه — يظهر زرّه في شريط الأدوات */
   next?: { href: string; title: string };
+  /** داخل الصفحة المستقلة: المسرح يملأ الشاشة ولا يظهر زرّ فتحها من جديد */
+  standalone?: boolean;
 };
 
 /**
@@ -61,7 +65,7 @@ export function ActivityPlayer(props: PlayerProps) {
   );
 }
 
-function PlayerInner({ activity, localHtml, next }: PlayerProps) {
+function PlayerInner({ activity, localHtml, next, standalone = false }: PlayerProps) {
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   // نسخة التشغيل داخل الـiframe المعزول (مع بديل التخزين)؛ blobUrl يبقى
   // للتحميل وفتح النافذة فيصل الملف للمستخدم كما رُفع تمامًا.
@@ -433,7 +437,11 @@ function PlayerInner({ activity, localHtml, next }: PlayerProps) {
 
   // العرض التقديمي: مسرح بنسبة الشرائح 16:9، والتركيز داخل الإطار حتى تعمل
   // الأسهم ومسافة وأجهزة التحكّم بالعرض فورًا دون نقرة على الشريحة أولًا.
-  const stageClass = activity.presentation ? 'presentation-stage' : 'game-stage';
+  const stageClass = standalone
+    ? 'standalone-stage'
+    : activity.presentation
+      ? 'presentation-stage'
+      : 'game-stage';
   const focusPresentation = () => {
     if (!activity.presentation) return;
     try {
@@ -559,6 +567,17 @@ function PlayerInner({ activity, localHtml, next }: PlayerProps) {
               <ExternalLink className="h-4 w-4" aria-hidden /> فتح في نافذة
             </a>
           )}
+          {opensStandalone(activity) && !standalone && (
+            <a
+              href={standalonePath(activity.id)}
+              target="_blank"
+              rel="noopener"
+              className="tool-btn"
+              title="يفتح في لسان جديد بلا رأس الموقع ولا تذييله — مناسب للسبورة ولمشاركة الرابط"
+            >
+              <AppWindow className="h-4 w-4" aria-hidden /> فتح في صفحة مستقلة
+            </a>
+          )}
           <SignLanguageButton
             active={signPref}
             onClick={() => setSignOpen(true)}
@@ -588,7 +607,7 @@ function PlayerInner({ activity, localHtml, next }: PlayerProps) {
               <span className="hidden sm:inline">تحميل</span>
             </a>
           )}
-          {next && (
+          {next && !standalone && (
             <Link href={next.href} className="tool-btn tool-btn--next" title={next.title}>
               النشاط التالي
               <ArrowLeft className="h-4 w-4" aria-hidden />

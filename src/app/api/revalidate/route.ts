@@ -18,7 +18,7 @@ export const runtime = 'nodejs';
 function pathsFor(subjectId?: string, activityId?: string): string[] {
   const paths = ['/', '/browse', '/search', '/dashboard', '/smart-games', '/smart-presentations'];
   if (subjectId) paths.push(`/subject/${subjectId}`);
-  if (activityId) paths.push(`/play/${activityId}`);
+  if (activityId) paths.push(`/play/${activityId}`, `/view/${activityId}`);
   return paths;
 }
 
