@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// استخراج البيانات التربوية من العرض — طبقة المزوّد (خادم فقط)
+// استخراج البيانات التربوية من ملف النشاط — طبقة المزوّد (خادم فقط)
 //
 // كمزوّد الغلوس: ANTHROPIC_API_KEY ← Claude، وإلا GEMINI_API_KEY ← Gemini
 // (الطبقة المجانية، مع التنقّل بين نماذج Flash عند الضغط أو نفاد الحصّة).
@@ -44,7 +44,7 @@ async function viaAnthropic(ctx: ExtractContext, deckText: string): Promise<Extr
       messages: [{ role: 'user', content: buildExtractUserMessage(ctx, deckText) }],
     });
     if (res.stop_reason === 'refusal' || !res.parsed_output) {
-      throw new ExtractError('تعذّر استخراج البيانات من هذا العرض', 502);
+      throw new ExtractError('تعذّر استخراج البيانات من هذا الملف', 502);
     }
     return res.parsed_output;
   } catch (e) {

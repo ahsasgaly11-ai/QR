@@ -27,6 +27,7 @@ import {
   getLocalStructure,
 } from '@/lib/local-store';
 import { normalizePedagogy } from '@/lib/pedagogy';
+import { activityKind } from '@/lib/pedagogy-extract-client';
 import {
   EMPTY_PEDAGOGY_DRAFT,
   PedagogyFields,
@@ -96,6 +97,26 @@ export function AdminUploader({
   const [result, setResult] = useState<Result | null>(null);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+
+  /** نصّ الملف المختار وسياقه — مصدر الاستخراج التلقائي للبيانات التربوية */
+  const extractSource = async () => {
+    if (!file) return null;
+    const lesson = unit?.lessons.find((l) => l.id === lessonId);
+    return {
+      html: await file.text(),
+      ctx: {
+        kind: activityKind({ presentation: presentationOnly, unitReview: reviewOnly, smartReinforcement: smartOnly }),
+        title: title.trim() || undefined,
+        subject: smartOnly ? undefined : subject?.title,
+        grade: smartOnly ? undefined : grade?.title,
+        lesson: smartOnly
+          ? undefined
+          : reviewOnly
+            ? unit?.title || newUnitName.trim() || undefined
+            : lesson?.title || newLessonName.trim() || undefined,
+      },
+    };
+  };
 
   const unitIsNew = unitId === NEW;
   // المراجعة تخصّ الوحدة كلّها فلا تحتاج إلى درس
@@ -568,9 +589,15 @@ export function AdminUploader({
         />
       </div>
 
-      {!smartOnly && (
-        <PedagogyFields value={ped} onChange={setPed} inputClass={inputCls} labelClass={labelCls} />
-      )}
+      {/* في كل الأقسام: يُستخرج الهدف والنواتج والأسئلة تلقائيًا عند اختيار الملف */}
+      <PedagogyFields
+        value={ped}
+        onChange={setPed}
+        inputClass={inputCls}
+        labelClass={labelCls}
+        extractFrom={extractSource}
+        autoExtractKey={file ? `${file.name}:${file.size}:${file.lastModified}` : null}
+      />
 
       <div className="mt-5">
         <label htmlFor="uploader-signlang" className={labelCls}>رابط شرح بلغة الإشارة (اختياري)</label>

@@ -12,7 +12,7 @@ import { ImpactManager } from './impact-manager';
 import { DownloadsManager } from './downloads-manager';
 import { ContentAudit } from './content-audit';
 import { PedagogyPackApply } from './pedagogy-pack-apply';
-import { PresentationPedagogyExtract } from './presentation-pedagogy-extract';
+import { PedagogyExtractAudit } from './pedagogy-extract-audit';
 import { signOutAdmin, isFirebaseConfigured } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 
@@ -183,7 +183,7 @@ export function AdminShell({
       {tab === 'content' && <ContentManager initial={structure} activities={activities} />}
       {tab === 'audit' && (
         <div className="space-y-6">
-          <PresentationPedagogyExtract activities={activities} structure={structure} />
+          <PedagogyExtractAudit activities={activities} structure={structure} />
           <PedagogyPackApply activities={activities} structure={structure} />
           <ContentAudit activities={activities} structure={structure} />
         </div>

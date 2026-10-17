@@ -5,11 +5,12 @@ import { toExtraction, type ExtractContext } from '@/lib/pedagogy-extract';
 import { ExtractError, extractPedagogy } from '@/lib/pedagogy-extract-server';
 
 // ---------------------------------------------------------------------------
-// POST /api/extract-pedagogy  { text, title?, subject?, grade?, lesson? }
+// POST /api/extract-pedagogy  { text, kind?, title?, subject?, grade?, lesson? }
 //   → { pedagogy, fromDeck }
 //
 // يستخرج الهدف التعليمي ونواتج التعلّم وأسئلة التقويم الختامي وطريقة التوظيف
-// من نصّ عرض تقديمي (يُستخرج النصّ في متصفّح المشرف، فلا يُرسَل الملف).
+// من نصّ ملف نشاط في أي قسم — عرض تقديمي، تجربة، لعبة تعزيز، مراجعة وحدة…
+// (يُستخرج النصّ في متصفّح المشرف، فلا يُرسَل الملف).
 // للمالك وحده: رمز الدخول في ترويسة Authorization ويُقارن بـ ADMIN_UID.
 // ---------------------------------------------------------------------------
 
@@ -32,13 +33,14 @@ export async function POST(req: Request) {
 
   const text = typeof body.text === 'string' ? body.text.trim() : '';
   if (text.length < 40) {
-    return NextResponse.json({ error: 'لم يُعثر في العرض على نصّ كافٍ للتحليل.' }, { status: 422 });
+    return NextResponse.json({ error: 'لم يُعثر في الملف على نصّ كافٍ للتحليل.' }, { status: 422 });
   }
   if (text.length > MAX_DECK_TEXT + 1000) {
-    return NextResponse.json({ error: 'نصّ العرض أطول من الحدّ المسموح.' }, { status: 413 });
+    return NextResponse.json({ error: 'نصّ الملف أطول من الحدّ المسموح.' }, { status: 413 });
   }
   const field = (v: unknown) => (typeof v === 'string' ? v.trim().slice(0, MAX_FIELD) : undefined);
   const ctx: ExtractContext = {
+    kind: field(body.kind),
     title: field(body.title),
     subject: field(body.subject),
     grade: field(body.grade),
@@ -48,7 +50,7 @@ export async function POST(req: Request) {
   try {
     const extraction = toExtraction(await extractPedagogy(ctx, text));
     if (!extraction) {
-      return NextResponse.json({ error: 'لم يُستخرج شيء صالح من هذا العرض.' }, { status: 422 });
+      return NextResponse.json({ error: 'لم يُستخرج شيء صالح من هذا الملف.' }, { status: 422 });
     }
     return NextResponse.json(extraction);
   } catch (e) {
