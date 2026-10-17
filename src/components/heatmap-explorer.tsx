@@ -23,6 +23,7 @@ import {
   RefreshCw,
   Search,
   School,
+  SlidersHorizontal,
   Sparkles,
   TrendingDown,
   TrendingUp,
@@ -98,6 +99,8 @@ interface ClusterHit {
 type RecentWindow = 'all' | 'hour' | 'today' | 'week';
 
 const MAX_SCALE = 36;
+// عرض لوحة التحليل الجانبية على الشاشات الواسعة مع هامشها (360 + 12).
+const INSIGHTS_W = 372;
 const SHAPE_BY_ID = Object.fromEntries(MUNICIPALITY_SHAPES.map((s) => [s.id, s]));
 
 const PERIOD_LABEL: Record<PeriodKey, string> = {
@@ -205,6 +208,9 @@ export function HeatmapExplorer({
     text: string;
   } | null>(null);
   const [themeTick, setThemeTick] = useState(0);
+  // اللوحتان تطفوان فوق الخريطة فتبقى الخريطة بملء الصفحة.
+  const [optionsOpen, setOptionsOpen] = useState(false);
+  const [insightsOpen, setInsightsOpen] = useState(false);
 
   useEffect(() => setMounted(true), []);
   useEffect(() => {
@@ -658,13 +664,18 @@ export function HeatmapExplorer({
       setSelectedMuni(school.municipalityId);
       setSearchQ(school.name);
       setSearchOpen(false);
+      setOptionsOpen(false);
+      setInsightsOpen(true);
+      // تفاصيل المدرسة تُفتح في اللوحة، فنضع المدرسة في الجزء الظاهر من الخريطة:
+      // يمين اللوحة الجانبية على الشاشات الواسعة، وفوق اللوحة السفلية في الجوال.
+      const wide = window.matchMedia('(min-width: 1024px)').matches;
+      const cx = wide ? (wrap.clientWidth + INSIGHTS_W) / 2 : wrap.clientWidth / 2;
+      const cy = wide ? wrap.clientHeight / 2 : wrap.clientHeight * 0.28;
       const t = transformRef.current;
       const target = Math.max(4, Math.min(MAX_SCALE, 7));
       t.scale = target;
-      t.panX =
-        wrap.clientWidth / 2 - normX(school.lng) * t.baseW * target;
-      t.panY =
-        wrap.clientHeight / 2 - normY(school.lat) * t.baseH * target;
+      t.panX = cx - normX(school.lng) * t.baseW * target;
+      t.panY = cy - normY(school.lat) * t.baseH * target;
       setScalePct(Math.round(target * 100));
       requestDraw();
     },
@@ -989,11 +1000,28 @@ export function HeatmapExplorer({
     if (!mounted) return;
     fit();
     setThemeTick((n) => n + 1);
-    const onResize = () => {
-      fit();
+    // في متصفح الجوال يتغيّر الارتفاع عند ظهور شريط العنوان أو لوحة المفاتيح؛
+    // نُبقي التكبير الحالي ونحافظ على المركز بدل إعادة الخريطة لحجمها الأصلي.
+    const wrap = mapRef.current;
+    let lastW = wrap?.clientWidth ?? 0;
+    let lastH = wrap?.clientHeight ?? 0;
+    const ro = new ResizeObserver(() => {
+      if (!wrap) return;
+      const W = wrap.clientWidth;
+      const H = wrap.clientHeight;
+      if (W === lastW && H === lastH) return;
+      const t = transformRef.current;
+      if (t.scale === 1) {
+        fit();
+      } else {
+        t.panX += (W - lastW) / 2;
+        t.panY += (H - lastH) / 2;
+      }
+      lastW = W;
+      lastH = H;
       setThemeTick((n) => n + 1);
-    };
-    window.addEventListener('resize', onResize);
+    });
+    if (wrap) ro.observe(wrap);
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
@@ -1001,13 +1029,26 @@ export function HeatmapExplorer({
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
-      window.removeEventListener('resize', onResize);
+      ro.disconnect();
       window.removeEventListener('keydown', onKey);
       document.body.style.overflow = prev;
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [mounted, fit, onClose]);
+
+  // Escape يغلق اللوحة المفتوحة أولًا، ثم المركز كله في الضغطة التالية.
+  useEffect(() => {
+    if (!optionsOpen && !insightsOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.stopImmediatePropagation();
+      setOptionsOpen(false);
+      setInsightsOpen(false);
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [optionsOpen, insightsOpen]);
 
   useEffect(() => {
     requestDraw();
@@ -1284,217 +1325,75 @@ export function HeatmapExplorer({
     selectedSchoolInfo?.bars.reduce((m, x) => Math.max(m, x.value), 1) || 1;
 
   const selectClass =
-    'rounded-xl border border-[color:var(--hairline-strong)] bg-[color:var(--surface)] px-3 py-2 text-xs font-bold text-foreground outline-none focus:border-[color:var(--maroon)]';
+    'w-full rounded-xl border sm:w-auto border-[color:var(--hairline-strong)] bg-[color:var(--surface)] px-3 py-2 text-xs font-bold text-foreground outline-none focus:border-[color:var(--maroon)]';
   const chip = (active: boolean) =>
     'rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ' +
     (active
       ? 'bg-[color:var(--maroon)] text-white shadow-sm'
       : 'text-[color:var(--maroon)] hover:bg-[color:var(--surface-2)]');
 
+  const panelToggle = (active: boolean) =>
+    'flex h-9 shrink-0 items-center gap-1.5 rounded-xl px-2.5 text-sm font-semibold ring-1 transition sm:px-3 ' +
+    (active
+      ? 'bg-[color:var(--maroon)] text-white ring-[color:var(--maroon)]'
+      : 'bg-[color:var(--surface)] text-[color:var(--maroon)] ring-[color:var(--hairline-strong)] hover:bg-[color:var(--surface-2)]');
+  const activeOptions =
+    (['subjectId', 'gradeId', 'unitId', 'gender', 'stage', 'period'] as const).filter(
+      (k) => filters[k] !== 'all'
+    ).length + (recent !== 'all' ? 1 : 0);
+
   return createPortal(
-    <div className="fixed inset-0 z-[220] flex flex-col overflow-hidden bg-[color:var(--surface)]" dir="rtl">
-      <header className="explorer-head max-h-[46vh] shrink-0 overflow-y-auto border-b border-[color:var(--hairline)] bg-[color:var(--surface)]/95 px-3 py-2 backdrop-blur lg:max-h-none lg:overflow-visible">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-2">
-            <GraduationCap className="h-5 w-5 shrink-0 text-[color:var(--gold)]" />
-            <div className="min-w-0">
-              <h2 className="truncate font-display text-base font-semibold text-foreground sm:text-lg">
-                مركز تحليل الخريطة التعليمية
-              </h2>
-              <p className="hidden text-[11px] font-bold text-muted-foreground sm:block">
-                قطر ← البلدية ← المدرسة ← الوحدة ← النشاط
-              </p>
-            </div>
+    <div className="fixed inset-x-0 top-0 z-[220] flex h-[100dvh] flex-col overflow-hidden overscroll-none bg-[color:var(--surface)]" dir="rtl">
+      <header className="explorer-head shrink-0 border-b border-[color:var(--hairline)] bg-[color:var(--surface)] px-3 py-2">
+        <div className="flex items-center gap-2">
+          <GraduationCap className="h-5 w-5 shrink-0 text-[color:var(--gold)]" />
+          <div className="min-w-0 flex-1">
+            <h2 className="truncate font-display text-base font-semibold text-foreground sm:text-lg">
+              مركز تحليل الخريطة التعليمية
+            </h2>
+            <p className="hidden text-[11px] font-bold text-muted-foreground sm:block">
+              قطر ← البلدية ← المدرسة ← الوحدة ← النشاط
+            </p>
           </div>
-          <div className="flex flex-wrap items-center gap-1.5">
-            <button onClick={exportPNG} className="btn-ghost btn-sm px-2.5 py-1.5 text-xs">
-              <Download className="h-3.5 w-3.5" /> PNG
-            </button>
-            <button onClick={exportPDF} className="btn-ghost btn-sm px-2.5 py-1.5 text-xs">
-              <FileText className="h-3.5 w-3.5" /> PDF
-            </button>
-            <button onClick={resetFilters} className="btn-ghost btn-sm px-2.5 py-1.5 text-xs">
-              <RefreshCw className="h-3.5 w-3.5" /> إعادة
-            </button>
-            <button
-              onClick={onClose}
-              className="flex items-center gap-1.5 rounded-xl bg-[color:var(--maroon)] px-3 py-2 text-sm font-semibold text-white"
-            >
-              <X className="h-4 w-4" /> إغلاق
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-0.5 rounded-xl bg-[color:var(--surface-2)]/70 p-0.5 ring-1 ring-[color:var(--hairline)]">
-            {(['users', 'plays', 'downloads'] as MetricKey[]).map((k) => (
-              <button
-                key={k}
-                onClick={() => {
-                  setMetric(k);
-                  setTimelineIndex(null);
-                }}
-                className={chip(metric === k)}
-              >
-                {METRIC_LABEL[k]}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-0.5 rounded-xl bg-[color:var(--surface-2)]/70 p-0.5 ring-1 ring-[color:var(--hairline)]">
-            <button onClick={() => setMode('heat')} className={chip(mode === 'heat')}>
-              <span className="flex items-center gap-1"><Flame className="h-3.5 w-3.5" /> حرارة</span>
-            </button>
-            <button onClick={() => setMode('regions')} className={chip(mode === 'regions')}>
-              <span className="flex items-center gap-1"><LayoutGrid className="h-3.5 w-3.5" /> مناطق</span>
-            </button>
-          </div>
-
-          <div className="flex items-center gap-0.5 rounded-xl bg-[color:var(--surface-2)]/70 p-0.5 ring-1 ring-[color:var(--hairline)]">
-            <button onClick={() => setNormalization('total')} className={chip(normalization === 'total')}>
-              الإجمالي
-            </button>
-            <button onClick={() => setNormalization('per-school')} className={chip(normalization === 'per-school')}>
-              لكل مدرسة
-            </button>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-0.5 rounded-xl bg-[color:var(--surface-2)]/70 p-0.5 ring-1 ring-[color:var(--hairline)]">
-            {(Object.keys(PERIOD_LABEL) as PeriodKey[]).map((p) => (
-              <button
-                key={p}
-                onClick={() => {
-                  setFilters((x) => ({ ...x, period: p }));
-                  setTimelineIndex(null);
-                }}
-                className={chip(filters.period === p)}
-              >
-                {PERIOD_LABEL[p]}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <span className="flex items-center gap-1 text-xs font-semibold text-[color:var(--maroon)]">
-            <Filter className="h-3.5 w-3.5" /> الفلاتر
-          </span>
-          <select
-            className={selectClass}
-            value={filters.subjectId}
-            onChange={(e) =>
-              setFilters((x) => ({
-                ...x,
-                subjectId: e.target.value,
-                gradeId: 'all',
-                unitId: 'all',
-              }))
-            }
+          <button
+            onClick={() => {
+              setOptionsOpen((v) => !v);
+              setSearchOpen(false);
+            }}
+            aria-expanded={optionsOpen}
+            className={panelToggle(optionsOpen)}
           >
-            <option value="all">كل المواد</option>
-            {subjects.map((s) => (
-              <option key={s.id} value={s.id}>{s.title}</option>
-            ))}
-          </select>
-          <select
-            className={selectClass}
-            value={filters.gradeId}
-            disabled={filters.subjectId === 'all'}
-            onChange={(e) =>
-              setFilters((x) => ({ ...x, gradeId: e.target.value, unitId: 'all' }))
-            }
+            <SlidersHorizontal className="h-4 w-4" />
+            <span className="hidden sm:inline">الخيارات</span>
+            {activeOptions > 0 && (
+              <span className="grid h-4 min-w-4 place-items-center rounded-full bg-[color:var(--gold)] px-1 text-[10px] font-bold text-white">
+                {activeOptions}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setInsightsOpen((v) => !v)}
+            aria-expanded={insightsOpen}
+            className={panelToggle(insightsOpen)}
           >
-            <option value="all">كل المستويات</option>
-            {gradeOptions.map((g) => (
-              <option key={g.id} value={g.id}>{g.title}</option>
-            ))}
-          </select>
-          <select
-            className={selectClass}
-            value={filters.unitId}
-            disabled={filters.gradeId === 'all'}
-            onChange={(e) => setFilters((x) => ({ ...x, unitId: e.target.value }))}
+            <BarChart3 className="h-4 w-4" />
+            <span className="hidden sm:inline">التحليل</span>
+          </button>
+          <button
+            onClick={onClose}
+            aria-label="إغلاق"
+            className="flex h-9 shrink-0 items-center gap-1.5 rounded-xl bg-[color:var(--maroon)] px-2.5 text-sm font-semibold text-white sm:px-3"
           >
-            <option value="all">كل الوحدات</option>
-            {unitOptions.map((u) => (
-              <option key={u.id} value={u.id}>{u.title}</option>
-            ))}
-          </select>
-          <select
-            className={selectClass}
-            value={filters.gender}
-            onChange={(e) =>
-              setFilters((x) => ({
-                ...x,
-                gender: e.target.value as HeatmapFilters['gender'],
-              }))
-            }
-          >
-            <option value="all">بنين وبنات</option>
-            {(Object.keys(GENDER_LABEL) as SchoolGender[]).map((g) => (
-              <option key={g} value={g}>{GENDER_LABEL[g]}</option>
-            ))}
-          </select>
-          <select
-            className={selectClass}
-            value={filters.stage}
-            onChange={(e) =>
-              setFilters((x) => ({
-                ...x,
-                stage: e.target.value as HeatmapFilters['stage'],
-              }))
-            }
-          >
-            <option value="all">كل المراحل</option>
-            {(Object.keys(STAGE_LABEL) as SchoolStage[]).map((s) => (
-              <option key={s} value={s}>{STAGE_LABEL[s]}</option>
-            ))}
-          </select>
-          <select
-            className={selectClass}
-            value={recent}
-            onChange={(e) => setRecent(e.target.value as RecentWindow)}
-          >
-            {(Object.keys(RECENT_LABEL) as RecentWindow[]).map((r) => (
-              <option key={r} value={r}>{RECENT_LABEL[r]}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <SummaryMini
-            icon={ActivityIcon}
-            label={metricLabel}
-            value={formatFull(total)}
-          />
-          <SummaryMini
-            icon={School}
-            label="انتشار المدارس"
-            value={activeSchoolIds.size + '/' + eligibleSchools.length + ' · ' + formatPercent(activeSchoolIds.size, eligibleSchools.length || 1)}
-          />
-          <SummaryMini
-            icon={Zap}
-            label="نشطة آخر ساعة"
-            value={String(activeHour)}
-          />
-          <SummaryMini
-            icon={typeof change === 'number' && change < 0 ? TrendingDown : TrendingUp}
-            label="مقارنة بالفترة السابقة"
-            value={
-              change === undefined
-                ? 'غير متاح للكل'
-                : change === null
-                  ? 'بيانات جديدة'
-                  : (change > 0 ? '+' : '') + change.toFixed(1) + '%'
-            }
-          />
+            <X className="h-4 w-4" />
+            <span className="hidden sm:inline">إغلاق</span>
+          </button>
         </div>
       </header>
 
-      <main className="flex min-h-0 flex-1 flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_350px]">
+      <main className="relative min-h-0 flex-1">
         <section
           ref={mapRef}
-          className="relative min-h-[280px] flex-1 touch-none overflow-hidden bg-gradient-to-b from-[color:var(--surface)] to-[color:var(--surface-2)]/60 lg:min-h-0"
+          className="absolute inset-0 touch-none overflow-hidden bg-gradient-to-b from-[color:var(--surface)] to-[color:var(--surface-2)]/60"
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
@@ -1502,7 +1401,7 @@ export function HeatmapExplorer({
         >
           <canvas ref={canvasRef} className="block h-full w-full" />
 
-          <div className="absolute right-3 top-3 z-10 w-[min(92%,440px)]">
+          <div className="absolute inset-x-3 top-3 z-10 sm:left-auto sm:w-[min(calc(100%-14rem),400px)]">
             <div className="relative">
               <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
@@ -1545,9 +1444,10 @@ export function HeatmapExplorer({
             </div>
           )}
 
-          <div className="absolute bottom-20 left-3 flex flex-col gap-2 sm:bottom-4">
+          <div className="absolute bottom-3 left-3 flex flex-col gap-2">
             <button
               className="icon-3d h-10 w-10 rounded-xl"
+              style={{ ['--i3d' as string]: 'var(--maroon)' }}
               aria-label="تكبير"
               onClick={() => {
                 const w = mapRef.current;
@@ -1558,6 +1458,7 @@ export function HeatmapExplorer({
             </button>
             <button
               className="icon-3d h-10 w-10 rounded-xl"
+              style={{ ['--i3d' as string]: 'var(--maroon)' }}
               aria-label="تصغير"
               onClick={() => {
                 const w = mapRef.current;
@@ -1566,17 +1467,21 @@ export function HeatmapExplorer({
             >
               <Minus className="h-4 w-4" />
             </button>
-            <button className="icon-3d h-10 w-10 rounded-xl" aria-label="إعادة الضبط" onClick={() => { fit(); requestDraw(); }}>
+            <button className="icon-3d h-10 w-10 rounded-xl"
+              style={{ ['--i3d' as string]: 'var(--maroon)' }}
+              aria-label="إعادة الضبط"
+              onClick={() => { fit(); requestDraw(); }}
+            >
               <Locate className="h-4 w-4" />
             </button>
           </div>
 
-          <div className="absolute bottom-20 right-3 rounded-full bg-[color:var(--surface)]/92 px-3 py-1.5 text-xs font-semibold text-[color:var(--maroon)] shadow sm:bottom-4">
+          <div className="absolute bottom-3 right-3 rounded-full bg-[color:var(--surface)] px-3 py-1.5 text-xs font-semibold text-[color:var(--maroon)] shadow">
             {scalePct}%
           </div>
 
-          <div className="absolute left-3 top-3 rounded-xl bg-[color:var(--surface)]/92 p-2.5 shadow ring-1 ring-[color:var(--hairline)]">
-            <div className="h-2 w-32 rounded-full" style={{ background: HEAT_GRADIENT_CSS }} />
+          <div className="pointer-events-none absolute bottom-14 right-3 rounded-xl bg-[color:var(--surface)] p-2 shadow sm:p-2.5 ring-1 ring-[color:var(--hairline)] sm:bottom-auto sm:right-auto sm:left-3 sm:top-3">
+            <div className="h-2 w-28 rounded-full sm:w-32" style={{ background: HEAT_GRADIENT_CSS }} />
             <div className="mt-1 flex justify-between text-[10px] font-bold text-muted-foreground">
               <span>أقل</span><span>أعلى تركيزًا</span>
             </div>
@@ -1588,7 +1493,7 @@ export function HeatmapExplorer({
           {selectedMuni && (
             <button
               onClick={() => setSelectedMuni(null)}
-              className="absolute left-3 top-24 flex items-center gap-1 rounded-xl bg-[color:var(--maroon)] px-3 py-1.5 text-xs font-semibold text-white shadow"
+              className="absolute right-3 top-[4.25rem] flex items-center gap-1 rounded-xl bg-[color:var(--maroon)] px-3 py-1.5 text-xs font-semibold text-white shadow sm:right-auto sm:left-3 sm:top-24"
             >
               <MapPin className="h-3.5 w-3.5" />
               {MUNICIPALITY_BY_ID[selectedMuni].name}
@@ -1597,7 +1502,217 @@ export function HeatmapExplorer({
           )}
         </section>
 
-        <aside className="max-h-[38vh] shrink-0 overflow-y-auto border-t border-[color:var(--hairline)] bg-[color:var(--surface)] p-4 lg:max-h-none lg:min-h-0 lg:border-r lg:border-t-0">
+        {/* لوحة الخيارات: تنسدل من الأعلى فوق الخريطة وتُطوى بضغطة. */}
+        <div
+          className={
+            'absolute inset-x-0 top-0 z-30 max-h-[85%] overflow-y-auto overscroll-contain border-b border-[color:var(--hairline)] bg-[color:var(--surface)] shadow-2xl transition-[transform,visibility] duration-300 ' +
+            (optionsOpen ? 'translate-y-0' : 'invisible -translate-y-full')
+          }
+        >
+          <div className="mx-auto max-w-5xl p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-0.5 rounded-xl bg-[color:var(--surface-2)]/70 p-0.5 ring-1 ring-[color:var(--hairline)]">
+              {(['users', 'plays', 'downloads'] as MetricKey[]).map((k) => (
+                <button
+                  key={k}
+                  onClick={() => {
+                    setMetric(k);
+                    setTimelineIndex(null);
+                  }}
+                  className={chip(metric === k)}
+                >
+                  {METRIC_LABEL[k]}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-0.5 rounded-xl bg-[color:var(--surface-2)]/70 p-0.5 ring-1 ring-[color:var(--hairline)]">
+              <button onClick={() => setMode('heat')} className={chip(mode === 'heat')}>
+                <span className="flex items-center gap-1"><Flame className="h-3.5 w-3.5" /> حرارة</span>
+              </button>
+              <button onClick={() => setMode('regions')} className={chip(mode === 'regions')}>
+                <span className="flex items-center gap-1"><LayoutGrid className="h-3.5 w-3.5" /> مناطق</span>
+              </button>
+            </div>
+
+            <div className="flex items-center gap-0.5 rounded-xl bg-[color:var(--surface-2)]/70 p-0.5 ring-1 ring-[color:var(--hairline)]">
+              <button onClick={() => setNormalization('total')} className={chip(normalization === 'total')}>
+                الإجمالي
+              </button>
+              <button onClick={() => setNormalization('per-school')} className={chip(normalization === 'per-school')}>
+                لكل مدرسة
+              </button>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-0.5 rounded-xl bg-[color:var(--surface-2)]/70 p-0.5 ring-1 ring-[color:var(--hairline)]">
+              {(Object.keys(PERIOD_LABEL) as PeriodKey[]).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => {
+                    setFilters((x) => ({ ...x, period: p }));
+                    setTimelineIndex(null);
+                  }}
+                  className={chip(filters.period === p)}
+                >
+                  {PERIOD_LABEL[p]}
+                </button>
+              ))}
+            </div>
+          </div>
+          <p className="mt-3 flex items-center gap-1 text-xs font-semibold text-[color:var(--maroon)]">
+            <Filter className="h-3.5 w-3.5" /> الفلاتر
+          </p>
+          <div className="mt-2 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+            <select
+              className={selectClass}
+              value={filters.subjectId}
+              onChange={(e) =>
+                setFilters((x) => ({
+                  ...x,
+                  subjectId: e.target.value,
+                  gradeId: 'all',
+                  unitId: 'all',
+                }))
+              }
+            >
+              <option value="all">كل المواد</option>
+              {subjects.map((s) => (
+                <option key={s.id} value={s.id}>{s.title}</option>
+              ))}
+            </select>
+            <select
+              className={selectClass}
+              value={filters.gradeId}
+              disabled={filters.subjectId === 'all'}
+              onChange={(e) =>
+                setFilters((x) => ({ ...x, gradeId: e.target.value, unitId: 'all' }))
+              }
+            >
+              <option value="all">كل المستويات</option>
+              {gradeOptions.map((g) => (
+                <option key={g.id} value={g.id}>{g.title}</option>
+              ))}
+            </select>
+            <select
+              className={selectClass}
+              value={filters.unitId}
+              disabled={filters.gradeId === 'all'}
+              onChange={(e) => setFilters((x) => ({ ...x, unitId: e.target.value }))}
+            >
+              <option value="all">كل الوحدات</option>
+              {unitOptions.map((u) => (
+                <option key={u.id} value={u.id}>{u.title}</option>
+              ))}
+            </select>
+            <select
+              className={selectClass}
+              value={filters.gender}
+              onChange={(e) =>
+                setFilters((x) => ({
+                  ...x,
+                  gender: e.target.value as HeatmapFilters['gender'],
+                }))
+              }
+            >
+              <option value="all">بنين وبنات</option>
+              {(Object.keys(GENDER_LABEL) as SchoolGender[]).map((g) => (
+                <option key={g} value={g}>{GENDER_LABEL[g]}</option>
+              ))}
+            </select>
+            <select
+              className={selectClass}
+              value={filters.stage}
+              onChange={(e) =>
+                setFilters((x) => ({
+                  ...x,
+                  stage: e.target.value as HeatmapFilters['stage'],
+                }))
+              }
+            >
+              <option value="all">كل المراحل</option>
+              {(Object.keys(STAGE_LABEL) as SchoolStage[]).map((s) => (
+                <option key={s} value={s}>{STAGE_LABEL[s]}</option>
+              ))}
+            </select>
+            <select
+              className={selectClass}
+              value={recent}
+              onChange={(e) => setRecent(e.target.value as RecentWindow)}
+            >
+              {(Object.keys(RECENT_LABEL) as RecentWindow[]).map((r) => (
+                <option key={r} value={r}>{RECENT_LABEL[r]}</option>
+              ))}
+            </select>
+          </div>
+            <div className="mt-3 flex flex-wrap items-center gap-1.5">
+              <button onClick={exportPNG} className="btn-ghost btn-sm px-2.5 py-1.5 text-xs">
+                <Download className="h-3.5 w-3.5" /> PNG
+              </button>
+              <button onClick={exportPDF} className="btn-ghost btn-sm px-2.5 py-1.5 text-xs">
+                <FileText className="h-3.5 w-3.5" /> PDF
+              </button>
+              <button onClick={resetFilters} className="btn-ghost btn-sm px-2.5 py-1.5 text-xs">
+                <RefreshCw className="h-3.5 w-3.5" /> إعادة
+              </button>
+              <button
+                onClick={() => setOptionsOpen(false)}
+                className="mr-auto flex items-center gap-1.5 rounded-xl bg-[color:var(--maroon)] px-3 py-2 text-xs font-semibold text-white"
+              >
+                <MapPin className="h-3.5 w-3.5" /> عرض الخريطة
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* لوحة التحليل: ورقة سفلية في الجوال، ودرج جانبي على الشاشات الواسعة. */}
+        <aside
+          className={
+            'absolute inset-x-0 bottom-0 z-20 max-h-[62%] overflow-y-auto overscroll-contain rounded-t-3xl border-t border-[color:var(--hairline)] bg-[color:var(--surface)] px-4 pb-4 shadow-2xl transition-[transform,visibility] duration-300 lg:inset-x-auto lg:bottom-3 lg:left-3 lg:top-3 lg:max-h-none lg:w-[360px] lg:rounded-2xl lg:border ' +
+            (insightsOpen
+              ? 'translate-y-0 lg:translate-x-0'
+              : 'invisible translate-y-full lg:translate-y-0 lg:-translate-x-[calc(100%+1rem)]')
+          }
+        >
+          <div className="sticky top-0 z-10 -mx-4 mb-3 flex items-center justify-between border-b border-[color:var(--hairline)] bg-[color:var(--surface)] px-4 py-2.5">
+            <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <BarChart3 className="h-4 w-4 text-[color:var(--gold)]" /> التحليل
+            </span>
+            <button
+              onClick={() => setInsightsOpen(false)}
+              aria-label="إغلاق لوحة التحليل"
+              className="rounded-lg p-1.5 text-muted-foreground hover:bg-[color:var(--surface-2)]"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="mb-4 grid grid-cols-2 gap-2">
+            <SummaryMini
+              icon={ActivityIcon}
+              label={metricLabel}
+              value={formatFull(total)}
+            />
+            <SummaryMini
+              icon={School}
+              label="انتشار المدارس"
+              value={activeSchoolIds.size + '/' + eligibleSchools.length + ' · ' + formatPercent(activeSchoolIds.size, eligibleSchools.length || 1)}
+            />
+            <SummaryMini
+              icon={Zap}
+              label="نشطة آخر ساعة"
+              value={String(activeHour)}
+            />
+            <SummaryMini
+              icon={typeof change === 'number' && change < 0 ? TrendingDown : TrendingUp}
+              label="مقارنة بالفترة السابقة"
+              value={
+                change === undefined
+                  ? 'غير متاح للكل'
+                  : change === null
+                    ? 'بيانات جديدة'
+                    : (change > 0 ? '+' : '') + change.toFixed(1) + '%'
+              }
+            />
+          </div>
           {selectedSchoolInfo ? (
             <SchoolDetail
               info={selectedSchoolInfo}
@@ -1740,7 +1855,7 @@ export function HeatmapExplorer({
         </aside>
       </main>
 
-      <footer className="border-t border-[color:var(--hairline)] bg-[color:var(--surface)] px-3 py-2">
+      <footer className="shrink-0 border-t border-[color:var(--hairline)] bg-[color:var(--surface)] px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         <div className="flex items-center gap-3">
           <button
             onClick={playTimeline}
