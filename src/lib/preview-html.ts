@@ -53,6 +53,20 @@ const FONT_RE =
  */
 const B64_LITERAL_RE = /(["'`])([A-Za-z0-9+/=]{3000,})\1/g;
 
+/**
+ * الحمولة نفسها داخل نصّ مهرَّب، أي كود محفوظ هو نفسه داخل نصّ:
+ *   window.__A={music:\"SUQz…\"}   (العروض المجمَّعة تحفظ أصولها هكذا)
+ */
+const B64_ESCAPED_RE = /(\\["'])([A-Za-z0-9+/=]{3000,})\1/g;
+
+/**
+ * مستند HTML كامل محفوظ كنصّ داخل الكود — العروض التقديمية تُضمِّن ألعابها
+ * هكذا:  window.__GAMES={"hospital":"<!DOCTYPE html>…"}  ولا تُشغَّل إلا عند
+ * فتح شريحتها، فلا مكان لها في معاينة الشريحة الأولى. تُستبدل بنصّ فارغ.
+ */
+const EMBEDDED_DOC_RE = /(["'])(?:<!DOCTYPE|<html)(?:[^"'\\]|\\[\s\S]|(?!\1)["'])*\1/gi;
+const EMBEDDED_DOC_MIN = 20_000;
+
 /** بديل صالح كصورة (شفّاف)، ويفشل بهدوء إن كان الأصل صوتًا. */
 const TINY_B64 =
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNgYGBgAAAABQABeqhXUAAAAABJRU5ErkJggg==';
@@ -86,6 +100,11 @@ export function makePreviewHtml(
 
   // 2) حمولات Base64 الطويلة داخل كود JavaScript — غالبًا هي الأثقل
   out = out.replace(B64_LITERAL_RE, (_m, q: string) => `${q}${TINY_B64}${q}`);
+  out = out.replace(B64_ESCAPED_RE, (_m, q: string) => `${q}${TINY_B64}${q}`);
+  if (bytes(out) <= MAX_PREVIEW_BYTES) return out;
+
+  // 2ب) الألعاب والمستندات المضمَّنة كنصوص (لا تظهر في الشريحة الأولى)
+  out = out.replace(EMBEDDED_DOC_RE, (m, q: string) => (m.length >= EMBEDDED_DOC_MIN ? `${q}${q}` : m));
   if (bytes(out) <= MAX_PREVIEW_BYTES) return out;
 
   // 3) الصور الكبيرة فقط — نُبقي الصغيرة لأنها غالبًا أيقونات تصنع الشكل

@@ -228,7 +228,11 @@ export function ActivityCard({
         aria-label={`تشغيل ${activity.title}`}
       >
         <span data-vt-preview className="block">
-          <ActivityPreview activity={activity} className="act-preview h-44" />
+          {/* العرض التقديمي بنسبة شرائحه 16:9 فتظهر الشريحة الأولى كاملة */}
+          <ActivityPreview
+            activity={activity}
+            className={activity.presentation ? 'act-preview aspect-video' : 'act-preview h-44'}
+          />
         </span>
         <span className="act-type-icon" aria-hidden>
           <HeritageIcon kind={icon} />
