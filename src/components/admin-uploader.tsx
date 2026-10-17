@@ -15,7 +15,7 @@ import {
   HardDrive,
 } from 'lucide-react';
 import type { ActivityType, Subject, Activity } from '@/lib/types';
-import { ACTIVITY_META } from '@/lib/types';
+import { ACTIVITY_META, PRESENTATIONS_PATH } from '@/lib/types';
 import { isFirebaseConfigured, getDb } from '@/lib/firebase';
 import { saveStructure, toStructure } from '@/lib/content';
 import { saveGameHtml, savePreviewHtml, MAX_GAME_BYTES } from '@/lib/game-store';
@@ -61,11 +61,14 @@ export function AdminUploader({
   subjects,
   smartOnly = false,
   reviewOnly = false,
+  presentationOnly = false,
 }: {
   subjects: Subject[];
   smartOnly?: boolean;
   /** رفع لعبة مراجعة لوحدة كاملة: مادة ومستوى ووحدة فقط، دون درس. */
   reviewOnly?: boolean;
+  /** رفع عرض تقديمي ذكي لدرس: يُربط بالدرس ويظهر في قسم العروض. */
+  presentationOnly?: boolean;
 }) {
   const available = subjects.filter((s) => s.grades.length > 0);
   const [subjectId, setSubjectId] = useState(available[0]?.id ?? '');
@@ -84,7 +87,9 @@ export function AdminUploader({
   const [signLang, setSignLang] = useState('');
   const [downloadable, setDownloadable] = useState(false);
   const [ped, setPed] = useState<PedagogyDraft>(EMPTY_PEDAGOGY_DRAFT);
-  const [type, setType] = useState<ActivityType>(smartOnly || reviewOnly ? 'game' : 'experiment');
+  const [type, setType] = useState<ActivityType>(
+    smartOnly || reviewOnly ? 'game' : presentationOnly ? 'simulation' : 'experiment'
+  );
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -164,6 +169,7 @@ export function AdminUploader({
       ...(signLang.trim() ? { signLang: signLang.trim() } : {}),
       smartReinforcement: smartOnly,
       ...(reviewOnly ? { unitReview: true, downloadable } : {}),
+      ...(presentationOnly ? { presentation: true } : {}),
       type,
       file: file.name,
       subjectId: finalSubjectId,
@@ -333,7 +339,9 @@ export function AdminUploader({
         <div className="mb-4 flex items-center gap-3 text-[color:var(--teal)]">
           <CheckCircle2 className="h-9 w-9" />
           <h3 className="font-display text-2xl font-bold">
-            {reviewOnly
+            {presentationOnly
+              ? 'تم رفع العرض التقديمي بنجاح!'
+              : reviewOnly
               ? 'تم رفع لعبة المراجعة بنجاح!'
               : result.mode === 'firebase'
                 ? smartOnly ? 'تم رفع لعبة التعزيز بنجاح!' : 'تم رفع النشاط بنجاح!'
@@ -343,7 +351,9 @@ export function AdminUploader({
 
         {result.mode === 'firebase' ? (
           <p className="text-muted-foreground">
-            {reviewOnly
+            {presentationOnly
+              ? <>أصبح العرض «{result.activity.title}» متاحًا الآن في قسم «العروض التقديمية الذكية»، وزرًّا «عرض الدرس» فوق أنشطة درسه.</>
+              : reviewOnly
               ? <>أصبحت المراجعة «{result.activity.title}» ظاهرة الآن أعلى الصفحة الرئيسية في قسم «مراجعات الوحدات».</>
               : smartOnly
               ? <>أصبحت اللعبة «{result.activity.title}» متاحة الآن في قسم ألعاب التعزيز الذكية.</>
@@ -352,7 +362,9 @@ export function AdminUploader({
         ) : (
           <div className="space-y-4">
             <p className="text-muted-foreground">
-              {reviewOnly
+              {presentationOnly
+                ? <>حُفظ العرض «{result.activity.title}» في هذا المتصفّح وظهر زرّ «عرض الدرس» في درسه.</>
+                : reviewOnly
                 ? <>حُفظت المراجعة «{result.activity.title}» في هذا المتصفّح وأصبحت جاهزة للتجربة.</>
                 : smartOnly
                 ? <>حُفظت اللعبة «{result.activity.title}» وأصبحت جاهزة للتجربة في قسم ألعاب التعزيز الذكية.</>
@@ -370,14 +382,20 @@ export function AdminUploader({
 
             <div className="flex flex-wrap gap-3">
               <Link href={`/play/${result.activity.id}`} className="btn-primary px-6 text-base">
-                <Play className="h-5 w-5 fill-current" /> جرّب اللعبة الآن
+                <Play className="h-5 w-5 fill-current" /> {presentationOnly ? 'جرّب العرض الآن' : 'جرّب اللعبة الآن'}
               </Link>
               <Link
-                href={smartOnly ? '/smart-games' : reviewOnly ? '/' : `/subject/${result.activity.subjectId}`}
+                href={
+                  presentationOnly
+                    ? PRESENTATIONS_PATH
+                    : smartOnly ? '/smart-games' : reviewOnly ? '/' : `/subject/${result.activity.subjectId}`
+                }
                 className="btn-ghost px-6 text-base"
               >
                 <BookOpen className="h-5 w-5" />
-                {smartOnly ? 'عرض قسم الألعاب' : reviewOnly ? 'عرض الصفحة الرئيسية' : 'عرضها في الدرس'}
+                {presentationOnly
+                  ? 'عرض قسم العروض'
+                  : smartOnly ? 'عرض قسم الألعاب' : reviewOnly ? 'عرض الصفحة الرئيسية' : 'عرضها في الدرس'}
               </Link>
             </div>
 
@@ -418,7 +436,8 @@ export function AdminUploader({
           </div>
         )}
         <button onClick={reset} className="btn-primary btn-sm mt-6 px-6 py-2.5 text-sm">
-          <UploadCloud className="h-4 w-4" /> {smartOnly || reviewOnly ? 'رفع لعبة أخرى' : 'رفع نشاط آخر'}
+          <UploadCloud className="h-4 w-4" />{' '}
+          {presentationOnly ? 'رفع عرض آخر' : smartOnly || reviewOnly ? 'رفع لعبة أخرى' : 'رفع نشاط آخر'}
         </button>
       </div>
     );
@@ -516,7 +535,9 @@ export function AdminUploader({
 
       <div className="mt-5">
         <label htmlFor="uploader-title" className={labelCls}>
-          {smartOnly ? 'عنوان لعبة التعزيز' : reviewOnly ? 'عنوان المراجعة' : 'عنوان النشاط / اللعبة'}
+          {presentationOnly
+            ? 'عنوان العرض التقديمي'
+            : smartOnly ? 'عنوان لعبة التعزيز' : reviewOnly ? 'عنوان المراجعة' : 'عنوان النشاط / اللعبة'}
         </label>
         <input
           id="uploader-title"
@@ -524,7 +545,9 @@ export function AdminUploader({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder={
-            smartOnly
+            presentationOnly
+              ? 'مثال: عرض درس دورة الماء في الطبيعة'
+              : smartOnly
               ? 'مثال: تحدي خصائص المواد'
               : reviewOnly
                 ? 'مثال: مراجعة الوحدة الأولى – العلوم'
@@ -564,6 +587,7 @@ export function AdminUploader({
         </p>
       </div>
 
+      {!presentationOnly && (
       <div className="mt-5">
         <p id="uploader-type-label" className={labelCls}>نوع النشاط</p>
         <div className="flex flex-wrap gap-2" role="group" aria-labelledby="uploader-type-label">
@@ -582,6 +606,19 @@ export function AdminUploader({
           ))}
         </div>
       </div>
+      )}
+
+      {presentationOnly && (
+        <div className="mt-5 rounded-2xl border border-[color:var(--gold)]/30 bg-[color:var(--gold)]/5 p-4">
+          <p className="text-sm font-semibold text-[color:var(--maroon)]">
+            يظهر العرض في قسم «العروض التقديمية الذكية» (تجريبي)، وزرًّا «عرض الدرس» فوق أنشطة الدرس المحدّد.
+          </p>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            ارفع ملف HTML واحدًا قائمًا بذاته يحاكي الشرائح، ويُفضَّل أن يتنقّل بالأسهم ومسافة.
+            يُفتح بنسبة 16:9 ويُعرض بملء الشاشة على السبورة، ولا يُحتسب ضمن أنشطة الدرس.
+          </p>
+        </div>
+      )}
 
       {reviewOnly && (
         <div className="mt-5 rounded-2xl border border-[color:var(--gold)]/30 bg-[color:var(--gold)]/5 p-4">
@@ -619,7 +656,7 @@ export function AdminUploader({
 
       <div className="mt-5">
         <label className={labelCls}>
-          {smartOnly || reviewOnly ? 'ملف اللعبة (HTML)' : 'ملف النشاط (HTML)'}
+          {presentationOnly ? 'ملف العرض (HTML)' : smartOnly || reviewOnly ? 'ملف اللعبة (HTML)' : 'ملف النشاط (HTML)'}
         </label>
         <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[color:var(--gold)]/50 bg-[color:var(--surface-2)]/60 p-8 text-center transition hover:border-[color:var(--maroon)] hover:bg-[color:var(--gold)]/5">
           {file ? (
@@ -663,7 +700,7 @@ export function AdminUploader({
         ) : (
           <>
             <UploadCloud className="h-5 w-5" />{' '}
-            {smartOnly ? 'رفع لعبة التعزيز' : reviewOnly ? 'رفع المراجعة' : 'رفع النشاط'}
+            {presentationOnly ? 'رفع العرض' : smartOnly ? 'رفع لعبة التعزيز' : reviewOnly ? 'رفع المراجعة' : 'رفع النشاط'}
           </>
         )}
       </button>

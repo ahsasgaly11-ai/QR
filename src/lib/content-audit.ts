@@ -203,7 +203,7 @@ export function auditContent(activities: Activity[], structure: Subject[]): Audi
 
     // تصنيف النوع: اقتراح فقط حين يوحي العنوان بنوع مختلف بوضوح
     const hinted = suggestType(a.title);
-    if (hinted && hinted !== a.type && !a.unitReview) {
+    if (hinted && hinted !== a.type && !a.unitReview && !a.presentation) {
       push({
         kind: 'type',
         message: `مصنّف «${TYPE_LABEL[a.type]}» بينما يوحي العنوان بـ«${TYPE_LABEL[hinted]}»`,

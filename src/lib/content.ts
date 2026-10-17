@@ -41,7 +41,8 @@ export function toStructure(subjects: Subject[]): Subject[] {
       ...g,
       units: g.units.map((u) => ({
         ...u,
-        lessons: u.lessons.map((l) => ({ ...l, activities: [] })),
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars -- العروض تُرفق وقت القراءة ولا تُحفظ في البنية
+        lessons: u.lessons.map(({ presentations, ...l }) => ({ ...l, activities: [] })),
       })),
     })),
   }));
@@ -76,6 +77,12 @@ export async function fetchUploadedActivities(): Promise<Activity[]> {
   }
 }
 
+/** يضع النشاط في درسه: العرض التقديمي في قائمته الخاصة، والباقي في الأنشطة. */
+export function placeInLesson(lesson: Lesson, a: Activity) {
+  const list = a.presentation ? (lesson.presentations ??= []) : lesson.activities;
+  if (!list.some((x) => x.id === a.id)) list.push(a);
+}
+
 function attachActivities(subjects: Subject[], activities: Activity[]) {
   for (const a of activities) {
     // ألعاب التعزيز الذكية قسم مستقل ولا تُدمج داخل دروس المواد.
@@ -86,9 +93,7 @@ function attachActivities(subjects: Subject[], activities: Activity[]) {
     const grade = subject?.grades.find((g) => g.id === a.gradeId);
     const unit = grade?.units.find((u) => u.id === a.unitId);
     const lesson = unit?.lessons.find((l) => l.id === a.lessonId);
-    if (lesson) {
-      if (!lesson.activities.some((x) => x.id === a.id)) lesson.activities.push(a);
-    }
+    if (lesson) placeInLesson(lesson, a);
   }
 }
 

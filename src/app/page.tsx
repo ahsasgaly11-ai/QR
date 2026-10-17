@@ -17,6 +17,7 @@ import { getMasteryServer, getReachServer, getSiteStatsServer } from '@/lib/stat
 import { fetchImpactServer } from '@/lib/impact';
 import { HeritageIcon } from '@/components/heritage-icons';
 import type { HeritageIconKind } from '@/components/heritage-icons';
+import { PRESENTATION_META, PRESENTATIONS_PATH, presentationsCount } from '@/lib/types';
 
 // المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
 // وإلا لما ظهرت الأنشطة المرفوعة بعد البناء إلا بنشر جديد.
@@ -49,7 +50,7 @@ export default async function HomePage() {
   // العدد نفسه الذي تعرضه لوحة الإحصاءات (كل الأنشطة المنشورة).
   const total = activities.length;
   const featured = activities
-    .filter((a) => !a.smartReinforcement && !a.unitReview)
+    .filter((a) => !a.smartReinforcement && !a.unitReview && !a.presentation)
     .slice(0, 4);
   // مراجعات الوحدات التي رفعها المشرف، الأحدث أولًا
   const reviews = activities
@@ -57,6 +58,7 @@ export default async function HomePage() {
     .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
   const latestReview = reviews[0];
   const smartGames = activities.filter((a) => a.smartReinforcement).length;
+  const presentations = activities.filter((a) => a.presentation).length;
 
   return (
     <>
@@ -171,7 +173,7 @@ export default async function HomePage() {
             {/* المواد الحيّة من قاعدة البيانات، لا القائمة المضمّنة —
                 وإلا لما ظهرت أي مادة يضيفها المشرف من لوحة الإدارة. */}
             {subjects.map((s, i) => {
-              const count = activities.filter((a) => a.subjectId === s.id && !a.smartReinforcement).length;
+              const count = activities.filter((a) => a.subjectId === s.id && !a.smartReinforcement && !a.presentation).length;
               const available = s.grades.length > 0;
               return (
                 <HeritageDoor
@@ -197,6 +199,13 @@ export default async function HomePage() {
               meta={smartGames > 0 ? `${smartGames} لعبة` : 'تعلّم • العب • عزّز'}
               color="#2d5f7c"
               emblem="games"
+            />
+            <HeritageDoor
+              href={PRESENTATIONS_PATH}
+              title="العروض التقديمية الذكية"
+              meta={presentations > 0 ? `تجريبي • ${presentationsCount(presentations)}` : 'تجريبي • اعرض • جرّب • تفاعل'}
+              color={PRESENTATION_META.color}
+              emblem="slides"
             />
           </div>
         </div>

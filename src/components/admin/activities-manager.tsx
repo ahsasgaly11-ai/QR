@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import {
-  Pencil, Trash2, X, Check, Loader2, Lock, Eye, Download, Images, Search, FolderInput, Hand, Sparkles, FileCode2, UploadCloud,
+  Pencil, Trash2, X, Check, Loader2, Lock, Eye, Download, Images, Search, FolderInput, Hand, Sparkles, FileCode2, UploadCloud, Presentation,
 } from 'lucide-react';
 import type { Activity, ActivityType, Subject } from '@/lib/types';
-import { ACTIVITY_META } from '@/lib/types';
+import { ACTIVITY_META, PRESENTATION_META } from '@/lib/types';
 import {
   updateActivity,
   deleteActivity,
@@ -45,6 +45,7 @@ export function ActivitiesManager({
   onlySmartReinforcement = false,
   excludeSmartReinforcement = false,
   onlyUnitReview = false,
+  onlyPresentation = false,
 }: {
   activities: Activity[];
   uploadedIds: string[];
@@ -57,6 +58,8 @@ export function ActivitiesManager({
   excludeSmartReinforcement?: boolean;
   /** يعرض مراجعات الوحدات فقط في تبويبها المستقل. */
   onlyUnitReview?: boolean;
+  /** يعرض العروض التقديمية الذكية فقط في تبويبها المستقل. */
+  onlyPresentation?: boolean;
 }) {
   const [rows, setRows] = useState<Activity[]>(initial);
   const [uploaded, setUploaded] = useState<Set<string>>(() => new Set(uploadedIds));
@@ -75,12 +78,14 @@ export function ActivitiesManager({
   const [backfillMsg, setBackfillMsg] = useState('');
   const [q, setQ] = useState('');
 
-  const scopedRows = onlyUnitReview
+  const scopedRows = onlyPresentation
+    ? rows.filter((a) => a.presentation)
+    : onlyUnitReview
     ? rows.filter((a) => a.unitReview)
     : onlySmartReinforcement
       ? rows.filter((a) => a.smartReinforcement)
       : excludeSmartReinforcement
-        ? rows.filter((a) => !a.smartReinforcement && !a.unitReview)
+        ? rows.filter((a) => !a.smartReinforcement && !a.unitReview && !a.presentation)
         : rows;
 
   /**
@@ -419,6 +424,7 @@ export function ActivitiesManager({
                   }
                   placeholder="الوصف"
                 />
+                {!a.presentation && (
                 <div className="flex flex-wrap gap-2">
                   {TYPES.map((t) => (
                     <button
@@ -435,6 +441,7 @@ export function ActivitiesManager({
                     </button>
                   ))}
                 </div>
+                )}
                 {/* استبدال ملف اللعبة دون حذف النشاط */}
                 <div className="rounded-xl border border-[color:var(--hairline)] p-3">
                   <label htmlFor={`replace-file-${a.id}`} className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-[color:var(--maroon)]">
@@ -576,7 +583,19 @@ export function ActivitiesManager({
               <div className="flex items-center gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <ActivityTypeBadge type={a.type} />
+                    {a.presentation ? (
+                      <span
+                        className="pill"
+                        style={{
+                          color: PRESENTATION_META.color,
+                          background: `color-mix(in srgb, ${PRESENTATION_META.color} 12%, transparent)`,
+                        }}
+                      >
+                        <Presentation className="h-3 w-3" /> عرض تقديمي
+                      </span>
+                    ) : (
+                      <ActivityTypeBadge type={a.type} />
+                    )}
                     {a.smartReinforcement && (
                       <span className="pill bg-[color:var(--gold)]/15 text-[color:var(--maroon)]">
                         <Sparkles className="h-3 w-3" /> تعزيز ذكي

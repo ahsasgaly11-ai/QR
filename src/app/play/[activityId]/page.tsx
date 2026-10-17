@@ -13,12 +13,12 @@ import { ActivityPlayer } from '@/components/activity-player';
 import { PlayHeader } from '@/components/play-header';
 import { PlayPageMode } from '@/components/play-page-mode';
 import { IosDocumentsNotice } from '@/components/ios-documents-notice';
-import { HeritageIcon, ACTIVITY_ICON } from '@/components/heritage-icons';
+import { HeritageIcon, activityIcon } from '@/components/heritage-icons';
 import { BackButton } from '@/components/back-button';
 import { LessonObjectives } from '@/components/lesson-objectives';
 import { ExitTicket } from '@/components/exit-ticket';
 import { SITE_NAME } from '@/lib/site';
-import { ACTIVITY_META } from '@/lib/types';
+import { PRESENTATIONS_PATH, activityLabel } from '@/lib/types';
 
 // المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
 // وإلا لما ظهرت الأنشطة المرفوعة بعد البناء إلا بنشر جديد.
@@ -40,7 +40,7 @@ export async function generateMetadata({
   const title = `${activity.title} | ${SITE_NAME}`;
   const description =
     activity.description?.trim() ||
-    `${ACTIVITY_META[activity.type]?.label ?? 'نشاط تفاعلي'}: ${activity.title} — جرّبه مباشرة على ${SITE_NAME}.`;
+    `${activityLabel(activity)?.label ?? 'نشاط تفاعلي'}: ${activity.title} — جرّبه مباشرة على ${SITE_NAME}.`;
   return {
     title,
     description,
@@ -63,14 +63,20 @@ export default async function PlayPage({
   const { subject, unit, lesson } = locateActivity(subjects, activity);
 
   const all = await getAllActivities();
-  // أنشطة المجموعة نفسها (الدرس، أو ألعاب التعزيز، أو المراجعات) بما فيها الحالي
+  // أنشطة المجموعة نفسها (الدرس، أو ألعاب التعزيز، أو المراجعات) بما فيها الحالي.
+  // العرض التقديمي يتصدّر أنشطة درسه فيكون «التالي» بعده أوّل نشاط، أمّا من
+  // داخل النشاط فلا تظهر عروض الدرس ضمن الأنشطة.
   const siblings = all.filter((a) =>
     activity.smartReinforcement
       ? a.smartReinforcement
       : activity.unitReview
         ? a.unitReview
-        : a.lessonId === activity.lessonId && !a.smartReinforcement && !a.unitReview
+        : a.lessonId === activity.lessonId &&
+          !a.smartReinforcement &&
+          !a.unitReview &&
+          (!a.presentation || a.id === activity.id)
   );
+  if (activity.presentation) siblings.sort((a, b) => Number(!!b.presentation) - Number(!!a.presentation));
   if (!siblings.some((a) => a.id === activity.id)) siblings.unshift(activity);
   const at = siblings.findIndex((a) => a.id === activity.id);
   const nextActivity = siblings.length > 1 ? siblings[(at + 1) % siblings.length] : undefined;
@@ -87,7 +93,9 @@ export default async function PlayPage({
           fallback={
             activity.smartReinforcement
               ? '/smart-games'
-              : activity.unitReview
+              : activity.presentation
+                ? PRESENTATIONS_PATH
+                : activity.unitReview
                 ? '/'
                 : `/subject/${activity.subjectId}`
           }
@@ -140,7 +148,7 @@ export default async function PlayPage({
           <h2 className="play-below-title">عن النشاط</h2>
           <p className="leading-8 text-[color:var(--ink-2)]">
             {activity.description?.trim() ||
-              `${ACTIVITY_META[activity.type].label}${lesson ? ` من درس «${lesson.title}»` : ''} — شغّله داخل الموقع، أو بملء الشاشة على السبورة.`}
+              `${activityLabel(activity).label}${lesson ? ` من درس «${lesson.title}»` : ''} — شغّله داخل الموقع، أو بملء الشاشة على السبورة.`}
           </p>
         </section>
         {siblings.length > 1 && (
@@ -150,18 +158,20 @@ export default async function PlayPage({
                 ? 'ألعاب التعزيز الذكية'
                 : activity.unitReview
                   ? 'مراجعات الوحدات'
-                  : 'أنشطة الدرس نفسه'}
+                  : activity.presentation
+                    ? 'أنشطة الدرس بعد العرض'
+                    : 'أنشطة الدرس نفسه'}
             </h2>
             <ul className="sibling-strip">
               {siblings.map((a) => {
                 const current = a.id === activity.id;
                 const inner = (
                   <>
-                    <HeritageIcon kind={ACTIVITY_ICON[a.type]} className="sibling-icon" />
+                    <HeritageIcon kind={activityIcon(a)} className="sibling-icon" />
                     <span className="min-w-0">
                       <span className="sibling-title">{a.title}</span>
                       <span className="sibling-type">
-                        {ACTIVITY_META[a.type].label}
+                        {activityLabel(a).label}
                         {current && ' • تشاهده الآن'}
                       </span>
                     </span>

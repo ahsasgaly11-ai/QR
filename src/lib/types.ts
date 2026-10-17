@@ -29,6 +29,28 @@ export const ACTIVITY_META: Record<
   game: { label: 'لعبة تعليمية', icon: 'gamepad', color: '#6a4c93' },
 };
 
+/** هوية العرض التقديمي الذكي: يُعرض بها بدل نوع النشاط أينما ظهر. */
+export const PRESENTATION_META = {
+  label: 'عرض تقديمي ذكي',
+  color: '#b5552b',
+  play: 'ابدأ العرض',
+} as const;
+
+/** عدد العروض بصيغة عربية صحيحة: عرض واحد، عرضان، ٣ عروض، ١١ عرضًا. */
+export function presentationsCount(n: number): string {
+  if (n === 1) return 'عرض واحد';
+  if (n === 2) return 'عرضان';
+  return `${n} ${n <= 10 ? 'عروض' : 'عرضًا'}`;
+}
+
+/** مسار قسم العروض التقديمية الذكية. */
+export const PRESENTATIONS_PATH = '/smart-presentations';
+
+/** تسمية النشاط ولونه كما يراهما الزائر (العرض التقديمي له هويته الخاصة). */
+export function activityLabel(a: Pick<Activity, 'type' | 'presentation'>): { label: string; color: string } {
+  return a.presentation ? PRESENTATION_META : ACTIVITY_META[a.type];
+}
+
 /** سؤال تقويم ختامي (تذكرة خروج) من اختيار من متعدّد. */
 export interface ExitQuestion {
   /** نص السؤال */
@@ -77,6 +99,12 @@ export interface Activity {
    */
   unitReview?: boolean;
   /**
+   * عرض تقديمي ذكي للدرس (قسم تجريبي): ملف HTML يحاكي شرائح البوربوينت
+   * بتفاعل ومحاكاة ومؤثّرات. مرتبط بدرسه، ويظهر زرًّا «عرض الدرس» فوق
+   * أنشطته وفي قسم «العروض التقديمية الذكية»، ولا يُعدّ ضمن أنشطة الدرس.
+   */
+  presentation?: boolean;
+  /**
    * تنزيل المراجعة (لمراجعات الوحدات فقط): يتحكّم به المشرف لكل مراجعة على
    * حدة، مستقلًّا عن إعدادات تبويب «التنزيل». غيابه يعني أن التنزيل موقوف.
    */
@@ -118,6 +146,8 @@ export interface Lesson {
   id: string;
   title: string;
   activities: Activity[];
+  /** العروض التقديمية الذكية للدرس — منفصلة عن أنشطته. */
+  presentations?: Activity[];
 }
 
 export interface Unit {

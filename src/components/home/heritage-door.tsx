@@ -55,6 +55,14 @@ function Emblem({ kind, letter }: { kind: DoorEmblem; letter: string }) {
           <circle cx="42" cy="44" r="7" fill="#fff" opacity=".9" />
         </g>
       );
+    case 'slides':
+      return (
+        <g {...stroke}>
+          <rect x="14" y="20" width="72" height="48" rx="5" />
+          <path d="M50 68v16M38 88l12-6 12 6" />
+          <path d="M44 34v20l16-10z" fill="currentColor" stroke="none" />
+        </g>
+      );
     default:
       return (
         <text x="50" y="72" textAnchor="middle" fontSize="56" fontWeight="700" fill="currentColor" fontFamily="'Readex Pro', sans-serif">

@@ -4,10 +4,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Play, Download, Eye, Pencil, Trash2, Check, X, Loader2 } from 'lucide-react';
-import { ACTIVITY_META } from '@/lib/types';
+import { PRESENTATION_META, activityLabel } from '@/lib/types';
 import type { Activity, ActivityStats, ActivityType } from '@/lib/types';
 import { subscribeActivityStats, trackDownload } from '@/lib/stats';
-import { HeritageIcon, ACTIVITY_ICON } from './heritage-icons';
+import { HeritageIcon, activityIcon } from './heritage-icons';
 import { formatNumber } from '@/lib/utils';
 import { getLocalRecord, htmlToBlobUrl, dropCachedPreview } from '@/lib/local-store';
 import { ActivityPreview } from './activity-preview';
@@ -168,7 +168,8 @@ export function ActivityCard({
 
   if (gone) return null;
 
-  const meta = ACTIVITY_META[activity.type];
+  const meta = activityLabel(activity);
+  const icon = activityIcon(activity);
 
   // ميل خفيف مع المؤشّر ولمعة ضوء تتبعه (لا على اللمس، ولا لمن طلب تقليل الحركة)
   const onTilt = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -230,7 +231,7 @@ export function ActivityCard({
           <ActivityPreview activity={activity} className="act-preview h-44" />
         </span>
         <span className="act-type-icon" aria-hidden>
-          <HeritageIcon kind={ACTIVITY_ICON[activity.type]} />
+          <HeritageIcon kind={icon} />
         </span>
         <span className="act-type-chip">{meta.label}</span>
         <span className="act-play-hint" aria-hidden>
@@ -319,7 +320,7 @@ export function ActivityCard({
             className="act-play"
           >
             <Play className="h-4 w-4 fill-current" aria-hidden />
-            {PLAY_LABEL[activity.type]}
+            {activity.presentation ? PRESENTATION_META.play : PLAY_LABEL[activity.type]}
           </Link>
           {canDownload && (
             <a

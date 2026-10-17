@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import type { ActivityType } from '@/lib/types';
+import type { Activity, ActivityType } from '@/lib/types';
 
 // ---------------------------------------------------------------------------
 // أيقونات ثلاثية الأبعاد بخامات من البيئة القطرية (زجاج، نحاس، صدف، لؤلؤ)
@@ -8,7 +8,7 @@ import type { ActivityType } from '@/lib/types';
 // فلا تتكرّر التدرّجات في الصفحة ولا تتعارض معرّفاتها.
 // ---------------------------------------------------------------------------
 
-export type HeritageIconKind = 'flask' | 'globe' | 'question' | 'oyster' | 'pearl' | 'chart' | 'key';
+export type HeritageIconKind = 'flask' | 'globe' | 'question' | 'oyster' | 'pearl' | 'chart' | 'key' | 'screen';
 
 export const ACTIVITY_ICON: Record<ActivityType, HeritageIconKind> = {
   experiment: 'flask',
@@ -16,6 +16,11 @@ export const ACTIVITY_ICON: Record<ActivityType, HeritageIconKind> = {
   quiz: 'question',
   game: 'oyster',
 };
+
+/** أيقونة النشاط كما يراها الزائر (للعرض التقديمي شاشته الخاصة). */
+export function activityIcon(a: Pick<Activity, 'type' | 'presentation'>): HeritageIconKind {
+  return a.presentation ? 'screen' : ACTIVITY_ICON[a.type];
+}
 
 export function HeritageIcon({
   kind,
@@ -169,6 +174,19 @@ export function HeritageIconSprite() {
           <path d="M86 96V66l12-4v30z" fill="#2d5f7c" />
           <path d="M72 62l12-4 14 4-12 4z" fill="#86bad8" />
           <path d="M50 38v40" stroke="#fff" strokeWidth="3" strokeLinecap="round" opacity=".45" />
+        </symbol>
+
+        {/* شاشة عرض على حامل نحاسي يتوسّطها زرّ تشغيل — العروض التقديمية */}
+        <symbol id="hi-screen" viewBox="0 0 120 120">
+          <ellipse cx="60" cy="112" rx="34" ry="6" fill="#231a17" opacity=".16" />
+          <path d="M60 84v20M60 92l-20 16M60 92l20 16" stroke="url(#hi-brass)" strokeWidth="5" strokeLinecap="round" fill="none" />
+          <rect x="14" y="22" width="92" height="64" rx="8" fill="url(#hi-gold-side)" transform="translate(0 5)" />
+          <rect x="14" y="22" width="92" height="64" rx="8" fill="url(#hi-gold-top)" />
+          <rect x="21" y="29" width="78" height="50" rx="4" fill="url(#hi-liquid)" />
+          <path d="M53 42v24l20-12z" fill="#fff" />
+          <path d="M28 70h18M28 64h10" stroke="#ffd1dd" strokeWidth="3" strokeLinecap="round" opacity=".7" />
+          <rect x="52" y="14" width="16" height="10" rx="3" fill="url(#hi-brass)" />
+          <path d="M26 34h30" stroke="#fff" strokeWidth="3" strokeLinecap="round" opacity=".35" />
         </symbol>
 
         {/* مفتاح نحاسي قديم بمقبض مثمّن — للوحة الإدارة */}

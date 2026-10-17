@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ChevronDown, BookMarked, Inbox, UploadCloud, Search } from 'lucide-react';
+import { ChevronDown, BookMarked, Inbox, UploadCloud, Search, ArrowLeft, Presentation } from 'lucide-react';
 import type { Subject, Activity } from '@/lib/types';
 import { ActivityCard } from './activity-card';
+import { HeritageIcon } from './heritage-icons';
 import { cn, normalizeAr } from '@/lib/utils';
 import {
   listLocalActivities,
@@ -77,9 +78,12 @@ export function CurriculumExplorer({ subject: serverSubject }: { subject: Subjec
     for (const g of merged.grades)
       for (const u of g.units)
         for (const l of u.lessons) {
-          l.activities = l.activities
-            .filter((a) => patched[a.id] !== null)
-            .map((a) => (patched[a.id] ? { ...a, ...patched[a.id] } : a));
+          const apply = (list: Activity[]) =>
+            list
+              .filter((a) => patched[a.id] !== null)
+              .map((a) => (patched[a.id] ? { ...a, ...patched[a.id] } : a));
+          l.activities = apply(l.activities);
+          if (l.presentations) l.presentations = apply(l.presentations);
         }
     return merged;
   }, [serverSubject, localStruct, liveStruct, localActs, liveActs, patched]);
@@ -108,7 +112,8 @@ export function CurriculumExplorer({ subject: serverSubject }: { subject: Subjec
         ? unit.lessons.filter(
             (l) =>
               normalizeAr(l.title).includes(q) ||
-              l.activities.some((a) => normalizeAr(a.title).includes(q))
+              l.activities.some((a) => normalizeAr(a.title).includes(q)) ||
+              (l.presentations ?? []).some((a) => normalizeAr(a.title).includes(q))
           )
         : unit.lessons;
       return { unit, lessons };
@@ -227,6 +232,30 @@ export function CurriculumExplorer({ subject: serverSubject }: { subject: Subjec
                               <span className="sr-only">{num} </span>
                               {title}
                             </h3>
+                            {/* عرض الدرس التقديمي أولًا: يبدأ به المعلّم قبل الأنشطة */}
+                            {lesson.presentations?.map((p) => (
+                              <Link
+                                key={p.id}
+                                href={`/play/${p.id}`}
+                                className="show-ticket"
+                                aria-label={`عرض الدرس: ${p.title}`}
+                              >
+                                <span className="show-ticket-icon" aria-hidden>
+                                  <HeritageIcon kind="screen" />
+                                </span>
+                                <span className="min-w-0 flex-1">
+                                  <span className="show-ticket-kicker">
+                                    <Presentation className="h-3.5 w-3.5" aria-hidden />
+                                    عرض الدرس
+                                    <span className="beta-pill">تجريبي</span>
+                                  </span>
+                                  <span className="show-ticket-title">{p.title}</span>
+                                </span>
+                                <span className="show-ticket-go" aria-hidden>
+                                  <ArrowLeft className="h-5 w-5" />
+                                </span>
+                              </Link>
+                            ))}
                             {lesson.activities.length > 0 ? (
                               <div className="mt-3 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                                 {lesson.activities.map((a, i) => (
@@ -241,7 +270,7 @@ export function CurriculumExplorer({ subject: serverSubject }: { subject: Subjec
                                   />
                                 ))}
                               </div>
-                            ) : (
+                            ) : lesson.presentations?.length ? null : (
                               <p className="lesson-empty">
                                 <Inbox className="h-3.5 w-3.5" aria-hidden />
                                 لا توجد أنشطة بعد

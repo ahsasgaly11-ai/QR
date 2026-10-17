@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { UploadCloud, ListChecks, Layers, LogOut, Megaphone, Download, Gamepad2, ClipboardCheck, HeartHandshake, SpellCheck2 } from 'lucide-react';
+import { UploadCloud, ListChecks, Layers, LogOut, Megaphone, Download, Gamepad2, ClipboardCheck, Presentation, HeartHandshake, SpellCheck2 } from 'lucide-react';
 import type { Subject, Activity } from '@/lib/types';
 import { AuthGate } from './auth-gate';
 import { AdminUploader } from '@/components/admin-uploader';
@@ -15,7 +15,7 @@ import { PedagogyPackApply } from './pedagogy-pack-apply';
 import { signOutAdmin, isFirebaseConfigured } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 
-type Tab = 'upload' | 'activities' | 'smart-games' | 'reviews' | 'content' | 'audit' | 'ticker' | 'impact' | 'downloads';
+type Tab = 'upload' | 'activities' | 'smart-games' | 'presentations' | 'reviews' | 'content' | 'audit' | 'ticker' | 'impact' | 'downloads';
 
 export function AdminShell({
   subjects,
@@ -36,6 +36,7 @@ export function AdminShell({
     { id: 'upload', label: 'رفع نشاط', icon: UploadCloud },
     { id: 'activities', label: 'إدارة الأنشطة', icon: ListChecks },
     { id: 'smart-games', label: 'ألعاب التعزيز', icon: Gamepad2 },
+    { id: 'presentations', label: 'العروض الذكية', icon: Presentation },
     { id: 'reviews', label: 'مراجعات الوحدات', icon: ClipboardCheck },
     { id: 'content', label: 'إدارة المناهج', icon: Layers },
     { id: 'audit', label: 'تدقيق المحتوى', icon: SpellCheck2 },
@@ -108,6 +109,39 @@ export function AdminShell({
               labels={labels}
               structure={structure}
               onlySmartReinforcement
+            />
+          </div>
+        </div>
+      )}
+      {tab === 'presentations' && (
+        <div className="space-y-10">
+          <div>
+            <div className="mb-4">
+              <h2 className="font-display text-xl font-semibold text-foreground">
+                رفع عرض تقديمي ذكي <span className="beta-pill align-middle">تجريبي</span>
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                ارفع ملف HTML يحاكي شرائح الدرس بتجارب ومحاكاة ومؤثّرات، واختر درسه.
+                يظهر في قسم «العروض التقديمية الذكية» وزرًّا «عرض الدرس» داخل الدرس.
+              </p>
+            </div>
+            <AdminUploader subjects={subjects} presentationOnly />
+          </div>
+          <div>
+            <div className="mb-4">
+              <h2 className="font-display text-xl font-semibold text-foreground">
+                إدارة العروض
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                عدّل العروض المرفوعة أو انقلها إلى درس آخر أو استبدل ملفها أو احذفها.
+              </p>
+            </div>
+            <ActivitiesManager
+              activities={activities}
+              uploadedIds={uploadedIds}
+              labels={labels}
+              structure={structure}
+              onlyPresentation
             />
           </div>
         </div>
