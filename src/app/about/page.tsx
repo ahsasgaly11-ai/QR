@@ -59,7 +59,7 @@ export default async function AboutPage() {
     getMasteryServer(),
   ]);
 
-  const curricular = activities.filter((a) => !a.smartReinforcement && !a.unitReview);
+  const curricular = activities.filter((a) => !a.smartReinforcement && !a.unitReview && !a.presentation);
   const withObjectives = curricular.filter((a) => pedagogyStatus(a.pedagogy).complete).length;
   const lessons = subjects.reduce(
     (n, s) => n + s.grades.reduce((m, g) => m + g.units.reduce((k, u) => k + u.lessons.length, 0), 0),

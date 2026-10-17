@@ -431,6 +431,19 @@ function PlayerInner({ activity, localHtml, next }: PlayerProps) {
     }
   }, []);
 
+  // العرض التقديمي: مسرح بنسبة الشرائح 16:9، والتركيز داخل الإطار حتى تعمل
+  // الأسهم ومسافة وأجهزة التحكّم بالعرض فورًا دون نقرة على الشريحة أولًا.
+  const stageClass = activity.presentation ? 'presentation-stage' : 'game-stage';
+  const focusPresentation = () => {
+    if (!activity.presentation) return;
+    try {
+      frameRef.current?.focus({ preventScroll: true });
+      frameRef.current?.contentWindow?.focus();
+    } catch {
+      /* الإطار غير جاهز */
+    }
+  };
+
   return (
     <div className="player-shell">
       {/* رفيق لغة الإشارة: على الجوّال ضمن التدفّق (فوق اللعبة، بلا تغطية)،
@@ -446,7 +459,7 @@ function PlayerInner({ activity, localHtml, next }: PlayerProps) {
       )}
 
       {/* حافظ على مكان المسرح في الصفحة أثناء وضع العرض الكامل */}
-      {immersive && <div className="game-stage w-full" aria-hidden />}
+      {immersive && <div className={cn(stageClass, 'w-full')} aria-hidden />}
 
       <div
         ref={wrapRef}
@@ -501,22 +514,25 @@ function PlayerInner({ activity, localHtml, next }: PlayerProps) {
             ref={frameRef}
             src={frameUrl}
             title={activity.title}
-            className={cn('w-full bg-white', immersive ? 'h-full' : 'game-stage')}
+            className={cn('w-full bg-white', immersive ? 'h-full' : stageClass)}
             style={!immersive && fitH ? { height: fitH, minHeight: 0 } : undefined}
             sandbox={
               uploaded
                 ? GAME_SANDBOX
                 : 'allow-scripts allow-same-origin allow-popups allow-downloads allow-forms allow-modals'
             }
+            // العروض قد تشغّل صوتًا أو فيديو مع الانتقال بين الشرائح
+            allow={activity.presentation ? 'autoplay' : undefined}
             onLoad={() => {
               setLoading(false);
               syncFrameFullscreen();
               revealStage();
+              focusPresentation();
             }}
           />
         ) : (
           <div
-            className={cn('w-full bg-white', immersive ? 'h-full' : 'game-stage')}
+            className={cn('w-full bg-white', immersive ? 'h-full' : stageClass)}
             style={!immersive && fitH ? { height: fitH, minHeight: 0 } : undefined}
           />
         )}
@@ -529,10 +545,12 @@ function PlayerInner({ activity, localHtml, next }: PlayerProps) {
             onClick={() => {
               gameOwnedRef.current = false;
               enterImmersive();
+              focusPresentation();
             }}
             className="tool-btn tool-btn--primary"
           >
-            <Maximize2 className="h-4 w-4" aria-hidden /> ملء الشاشة
+            <Maximize2 className="h-4 w-4" aria-hidden />{' '}
+            {activity.presentation ? 'ابدأ العرض بملء الشاشة' : 'ملء الشاشة'}
           </button>
           {/* «فتح في نافذة» يعرض ملف اللعبة خارج الموقع فيُمكن حفظه، لذا يُخفى
               مع زرّ التحميل عند قصر الاستخدام على داخل الموقع. */}

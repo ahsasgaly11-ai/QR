@@ -262,9 +262,10 @@ export function mergeLocalIntoSubject(
     const grade = merged.grades.find((g) => g.id === a.gradeId);
     const unit = grade?.units.find((u) => u.id === a.unitId);
     const lesson = unit?.lessons.find((l) => l.id === a.lessonId);
-    if (lesson && !lesson.activities.some((x) => x.id === a.id)) {
-      lesson.activities.push(a);
-    }
+    if (!lesson) continue;
+    // العرض التقديمي في قائمته الخاصة بالدرس، لا ضمن الأنشطة
+    const list = a.presentation ? (lesson.presentations ??= []) : lesson.activities;
+    if (!list.some((x) => x.id === a.id)) list.push(a);
   }
   return merged;
 }

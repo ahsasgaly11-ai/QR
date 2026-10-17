@@ -6,6 +6,7 @@ import { DOOR_PAINT, emblemFor } from '@/components/home/door-emblem';
 import { SectionHead } from '@/components/home/section-head';
 import { PageCourt } from '@/components/page-court';
 import { SITE_NAME } from '@/lib/site';
+import { PRESENTATION_META, PRESENTATIONS_PATH, presentationsCount } from '@/lib/types';
 
 // المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
 // وإلا لما ظهرت الأنشطة المرفوعة بعد البناء إلا بنشر جديد.
@@ -22,10 +23,11 @@ export default async function BrowsePage() {
   const rows = subjects.map((s, i) => {
     const units = s.grades.reduce((n, g) => n + g.units.length, 0);
     const lessons = s.grades.reduce((n, g) => n + g.units.reduce((m, u) => m + u.lessons.length, 0), 0);
-    const count = activities.filter((a) => a.subjectId === s.id && !a.smartReinforcement).length;
+    const count = activities.filter((a) => a.subjectId === s.id && !a.smartReinforcement && !a.presentation).length;
     return { s, units, lessons, count, available: s.grades.length > 0, color: DOOR_PAINT[i % DOOR_PAINT.length] };
   });
   const smartGames = activities.filter((a) => a.smartReinforcement).length;
+  const presentations = activities.filter((a) => a.presentation).length;
   const open = rows.filter((r) => r.available);
 
   return (
@@ -70,6 +72,13 @@ export default async function BrowsePage() {
               meta={smartGames > 0 ? `${smartGames} لعبة` : 'تعلّم • العب • عزّز'}
               color="#2d5f7c"
               emblem="games"
+            />
+            <HeritageDoor
+              href={PRESENTATIONS_PATH}
+              title="العروض التقديمية الذكية"
+              meta={presentations > 0 ? `تجريبي • ${presentationsCount(presentations)}` : 'تجريبي • اعرض • جرّب • تفاعل'}
+              color={PRESENTATION_META.color}
+              emblem="slides"
             />
           </div>
         </div>

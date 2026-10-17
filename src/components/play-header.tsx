@@ -1,16 +1,16 @@
 import type { Activity } from '@/lib/types';
-import { ACTIVITY_META } from '@/lib/types';
-import { HeritageIcon, ACTIVITY_ICON } from './heritage-icons';
+import { activityLabel } from '@/lib/types';
+import { HeritageIcon, activityIcon } from './heritage-icons';
 import { ActivityStatsChips } from './activity-stats-chips';
 
 /** رأس صفحة التشغيل: أيقونة نوع النشاط ثلاثية الأبعاد، العنوان، سطر تعريفي،
  *  وعدّادات المشاهدة والتنزيل الحيّة. */
 export function PlayHeader({ activity, context }: { activity: Activity; context?: string }) {
-  const meta = ACTIVITY_META[activity.type];
+  const meta = activityLabel(activity);
   return (
     <header className="play-head">
       <span className="play-head-icon" aria-hidden>
-        <HeritageIcon kind={ACTIVITY_ICON[activity.type]} />
+        <HeritageIcon kind={activityIcon(activity)} />
       </span>
       <div className="min-w-0 flex-1 basis-[min(100%,16rem)]">
         <h1 className="short-title font-calli text-[1.75rem] leading-[1.45] text-foreground sm:text-4xl">
