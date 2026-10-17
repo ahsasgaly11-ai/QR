@@ -15,10 +15,10 @@ import { LessonObjectives } from './lesson-objectives';
 import { ExitTicket } from './exit-ticket';
 
 /**
- * يُستخدم عندما لا يجد الخادم النشاط: قد يكون نشاطًا مرفوعًا في «وضع العرض»
- * ومحفوظًا داخل متصفّح هذا المستخدم فقط.
+ * يبحث عن نشاط لا يعرفه الخادم: في مخزن هذا المتصفّح (وضع العرض) أولًا، ثم
+ * في Firestore مباشرة (رُفع للتوّ ولم تلتقطه الصفحة المُخزَّنة بعد).
  */
-export function LocalPlay({ activityId }: { activityId: string }) {
+export function useLocalActivity(activityId: string) {
   const [state, setState] = useState<'loading' | 'found' | 'missing'>('loading');
   // من أين جاء النشاط: مخزن المتصفّح (وضع العرض) أم Firestore (منشور فعلًا)
   const [source, setSource] = useState<'local' | 'remote'>('local');
@@ -71,6 +71,16 @@ export function LocalPlay({ activityId }: { activityId: string }) {
       alive = false;
     };
   }, [activityId]);
+
+  return { state, source, activity, html };
+}
+
+/**
+ * يُستخدم عندما لا يجد الخادم النشاط: قد يكون نشاطًا مرفوعًا في «وضع العرض»
+ * ومحفوظًا داخل متصفّح هذا المستخدم فقط.
+ */
+export function LocalPlay({ activityId }: { activityId: string }) {
+  const { state, source, activity, html } = useLocalActivity(activityId);
 
   if (state === 'loading') {
     return (
