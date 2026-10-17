@@ -182,25 +182,20 @@ export async function loadGameHtml(id: string): Promise<string | null> {
 export async function savePreviewHtml(id: string, html: string): Promise<boolean> {
   const db = getDb();
   if (!db) return false;
-  const { makePreviewHtml, PREVIEW_VERSION, PREVIEW_DOC_BYTES } = await import(
-    '@/lib/preview-html'
-  );
-  // خفّف قدر الإمكان دون رفض، ثم قرّر: نصّ عادي أو مضغوط
-  const light = makePreviewHtml(html, Infinity);
-  if (!light) return false;
+  const { pickPreview, PREVIEW_VERSION } = await import('@/lib/preview-html');
   try {
+    // أول بديل يتّسع: المعاينة الخفيفة، ثم بلا المكتبات الضخمة، ثم صورة
+    // الشريحة الأولى، ثم بطاقة بالعنوان — فلا تبقى بطاقة بلا صورة.
+    const picked = await pickPreview(html, gzip);
+    if (!picked) return false;
     const { doc, setDoc, Bytes } = await import('firebase/firestore');
     const ref = doc(db, 'activities', id, 'preview', 'doc');
-    if (byteLength(light) <= PREVIEW_DOC_BYTES) {
-      await setDoc(ref, { s: light, v: PREVIEW_VERSION });
-      return true;
-    }
-    // ألعاب 3D تُضمِّن مكتبة Three.js كاملةً فيبقى حجمها فوق حدّ الوثيقة
-    // حتى بعد حذف الوسائط. الكود النصّي ينضغط إلى نحو الربع، فنحفظه
-    // مضغوطًا (gzip) بدل ترك البطاقة بلا صورة.
-    const z = await gzip(light);
-    if (!z || z.byteLength > PREVIEW_DOC_BYTES) return false;
-    await setDoc(ref, { z: Bytes.fromUint8Array(z), v: PREVIEW_VERSION });
+    await setDoc(
+      ref,
+      'z' in picked
+        ? { z: Bytes.fromUint8Array(picked.z), v: PREVIEW_VERSION }
+        : { s: picked.s, v: PREVIEW_VERSION }
+    );
     return true;
   } catch {
     return false;

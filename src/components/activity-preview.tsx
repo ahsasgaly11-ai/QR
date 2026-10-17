@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Gamepad2, Loader2 } from 'lucide-react';
+import { Gamepad2, Loader2, Presentation } from 'lucide-react';
 import type { Activity } from '@/lib/types';
 import {
   PREVIEW_VERSION,
@@ -179,7 +179,11 @@ export function ActivityPreview({
             (failed ? '' : 'animate-pulse')
           }
         >
-          <Gamepad2 className="h-8 w-8 text-[color:var(--maroon)]/30" />
+          {activity.presentation ? (
+            <Presentation className="h-8 w-8 text-[color:var(--maroon)]/30" />
+          ) : (
+            <Gamepad2 className="h-8 w-8 text-[color:var(--maroon)]/30" />
+          )}
         </div>
       )}
     </div>
