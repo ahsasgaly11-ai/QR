@@ -413,9 +413,9 @@ function LayerArt({ name }: { name: (typeof LAYERS)[number]['key'] }) {
             <rect x="418" y="512" width="30" height="3" rx="1.5" />
           </g>
           <g stroke="var(--hw-wave)" strokeWidth="3" fill="none" strokeLinecap="round">
-            <path className="hw-wave" d="M-60 490h720" />
-            <path className="hw-wave" d="M-60 520h720" style={{ animationDuration: '4.2s' }} />
-            <path className="hw-wave" d="M-60 548h720" style={{ animationDuration: '5.4s' }} />
+            <path className="hw-wave" d="M-220 490h880" />
+            <path className="hw-wave" d="M-220 520h880" style={{ animationDuration: '4.2s' }} />
+            <path className="hw-wave" d="M-220 548h880" style={{ animationDuration: '5.4s' }} />
           </g>
           {/* السفينة الشراعية (البوم) */}
           <g className="hw-dhow">

@@ -1264,8 +1264,12 @@ body { padding-bottom: var(--ticker-h); }
 @keyframes hw-gulls { from { transform: translateX(-140px); } to { transform: translateX(640px); } }
 .hw-gull { transform-box: fill-box; transform-origin: center; animation: hw-flap 0.6s ease-in-out infinite alternate; }
 @keyframes hw-flap { to { transform: scaleY(0.45); } }
+/* الموج يتحرّك بإزاحة الخط نفسه لا بـ stroke-dashoffset: سفاري لا يعيد رسم
+   تحريك dashoffset داخل طبقة مركّبة (will-change) فيتجمّد الموج حين يستقرّ
+   المشهد. الإزاحة 160 = دورتان من نمط الشرطات (46+34) فتتكرّر بلا قفزة،
+   والخط ممدود 160 يسارًا كي لا يظهر طرفه */
 .hw-wave { stroke-dasharray: 46 34; animation: hw-wave 3s linear infinite; }
-@keyframes hw-wave { to { stroke-dashoffset: -160; } }
+@keyframes hw-wave { from { transform: translateX(0); } to { transform: translateX(160px); } }
 .hw-shimmer { animation: hw-shimmer 2.6s ease-in-out infinite; }
 @keyframes hw-shimmer { 50% { opacity: 0.45; } }
 .hw-dhow { transform-box: fill-box; transform-origin: 50% 100%; animation: hw-bob 4.8s ease-in-out infinite; }
