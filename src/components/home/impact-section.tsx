@@ -29,12 +29,18 @@ export function ImpactSection({
   reach,
   voices,
   mastery,
+  kicker = 'أثر التعلّم',
+  title = 'ماذا صنعت المنصّة في الصفوف؟',
+  lead = 'أرقام حقيقية تُحتسب من استخدام الطلبة والمعلّمين الفعلي، لا تقديرات — وآراء من جرّبوا الأنشطة في صفوفهم.',
 }: {
   activities: number;
   totals: SiteTotals | null;
   reach: ReachSnapshot | null;
   voices: ImpactSettings;
   mastery?: MasterySnapshot | null;
+  kicker?: string;
+  title?: string;
+  lead?: string;
 }) {
   const figures: Figure[] = [
     {
@@ -108,9 +114,9 @@ export function ImpactSection({
     <section id="impact" className="impact-band scroll-mt-24">
       <div className="mx-auto max-w-7xl px-5 py-12 sm:px-6 lg:py-16">
         <SectionHead
-          kicker="أثر التعلّم"
-          title="ماذا صنعت المنصّة في الصفوف؟"
-          lead="أرقام حقيقية تُحتسب من استخدام الطلبة والمعلّمين الفعلي، لا تقديرات — وآراء من جرّبوا الأنشطة في صفوفهم."
+          kicker={kicker}
+          title={title}
+          lead={lead}
           action={{ href: '/dashboard', label: 'لوحة الإحصاءات الكاملة' }}
         />
 

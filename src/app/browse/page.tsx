@@ -5,6 +5,7 @@ import { HeritageDoor } from '@/components/home/heritage-door';
 import { DOOR_PAINT, emblemFor } from '@/components/home/door-emblem';
 import { SectionHead } from '@/components/home/section-head';
 import { PageCourt } from '@/components/page-court';
+import { fetchSiteTextsServer, txt } from '@/lib/site-texts';
 import { SITE_NAME } from '@/lib/site';
 import { PRESENTATION_META, PRESENTATIONS_PATH, presentationsCount } from '@/lib/types';
 
@@ -18,7 +19,11 @@ export const metadata = {
 };
 
 export default async function BrowsePage() {
-  const [subjects, activities] = await Promise.all([getSubjects(), getAllActivities()]);
+  const [subjects, activities, texts] = await Promise.all([
+    getSubjects(),
+    getAllActivities(),
+    fetchSiteTextsServer(),
+  ]);
 
   const rows = subjects.map((s, i) => {
     const units = s.grades.reduce((n, g) => n + g.units.length, 0);
@@ -33,12 +38,12 @@ export default async function BrowsePage() {
   return (
     <>
       <PageCourt
-        crumbs={[{ href: '/', label: 'الرئيسية' }, { label: 'المناهج' }]}
-        kicker="المكتبة التعليمية"
-        title="تصفّح المناهج"
+        crumbs={[{ href: '/', label: txt(texts, 'nav.home') }, { label: txt(texts, 'nav.browse') }]}
+        kicker={txt(texts, 'page.browse.kicker')}
+        title={txt(texts, 'page.browse.title')}
         icon="globe"
         color="#2d5f7c"
-        lead="كل مادة باب. اختر الباب لتصل إلى مستوياتها ووحداتها ودروسها، ثم إلى أنشطتها التفاعلية."
+        lead={txt(texts, 'page.browse.lead')}
         chips={[
           { n: open.length, label: open.length === 1 ? 'مادة متاحة' : 'مواد متاحة' },
           { n: open.reduce((n, r) => n + r.units, 0), label: 'وحدات' },

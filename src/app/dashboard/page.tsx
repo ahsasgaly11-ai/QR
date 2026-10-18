@@ -3,6 +3,7 @@ import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { StatsSyncNotice } from '@/components/stats-sync-notice';
 import { TrackingStatus } from '@/components/tracking-status';
 import { PageCourt } from '@/components/page-court';
+import { fetchSiteTextsServer, txt } from '@/lib/site-texts';
 import { SITE_NAME } from '@/lib/site';
 import type { DashboardRow } from '@/lib/dashboard-metrics';
 
@@ -16,8 +17,11 @@ export const metadata = {
 };
 
 export default async function DashboardPage() {
-  const activities = await getAllActivities();
-  const subjects = await getSubjects();
+  const [activities, subjects, texts] = await Promise.all([
+    getAllActivities(),
+    getSubjects(),
+    fetchSiteTextsServer(),
+  ]);
 
   const rows: DashboardRow[] = activities.map((a) => {
     const { subject, grade, unit, lesson } = locateActivity(subjects, a);
@@ -39,12 +43,12 @@ export default async function DashboardPage() {
   return (
     <>
       <PageCourt
-        crumbs={[{ href: '/', label: 'الرئيسية' }, { label: 'الإحصاءات' }]}
-        kicker="متابعة حيّة"
-        title="لوحة الإحصاءات"
+        crumbs={[{ href: '/', label: txt(texts, 'nav.home') }, { label: txt(texts, 'nav.dashboard') }]}
+        kicker={txt(texts, 'page.dashboard.kicker')}
+        title={txt(texts, 'page.dashboard.title')}
         icon="chart"
         color="#b0862a"
-        lead="المؤشّرات الرئيسية واتجاهها عبر الزمن في شاشة واحدة، والتفاصيل في أقسام مستقلّة."
+        lead={txt(texts, 'page.dashboard.lead')}
       />
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
         <StatsSyncNotice />

@@ -16,7 +16,16 @@ export const runtime = 'nodejs';
 
 /** المسارات التي تعرض المحتوى وتحتاج تحديثًا بعد أي تغيير. */
 function pathsFor(subjectId?: string, activityId?: string): string[] {
-  const paths = ['/', '/browse', '/search', '/dashboard', '/smart-games', '/smart-presentations'];
+  const paths = [
+    '/',
+    '/browse',
+    '/search',
+    '/dashboard',
+    '/smart-games',
+    '/smart-presentations',
+    '/heatmap',
+    '/about',
+  ];
   if (subjectId) paths.push(`/subject/${subjectId}`);
   if (activityId) paths.push(`/play/${activityId}`, `/view/${activityId}`);
   return paths;
