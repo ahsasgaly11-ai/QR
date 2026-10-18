@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { ClipboardCheck, Loader2, Plus, Target, Trash2, Wand2 } from 'lucide-react';
 import type { ExitQuestion, LessonPhase, Pedagogy } from '@/lib/types';
 import { PEDAGOGY_LIMITS, PHASES, parseOutcomes, pedagogyStatus } from '@/lib/pedagogy';
@@ -122,6 +122,8 @@ export function PedagogyFields({
   autoExtractKey?: string | null;
 }) {
   const [open, setOpen] = useState(true);
+  // معرّفات فريدة: قد تُفتح عدّة نماذج معًا (مراجعة الاستخراج في «تدقيق المحتوى»)
+  const uid = useId();
   const set = (patch: Partial<PedagogyDraft>) => onChange({ ...value, ...patch });
 
   // أحدث قيمة ودالّة تغيير: يُدمج المستخرَج في ما كتبه المشرف أثناء التحليل
@@ -230,9 +232,9 @@ export function PedagogyFields({
       {open && (
         <div className="mt-4 space-y-4">
           <div>
-            <label htmlFor="ped-objective" className={labelClass}>الهدف التعليمي</label>
+            <label htmlFor={`${uid}-objective`} className={labelClass}>الهدف التعليمي</label>
             <input
-              id="ped-objective"
+              id={`${uid}-objective`}
               className={inputClass}
               value={value.objective}
               maxLength={PEDAGOGY_LIMITS.objective}
@@ -242,11 +244,11 @@ export function PedagogyFields({
           </div>
 
           <div>
-            <label htmlFor="ped-outcomes" className={labelClass}>
+            <label htmlFor={`${uid}-outcomes`} className={labelClass}>
               نواتج التعلّم <span className="font-normal text-muted-foreground">(ناتج في كل سطر)</span>
             </label>
             <textarea
-              id="ped-outcomes"
+              id={`${uid}-outcomes`}
               className={inputClass}
               rows={3}
               value={value.outcomesText}
@@ -279,9 +281,9 @@ export function PedagogyFields({
               </div>
             </div>
             <div>
-              <label htmlFor="ped-duration" className={labelClass}>المدة المقترحة (دقائق)</label>
+              <label htmlFor={`${uid}-duration`} className={labelClass}>المدة المقترحة (دقائق)</label>
               <input
-                id="ped-duration"
+                id={`${uid}-duration`}
                 className={inputClass}
                 type="number"
                 min={1}
@@ -295,9 +297,9 @@ export function PedagogyFields({
           </div>
 
           <div>
-            <label htmlFor="ped-usage" className={labelClass}>طريقة التوظيف في الصف</label>
+            <label htmlFor={`${uid}-usage`} className={labelClass}>طريقة التوظيف في الصف</label>
             <textarea
-              id="ped-usage"
+              id={`${uid}-usage`}
               className={inputClass}
               rows={3}
               maxLength={PEDAGOGY_LIMITS.usage}
@@ -308,11 +310,11 @@ export function PedagogyFields({
           </div>
 
           <div>
-            <label htmlFor="ped-support" className={labelClass}>
+            <label htmlFor={`${uid}-support`} className={labelClass}>
               الفروق الفردية وأدوات الدعم <span className="font-normal text-muted-foreground">(اختياري)</span>
             </label>
             <textarea
-              id="ped-support"
+              id={`${uid}-support`}
               className={inputClass}
               rows={2}
               maxLength={PEDAGOGY_LIMITS.support}
@@ -366,7 +368,7 @@ export function PedagogyFields({
                     <label key={j} className="flex items-center gap-2 text-sm">
                       <input
                         type="radio"
-                        name={`ped-q-${i}-answer`}
+                        name={`${uid}-q-${i}-answer`}
                         checked={q.answer === j}
                         onChange={() => setQ(i, { answer: j })}
                         className="accent-[color:var(--maroon)]"
