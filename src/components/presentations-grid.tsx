@@ -91,9 +91,11 @@ export function PresentationsGrid({ initialRows }: { initialRows: PresentationRo
       )}
 
       {shown.length > 0 ? (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        // grid-cols-1 = minmax(0,1fr): بدونه يتمدّد العمود الضمني على الجوال بعرض
+        // سطر المادة والدرس (truncate لا يلتفّ) فتتّسع الصفحة أفقيًا ويُصغّرها الهاتف.
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {shown.map((r, i) => (
-            <Reveal key={r.activity.id} delay={i * 70}>
+            <Reveal key={r.activity.id} delay={i * 70} className="min-w-0">
               <p className="mb-2 truncate text-xs font-semibold text-muted-foreground">
                 {[r.subjectTitle, r.context].filter(Boolean).join(' • ')}
               </p>
