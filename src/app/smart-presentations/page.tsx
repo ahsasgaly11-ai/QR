@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { getAllActivities, getSubjects, locateActivity } from '@/lib/content';
 import { PageCourt } from '@/components/page-court';
 import { fetchSiteTextsServer, txt } from '@/lib/site-texts';
+import { T } from '@/components/editable-text';
 import { PresentationsGrid, type PresentationRow } from '@/components/presentations-grid';
 import { SITE_NAME } from '@/lib/site';
 import { PRESENTATION_META, PRESENTATIONS_PATH } from '@/lib/types';
@@ -44,11 +45,11 @@ export default async function SmartPresentationsPage() {
     <>
       <PageCourt
         crumbs={[{ href: '/', label: txt(texts, 'nav.home') }, { label: txt(texts, 'page.presentations.title') }]}
-        kicker={txt(texts, 'page.presentations.kicker')}
-        title={txt(texts, 'page.presentations.title')}
+        kicker={<T k="page.presentations.kicker" v={txt(texts, 'page.presentations.kicker')} />}
+        title={<T k="page.presentations.title" v={txt(texts, 'page.presentations.title')} />}
         icon="screen"
         color={PRESENTATION_META.color}
-        lead={txt(texts, 'page.presentations.lead')}
+        lead={<T k="page.presentations.lead" v={txt(texts, 'page.presentations.lead')} />}
         chips={[
           { n: rows.length, label: rows.length === 1 ? 'عرض' : rows.length <= 10 ? 'عروض' : 'عرضًا' },
           { n: subjectCount, label: subjectCount === 1 ? 'مادة' : 'مواد' },

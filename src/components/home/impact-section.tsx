@@ -38,9 +38,9 @@ export function ImpactSection({
   reach: ReachSnapshot | null;
   voices: ImpactSettings;
   mastery?: MasterySnapshot | null;
-  kicker?: string;
-  title?: string;
-  lead?: string;
+  kicker?: React.ReactNode;
+  title?: React.ReactNode;
+  lead?: React.ReactNode;
 }) {
   const figures: Figure[] = [
     {

@@ -1,18 +1,8 @@
-import Link from 'next/link';
 import Image from 'next/image';
 import { Mail, MessageCircleMore } from 'lucide-react';
 import { CONTACT_EMAIL, CONTACT_PHONE_E164, CONTACT_PHONE_PRETTY, SITE_NAME } from '@/lib/site';
 import { DownloadsSwitch } from './downloads-switch';
-
-const LINKS = [
-  { href: '/', label: 'الرئيسية' },
-  { href: '/browse', label: 'تصفّح المناهج' },
-  { href: '/about', label: 'عن المنصّة' },
-  { href: '/dashboard', label: 'لوحة الإحصاءات' },
-  { href: '/admin', label: 'رفع نشاط جديد' },
-  { href: '/privacy', label: 'سياسة الخصوصية' },
-  { href: '/accessibility', label: 'إمكانية الوصول' },
-];
+import { FooterLinks, LiveText } from './site-footer-live';
 
 // نخلة بسيطة: جذع مائل وسعفات — تُرسم بلون خط الأفق نفسه
 function Palm({ x, h = 1 }: { x: number; h?: number }) {
@@ -121,49 +111,36 @@ export function SiteFooter() {
               <div>
                 <p className="font-display text-lg font-extrabold leading-snug">{SITE_NAME}</p>
                 <p className="text-xs text-white/70">
-                  وزارة التربية والتعليم والتعليم العالي — دولة قطر
+                  <LiveText k="footer.org" />
                 </p>
               </div>
             </div>
             <p className="max-w-sm text-sm leading-7 text-white/75">
-              منصة تعليمية تفاعلية تجمع التجارب العملية والمحاكاة والأسئلة بصيغة
-              تفاعلية، يمكن للطلبة تجربتها مباشرة
+              <LiveText k="footer.about" />
               <DownloadsSwitch on=" أو تحميلها لاستخدامها دون اتصال" off=" من الموقع" />.
             </p>
           </div>
 
           <div>
             <h2 className="mb-4 font-display text-sm font-extrabold text-[#ecd9a6]">
-              روابط سريعة
+              <LiveText k="footer.linksTitle" />
             </h2>
-            <ul className="space-y-2 text-sm text-white/80">
-              {LINKS.map((l) => (
-                <li key={l.href}>
-                  <Link
-                    href={l.href}
-                    className="underline-offset-4 transition-colors hover:text-white hover:underline"
-                  >
-                    {l.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <FooterLinks />
           </div>
 
           <div>
             <h2 className="mb-4 font-display text-sm font-extrabold text-[#ecd9a6]">
-              رؤية قطر الوطنية 2030
+              <LiveText k="footer.visionTitle" />
             </h2>
             <p className="text-sm leading-7 text-white/75">
-              نُسهم في بناء التنمية البشرية من خلال تعليم رقمي إبداعي يواكب أحدث
-              التقنيات ويعزّز حبّ الاستكشاف لدى المتعلّمين.
+              <LiveText k="footer.vision" />
             </p>
           </div>
 
           {/* التواصل: بريد رسمي واضح + واتساب — للمعلّمين والمحكّمين وأولياء الأمور */}
           <div>
             <h2 className="mb-4 font-display text-sm font-extrabold text-[#ecd9a6]">
-              تواصل معنا
+              <LiveText k="footer.contactTitle" />
             </h2>
             <ul className="space-y-3 text-sm text-white/85">
               <li>

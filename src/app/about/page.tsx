@@ -15,6 +15,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { PageCourt } from '@/components/page-court';
 import { fetchSiteTextsServer, txt } from '@/lib/site-texts';
+import { T } from '@/components/editable-text';
 import { getAllActivities, getSubjects } from '@/lib/content';
 import { getMasteryServer, getReachServer, getSiteStatsServer } from '@/lib/stats-server';
 import { pedagogyStatus } from '@/lib/pedagogy';
@@ -84,11 +85,11 @@ export default async function AboutPage() {
     <>
       <PageCourt
         crumbs={[{ href: '/', label: txt(texts, 'nav.home') }, { label: txt(texts, 'nav.about') }]}
-        kicker={txt(texts, 'page.about.kicker')}
-        title={txt(texts, 'page.about.title')}
+        kicker={<T k="page.about.kicker" v={txt(texts, 'page.about.kicker')} />}
+        title={<T k="page.about.title" v={txt(texts, 'page.about.title')} />}
         icon="key"
         color="#2b6b62"
-        lead={txt(texts, 'page.about.lead')}
+        lead={<T k="page.about.lead" v={txt(texts, 'page.about.lead')} />}
         chips={facts.slice(0, 4)}
       />
 

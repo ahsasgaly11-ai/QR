@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { getAllActivities } from '@/lib/content';
 import { PageCourt } from '@/components/page-court';
 import { fetchSiteTextsServer, txt } from '@/lib/site-texts';
+import { T } from '@/components/editable-text';
 import { SmartGamesGrid } from '@/components/smart-games-grid';
 import { SITE_NAME } from '@/lib/site';
 
@@ -30,11 +31,11 @@ export default async function SmartGamesPage() {
     <>
       <PageCourt
         crumbs={[{ href: '/', label: txt(texts, 'nav.home') }, { label: txt(texts, 'page.smartGames.title') }]}
-        kicker={txt(texts, 'page.smartGames.kicker')}
-        title={txt(texts, 'page.smartGames.title')}
+        kicker={<T k="page.smartGames.kicker" v={txt(texts, 'page.smartGames.kicker')} />}
+        title={<T k="page.smartGames.title" v={txt(texts, 'page.smartGames.title')} />}
         icon="oyster"
         color="#2d5f7c"
-        lead={txt(texts, 'page.smartGames.lead')}
+        lead={<T k="page.smartGames.lead" v={txt(texts, 'page.smartGames.lead')} />}
         chips={[{ n: games.length + 1, label: games.length + 1 === 1 ? 'لعبة' : 'ألعاب' }]}
       />
 

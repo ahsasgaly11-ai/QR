@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Gamepad2 } from 'lucide-react';
 import { getSubjects, getAllActivities } from '@/lib/content';
@@ -17,9 +18,9 @@ import { getMasteryServer, getReachServer, getSiteStatsServer } from '@/lib/stat
 import { fetchImpactServer } from '@/lib/impact';
 import { HeritageIcon } from '@/components/heritage-icons';
 import type { HeritageIconKind } from '@/components/heritage-icons';
-import { PRESENTATION_META, PRESENTATIONS_PATH, presentationsCount } from '@/lib/types';
-import { fetchSiteTextsServer, isSectionHidden, txt } from '@/lib/site-texts';
-import { HighlightText } from '@/components/highlight-text';
+import { PRESENTATIONS_PATH, presentationsCount } from '@/lib/types';
+import { doorStyle, fetchSiteTextsServer, homeOrder, isSectionHidden, SPECIAL_DOORS, txt } from '@/lib/site-texts';
+import { T } from '@/components/editable-text';
 
 // المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
 // وإلا لما ظهرت الأنشطة المرفوعة بعد البناء إلا بنشر جديد.
@@ -47,6 +48,8 @@ export default async function HomePage() {
     fetchSiteTextsServer(),
   ]);
   const t = (key: string) => txt(texts, key);
+  // نصّ قابل للتحرير المباشر من الموقع (انظر InlineTextEditor)
+  const e = (key: string) => <T k={key} v={t(key)} />;
   const shown = (id: string) => !isSectionHidden(texts, id);
   // العدد نفسه الذي تعرضه لوحة الإحصاءات (كل الأنشطة المنشورة).
   const total = activities.length;
@@ -61,6 +64,206 @@ export default async function HomePage() {
   const smartGames = activities.filter((a) => a.smartReinforcement).length;
   const presentations = activities.filter((a) => a.presentation).length;
 
+  // أقسام الرئيسية بمعرّفاتها؛ يُعرض منها الظاهر بالترتيب الذي يحدّده المشرف
+  const sections: Record<string, React.ReactNode> = {
+    // فيديو الإطلاق + عرض نسيج المجتمع القطري
+    'home.naseej': (
+      <section id="naseej" className="mx-auto max-w-7xl scroll-mt-24 px-5 py-10 sm:px-6 lg:py-14">
+        <SectionHead
+          kicker={e('home.naseej.kicker')}
+          title={e('home.naseej.title')}
+          lead={e('home.naseej.lead')}
+        />
+        <div className="showcase-grid">
+          <div className="showcase-main">
+            <p className="showcase-label">
+              <span className="showcase-dot" aria-hidden />
+              {e('home.naseej.showLabel')}
+            </p>
+            <NaseejShow />
+          </div>
+          <div className="showcase-side">
+            <p className="showcase-label">
+              <span className="showcase-dot" aria-hidden />
+              {e('home.naseej.videoLabel')}
+            </p>
+            <LaunchVideo />
+          </div>
+        </div>
+      </section>
+    ),
+    // مراجعات الوحدات
+    'home.reviews': (
+        <UnitReviewsSection
+          reviews={reviews}
+          subjects={subjects}
+          kicker={e('home.reviews.kicker')}
+          title={e('home.reviews.title')}
+        />
+    ),
+    // أبواب المواد
+    'home.doors': (
+      <section id="doors" className="door-wall scroll-mt-24">
+        <div className="relative mx-auto max-w-7xl px-5 py-10 sm:px-6 lg:py-12">
+          <SectionHead
+            kicker={e('home.doors.kicker')}
+            title={e('home.doors.title')}
+            lead={e('home.doors.lead')}
+            action={{ href: '/browse', label: e('home.doors.action') }}
+          />
+          <div className="door-row">
+            {/* المواد الحيّة من قاعدة البيانات، لا القائمة المضمّنة —
+                وإلا لما ظهرت أي مادة يضيفها المشرف من لوحة الإدارة. */}
+            {subjects.map((s, i) => {
+              const count = activities.filter((a) => a.subjectId === s.id && !a.smartReinforcement && !a.presentation).length;
+              const available = s.grades.length > 0;
+              return (
+                <HeritageDoor
+                  key={s.id}
+                  href={`/subject/${s.id}`}
+                  title={s.title}
+                  meta={
+                    available
+                      ? [s.grades.map((g) => g.title).join(' • '), count > 0 && `${count} نشاطًا`]
+                          .filter(Boolean)
+                          .join(' • ')
+                      : 'قريبًا'
+                  }
+                  {...doorStyle(texts, s.id, {
+                    color: DOOR_PAINT[i % DOOR_PAINT.length],
+                    emblem: emblemFor(s.id),
+                  })}
+                  locked={!available}
+                />
+              );
+            })}
+            <HeritageDoor
+              href="/smart-games"
+              title={t('home.doors.games')}
+              textKey="home.doors.games"
+              meta={smartGames > 0 ? `${smartGames} لعبة` : 'تعلّم • العب • عزّز'}
+              {...doorStyle(texts, '__games', SPECIAL_DOORS.__games)}
+            />
+            <HeritageDoor
+              href={PRESENTATIONS_PATH}
+              title={t('home.doors.presentations')}
+              textKey="home.doors.presentations"
+              meta={presentations > 0 ? `تجريبي • ${presentationsCount(presentations)}` : 'تجريبي • اعرض • جرّب • تفاعل'}
+              {...doorStyle(texts, '__presentations', SPECIAL_DOORS.__presentations)}
+            />
+          </div>
+        </div>
+      </section>
+    ),
+    // كيف تعمل المنصّة
+    'home.steps': (
+      <section className="mx-auto max-w-7xl px-5 py-12 sm:px-6 lg:py-16">
+        <SectionHead kicker={e('home.steps.kicker')} title={e('home.steps.title')} />
+        <ol className="steps">
+          <li>
+            <span className="steps-n">١</span>
+            <h3>{e('home.steps.1.title')}</h3>
+            <p>{e('home.steps.1.desc')}</p>
+          </li>
+          <li>
+            <span className="steps-n">٢</span>
+            <h3>{e('home.steps.2.title')}</h3>
+            <p>{e('home.steps.2.desc')}</p>
+          </li>
+          <li>
+            <span className="steps-n">٣</span>
+            <DownloadsSwitch
+              on={
+                <>
+                  <h3>{e('home.steps.3.title')}</h3>
+                  <p>{e('home.steps.3.desc')}</p>
+                </>
+              }
+              off={
+                <>
+                  <h3>{e('home.steps.3off.title')}</h3>
+                  <p>{e('home.steps.3off.desc')}</p>
+                </>
+              }
+            />
+          </li>
+        </ol>
+      </section>
+    ),
+    // أنواع الأنشطة
+    'home.types': (
+      <section className="types-band">
+        <div className="mx-auto max-w-7xl px-5 py-12 sm:px-6 lg:py-16">
+          <SectionHead kicker={e('home.types.kicker')} title={e('home.types.title')} />
+          <ul className="types-grid">
+            {TYPE_ICONS.map((icon, i) => (
+              <li key={icon} className="type-tile">
+                <span className="type-icon" style={{ '--d': `${-i * 1.1}s` } as React.CSSProperties}>
+                  <HeritageIcon kind={icon} />
+                </span>
+                <h3>{e(`home.types.${i + 1}.title`)}</h3>
+                <p>{e(`home.types.${i + 1}.desc`)}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    ),
+    // أثر التعلّم
+    'home.impact': (
+        <ImpactSection
+          activities={total}
+          totals={siteStats}
+          reach={reach}
+          voices={impact}
+          mastery={mastery}
+          kicker={e('home.impact.kicker')}
+          title={e('home.impact.title')}
+          lead={e('home.impact.lead')}
+        />
+    ),
+    // أنشطة مميّزة (عند وجود محتوى)
+    'home.featured': featured.length > 0 ? (
+        <section className="mx-auto max-w-7xl px-5 py-12 sm:px-6 lg:py-16">
+          <SectionHead
+            kicker={e('home.featured.kicker')}
+            title={e('home.featured.title')}
+            action={{ href: '/search', label: e('home.featured.action') }}
+          />
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {featured.map((a, i) => (
+              <Reveal key={a.id} delay={i * 80}>
+                <ActivityCard activity={a} index={i} />
+              </Reveal>
+            ))}
+          </div>
+        </section>
+    ) : null,
+    // الخاتمة
+    'home.closing': (
+      <section className="mx-auto max-w-7xl px-5 pb-6 sm:px-6">
+        <div className="closing-band">
+          <div className="sadu-band" aria-hidden />
+          <div className="closing-body">
+            <HeritageIcon kind="pearl" className="closing-pearl" />
+            <div className="min-w-0 flex-1">
+              <h2 className="font-calli text-2xl text-white sm:text-3xl">
+                {e('home.closing.title')}
+              </h2>
+              <p className="mt-2 max-w-xl text-white/80">
+                {e('home.closing.lead')}
+              </p>
+            </div>
+            <Link href="/browse" className="closing-cta">
+              {e('home.closing.cta')}
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+          </div>
+        </div>
+      </section>
+    ),
+  };
+
   return (
     <>
       {/* ===================== نافذة الدوحة ===================== */}
@@ -68,21 +271,21 @@ export default async function HomePage() {
         <div className="mx-auto grid max-w-7xl items-center gap-8 px-5 pb-10 pt-8 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,540px)] lg:gap-12 lg:pb-12 lg:pt-10">
           <div className="hero-rise order-2 lg:order-1">
             <p className="kicker" style={{ '--i': 0 } as React.CSSProperties}>
-              {t('home.hero.kicker')}
+              {e('home.hero.kicker')}
             </p>
             <h1
               className="mt-4 font-calli text-[2.4rem] leading-[1.45] text-foreground sm:text-5xl lg:text-[3.6rem]"
               style={{ '--i': 1 } as React.CSSProperties}
             >
-              <HighlightText text={t('home.hero.line1')} />
+              <T k="home.hero.line1" v={t('home.hero.line1')} highlight />
               <br />
-              <HighlightText text={t('home.hero.line2')} />
+              <T k="home.hero.line2" v={t('home.hero.line2')} highlight />
             </h1>
             <p
               className="mt-5 max-w-[34rem] text-[1.05rem] leading-8 text-[color:var(--ink-2)]"
               style={{ '--i': 2 } as React.CSSProperties}
             >
-              {t('home.hero.lead')}
+              {e('home.hero.lead')}
               <DownloadsSwitch on=" أو حمّلها للعمل دون اتصال" off=" في الصف أو البيت" />.
             </p>
             <div
@@ -90,7 +293,7 @@ export default async function HomePage() {
               style={{ '--i': 3 } as React.CSSProperties}
             >
               <a href="#doors" className="btn-primary px-7 text-[1.05rem]">
-                {t('home.hero.cta')}
+                {e('home.hero.cta')}
                 <ArrowLeft className="h-5 w-5" />
               </a>
               {latestReview ? (
@@ -131,208 +334,11 @@ export default async function HomePage() {
       </section>
 
       <div className="sadu-band" aria-hidden />
-
-      {/* ============ فيديو الإطلاق + عرض نسيج المجتمع القطري ============ */}
-      {shown('home.naseej') && (
-      <section id="naseej" className="mx-auto max-w-7xl scroll-mt-24 px-5 py-10 sm:px-6 lg:py-14">
-        <SectionHead
-          kicker={t('home.naseej.kicker')}
-          title={t('home.naseej.title')}
-          lead={t('home.naseej.lead')}
-        />
-        <div className="showcase-grid">
-          <div className="showcase-main">
-            <p className="showcase-label">
-              <span className="showcase-dot" aria-hidden />
-              {t('home.naseej.showLabel')}
-            </p>
-            <NaseejShow />
-          </div>
-          <div className="showcase-side">
-            <p className="showcase-label">
-              <span className="showcase-dot" aria-hidden />
-              {t('home.naseej.videoLabel')}
-            </p>
-            <LaunchVideo />
-          </div>
-        </div>
-      </section>
-      )}
-
-      {/* ===================== مراجعات الوحدات ===================== */}
-      {shown('home.reviews') && (
-        <UnitReviewsSection
-          reviews={reviews}
-          subjects={subjects}
-          kicker={t('home.reviews.kicker')}
-          title={t('home.reviews.title')}
-        />
-      )}
-
-      {/* ===================== أبواب المواد ===================== */}
-      {shown('home.doors') && (
-      <section id="doors" className="door-wall scroll-mt-24">
-        <div className="relative mx-auto max-w-7xl px-5 py-10 sm:px-6 lg:py-12">
-          <SectionHead
-            kicker={t('home.doors.kicker')}
-            title={t('home.doors.title')}
-            lead={t('home.doors.lead')}
-            action={{ href: '/browse', label: t('home.doors.action') }}
-          />
-          <div className="door-row">
-            {/* المواد الحيّة من قاعدة البيانات، لا القائمة المضمّنة —
-                وإلا لما ظهرت أي مادة يضيفها المشرف من لوحة الإدارة. */}
-            {subjects.map((s, i) => {
-              const count = activities.filter((a) => a.subjectId === s.id && !a.smartReinforcement && !a.presentation).length;
-              const available = s.grades.length > 0;
-              return (
-                <HeritageDoor
-                  key={s.id}
-                  href={`/subject/${s.id}`}
-                  title={s.title}
-                  meta={
-                    available
-                      ? [s.grades.map((g) => g.title).join(' • '), count > 0 && `${count} نشاطًا`]
-                          .filter(Boolean)
-                          .join(' • ')
-                      : 'قريبًا'
-                  }
-                  color={DOOR_PAINT[i % DOOR_PAINT.length]}
-                  emblem={emblemFor(s.id)}
-                  locked={!available}
-                />
-              );
-            })}
-            <HeritageDoor
-              href="/smart-games"
-              title={t('home.doors.games')}
-              meta={smartGames > 0 ? `${smartGames} لعبة` : 'تعلّم • العب • عزّز'}
-              color="#2d5f7c"
-              emblem="games"
-            />
-            <HeritageDoor
-              href={PRESENTATIONS_PATH}
-              title={t('home.doors.presentations')}
-              meta={presentations > 0 ? `تجريبي • ${presentationsCount(presentations)}` : 'تجريبي • اعرض • جرّب • تفاعل'}
-              color={PRESENTATION_META.color}
-              emblem="slides"
-            />
-          </div>
-        </div>
-      </section>
-      )}
-
-      {/* ===================== كيف تعمل المنصّة ===================== */}
-      {shown('home.steps') && (
-      <section className="mx-auto max-w-7xl px-5 py-12 sm:px-6 lg:py-16">
-        <SectionHead kicker={t('home.steps.kicker')} title={t('home.steps.title')} />
-        <ol className="steps">
-          <li>
-            <span className="steps-n">١</span>
-            <h3>{t('home.steps.1.title')}</h3>
-            <p>{t('home.steps.1.desc')}</p>
-          </li>
-          <li>
-            <span className="steps-n">٢</span>
-            <h3>{t('home.steps.2.title')}</h3>
-            <p>{t('home.steps.2.desc')}</p>
-          </li>
-          <li>
-            <span className="steps-n">٣</span>
-            <DownloadsSwitch
-              on={
-                <>
-                  <h3>{t('home.steps.3.title')}</h3>
-                  <p>{t('home.steps.3.desc')}</p>
-                </>
-              }
-              off={
-                <>
-                  <h3>{t('home.steps.3off.title')}</h3>
-                  <p>{t('home.steps.3off.desc')}</p>
-                </>
-              }
-            />
-          </li>
-        </ol>
-      </section>
-      )}
-
-      {/* ===================== أنواع الأنشطة ===================== */}
-      {shown('home.types') && (
-      <section className="types-band">
-        <div className="mx-auto max-w-7xl px-5 py-12 sm:px-6 lg:py-16">
-          <SectionHead kicker={t('home.types.kicker')} title={t('home.types.title')} />
-          <ul className="types-grid">
-            {TYPE_ICONS.map((icon, i) => (
-              <li key={icon} className="type-tile">
-                <span className="type-icon" style={{ '--d': `${-i * 1.1}s` } as React.CSSProperties}>
-                  <HeritageIcon kind={icon} />
-                </span>
-                <h3>{t(`home.types.${i + 1}.title`)}</h3>
-                <p>{t(`home.types.${i + 1}.desc`)}</p>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-      )}
-
-      {/* ===================== أثر التعلّم ===================== */}
-      {shown('home.impact') && (
-        <ImpactSection
-          activities={total}
-          totals={siteStats}
-          reach={reach}
-          voices={impact}
-          mastery={mastery}
-          kicker={t('home.impact.kicker')}
-          title={t('home.impact.title')}
-          lead={t('home.impact.lead')}
-        />
-      )}
-
-      {/* ===================== أنشطة مميّزة (عند وجود محتوى) ========= */}
-      {featured.length > 0 && shown('home.featured') && (
-        <section className="mx-auto max-w-7xl px-5 py-12 sm:px-6 lg:py-16">
-          <SectionHead
-            kicker={t('home.featured.kicker')}
-            title={t('home.featured.title')}
-            action={{ href: '/search', label: t('home.featured.action') }}
-          />
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {featured.map((a, i) => (
-              <Reveal key={a.id} delay={i * 80}>
-                <ActivityCard activity={a} index={i} />
-              </Reveal>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* ===================== الخاتمة ===================== */}
-      {shown('home.closing') && (
-      <section className="mx-auto max-w-7xl px-5 pb-6 sm:px-6">
-        <div className="closing-band">
-          <div className="sadu-band" aria-hidden />
-          <div className="closing-body">
-            <HeritageIcon kind="pearl" className="closing-pearl" />
-            <div className="min-w-0 flex-1">
-              <h2 className="font-calli text-2xl text-white sm:text-3xl">
-                {t('home.closing.title')}
-              </h2>
-              <p className="mt-2 max-w-xl text-white/80">
-                {t('home.closing.lead')}
-              </p>
-            </div>
-            <Link href="/browse" className="closing-cta">
-              {t('home.closing.cta')}
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-          </div>
-        </div>
-      </section>
-      )}
+      {homeOrder(texts)
+        .filter(shown)
+        .map((id) => (
+          <Fragment key={id}>{sections[id]}</Fragment>
+        ))}
     </>
   );
 }

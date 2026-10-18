@@ -4,6 +4,7 @@ import { StatsSyncNotice } from '@/components/stats-sync-notice';
 import { TrackingStatus } from '@/components/tracking-status';
 import { PageCourt } from '@/components/page-court';
 import { fetchSiteTextsServer, txt } from '@/lib/site-texts';
+import { T } from '@/components/editable-text';
 import { SITE_NAME } from '@/lib/site';
 import type { DashboardRow } from '@/lib/dashboard-metrics';
 
@@ -44,11 +45,11 @@ export default async function DashboardPage() {
     <>
       <PageCourt
         crumbs={[{ href: '/', label: txt(texts, 'nav.home') }, { label: txt(texts, 'nav.dashboard') }]}
-        kicker={txt(texts, 'page.dashboard.kicker')}
-        title={txt(texts, 'page.dashboard.title')}
+        kicker={<T k="page.dashboard.kicker" v={txt(texts, 'page.dashboard.kicker')} />}
+        title={<T k="page.dashboard.title" v={txt(texts, 'page.dashboard.title')} />}
         icon="chart"
         color="#b0862a"
-        lead={txt(texts, 'page.dashboard.lead')}
+        lead={<T k="page.dashboard.lead" v={txt(texts, 'page.dashboard.lead')} />}
       />
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
         <StatsSyncNotice />

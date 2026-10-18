@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { UploadCloud, ListChecks, Layers, LogOut, Megaphone, Download, Gamepad2, ClipboardCheck, Presentation, HeartHandshake, SpellCheck2, Heading } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { UploadCloud, ListChecks, Layers, LogOut, Megaphone, Download, Gamepad2, ClipboardCheck, Presentation, HeartHandshake, SpellCheck2, Heading, Users } from 'lucide-react';
 import type { Subject, Activity } from '@/lib/types';
-import { AuthGate } from './auth-gate';
+import { AuthGate, useAdminIdentity } from './auth-gate';
+import { RolesManager } from './roles-manager';
+import type { AdminRole } from '@/lib/roles';
 import { AdminUploader } from '@/components/admin-uploader';
 import { ActivitiesManager } from './activities-manager';
 import { ContentManager } from './content-manager';
@@ -17,24 +19,35 @@ import { PedagogyExtractAudit } from './pedagogy-extract-audit';
 import { signOutAdmin, isFirebaseConfigured } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 
-type Tab = 'upload' | 'activities' | 'smart-games' | 'presentations' | 'reviews' | 'content' | 'audit' | 'texts' | 'ticker' | 'impact' | 'downloads';
+type Tab = 'upload' | 'activities' | 'smart-games' | 'presentations' | 'reviews' | 'content' | 'audit' | 'texts' | 'ticker' | 'impact' | 'downloads' | 'roles';
 
-export function AdminShell({
-  subjects,
-  structure,
-  activities,
-  uploadedIds,
-  labels,
-}: {
+type ShellProps = {
   subjects: Subject[];
   structure: Subject[];
   activities: Activity[];
   uploadedIds: string[];
   labels: Record<string, string>;
-}) {
-  const [tab, setTab] = useState<Tab>('upload');
+};
 
-  const tabs: { id: Tab; label: string; icon: typeof UploadCloud }[] = [
+/** التبويبات المتاحة لكل صلاحية — المالك يرى الكل. */
+const ROLE_TABS: Record<Exclude<AdminRole, 'owner'>, Tab[]> = {
+  texts: ['texts'],
+  uploader: ['upload', 'activities', 'smart-games', 'presentations', 'reviews'],
+};
+
+export function AdminShell(props: ShellProps) {
+  return (
+    <AuthGate>
+      <AdminPanel {...props} />
+    </AuthGate>
+  );
+}
+
+function AdminPanel({ subjects, structure, activities, uploadedIds, labels }: ShellProps) {
+  const { role } = useAdminIdentity();
+  const [tab, setTab] = useState<Tab>(role === 'texts' ? 'texts' : 'upload');
+
+  const tabs = ([
     { id: 'upload', label: 'رفع نشاط', icon: UploadCloud },
     { id: 'activities', label: 'إدارة الأنشطة', icon: ListChecks },
     { id: 'smart-games', label: 'ألعاب التعزيز', icon: Gamepad2 },
@@ -46,10 +59,15 @@ export function AdminShell({
     { id: 'ticker', label: 'الشريط المتحرّك', icon: Megaphone },
     { id: 'impact', label: 'أثر التعلّم', icon: HeartHandshake },
     { id: 'downloads', label: 'التنزيل', icon: Download },
-  ];
+    { id: 'roles', label: 'المشرفون والصلاحيات', icon: Users },
+  ] as { id: Tab; label: string; icon: typeof UploadCloud }[]).filter((t) => role === 'owner' || ROLE_TABS[role].includes(t.id));
+
+  // لا يبقى تبويب غير مسموح مفتوحًا إن تغيّرت الصلاحية
+  useEffect(() => {
+    if (!tabs.some((t) => t.id === tab)) setTab(tabs[0].id);
+  }, [tabs, tab]);
 
   return (
-    <AuthGate>
       <div className="admin-layout">
         {/* شريط جانبي على الحاسوب، وشريط أفقي قابل للتمرير على الجوال */}
         <nav className="admin-rail" aria-label="أقسام لوحة الإدارة">
@@ -190,12 +208,12 @@ export function AdminShell({
           <ContentAudit activities={activities} structure={structure} />
         </div>
       )}
-      {tab === 'texts' && <TextsManager />}
+      {tab === 'texts' && <TextsManager subjects={subjects} />}
+      {tab === 'roles' && <RolesManager />}
       {tab === 'ticker' && <TickerManager />}
       {tab === 'impact' && <ImpactManager />}
       {tab === 'downloads' && <DownloadsManager structure={structure} />}
         </div>
       </div>
-    </AuthGate>
   );
 }

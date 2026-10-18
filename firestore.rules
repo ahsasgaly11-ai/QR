@@ -78,30 +78,54 @@ service cloud.firestore {
       allow write: if false; // لا أحد إطلاقًا — عبر Console حصرًا
     }
 
+    // --- مشرفون بصلاحيات محدودة يضيفهم المالك من لوحة الإدارة ---------------
+    //   role = 'texts'     محرّر نصوص: curriculum/texts و curriculum/texts_history
+    //   role = 'uploader'  رافع أنشطة: إنشاء الأنشطة وتعديلها (بلا حذف) وبنية المناهج
+    function hasRole(r) {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/editors/$(request.auth.uid))
+        && get(/databases/$(database)/documents/editors/$(request.auth.uid)).data.role == r;
+    }
+
+    match /editors/{uid} {
+      // يقرأ المشرف وثيقته (لتعرف الواجهة صلاحيته)، والمالك يقرأ الكل
+      allow read: if isOwner() || (request.auth != null && request.auth.uid == uid);
+      allow write: if isOwner()
+        && request.resource.data.keys().hasOnly(['name', 'role', 'addedAt'])
+        && request.resource.data.role in ['texts', 'uploader']
+        && request.resource.data.name is string
+        && request.resource.data.name.size() <= 60;
+      allow delete: if isOwner();
+    }
+
     // الأنشطة (الألعاب/التجارب/المحاكاة/الأسئلة)
     match /activities/{activityId} {
       allow read: if true;
-      allow write: if isOwner();
+      allow create, update: if isOwner() || hasRole('uploader');
+      allow delete: if isOwner();
 
       // ملف اللعبة نفسه مقسّمًا إلى أجزاء (بديل Firebase Storage المدفوع).
       // القراءة عامة ليشغّل الزوّار ويحمّلوا، والكتابة للمالك وحده.
       match /chunks/{chunkId} {
         allow read: if true;
-        allow write: if isOwner();
+        allow write: if isOwner() || hasRole('uploader');
       }
 
       // نسخة معاينة خفيفة تُعرض في بطاقة الدرس بدل تحميل الملف كاملًا
       match /preview/{docId} {
         allow read: if true;
-        allow write: if isOwner();
+        allow write: if isOwner() || hasRole('uploader');
       }
     }
 
     // بنية المناهج (المواد/المستويات/الوحدات/الدروس) — curriculum/tree
     // ورسائل الشريط المتحرّك أسفل الموقع — curriculum/ticker
+    // ونصوص الموقع وسجلها — curriculum/texts و curriculum/texts_history
     match /curriculum/{docId} {
       allow read: if true;
-      allow write: if isOwner();
+      allow write: if isOwner()
+        || (docId in ['texts', 'texts_history'] && hasRole('texts'))
+        || (docId == 'tree' && hasRole('uploader'));
     }
 
     // --- خرائط الأيام ({"YYYY-MM-DD": عدد}) ---------------------------------

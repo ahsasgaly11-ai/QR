@@ -5,7 +5,8 @@ import { HeritageDoor } from '@/components/home/heritage-door';
 import { DOOR_PAINT, emblemFor } from '@/components/home/door-emblem';
 import { SectionHead } from '@/components/home/section-head';
 import { PageCourt } from '@/components/page-court';
-import { fetchSiteTextsServer, txt } from '@/lib/site-texts';
+import { doorStyle, fetchSiteTextsServer, txt } from '@/lib/site-texts';
+import { T } from '@/components/editable-text';
 import { SITE_NAME } from '@/lib/site';
 import { PRESENTATION_META, PRESENTATIONS_PATH, presentationsCount } from '@/lib/types';
 
@@ -29,7 +30,7 @@ export default async function BrowsePage() {
     const units = s.grades.reduce((n, g) => n + g.units.length, 0);
     const lessons = s.grades.reduce((n, g) => n + g.units.reduce((m, u) => m + u.lessons.length, 0), 0);
     const count = activities.filter((a) => a.subjectId === s.id && !a.smartReinforcement && !a.presentation).length;
-    return { s, units, lessons, count, available: s.grades.length > 0, color: DOOR_PAINT[i % DOOR_PAINT.length] };
+    return { s, units, lessons, count, available: s.grades.length > 0, color: doorStyle(texts, s.id, { color: DOOR_PAINT[i % DOOR_PAINT.length], emblem: emblemFor(s.id) }).color };
   });
   const smartGames = activities.filter((a) => a.smartReinforcement).length;
   const presentations = activities.filter((a) => a.presentation).length;
@@ -39,11 +40,11 @@ export default async function BrowsePage() {
     <>
       <PageCourt
         crumbs={[{ href: '/', label: txt(texts, 'nav.home') }, { label: txt(texts, 'nav.browse') }]}
-        kicker={txt(texts, 'page.browse.kicker')}
-        title={txt(texts, 'page.browse.title')}
+        kicker={<T k="page.browse.kicker" v={txt(texts, 'page.browse.kicker')} />}
+        title={<T k="page.browse.title" v={txt(texts, 'page.browse.title')} />}
         icon="globe"
         color="#2d5f7c"
-        lead={txt(texts, 'page.browse.lead')}
+        lead={<T k="page.browse.lead" v={txt(texts, 'page.browse.lead')} />}
         chips={[
           { n: open.length, label: open.length === 1 ? 'مادة متاحة' : 'مواد متاحة' },
           { n: open.reduce((n, r) => n + r.units, 0), label: 'وحدات' },

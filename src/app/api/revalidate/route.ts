@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
-import { verifyOwnerToken, bearerToken } from '@/lib/server-auth';
+import { verifyStaffToken, bearerToken } from '@/lib/server-auth';
 
 // ---------------------------------------------------------------------------
 // إعادة توليد فورية للصفحات بعد رفع نشاط أو تعديل بنية المناهج.
@@ -9,7 +9,8 @@ import { verifyOwnerToken, bearerToken } from '@/lib/server-auth';
 // وكأنه لم ينجح. وبها يظهر المحتوى لكل الزوّار في اللحظة نفسها، دون أي
 // قراءة إضافية من حصّة Firestore المجانية.
 //
-// الأمان: للمالك وحده — يُتحقّق من رمز الدخول ويُقارن بـ ADMIN_UID.
+// الأمان: للمالك (ADMIN_UID) وللمشرفين المضافين في editors/{uid} فقط —
+// يُتحقّق من رمز الدخول قبل أي شيء.
 // ---------------------------------------------------------------------------
 
 export const runtime = 'nodejs';
@@ -32,7 +33,7 @@ function pathsFor(subjectId?: string, activityId?: string): string[] {
 }
 
 export async function POST(req: Request) {
-  if (!(await verifyOwnerToken(bearerToken(req)))) {
+  if (!(await verifyStaffToken(bearerToken(req)))) {
     return NextResponse.json({ error: 'غير مصرّح.' }, { status: 403 });
   }
 

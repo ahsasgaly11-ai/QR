@@ -19,8 +19,8 @@ export function UnitReviewsSection({
 }: {
   reviews: Activity[];
   subjects: Subject[];
-  kicker?: string;
-  title?: string;
+  kicker?: React.ReactNode;
+  title?: React.ReactNode;
 }) {
   if (reviews.length === 0) return null;
 
