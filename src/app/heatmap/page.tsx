@@ -2,6 +2,7 @@ import { UserHeatmap } from '@/components/user-heatmap';
 import { StatsSyncNotice } from '@/components/stats-sync-notice';
 import { PageCourt } from '@/components/page-court';
 import { fetchSiteTextsServer, txt } from '@/lib/site-texts';
+import { T } from '@/components/editable-text';
 import { SITE_NAME } from '@/lib/site';
 
 // العناوين تُحرَّر من لوحة الإدارة؛ تُعاد قراءتها دوريًا وفور الحفظ.
@@ -15,11 +16,11 @@ export default async function HeatmapPage() {
     <>
       <PageCourt
         crumbs={[{ href: '/', label: txt(texts, 'nav.home') }, { label: txt(texts, 'nav.heatmap') }]}
-        kicker={txt(texts, 'page.heatmap.kicker')}
-        title={txt(texts, 'page.heatmap.title')}
+        kicker={<T k="page.heatmap.kicker" v={txt(texts, 'page.heatmap.kicker')} />}
+        title={<T k="page.heatmap.title" v={txt(texts, 'page.heatmap.title')} />}
         icon="globe"
         color="#2d5f7c"
-        lead={txt(texts, 'page.heatmap.lead')}
+        lead={<T k="page.heatmap.lead" v={txt(texts, 'page.heatmap.lead')} />}
       />
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
         <StatsSyncNotice />

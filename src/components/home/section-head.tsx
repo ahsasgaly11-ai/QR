@@ -8,10 +8,10 @@ export function SectionHead({
   lead,
   action,
 }: {
-  kicker: string;
-  title: string;
-  lead?: string;
-  action?: { href: string; label: string };
+  kicker: React.ReactNode;
+  title: React.ReactNode;
+  lead?: React.ReactNode;
+  action?: { href: string; label: React.ReactNode };
 }) {
   return (
     <div className="section-head">

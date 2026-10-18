@@ -25,8 +25,8 @@ export function PageCourt({
 }: {
   crumbs: Crumb[];
   back?: string;
-  kicker?: string;
-  title: string;
+  kicker?: React.ReactNode;
+  title: React.ReactNode;
   lead?: React.ReactNode;
   icon: HeritageIconKind;
   color?: string;

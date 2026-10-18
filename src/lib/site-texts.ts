@@ -17,6 +17,7 @@
 // ---------------------------------------------------------------------------
 
 import { getDb, isFirebaseConfigured } from '@/lib/firebase';
+import type { DoorEmblem } from '@/components/home/door-emblem';
 
 export interface SiteTextField {
   key: string;
@@ -205,6 +206,32 @@ export const SITE_TEXT_GROUPS: SiteTextGroup[] = [
     ],
   },
   {
+    id: 'footer',
+    label: 'التذييل (أسفل كل صفحة)',
+    href: '/',
+    fields: [
+      { key: 'footer.org', label: 'السطر تحت اسم المنصّة', default: 'وزارة التربية والتعليم والتعليم العالي — دولة قطر' },
+      {
+        key: 'footer.about',
+        label: 'نبذة المنصّة',
+        default:
+          'منصة تعليمية تفاعلية تجمع التجارب العملية والمحاكاة والأسئلة بصيغة تفاعلية، يمكن للطلبة تجربتها مباشرة',
+        long: true,
+        hint: 'تُكمَّل تلقائيًا بعبارة التنزيل حسب إعداده.',
+      },
+      { key: 'footer.linksTitle', label: 'عنوان الروابط السريعة', default: 'روابط سريعة' },
+      { key: 'footer.visionTitle', label: 'عنوان عمود الرؤية', default: 'رؤية قطر الوطنية 2030' },
+      {
+        key: 'footer.vision',
+        label: 'نص عمود الرؤية',
+        default:
+          'نُسهم في بناء التنمية البشرية من خلال تعليم رقمي إبداعي يواكب أحدث التقنيات ويعزّز حبّ الاستكشاف لدى المتعلّمين.',
+        long: true,
+      },
+      { key: 'footer.contactTitle', label: 'عنوان التواصل', default: 'تواصل معنا' },
+    ],
+  },
+  {
     id: 'page.browse',
     label: 'صفحة تصفّح المناهج',
     href: '/browse',
@@ -287,21 +314,105 @@ export const SITE_TEXT_DEFAULTS: Record<string, string> = Object.fromEntries(
   SITE_TEXT_GROUPS.flatMap((g) => g.fields.map((f) => [f.key, f.default]))
 );
 
-const HIDEABLE = new Set(SITE_TEXT_GROUPS.filter((g) => g.hideable).map((g) => g.id));
+/** أقسام الصفحة الرئيسية التي يمكن إخفاؤها وترتيبها، بترتيبها الأصلي. */
+export const HOME_SECTIONS = SITE_TEXT_GROUPS.filter((g) => g.hideable).map((g) => ({
+  id: g.id,
+  label: g.label.replace(/^الرئيسية • /, ''),
+}));
+const HOME_IDS = new Set(HOME_SECTIONS.map((h) => h.id));
 
-export const SITE_TEXT_LIMITS = { short: 120, long: 600 };
+export const SITE_TEXT_LIMITS = { short: 120, long: 600, footerLinks: 12, history: 30 };
+
+// --- مظهر الأبواب ----------------------------------------------------------
+
+export const DOOR_EMBLEMS: Record<DoorEmblem, string> = {
+  science: 'ذرّة (علوم)',
+  math: 'مثلث ودائرة (رياضيات)',
+  arabic: 'حرف عربي (لغة عربية)',
+  islamic: 'قبة (تربية إسلامية)',
+  english: 'حرف لاتيني (إنجليزي)',
+  games: 'ألعاب',
+  slides: 'شاشة عرض',
+  letter: 'الحرف الأول من الاسم',
+};
+
+/** ألوان جاهزة للأبواب (يمكن اختيار أي لون آخر). */
+export const DOOR_SWATCHES = ['#8a1538', '#2b6b62', '#2d5f7c', '#3f6b3a', '#5b3a22', '#b0862a', '#5a3d7a', '#1f2937'];
+
+/** البابان الخاصّان في الصفحة الرئيسية (غير المواد). */
+export const SPECIAL_DOORS: Record<string, { label: string; color: string; emblem: DoorEmblem }> = {
+  __games: { label: 'ألعاب التعزيز الذكية', color: '#2d5f7c', emblem: 'games' },
+  __presentations: { label: 'العروض التقديمية الذكية', color: '#b5552b', emblem: 'slides' },
+};
+
+export interface DoorStyle {
+  color?: string;
+  emblem?: DoorEmblem;
+}
+
+// --- روابط التذييل ---------------------------------------------------------
+
+export interface FooterLink {
+  label: string;
+  href: string;
+}
+
+export const DEFAULT_FOOTER_LINKS: FooterLink[] = [
+  { href: '/', label: 'الرئيسية' },
+  { href: '/browse', label: 'تصفّح المناهج' },
+  { href: '/about', label: 'عن المنصّة' },
+  { href: '/dashboard', label: 'لوحة الإحصاءات' },
+  { href: '/admin', label: 'رفع نشاط جديد' },
+  { href: '/privacy', label: 'سياسة الخصوصية' },
+  { href: '/accessibility', label: 'إمكانية الوصول' },
+];
+
+/** رابط داخلي (/…) أو خارجي آمن (https/mailto/tel) فقط. */
+export function isSafeHref(href: string): boolean {
+  return /^(\/(?!\/)|https:\/\/|mailto:|tel:)/i.test(href.trim());
+}
+
+// --- النموذج ----------------------------------------------------------------
 
 export interface SiteTexts {
   /** ما غيّره المشرف فقط: مفتاح ← نص */
   texts: Record<string, string>;
   /** معرّفات الأقسام المخفية (من المجموعات القابلة للإخفاء) */
   hidden: string[];
+  /** ترتيب أقسام الرئيسية — فارغ = الترتيب الأصلي */
+  order: string[];
+  /** لون الباب ونقشه: معرّف المادة (أو __games / __presentations) ← نمط */
+  doors: Record<string, DoorStyle>;
+  /** روابط التذييل — null = الروابط الأصلية */
+  footerLinks: FooterLink[] | null;
 }
 
-export const DEFAULT_SITE_TEXTS: SiteTexts = { texts: {}, hidden: [] };
+export interface SiteTextsSchedule {
+  /** موعد النشر (ms) */
+  at: number;
+  data: SiteTexts;
+  by: string;
+}
+
+export interface SiteTextsHistoryEntry {
+  at: number;
+  by: string;
+  note: string;
+  data: SiteTexts;
+}
+
+export const DEFAULT_SITE_TEXTS: SiteTexts = {
+  texts: {},
+  hidden: [],
+  order: [],
+  doors: {},
+  footerLinks: null,
+};
 
 const DOC_PATH = ['curriculum', 'texts'] as const;
-const CACHE_KEY = 'qa-site-texts-v1';
+const HISTORY_PATH = ['curriculum', 'texts_history'] as const;
+const CACHE_KEY = 'qa-site-texts-v2';
+const HISTORY_CACHE_KEY = 'qa-site-texts-history-v1';
 const LOCAL_EVENT = 'qa-site-texts-change';
 
 /** النص النافذ لمفتاح: ما كتبه المشرف، وإلا الافتراضي. */
@@ -313,12 +424,33 @@ export function isSectionHidden(s: SiteTexts, groupId: string): boolean {
   return s.hidden.includes(groupId);
 }
 
+/** ترتيب أقسام الرئيسية النافذ: ما حدّده المشرف، ثم أي قسم جديد بترتيبه الأصلي. */
+export function homeOrder(s: SiteTexts): string[] {
+  const seen = new Set(s.order);
+  return [...s.order, ...HOME_SECTIONS.map((h) => h.id).filter((id) => !seen.has(id))];
+}
+
+/** نمط الباب النافذ: ما اختاره المشرف، وإلا الافتراضي المعطى. */
+export function doorStyle(
+  s: SiteTexts,
+  id: string,
+  fallback: { color: string; emblem: DoorEmblem }
+): { color: string; emblem: DoorEmblem } {
+  const d = s.doors[id];
+  return { color: d?.color ?? fallback.color, emblem: d?.emblem ?? fallback.emblem };
+}
+
+export function footerLinks(s: SiteTexts): FooterLink[] {
+  return s.footerLinks ?? DEFAULT_FOOTER_LINKS;
+}
+
 /**
  * ينظّف البيانات الواردة: يتجاهل المفاتيح المجهولة والقيم الفارغة وما يطابق
- * الافتراضي، فلا تتراكم في الوثيقة نصوص لا أثر لها.
+ * الافتراضي، فلا تتراكم في الوثيقة قيم لا أثر لها.
  */
 export function normalizeSiteTexts(raw: unknown): SiteTexts {
-  const r = (raw && typeof raw === 'object' ? raw : {}) as { texts?: unknown; hidden?: unknown };
+  const r = (raw && typeof raw === 'object' ? raw : {}) as Partial<Record<keyof SiteTexts, unknown>>;
+
   const texts: Record<string, string> = {};
   if (r.texts && typeof r.texts === 'object') {
     for (const [k, v] of Object.entries(r.texts as Record<string, unknown>)) {
@@ -327,24 +459,83 @@ export function normalizeSiteTexts(raw: unknown): SiteTexts {
       if (clean && clean !== SITE_TEXT_DEFAULTS[k]) texts[k] = clean;
     }
   }
+
   const hidden = Array.isArray(r.hidden)
-    ? [...new Set(r.hidden.filter((v): v is string => typeof v === 'string' && HIDEABLE.has(v)))]
+    ? [...new Set(r.hidden.filter((v): v is string => typeof v === 'string' && HOME_IDS.has(v)))].sort()
     : [];
-  return { texts, hidden };
+
+  let order = Array.isArray(r.order)
+    ? [...new Set(r.order.filter((v): v is string => typeof v === 'string' && HOME_IDS.has(v)))]
+    : [];
+  const full = homeOrder({ ...DEFAULT_SITE_TEXTS, order });
+  if (full.join('|') === HOME_SECTIONS.map((h) => h.id).join('|')) order = [];
+  else order = full;
+
+  const doors: Record<string, DoorStyle> = {};
+  if (r.doors && typeof r.doors === 'object') {
+    for (const [id, v] of Object.entries(r.doors as Record<string, unknown>).sort(([a], [b]) =>
+      a.localeCompare(b)
+    )) {
+      if (!/^[\w-]{1,80}$/.test(id) || !v || typeof v !== 'object') continue;
+      const x = v as { color?: unknown; emblem?: unknown };
+      const style: DoorStyle = {};
+      if (typeof x.color === 'string' && /^#[0-9a-f]{6}$/i.test(x.color)) style.color = x.color.toLowerCase();
+      if (typeof x.emblem === 'string' && x.emblem in DOOR_EMBLEMS) style.emblem = x.emblem as DoorEmblem;
+      if (style.color || style.emblem) doors[id] = style;
+    }
+  }
+
+  let links: FooterLink[] | null = null;
+  if (Array.isArray(r.footerLinks)) {
+    links = [];
+    for (const l of r.footerLinks.slice(0, SITE_TEXT_LIMITS.footerLinks)) {
+      if (!l || typeof l !== 'object') continue;
+      const x = l as { label?: unknown; href?: unknown };
+      const label = typeof x.label === 'string' ? x.label.trim().slice(0, 60) : '';
+      const href = typeof x.href === 'string' ? x.href.trim().slice(0, 300) : '';
+      if (label && isSafeHref(href)) links.push({ label, href });
+    }
+    if (JSON.stringify(links) === JSON.stringify(DEFAULT_FOOTER_LINKS)) links = null;
+  }
+
+  return { texts, hidden, order, doors, footerLinks: links };
 }
 
-function readCache(): SiteTexts | null {
+interface ParsedDoc {
+  live: SiteTexts;
+  scheduled: SiteTextsSchedule | null;
+}
+
+function parseDoc(raw: unknown): ParsedDoc {
+  const live = normalizeSiteTexts(raw);
+  const sc = (raw as { scheduled?: unknown } | null)?.scheduled as
+    | { at?: unknown; data?: unknown; by?: unknown }
+    | null
+    | undefined;
+  const scheduled =
+    sc && typeof sc.at === 'number' && sc.data
+      ? { at: sc.at, data: normalizeSiteTexts(sc.data), by: typeof sc.by === 'string' ? sc.by : '' }
+      : null;
+  return { live, scheduled };
+}
+
+/** النسخة النافذة الآن: المجدولة إن حلّ موعدها، وإلا المنشورة. */
+function resolveDoc(d: ParsedDoc, now = Date.now()): SiteTexts {
+  return d.scheduled && d.scheduled.at <= now ? d.scheduled.data : d.live;
+}
+
+function readCache(): ParsedDoc | null {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
-    return raw ? normalizeSiteTexts(JSON.parse(raw)) : null;
+    return raw ? parseDoc(JSON.parse(raw)) : null;
   } catch {
     return null;
   }
 }
 
-function writeCache(s: SiteTexts) {
+function writeCache(d: ParsedDoc) {
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify(s));
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ ...d.live, scheduled: d.scheduled }));
   } catch {
     /* ignore */
   }
@@ -358,7 +549,7 @@ export async function fetchSiteTextsServer(): Promise<SiteTexts> {
   try {
     const { doc, getDoc } = await import('firebase/firestore');
     const snap = await getDoc(doc(db, ...DOC_PATH));
-    return normalizeSiteTexts(snap.exists() ? snap.data() : null);
+    return resolveDoc(parseDoc(snap.exists() ? snap.data() : null));
   } catch {
     return DEFAULT_SITE_TEXTS;
   }
@@ -366,21 +557,31 @@ export async function fetchSiteTextsServer(): Promise<SiteTexts> {
 
 /**
  * يشترك في النصوص من المتصفّح (للمكوّنات التي لا يولّدها الخادم مثل القائمة
- * العلوية). يستدعي cb فورًا بالمحفوظ في المتصفّح إن وُجد، ثم بكل نسخة جديدة.
+ * العلوية والتذييل). يستدعي cb فورًا بالمحفوظ في المتصفّح إن وُجد، ثم بكل
+ * نسخة جديدة — وعند حلول موعد نسخة مجدولة.
  */
 export function subscribeSiteTexts(cb: (s: SiteTexts) => void): () => void {
   if (typeof window === 'undefined') return () => {};
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const emit = (d: ParsedDoc) => {
+    clearTimeout(timer);
+    cb(resolveDoc(d));
+    const wait = d.scheduled ? d.scheduled.at - Date.now() : -1;
+    // setTimeout لا يقبل أكثر من ~24 يومًا؛ الأبعد يلتقطه أول تحميل لاحق
+    if (wait > 0 && wait < 2 ** 31 - 1) timer = setTimeout(() => cb(resolveDoc(d)), wait + 500);
+  };
   const cached = readCache();
-  if (cached) cb(cached);
+  if (cached) emit(cached);
 
   if (!isFirebaseConfigured) {
-    const onLocal = () => cb(readCache() ?? DEFAULT_SITE_TEXTS);
+    const onLocal = () => emit(readCache() ?? { live: DEFAULT_SITE_TEXTS, scheduled: null });
     const onStorage = (e: StorageEvent) => {
       if (e.key === CACHE_KEY) onLocal();
     };
     window.addEventListener(LOCAL_EVENT, onLocal);
     window.addEventListener('storage', onStorage);
     return () => {
+      clearTimeout(timer);
       window.removeEventListener(LOCAL_EVENT, onLocal);
       window.removeEventListener('storage', onStorage);
     };
@@ -397,9 +598,9 @@ export function subscribeSiteTexts(cb: (s: SiteTexts) => void): () => void {
       unsub = onSnapshot(
         doc(db, ...DOC_PATH),
         (snap) => {
-          const s = normalizeSiteTexts(snap.exists() ? snap.data() : null);
-          writeCache(s);
-          cb(s);
+          const d = parseDoc(snap.exists() ? snap.data() : null);
+          writeCache(d);
+          emit(d);
         },
         () => {
           /* تعذّرت القراءة: نبقي على آخر قيمة معروفة */
@@ -410,32 +611,151 @@ export function subscribeSiteTexts(cb: (s: SiteTexts) => void): () => void {
 
   return () => {
     cancelled = true;
+    clearTimeout(timer);
     unsub?.();
   };
 }
 
-/** يقرأ النصوص الحالية مرّة واحدة (للوحة التحكّم). */
-export async function getSiteTexts(): Promise<SiteTexts> {
-  if (!isFirebaseConfigured) return readCache() ?? DEFAULT_SITE_TEXTS;
+// --- القراءة والكتابة من لوحة التحكّم ----------------------------------------
+
+async function readDoc(): Promise<ParsedDoc> {
+  if (!isFirebaseConfigured) return readCache() ?? { live: DEFAULT_SITE_TEXTS, scheduled: null };
   const db = getDb();
-  if (!db) return DEFAULT_SITE_TEXTS;
+  if (!db) return { live: DEFAULT_SITE_TEXTS, scheduled: null };
   const { doc, getDoc } = await import('firebase/firestore');
   const snap = await getDoc(doc(db, ...DOC_PATH));
-  return normalizeSiteTexts(snap.exists() ? snap.data() : null);
+  return parseDoc(snap.exists() ? snap.data() : null);
 }
 
-/** ينشر النصوص لكل الزوّار (Firestore)، أو يحفظها محليًا في وضع العرض. */
-export async function saveSiteTexts(s: SiteTexts): Promise<SiteTexts> {
-  const clean = normalizeSiteTexts(s);
+async function writeDoc(d: ParsedDoc, by: string): Promise<void> {
   if (!isFirebaseConfigured) {
-    writeCache(clean);
+    writeCache(d);
     window.dispatchEvent(new Event(LOCAL_EVENT));
-    return clean;
+    return;
   }
   const db = getDb();
   if (!db) throw new Error('Firebase غير مُعدّ.');
   const { doc, setDoc } = await import('firebase/firestore');
-  await setDoc(doc(db, ...DOC_PATH), { ...clean, updatedAt: Date.now() });
-  writeCache(clean);
+  // setDoc بلا merge يستبدل الوثيقة كاملة، فلا تبقى مفاتيح محذوفة
+  await setDoc(doc(db, ...DOC_PATH), {
+    ...d.live,
+    scheduled: d.scheduled,
+    updatedAt: Date.now(),
+    updatedBy: by,
+  });
+  writeCache(d);
+}
+
+/**
+ * يقرأ الحالة الحالية للوحة التحكّم. إن حلّ موعد نسخة مجدولة تُعتمَد هنا
+ * نسخةً منشورة (وتُسجَّل في السجل)، فلا تبقى معلّقة في الوثيقة.
+ */
+export async function getSiteTextsAdmin(by: string): Promise<ParsedDoc> {
+  const d = await readDoc();
+  if (d.scheduled && d.scheduled.at <= Date.now()) {
+    const promoted = { live: d.scheduled.data, scheduled: null };
+    try {
+      await writeDoc(promoted, d.scheduled.by || by);
+      await appendHistory({ at: d.scheduled.at, by: d.scheduled.by || by, note: 'نشر مجدول', data: promoted.live });
+    } catch {
+      /* لا صلاحية كتابة؟ نعرض النافذ على أي حال */
+    }
+    return promoted;
+  }
+  return d;
+}
+
+/** ينشر النصوص لكل الزوّار الآن، مع إبقاء أي نشر مجدول كما هو. */
+export async function saveSiteTexts(s: SiteTexts, by: string, note = 'نشر'): Promise<SiteTexts> {
+  const clean = normalizeSiteTexts(s);
+  const current = await readDoc();
+  await writeDoc({ live: clean, scheduled: current.scheduled }, by);
+  await appendHistory({ at: Date.now(), by, note, data: clean }).catch(() => {});
   return clean;
+}
+
+/** يعدّل نصًّا واحدًا وينشره فورًا (التحرير المباشر من صفحات الموقع). */
+export async function saveSiteTextKey(key: string, value: string, by: string): Promise<SiteTexts> {
+  const current = await readDoc();
+  const live = resolveDoc(current);
+  const field = SITE_TEXT_GROUPS.flatMap((g) => g.fields).find((f) => f.key === key);
+  return saveSiteTexts(
+    { ...live, texts: { ...live.texts, [key]: value } },
+    by,
+    `تعديل مباشر: ${field?.label ?? key}`
+  );
+}
+
+/** يجدول نشر نسخة في موعد لاحق (أو يلغي المجدول بتمرير null). */
+export async function scheduleSiteTexts(
+  s: SiteTexts | null,
+  at: number,
+  by: string
+): Promise<void> {
+  const current = await readDoc();
+  await writeDoc(
+    { live: current.live, scheduled: s ? { at, data: normalizeSiteTexts(s), by } : null },
+    by
+  );
+}
+
+export async function getScheduled(): Promise<SiteTextsSchedule | null> {
+  return (await readDoc()).scheduled;
+}
+
+// --- السجل ------------------------------------------------------------------
+
+function parseHistory(raw: unknown): SiteTextsHistoryEntry[] {
+  const items = (raw as { items?: unknown } | null)?.items;
+  if (!Array.isArray(items)) return [];
+  return items
+    .filter((x): x is Record<string, unknown> => Boolean(x) && typeof x === 'object')
+    .map((x) => ({
+      at: typeof x.at === 'number' ? x.at : 0,
+      by: typeof x.by === 'string' ? x.by : '',
+      note: typeof x.note === 'string' ? x.note : '',
+      data: normalizeSiteTexts(x.data),
+    }))
+    .sort((a, b) => b.at - a.at);
+}
+
+export async function getSiteTextsHistory(): Promise<SiteTextsHistoryEntry[]> {
+  if (!isFirebaseConfigured) {
+    try {
+      return parseHistory(JSON.parse(localStorage.getItem(HISTORY_CACHE_KEY) ?? 'null'));
+    } catch {
+      return [];
+    }
+  }
+  const db = getDb();
+  if (!db) return [];
+  const { doc, getDoc } = await import('firebase/firestore');
+  const snap = await getDoc(doc(db, ...HISTORY_PATH));
+  return parseHistory(snap.exists() ? snap.data() : null);
+}
+
+async function appendHistory(entry: SiteTextsHistoryEntry): Promise<void> {
+  const items = [entry, ...(await getSiteTextsHistory())].slice(0, SITE_TEXT_LIMITS.history);
+  if (!isFirebaseConfigured) {
+    localStorage.setItem(HISTORY_CACHE_KEY, JSON.stringify({ items }));
+    return;
+  }
+  const db = getDb();
+  if (!db) return;
+  const { doc, setDoc } = await import('firebase/firestore');
+  await setDoc(doc(db, ...HISTORY_PATH), { items, updatedAt: Date.now() });
+}
+
+/** وصف مختصر لما تغيّر بين نسختين — لعرضه في السجل. */
+export function diffSiteTexts(a: SiteTexts, b: SiteTexts): string[] {
+  const out: string[] = [];
+  const fields = SITE_TEXT_GROUPS.flatMap((g) => g.fields.map((f) => ({ ...f, group: g.label })));
+  for (const f of fields) {
+    if (txt(a, f.key) !== txt(b, f.key)) out.push(`${f.group} ← ${f.label}`);
+  }
+  if (a.hidden.join('|') !== b.hidden.join('|')) out.push('إظهار/إخفاء الأقسام');
+  if (homeOrder(a).join('|') !== homeOrder(b).join('|')) out.push('ترتيب أقسام الرئيسية');
+  if (JSON.stringify(a.doors) !== JSON.stringify(b.doors)) out.push('ألوان الأبواب ونقوشها');
+  if (JSON.stringify(footerLinks(a)) !== JSON.stringify(footerLinks(b))) out.push('روابط التذييل');
+  return out;
 }

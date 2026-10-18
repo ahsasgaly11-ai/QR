@@ -10,7 +10,8 @@ import { ThemeToggle } from './theme-toggle';
 import { PearlChest } from './pearls/pearl-chest';
 import { SITE_NAME } from '@/lib/site';
 import { normalizePathname } from '@/lib/pathname';
-import { DEFAULT_SITE_TEXTS, subscribeSiteTexts, txt } from '@/lib/site-texts';
+import { txt } from '@/lib/site-texts';
+import { useSiteTexts } from './use-site-texts';
 
 // روابط التنقّل نصّية فقط — بلا أيقونات. عناوينها تُحرَّر من لوحة الإدارة.
 const NAV_KEYS = [
@@ -26,11 +27,10 @@ export function SiteHeader() {
   const pathname = normalizePathname(usePathname());
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
-  const [texts, setTexts] = useState(DEFAULT_SITE_TEXTS);
-  useEffect(() => subscribeSiteTexts(setTexts), []);
+  const texts = useSiteTexts();
   const t = (key: string) => txt(texts, key);
-  const NAV = NAV_KEYS.map((n) => ({ href: n.href, label: t(n.key) }));
-  const UPLOAD = { href: '/admin', label: t('nav.upload') };
+  const NAV = NAV_KEYS.map((n) => ({ href: n.href, key: n.key, label: t(n.key) }));
+  const UPLOAD = { href: '/admin', key: 'nav.upload', label: t('nav.upload') };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -49,8 +49,8 @@ export function SiteHeader() {
       {/* شريط العلم: يمرّ مع الصفحة ولا يثبت، فيبقى الشريط المثبّت نحيفًا */}
       <aside className="qatar-flag-bar" aria-label="عن المنصّة">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 py-1.5 pl-16 pr-4 font-gov text-[12px] leading-5">
-          <span>{t('header.flag')}</span>
-          <span className="hidden sm:inline">{t('header.flag2')}</span>
+          <span data-tk="header.flag">{t('header.flag')}</span>
+          <span className="hidden sm:inline" data-tk="header.flag2">{t('header.flag2')}</span>
         </div>
       </aside>
 
@@ -77,7 +77,7 @@ export function SiteHeader() {
                 {SITE_NAME}
               </p>
               <p className="hidden truncate font-gov text-[12px] text-muted-foreground sm:block">
-                {t('header.tagline')}
+                <span data-tk="header.tagline">{t('header.tagline')}</span>
               </p>
             </div>
           </Link>
@@ -99,7 +99,7 @@ export function SiteHeader() {
                       : 'text-foreground/70 after:scale-x-0 hover:text-[color:var(--maroon)] hover:after:scale-x-50'
                   )}
                 >
-                  {item.label}
+                  <span data-tk={item.key}>{item.label}</span>
                 </Link>
               );
             })}
@@ -113,7 +113,7 @@ export function SiteHeader() {
               className="btn-primary btn-sm hidden px-4 py-2 font-gov text-sm font-semibold sm:inline-flex"
             >
               <UploadCloud className="h-4 w-4" />
-              {UPLOAD.label}
+              <span data-tk={UPLOAD.key}>{UPLOAD.label}</span>
             </Link>
             <button
               className="header-icon-btn lg:hidden"
@@ -146,7 +146,7 @@ export function SiteHeader() {
                           : 'text-foreground/80 hover:text-[color:var(--maroon)]'
                       )}
                     >
-                      {item.label}
+                      <span data-tk={item.key}>{item.label}</span>
                       {active && (
                         <span
                           className="h-2 w-2 rotate-45 bg-[color:var(--maroon)]"

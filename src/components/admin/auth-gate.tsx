@@ -1,17 +1,38 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { LogIn, Loader2, ShieldCheck, Info, ShieldX } from 'lucide-react';
+import { createContext, useContext, useEffect, useState } from 'react';
+import { LogIn, Loader2, ShieldCheck, Info, ShieldX, Copy } from 'lucide-react';
 import { HeritageIcon } from '@/components/heritage-icons';
 import {
   isFirebaseConfigured,
   signInAdmin,
   signOutAdmin,
   watchAdmin,
-  isOwnerUid,
   type AdminUser,
   DEMO_PASSCODE,
 } from '@/lib/auth';
+import {
+  ADMIN_SEEN_KEY,
+  DEMO_IDENTITY,
+  ROLE_LABELS,
+  resolveRole,
+  type AdminIdentity,
+} from '@/lib/roles';
+
+const IdentityContext = createContext<AdminIdentity>(DEMO_IDENTITY);
+
+/** صلاحية المشرف الحالي واسمه — داخل AuthGate فقط. */
+export function useAdminIdentity(): AdminIdentity {
+  return useContext(IdentityContext);
+}
+
+function markAdminBrowser() {
+  try {
+    localStorage.setItem(ADMIN_SEEN_KEY, '1');
+  } catch {
+    /* ignore */
+  }
+}
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AdminUser | null>(null);
@@ -25,23 +46,29 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const [unlocked, setUnlocked] = useState(!DEMO_PASSCODE);
   const [code, setCode] = useState('');
 
-  // هل الحساب المسجَّل هو المالك؟ null = قيد التحقّق
-  const [owner, setOwner] = useState<boolean | null>(null);
+  // صلاحية الحساب المسجَّل: undefined = قيد التحقّق، null = لا صلاحية
+  const [identity, setIdentity] = useState<AdminIdentity | null | undefined>(undefined);
 
   useEffect(() => {
     if (!isFirebaseConfigured) return;
     const unsub = watchAdmin((u) => {
       setUser(u);
       setLoading(false);
+      setIdentity(undefined);
       if (u) {
-        setOwner(null);
-        isOwnerUid(u.uid).then(setOwner);
-      } else {
-        setOwner(null);
+        resolveRole(u.uid).then((id) => {
+          if (id) markAdminBrowser();
+          setIdentity(id);
+        });
       }
     });
     return unsub;
   }, []);
+
+  // وضع العرض: هذا المتصفّح متصفّح المشرف (لإظهار زر التحرير المباشر)
+  useEffect(() => {
+    if (!isFirebaseConfigured && unlocked) markAdminBrowser();
+  }, [unlocked]);
 
   const input =
     'w-full rounded-xl border border-[color:var(--hairline-strong)] bg-[color:var(--surface)] px-4 py-3 text-sm font-bold outline-none transition focus:border-[color:var(--maroon)] focus:ring-2 focus:ring-[color:var(--maroon)]/20';
@@ -94,8 +121,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         </LoginCard>
       );
     }
-    // مسجّل الدخول — لكن نتحقّق أنه المالك قبل إظهار أي أدوات تحكّم
-    if (owner === null) {
+    // مسجّل الدخول — لكن نتحقّق من صلاحيته قبل إظهار أي أدوات تحكّم
+    if (identity === undefined) {
       return (
         <div className="grid place-items-center gap-3 py-24">
           <Loader2 className="h-10 w-10 animate-spin text-[color:var(--maroon)]" />
@@ -106,7 +133,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       );
     }
 
-    if (owner === false) {
+    if (identity === null) {
       return (
         <div className="mx-auto max-w-md">
           <div className="panel gate-card-top p-8 text-center">
@@ -117,10 +144,20 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
               غير مصرّح لك بالدخول
             </h2>
             <p className="mt-2 text-sm leading-7 text-muted-foreground">
-              هذا الحساب{user.email ? ` (${user.email})` : ''} ليس مالك المنصّة،
-              ولا يملك صلاحية الرفع أو التعديل. إدارة المحتوى محصورة بحساب
-              المالك وحده.
+              هذا الحساب{user.email ? ` (${user.email})` : ''} لا يملك صلاحية
+              في لوحة الإدارة بعد. إن كنت ستعمل محرّرًا، أرسل معرّف حسابك أدناه
+              إلى مالك المنصّة ليضيفك من تبويب «المشرفون والصلاحيات».
             </p>
+            <button
+              type="button"
+              onClick={() => navigator.clipboard?.writeText(user.uid)}
+              className="mx-auto mt-4 flex max-w-full items-center gap-2 rounded-xl border border-[color:var(--hairline-strong)] bg-[color:var(--surface)] px-3 py-2 font-mono text-xs"
+              title="نسخ المعرّف"
+              dir="ltr"
+            >
+              <Copy className="h-4 w-4 shrink-0" />
+              <span className="truncate">{user.uid}</span>
+            </button>
             <button
               onClick={() => signOutAdmin()}
               className="btn-ghost btn-sm mt-6 px-6 text-sm"
@@ -133,10 +170,10 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     }
 
     return (
-      <div>
-        <AdminBadge email={user.email} />
+      <IdentityContext.Provider value={identity}>
+        <AdminBadge email={user.email} role={ROLE_LABELS[identity.role]} />
         {children}
-      </div>
+      </IdentityContext.Provider>
     );
   }
 
@@ -179,11 +216,11 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   );
 }
 
-function AdminBadge({ email }: { email: string | null }) {
+function AdminBadge({ email, role }: { email: string | null; role: string }) {
   return (
     <div className="owner-note mb-6">
       <ShieldCheck className="h-5 w-5" />
-      مسجّل الدخول كمشرف{email ? ` — ${email}` : ''}
+      مسجّل الدخول ({role}){email ? ` — ${email}` : ''}
     </div>
   );
 }

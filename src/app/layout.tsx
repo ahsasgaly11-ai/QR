@@ -3,6 +3,7 @@ import './fonts.css';
 import './globals.css';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
+import { InlineTextEditor } from '@/components/inline-text-editor';
 import { FloatingMascot } from '@/components/mascot-cheer';
 import { ContactFab } from '@/components/contact-fab';
 import { RouteTransitions } from '@/components/route-transitions';
@@ -112,6 +113,7 @@ export default function RootLayout({
         <PearlToast />
         <IosDocumentsNotice />
         <Analytics />
+        <InlineTextEditor />
       </body>
     </html>
   );

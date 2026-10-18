@@ -126,6 +126,7 @@ export function HeritageDoor({
   emblem,
   letter,
   locked = false,
+  textKey,
 }: {
   href: string;
   title: string;
@@ -134,6 +135,8 @@ export function HeritageDoor({
   emblem: DoorEmblem;
   letter?: string;
   locked?: boolean;
+  /** مفتاح النص للتحرير المباشر من الموقع (انظر InlineTextEditor) */
+  textKey?: string;
 }) {
   const router = useRouter();
   const frame = useRef<HTMLSpanElement>(null);
@@ -228,7 +231,7 @@ export function HeritageDoor({
         </span>
       </span>
       <span className="hd-caption">
-        <span className="hd-title">{title}</span>
+        <span className="hd-title" data-tk={textKey}>{title}</span>
         <span className="hd-meta">{meta}</span>
       </span>
     </Link>
