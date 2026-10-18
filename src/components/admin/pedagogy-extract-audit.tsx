@@ -1,15 +1,22 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Check, CheckCircle2, Loader2, Sparkles, Wand2, X } from 'lucide-react';
-import type { Activity, Pedagogy, Subject } from '@/lib/types';
+import { Check, CheckCircle2, Loader2, Pencil, Sparkles, Wand2, X } from 'lucide-react';
+import type { Activity, Subject } from '@/lib/types';
 import { isFirebaseConfigured } from '@/lib/firebase';
 import { fetchUploadedActivities, getStructure, locateActivity, updateActivity } from '@/lib/content';
 import { revalidateContent } from '@/lib/revalidate';
-import { normalizePedagogy, pedagogyStatus, PHASE_LABEL } from '@/lib/pedagogy';
+import { normalizePedagogy, pedagogyStatus } from '@/lib/pedagogy';
 import type { PedagogyExtraction } from '@/lib/pedagogy-extract';
 import { activityKind, loadActivityHtml, requestPedagogyExtraction } from '@/lib/pedagogy-extract-client';
 import { cn } from '@/lib/utils';
+import {
+  PedagogyFields,
+  draftToPedagogy,
+  fillDraft,
+  pedagogyToDraft,
+  type PedagogyDraft,
+} from './pedagogy-fields';
 
 /** أقسام المنصّة كما تظهر في لوحة الإدارة */
 type Section = 'all' | 'presentations' | 'lessons' | 'smart' | 'reviews';
@@ -24,26 +31,10 @@ const SECTIONS: { id: Section; label: string; match: (a: Activity) => boolean }[
 type RowState =
   | { kind: 'idle' }
   | { kind: 'working'; step: string }
-  | { kind: 'ready'; result: PedagogyExtraction }
+  /** مفتوح للمراجعة والتعديل اليدوي قبل الحفظ (result غائب في التعديل اليدوي) */
+  | { kind: 'ready'; draft: PedagogyDraft; result?: PedagogyExtraction }
   | { kind: 'saved' }
   | { kind: 'error'; message: string };
-
-/**
- * يدمج المستخرَج مع الموجود: بلا «استبدال» يُكمل الحقول الفارغة فقط ويُبقي
- * ما كتبه المشرف، ومع «استبدال» يحلّ المستخرَج محلّ الموجود.
- */
-function merge(current: Pedagogy | undefined, extracted: Pedagogy, overwrite: boolean): Pedagogy {
-  if (overwrite || !current) return extracted;
-  const out: Pedagogy = { ...current };
-  if (!out.objective) out.objective = extracted.objective;
-  if (!out.outcomes?.length) out.outcomes = extracted.outcomes;
-  if (!out.duration) out.duration = extracted.duration;
-  if (!out.phase) out.phase = extracted.phase;
-  if (!out.usage) out.usage = extracted.usage;
-  if (!out.support) out.support = extracted.support;
-  if (!out.exitTicket?.length) out.exitTicket = extracted.exitTicket;
-  return out;
-}
 
 function SourceTag({ fromDeck }: { fromDeck: boolean }) {
   return (
@@ -58,64 +49,37 @@ function SourceTag({ fromDeck }: { fromDeck: boolean }) {
   );
 }
 
-/** معاينة ما سيُحفظ، مع وسم كل جزء: مأخوذ من الملف أم مقترح من النموذج. */
-function ResultPreview({ result }: { result: PedagogyExtraction }) {
+/** من أين جاء كل جزء مستخرَج: من الملف نفسه أم مقترح من النموذج. */
+function SourceSummary({ result }: { result: PedagogyExtraction }) {
   const p = result.pedagogy;
+  const qs = result.fromDeck.questions;
   return (
-    <div className="mt-3 space-y-3 rounded-xl border border-[color:var(--hairline)] bg-[color:var(--surface)] p-3 text-sm leading-7">
+    <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg bg-[color:var(--surface-2)] px-3 py-2 text-xs">
+      <span className="font-bold text-foreground">مصدر المستخرَج:</span>
       {p.objective && (
-        <div>
-          <p className="text-xs font-bold text-[color:var(--maroon)]">
-            الهدف التعليمي <SourceTag fromDeck={result.fromDeck.objective} />
-          </p>
-          <p>{p.objective}</p>
-        </div>
+        <span>
+          الهدف <SourceTag fromDeck={result.fromDeck.objective} />
+        </span>
       )}
       {p.outcomes?.length ? (
-        <div>
-          <p className="text-xs font-bold text-[color:var(--maroon)]">
-            نواتج التعلّم <SourceTag fromDeck={result.fromDeck.outcomes} />
-          </p>
-          <ul className="list-disc pr-5">
-            {p.outcomes.map((o) => (
-              <li key={o}>{o}</li>
-            ))}
-          </ul>
-        </div>
+        <span>
+          النواتج <SourceTag fromDeck={result.fromDeck.outcomes} />
+        </span>
       ) : null}
-      {p.exitTicket?.length ? (
-        <div>
-          <p className="text-xs font-bold text-[color:var(--maroon)]">أسئلة التقويم الختامي</p>
-          <ol className="list-decimal space-y-1.5 pr-5">
-            {p.exitTicket.map((q, i) => (
-              <li key={q.q}>
-                {q.q} <SourceTag fromDeck={result.fromDeck.questions[i] ?? false} />
-                <span className="mt-1 flex flex-wrap gap-1.5">
-                  {q.options.map((o, j) => (
-                    <span
-                      key={o}
-                      className={cn(
-                        'rounded-lg px-2 py-0.5 text-xs',
-                        j === q.answer
-                          ? 'bg-[color:var(--teal)]/15 font-bold text-[color:var(--teal)]'
-                          : 'bg-[color:var(--surface-2)] text-muted-foreground'
-                      )}
-                    >
-                      {j === q.answer && <Check className="ml-1 inline h-3 w-3" aria-label="الإجابة الصحيحة" />}
-                      {o}
-                    </span>
-                  ))}
-                </span>
-              </li>
-            ))}
-          </ol>
-        </div>
-      ) : null}
-      <p className="text-xs text-muted-foreground">
-        {[p.phase && PHASE_LABEL[p.phase], p.duration && `${p.duration} دقيقة`].filter(Boolean).join(' • ')}
-        {(p.usage || p.support) && ' • مع طريقة التوظيف ومراعاة الفروق الفردية (مقترحة)'}
-      </p>
-    </div>
+      {qs.map((fromDeck, i) => (
+        <span key={i}>
+          السؤال {i + 1} <SourceTag fromDeck={fromDeck} />
+        </span>
+      ))}
+      {(p.usage || p.support || p.phase) && (
+        <span>
+          التوظيف والفروق الفردية <SourceTag fromDeck={false} />
+        </span>
+      )}
+      <span className="basis-full text-muted-foreground">
+        راجع كل حقل وصحّح ما يلزم يدويًّا أدناه — يُحفظ ما تراه بعد التعديل.
+      </span>
+    </p>
   );
 }
 
@@ -186,22 +150,27 @@ export function PedagogyExtractAudit({
         grade: a.smartReinforcement ? undefined : grade?.title,
         lesson: a.smartReinforcement ? undefined : a.unitReview ? unit?.title : lesson?.title,
       });
-      setRow(a.id, { kind: 'ready', result });
+      // يُكمل الحقول الفارغة فقط (أو يستبدلها عند «استبدال الموجود»)، ثم يُفتح للتعديل
+      setRow(a.id, { kind: 'ready', result, draft: fillDraft(pedagogyToDraft(a.pedagogy), result.pedagogy, overwrite) });
     } catch (e) {
       setRow(a.id, { kind: 'error', message: e instanceof Error ? e.message : 'خطأ غير متوقّع.' });
     }
   }
 
-  async function save(a: Activity, result: PedagogyExtraction): Promise<boolean> {
-    const pedagogy = normalizePedagogy(merge(a.pedagogy, result.pedagogy, overwrite));
-    if (!pedagogy) return false;
+  /** تعديل يدوي بلا استخراج: البيانات الحالية في النموذج نفسه */
+  const editManually = (a: Activity) => setRow(a.id, { kind: 'ready', draft: pedagogyToDraft(a.pedagogy) });
+
+  async function save(a: Activity, draft: PedagogyDraft): Promise<boolean> {
+    // مسح كل الحقول يدويًّا يحذف البيانات التربوية بدل حفظ كائن فارغ
+    const pedagogy = normalizePedagogy(draftToPedagogy(draft));
     try {
       if (isFirebaseConfigured && !a.local) {
-        await updateActivity(a.id, { pedagogy });
+        await updateActivity(a.id, pedagogy ? { pedagogy } : {}, pedagogy ? [] : ['pedagogy']);
       } else {
         const { getLocalRecord, saveLocalActivity } = await import('@/lib/local-store');
         const rec = await getLocalRecord(a.id);
-        if (!rec || !(await saveLocalActivity({ ...rec.activity, pedagogy }, rec.html))) throw new Error('تعذّر الحفظ في المتصفّح.');
+        if (!rec || !(await saveLocalActivity({ ...rec.activity, pedagogy }, rec.html)))
+          throw new Error('تعذّر الحفظ في المتصفّح.');
       }
       setActivities((list) => list.map((x) => (x.id === a.id ? { ...x, pedagogy } : x)));
       setRow(a.id, { kind: 'saved' });
@@ -226,7 +195,7 @@ export function PedagogyExtractAudit({
     let subjectId: string | undefined;
     for (const a of ready) {
       const s = rows[a.id];
-      if (s?.kind === 'ready' && (await save(a, s.result))) {
+      if (s?.kind === 'ready' && (await save(a, s.draft))) {
         ok++;
         subjectId = a.subjectId;
       }
@@ -236,8 +205,8 @@ export function PedagogyExtractAudit({
     setBulk(false);
   }
 
-  async function saveOne(a: Activity, result: PedagogyExtraction) {
-    if ((await save(a, result)) && isFirebaseConfigured) await revalidateContent({ subjectId: a.subjectId });
+  async function saveOne(a: Activity, draft: PedagogyDraft) {
+    if ((await save(a, draft)) && isFirebaseConfigured) await revalidateContent({ subjectId: a.subjectId });
   }
 
   return (
@@ -322,29 +291,51 @@ export function PedagogyExtractAudit({
                     </span>
                   ) : s.kind === 'ready' ? (
                     <div className="flex gap-2">
-                      <button type="button" disabled={bulk} onClick={() => void saveOne(a, s.result)} className="btn-primary btn-sm px-3 py-1.5 text-xs">
-                        <Check className="h-4 w-4" /> اعتماد
+                      <button type="button" disabled={bulk} onClick={() => void saveOne(a, s.draft)} className="btn-primary btn-sm px-3 py-1.5 text-xs">
+                        <Check className="h-4 w-4" /> {s.result ? 'اعتماد' : 'حفظ'}
                       </button>
                       <button type="button" disabled={bulk} onClick={() => setRow(a.id, { kind: 'idle' })} className="btn-ghost btn-sm px-3 py-1.5 text-xs">
-                        <X className="h-4 w-4" /> تجاهل
+                        <X className="h-4 w-4" /> {s.result ? 'تجاهل' : 'إلغاء'}
                       </button>
                     </div>
-                  ) : s.kind === 'saved' ? (
-                    <span className="flex items-center gap-1.5 text-xs font-bold text-[color:var(--teal)]">
-                      <CheckCircle2 className="h-4 w-4" /> حُفظت
-                    </span>
                   ) : (
-                    <button type="button" disabled={bulk} onClick={() => void extract(a)} className="btn-ghost btn-sm px-3 py-1.5 text-xs">
-                      <Wand2 className="h-4 w-4" /> استخراج
-                    </button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {s.kind === 'saved' && (
+                        <span className="flex items-center gap-1.5 text-xs font-bold text-[color:var(--teal)]">
+                          <CheckCircle2 className="h-4 w-4" /> حُفظت
+                        </span>
+                      )}
+                      <button type="button" disabled={bulk} onClick={() => void extract(a)} className="btn-ghost btn-sm px-3 py-1.5 text-xs">
+                        <Wand2 className="h-4 w-4" /> {s.kind === 'error' ? 'إعادة الاستخراج' : 'استخراج'}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={bulk}
+                        onClick={() => editManually(a)}
+                        className="btn-ghost btn-sm px-3 py-1.5 text-xs"
+                        title="افتح البيانات التربوية لهذا الملف وعدّلها بنفسك"
+                      >
+                        <Pencil className="h-4 w-4" /> تعديل يدوي
+                      </button>
+                    </div>
                   )}
                 </div>
                 {s.kind === 'error' && (
                   <p role="alert" className="mt-2 rounded-lg bg-[color:var(--coral)]/15 px-3 py-1.5 text-xs font-bold text-[color:var(--coral)]">
-                    {s.message}
+                    {s.message} — يمكنك إعادة المحاولة أو إدخال البيانات بـ«تعديل يدوي».
                   </p>
                 )}
-                {s.kind === 'ready' && <ResultPreview result={s.result} />}
+                {s.kind === 'ready' && (
+                  <>
+                    {s.result && <SourceSummary result={s.result} />}
+                    <PedagogyFields
+                      value={s.draft}
+                      onChange={(draft) => setRow(a.id, { ...s, draft })}
+                      inputClass="w-full rounded-lg border border-[color:var(--hairline-strong)] bg-[color:var(--surface)] px-3 py-2 text-sm text-foreground outline-none focus:border-[color:var(--maroon)]"
+                      labelClass="mb-1 block text-xs font-semibold text-[color:var(--maroon)]"
+                    />
+                  </>
+                )}
               </li>
             );
           })}
