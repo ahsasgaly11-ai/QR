@@ -1,6 +1,7 @@
 import { getAllActivities, getSubjects, locateActivity } from '@/lib/content';
 import { SearchExplorer, type SearchRow } from '@/components/search-explorer';
 import { PageCourt } from '@/components/page-court';
+import { fetchSiteTextsServer, txt } from '@/lib/site-texts';
 import { SITE_NAME } from '@/lib/site';
 
 // المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
@@ -13,9 +14,10 @@ export const metadata = {
 };
 
 export default async function SearchPage() {
-  const [activities, subjects] = await Promise.all([
+  const [activities, subjects, texts] = await Promise.all([
     getAllActivities(),
     getSubjects(),
+    fetchSiteTextsServer(),
   ]);
 
   const rows: SearchRow[] = activities.map((a) => {
@@ -36,12 +38,12 @@ export default async function SearchPage() {
   return (
     <>
       <PageCourt
-        crumbs={[{ href: '/', label: 'الرئيسية' }, { label: 'بحث' }]}
-        kicker="الفهرس"
-        title="ابحث في المنصّة"
+        crumbs={[{ href: '/', label: txt(texts, 'nav.home') }, { label: txt(texts, 'nav.search') }]}
+        kicker={txt(texts, 'page.search.kicker')}
+        title={txt(texts, 'page.search.title')}
         icon="question"
         color="#b0862a"
-        lead="اعثر على أي تجربة أو محاكاة أو لعبة أو سؤال بكلمة من عنوانه أو درسه، وصفِّ النتائج حسب النوع أو المادة."
+        lead={txt(texts, 'page.search.lead')}
       />
       <section className="mx-auto max-w-6xl px-5 py-10 sm:px-6">
         <SearchExplorer rows={rows} subjects={subjectOpts} />

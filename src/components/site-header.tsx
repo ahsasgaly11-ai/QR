@@ -10,23 +10,27 @@ import { ThemeToggle } from './theme-toggle';
 import { PearlChest } from './pearls/pearl-chest';
 import { SITE_NAME } from '@/lib/site';
 import { normalizePathname } from '@/lib/pathname';
+import { DEFAULT_SITE_TEXTS, subscribeSiteTexts, txt } from '@/lib/site-texts';
 
-// روابط التنقّل نصّية فقط — بلا أيقونات.
-const NAV = [
-  { href: '/', label: 'الرئيسية' },
-  { href: '/browse', label: 'المناهج' },
-  { href: '/search', label: 'بحث' },
-  { href: '/dashboard', label: 'الإحصاءات' },
-  { href: '/heatmap', label: 'الخريطة الحرارية' },
-  { href: '/about', label: 'عن المنصّة' },
+// روابط التنقّل نصّية فقط — بلا أيقونات. عناوينها تُحرَّر من لوحة الإدارة.
+const NAV_KEYS = [
+  { href: '/', key: 'nav.home' },
+  { href: '/browse', key: 'nav.browse' },
+  { href: '/search', key: 'nav.search' },
+  { href: '/dashboard', key: 'nav.dashboard' },
+  { href: '/heatmap', key: 'nav.heatmap' },
+  { href: '/about', key: 'nav.about' },
 ];
-
-const UPLOAD = { href: '/admin', label: 'رفع نشاط' };
 
 export function SiteHeader() {
   const pathname = normalizePathname(usePathname());
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [texts, setTexts] = useState(DEFAULT_SITE_TEXTS);
+  useEffect(() => subscribeSiteTexts(setTexts), []);
+  const t = (key: string) => txt(texts, key);
+  const NAV = NAV_KEYS.map((n) => ({ href: n.href, label: t(n.key) }));
+  const UPLOAD = { href: '/admin', label: t('nav.upload') };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -45,8 +49,8 @@ export function SiteHeader() {
       {/* شريط العلم: يمرّ مع الصفحة ولا يثبت، فيبقى الشريط المثبّت نحيفًا */}
       <aside className="qatar-flag-bar" aria-label="عن المنصّة">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 py-1.5 pl-16 pr-4 font-gov text-[12px] leading-5">
-          <span>منصة تعليمية لطلبة مدارس دولة قطر</span>
-          <span className="hidden sm:inline">وزارة التربية والتعليم والتعليم العالي</span>
+          <span>{t('header.flag')}</span>
+          <span className="hidden sm:inline">{t('header.flag2')}</span>
         </div>
       </aside>
 
@@ -73,7 +77,7 @@ export function SiteHeader() {
                 {SITE_NAME}
               </p>
               <p className="hidden truncate font-gov text-[12px] text-muted-foreground sm:block">
-                تجارب • محاكاة • أسئلة • ألعاب
+                {t('header.tagline')}
               </p>
             </div>
           </Link>

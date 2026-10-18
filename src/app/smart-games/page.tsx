@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { getAllActivities } from '@/lib/content';
 import { PageCourt } from '@/components/page-court';
+import { fetchSiteTextsServer, txt } from '@/lib/site-texts';
 import { SmartGamesGrid } from '@/components/smart-games-grid';
 import { SITE_NAME } from '@/lib/site';
 
@@ -20,7 +21,7 @@ export const metadata: Metadata = {
 };
 
 export default async function SmartGamesPage() {
-  const activities = await getAllActivities();
+  const [activities, texts] = await Promise.all([getAllActivities(), fetchSiteTextsServer()]);
   const games = activities
     .filter((a) => a.smartReinforcement)
     .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
@@ -28,12 +29,12 @@ export default async function SmartGamesPage() {
   return (
     <>
       <PageCourt
-        crumbs={[{ href: '/', label: 'الرئيسية' }, { label: 'ألعاب التعزيز الذكية' }]}
-        kicker="تعلّم • العب • عزّز"
-        title="ألعاب التعزيز الذكية"
+        crumbs={[{ href: '/', label: txt(texts, 'nav.home') }, { label: txt(texts, 'page.smartGames.title') }]}
+        kicker={txt(texts, 'page.smartGames.kicker')}
+        title={txt(texts, 'page.smartGames.title')}
         icon="oyster"
         color="#2d5f7c"
-        lead="مجموعة مستقلة من الألعاب التفاعلية تساعد على تثبيت المفاهيم والمهارات بطريقة ممتعة، مع وصف مختصر لكل لعبة."
+        lead={txt(texts, 'page.smartGames.lead')}
         chips={[{ n: games.length + 1, label: games.length + 1 === 1 ? 'لعبة' : 'ألعاب' }]}
       />
 

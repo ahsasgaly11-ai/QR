@@ -14,15 +14,19 @@ import { SectionHead } from '@/components/home/section-head';
 export function UnitReviewsSection({
   reviews,
   subjects,
+  kicker = 'جديد • استعدّ للاختبار',
+  title = 'مراجعات الوحدات',
 }: {
   reviews: Activity[];
   subjects: Subject[];
+  kicker?: string;
+  title?: string;
 }) {
   if (reviews.length === 0) return null;
 
   return (
     <section id="reviews" className="mx-auto max-w-7xl scroll-mt-24 px-5 pt-12 sm:px-6">
-      <SectionHead kicker="جديد • استعدّ للاختبار" title="مراجعات الوحدات" />
+      <SectionHead kicker={kicker} title={title} />
 
       <div className="grid gap-5">
         {reviews.map((r, i) => {

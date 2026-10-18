@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { PageCourt } from '@/components/page-court';
+import { fetchSiteTextsServer, txt } from '@/lib/site-texts';
 import { getAllActivities, getSubjects } from '@/lib/content';
 import { getMasteryServer, getReachServer, getSiteStatsServer } from '@/lib/stats-server';
 import { pedagogyStatus } from '@/lib/pedagogy';
@@ -51,12 +52,13 @@ const SECTIONS: SectionDef[] = [
 ];
 
 export default async function AboutPage() {
-  const [subjects, activities, totals, reach, mastery] = await Promise.all([
+  const [subjects, activities, totals, reach, mastery, texts] = await Promise.all([
     getSubjects(),
     getAllActivities(),
     getSiteStatsServer(),
     getReachServer(),
     getMasteryServer(),
+    fetchSiteTextsServer(),
   ]);
 
   const curricular = activities.filter((a) => !a.smartReinforcement && !a.unitReview && !a.presentation);
@@ -81,12 +83,12 @@ export default async function AboutPage() {
   return (
     <>
       <PageCourt
-        crumbs={[{ href: '/', label: 'الرئيسية' }, { label: 'عن المنصّة' }]}
-        kicker="للمعلّمين والمشرفين والمحكّمين"
-        title="عن المنصّة"
+        crumbs={[{ href: '/', label: txt(texts, 'nav.home') }, { label: txt(texts, 'nav.about') }]}
+        kicker={txt(texts, 'page.about.kicker')}
+        title={txt(texts, 'page.about.title')}
         icon="key"
         color="#2b6b62"
-        lead="ما الذي تحلّه المنصّة، ولماذا هي مختلفة، وكيف تُستخدم في الصف، وكيف نعرف أنها تعلّم فعلًا. كل رقم في هذه الصفحة يُقرأ من الاستخدام الحقيقي وقت فتحها."
+        lead={txt(texts, 'page.about.lead')}
         chips={facts.slice(0, 4)}
       />
 

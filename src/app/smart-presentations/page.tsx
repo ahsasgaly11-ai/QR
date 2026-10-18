@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { getAllActivities, getSubjects, locateActivity } from '@/lib/content';
 import { PageCourt } from '@/components/page-court';
+import { fetchSiteTextsServer, txt } from '@/lib/site-texts';
 import { PresentationsGrid, type PresentationRow } from '@/components/presentations-grid';
 import { SITE_NAME } from '@/lib/site';
 import { PRESENTATION_META, PRESENTATIONS_PATH } from '@/lib/types';
@@ -19,7 +20,11 @@ export const metadata: Metadata = {
 };
 
 export default async function SmartPresentationsPage() {
-  const [subjects, activities] = await Promise.all([getSubjects(), getAllActivities()]);
+  const [subjects, activities, texts] = await Promise.all([
+    getSubjects(),
+    getAllActivities(),
+    fetchSiteTextsServer(),
+  ]);
   const rows: PresentationRow[] = activities
     .filter((a) => a.presentation)
     .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
@@ -38,12 +43,12 @@ export default async function SmartPresentationsPage() {
   return (
     <>
       <PageCourt
-        crumbs={[{ href: '/', label: 'الرئيسية' }, { label: TITLE }]}
-        kicker="قسم تجريبي • اعرض • جرّب • تفاعل"
-        title={TITLE}
+        crumbs={[{ href: '/', label: txt(texts, 'nav.home') }, { label: txt(texts, 'page.presentations.title') }]}
+        kicker={txt(texts, 'page.presentations.kicker')}
+        title={txt(texts, 'page.presentations.title')}
         icon="screen"
         color={PRESENTATION_META.color}
-        lead="شرح الدرس كما في البوربوينت، لكن الشرائح هنا حيّة: تجارب ومحاكاة ومؤثّرات يتفاعل معها الطالب. افتح العرض بملء الشاشة على السبورة وتنقّل بالأسهم."
+        lead={txt(texts, 'page.presentations.lead')}
         chips={[
           { n: rows.length, label: rows.length === 1 ? 'عرض' : rows.length <= 10 ? 'عروض' : 'عرضًا' },
           { n: subjectCount, label: subjectCount === 1 ? 'مادة' : 'مواد' },

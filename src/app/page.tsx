@@ -18,6 +18,8 @@ import { fetchImpactServer } from '@/lib/impact';
 import { HeritageIcon } from '@/components/heritage-icons';
 import type { HeritageIconKind } from '@/components/heritage-icons';
 import { PRESENTATION_META, PRESENTATIONS_PATH, presentationsCount } from '@/lib/types';
+import { fetchSiteTextsServer, isSectionHidden, txt } from '@/lib/site-texts';
+import { HighlightText } from '@/components/highlight-text';
 
 // المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
 // وإلا لما ظهرت الأنشطة المرفوعة بعد البناء إلا بنشر جديد.
@@ -29,24 +31,23 @@ export const metadata = { alternates: { canonical: '/' } };
 
 // ألوان الأبواب القطرية القديمة: خشب مطليّ بالأزرق والأخضر والعنّابي أو ساج طبيعي
 
-const TYPES: { icon: HeritageIconKind; label: string; desc: string }[] = [
-  { icon: 'flask', label: 'تجارب عملية', desc: 'يجرّب الطالب بيده ويرى النتيجة كما في المختبر.' },
-  { icon: 'globe', label: 'محاكاة تفاعلية', desc: 'ظواهر يصعب رؤيتها في الصف، يغيّر الطالب متغيّراتها ويراقب.' },
-  { icon: 'question', label: 'أسئلة وتقويم', desc: 'أسئلة قصيرة تُظهر للطالب ما فهمه وما يحتاج مراجعته.' },
-  { icon: 'oyster', label: 'ألعاب تعليمية', desc: 'تحدّيات ومراحل تعزّز ما تعلّمه الطالب في الدرس.' },
-];
+// نصوص البطاقات تُحرَّر من لوحة الإدارة (home.types.N.title/desc)
+const TYPE_ICONS: HeritageIconKind[] = ['flask', 'globe', 'question', 'oyster'];
 
 export default async function HomePage() {
   // المحتوى والعدّادات المشتركة وآراء «أثر التعلّم» تُقرأ معًا في الخادم،
   // فتصل الأرقام الفعلية مضمَّنة في HTML بدل أصفار تنتظر المتصفّح.
-  const [subjects, activities, siteStats, reach, impact, mastery] = await Promise.all([
+  const [subjects, activities, siteStats, reach, impact, mastery, texts] = await Promise.all([
     getSubjects(),
     getAllActivities(),
     getSiteStatsServer(),
     getReachServer(),
     fetchImpactServer(),
     getMasteryServer(),
+    fetchSiteTextsServer(),
   ]);
+  const t = (key: string) => txt(texts, key);
+  const shown = (id: string) => !isSectionHidden(texts, id);
   // العدد نفسه الذي تعرضه لوحة الإحصاءات (كل الأنشطة المنشورة).
   const total = activities.length;
   const featured = activities
@@ -67,22 +68,21 @@ export default async function HomePage() {
         <div className="mx-auto grid max-w-7xl items-center gap-8 px-5 pb-10 pt-8 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,540px)] lg:gap-12 lg:pb-12 lg:pt-10">
           <div className="hero-rise order-2 lg:order-1">
             <p className="kicker" style={{ '--i': 0 } as React.CSSProperties}>
-              منصة تعليمية تفاعلية • دولة قطر
+              {t('home.hero.kicker')}
             </p>
             <h1
               className="mt-4 font-calli text-[2.4rem] leading-[1.45] text-foreground sm:text-5xl lg:text-[3.6rem]"
               style={{ '--i': 1 } as React.CSSProperties}
             >
-              نتعلّم <span className="text-[color:var(--maroon)]">بأيدينا</span>
+              <HighlightText text={t('home.hero.line1')} />
               <br />
-              ونكتشف <span className="text-[color:var(--maroon)]">بعقولنا</span>
+              <HighlightText text={t('home.hero.line2')} />
             </h1>
             <p
               className="mt-5 max-w-[34rem] text-[1.05rem] leading-8 text-[color:var(--ink-2)]"
               style={{ '--i': 2 } as React.CSSProperties}
             >
-              تجارب عملية ومحاكاة وأسئلة وألعاب تعليمية لمناهج دولة قطر، مرتّبة
-              حسب المادة والوحدة والدرس — جرّبها مباشرة من المتصفّح
+              {t('home.hero.lead')}
               <DownloadsSwitch on=" أو حمّلها للعمل دون اتصال" off=" في الصف أو البيت" />.
             </p>
             <div
@@ -90,7 +90,7 @@ export default async function HomePage() {
               style={{ '--i': 3 } as React.CSSProperties}
             >
               <a href="#doors" className="btn-primary px-7 text-[1.05rem]">
-                ادخل إلى المواد
+                {t('home.hero.cta')}
                 <ArrowLeft className="h-5 w-5" />
               </a>
               {latestReview ? (
@@ -133,41 +133,51 @@ export default async function HomePage() {
       <div className="sadu-band" aria-hidden />
 
       {/* ============ فيديو الإطلاق + عرض نسيج المجتمع القطري ============ */}
+      {shown('home.naseej') && (
       <section id="naseej" className="mx-auto max-w-7xl scroll-mt-24 px-5 py-10 sm:px-6 lg:py-14">
         <SectionHead
-          kicker="شاهد قبل أن تبدأ"
-          title="نسيج المجتمع القطري وفيديو الإطلاق"
-          lead="عرض تفاعلي يعمل تلقائيًا من درس «أنا ومجتمعي»، وإلى جانبه فيديو قصير يعرّفك بالمنصّة. الفيديو يبدأ بلا صوت حين تصل إليه، وتشغّل صوته متى شئت."
+          kicker={t('home.naseej.kicker')}
+          title={t('home.naseej.title')}
+          lead={t('home.naseej.lead')}
         />
         <div className="showcase-grid">
           <div className="showcase-main">
             <p className="showcase-label">
               <span className="showcase-dot" aria-hidden />
-              عرض تلقائي متواصل • أنا ومجتمعي
+              {t('home.naseej.showLabel')}
             </p>
             <NaseejShow />
           </div>
           <div className="showcase-side">
             <p className="showcase-label">
               <span className="showcase-dot" aria-hidden />
-              فيديو الإطلاق • يعمل عند الوصول إليه
+              {t('home.naseej.videoLabel')}
             </p>
             <LaunchVideo />
           </div>
         </div>
       </section>
+      )}
 
       {/* ===================== مراجعات الوحدات ===================== */}
-      <UnitReviewsSection reviews={reviews} subjects={subjects} />
+      {shown('home.reviews') && (
+        <UnitReviewsSection
+          reviews={reviews}
+          subjects={subjects}
+          kicker={t('home.reviews.kicker')}
+          title={t('home.reviews.title')}
+        />
+      )}
 
       {/* ===================== أبواب المواد ===================== */}
+      {shown('home.doors') && (
       <section id="doors" className="door-wall scroll-mt-24">
         <div className="relative mx-auto max-w-7xl px-5 py-10 sm:px-6 lg:py-12">
           <SectionHead
-            kicker="المواد الدراسية"
-            title="افتح باب المادة"
-            lead="كل مادة باب. ادخل لتصل إلى وحداتها ودروسها وأنشطتها."
-            action={{ href: '/browse', label: 'كل المناهج' }}
+            kicker={t('home.doors.kicker')}
+            title={t('home.doors.title')}
+            lead={t('home.doors.lead')}
+            action={{ href: '/browse', label: t('home.doors.action') }}
           />
           <div className="door-row">
             {/* المواد الحيّة من قاعدة البيانات، لا القائمة المضمّنة —
@@ -195,14 +205,14 @@ export default async function HomePage() {
             })}
             <HeritageDoor
               href="/smart-games"
-              title="ألعاب التعزيز الذكية"
+              title={t('home.doors.games')}
               meta={smartGames > 0 ? `${smartGames} لعبة` : 'تعلّم • العب • عزّز'}
               color="#2d5f7c"
               emblem="games"
             />
             <HeritageDoor
               href={PRESENTATIONS_PATH}
-              title="العروض التقديمية الذكية"
+              title={t('home.doors.presentations')}
               meta={presentations > 0 ? `تجريبي • ${presentationsCount(presentations)}` : 'تجريبي • اعرض • جرّب • تفاعل'}
               color={PRESENTATION_META.color}
               emblem="slides"
@@ -210,69 +220,85 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+      )}
 
       {/* ===================== كيف تعمل المنصّة ===================== */}
+      {shown('home.steps') && (
       <section className="mx-auto max-w-7xl px-5 py-12 sm:px-6 lg:py-16">
-        <SectionHead kicker="كيف تعمل المنصّة؟" title="من الكتاب إلى التجربة في ثلاث خطوات" />
+        <SectionHead kicker={t('home.steps.kicker')} title={t('home.steps.title')} />
         <ol className="steps">
           <li>
             <span className="steps-n">١</span>
-            <h3>اختر الدرس</h3>
-            <p>المادة، ثم المستوى، ثم الوحدة، ثم الدرس — بترتيب الكتاب المدرسي نفسه.</p>
+            <h3>{t('home.steps.1.title')}</h3>
+            <p>{t('home.steps.1.desc')}</p>
           </li>
           <li>
             <span className="steps-n">٢</span>
-            <h3>جرّب مباشرة</h3>
-            <p>شغّل التجربة أو المحاكاة أو اللعبة داخل المتصفّح دون أي تثبيت، وبملء الشاشة على السبورة.</p>
+            <h3>{t('home.steps.2.title')}</h3>
+            <p>{t('home.steps.2.desc')}</p>
           </li>
           <li>
             <span className="steps-n">٣</span>
             <DownloadsSwitch
               on={
                 <>
-                  <h3>خذها معك</h3>
-                  <p>نزّل النشاط ملفًا واحدًا يعمل على أي جهاز في الصف أو البيت دون اتصال.</p>
+                  <h3>{t('home.steps.3.title')}</h3>
+                  <p>{t('home.steps.3.desc')}</p>
                 </>
               }
               off={
                 <>
-                  <h3>تعلّم في أي مكان</h3>
-                  <p>استخدم الأنشطة من الموقع في الصف أو البيت، على أي جهاز متصل بالإنترنت.</p>
+                  <h3>{t('home.steps.3off.title')}</h3>
+                  <p>{t('home.steps.3off.desc')}</p>
                 </>
               }
             />
           </li>
         </ol>
       </section>
+      )}
 
       {/* ===================== أنواع الأنشطة ===================== */}
+      {shown('home.types') && (
       <section className="types-band">
         <div className="mx-auto max-w-7xl px-5 py-12 sm:px-6 lg:py-16">
-          <SectionHead kicker="أنواع الأنشطة" title="أربع طرق لتعلّم الدرس نفسه" />
+          <SectionHead kicker={t('home.types.kicker')} title={t('home.types.title')} />
           <ul className="types-grid">
-            {TYPES.map((t, i) => (
-              <li key={t.label} className="type-tile">
+            {TYPE_ICONS.map((icon, i) => (
+              <li key={icon} className="type-tile">
                 <span className="type-icon" style={{ '--d': `${-i * 1.1}s` } as React.CSSProperties}>
-                  <HeritageIcon kind={t.icon} />
+                  <HeritageIcon kind={icon} />
                 </span>
-                <h3>{t.label}</h3>
-                <p>{t.desc}</p>
+                <h3>{t(`home.types.${i + 1}.title`)}</h3>
+                <p>{t(`home.types.${i + 1}.desc`)}</p>
               </li>
             ))}
           </ul>
         </div>
       </section>
+      )}
 
       {/* ===================== أثر التعلّم ===================== */}
-      <ImpactSection activities={total} totals={siteStats} reach={reach} voices={impact} mastery={mastery} />
+      {shown('home.impact') && (
+        <ImpactSection
+          activities={total}
+          totals={siteStats}
+          reach={reach}
+          voices={impact}
+          mastery={mastery}
+          kicker={t('home.impact.kicker')}
+          title={t('home.impact.title')}
+          lead={t('home.impact.lead')}
+        />
+      )}
 
       {/* ===================== أنشطة مميّزة (عند وجود محتوى) ========= */}
-      {featured.length > 0 && (
+      {featured.length > 0 && shown('home.featured') && (
         <section className="mx-auto max-w-7xl px-5 py-12 sm:px-6 lg:py-16">
           <SectionHead
-            kicker="الأكثر تفاعلًا"
-            title="أنشطة مميّزة"
-            action={{ href: '/search', label: 'كل الأنشطة' }}
+            kicker={t('home.featured.kicker')}
+            title={t('home.featured.title')}
+            action={{ href: '/search', label: t('home.featured.action') }}
           />
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {featured.map((a, i) => (
@@ -285,6 +311,7 @@ export default async function HomePage() {
       )}
 
       {/* ===================== الخاتمة ===================== */}
+      {shown('home.closing') && (
       <section className="mx-auto max-w-7xl px-5 pb-6 sm:px-6">
         <div className="closing-band">
           <div className="sadu-band" aria-hidden />
@@ -292,19 +319,20 @@ export default async function HomePage() {
             <HeritageIcon kind="pearl" className="closing-pearl" />
             <div className="min-w-0 flex-1">
               <h2 className="font-calli text-2xl text-white sm:text-3xl">
-                كل درس فيه لؤلؤة تنتظر من يكتشفها
+                {t('home.closing.title')}
               </h2>
               <p className="mt-2 max-w-xl text-white/80">
-                تصفّح المناهج واختر الدرس الذي تدرسه هذا الأسبوع، وابدأ بنشاطه.
+                {t('home.closing.lead')}
               </p>
             </div>
             <Link href="/browse" className="closing-cta">
-              تصفّح المناهج
+              {t('home.closing.cta')}
               <ArrowLeft className="h-5 w-5" />
             </Link>
           </div>
         </div>
       </section>
+      )}
     </>
   );
 }
