@@ -103,6 +103,33 @@ export function ActivityCard({
   // مشاهدات/تنزيلات حيّة: الرقم نفسه لدى الجميع ويتحدّث دون إعادة تحميل.
   useEffect(() => subscribeActivityStats(activity.id, setStats), [activity.id]);
 
+  // إصلاح ذاتي: نشاط رُفع بلا معاينة (قبل تحسين المولّد، أو تعذّر بناؤها عند
+  // الرفع) تُبنى معاينته مرّة واحدة حين يتصفّح المالك الصفحة، فتظهر للجميع
+  // دون أن يتذكّر المشرف زرّ «توليد المعاينات».
+  const [previewRev, setPreviewRev] = useState(0);
+  useEffect(() => {
+    if (!canManage || activity.hasPreview) return;
+    let alive = true;
+    (async () => {
+      const { loadGameHtml, savePreviewHtml } = await import('@/lib/game-store');
+      const html = await loadGameHtml(activity.id);
+      if (!html || !alive || !(await savePreviewHtml(activity.id, html))) return;
+      const [{ updateActivity }, { PREVIEW_VERSION }, { revalidateContent }] = await Promise.all([
+        import('@/lib/content'),
+        import('@/lib/preview-html'),
+        import('@/lib/revalidate'),
+      ]);
+      await updateActivity(activity.id, { hasPreview: true, previewV: PREVIEW_VERSION });
+      // حدّث الصفحات المخزّنة فلا تُعاد المحاولة في الزيارة التالية
+      void revalidateContent({ subjectId: activity.subjectId, activityId: activity.id });
+      await dropCachedPreview(activity.id).catch(() => {});
+      if (alive) setPreviewRev((r) => r + 1);
+    })().catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [canManage, activity.id, activity.hasPreview]);
+
   const saveHtml = (html: string) => {
     const url = htmlToBlobUrl(html);
     const a = document.createElement('a');
@@ -230,6 +257,7 @@ export function ActivityCard({
         <span data-vt-preview className="block">
           {/* العرض التقديمي بنسبة شرائحه 16:9 فتظهر الشريحة الأولى كاملة */}
           <ActivityPreview
+            key={previewRev}
             activity={activity}
             className={activity.presentation ? 'act-preview aspect-video' : 'act-preview h-44'}
           />
