@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { ChevronDown, ShieldCheck } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import Link from 'next/link';
+import { ArrowLeft, ChevronDown, Gamepad2 } from 'lucide-react';
 import type { Activity } from '@/lib/types';
-import { ActivityCard } from '@/components/activity-card';
-import { isFirebaseConfigured, isOwnerUid, watchAdmin } from '@/lib/auth';
+import { HeritageIcon } from '@/components/heritage-icons';
 import { cn } from '@/lib/utils';
 
 export type ReviewRow = {
@@ -24,40 +24,14 @@ const ALL = '__all__';
 
 /**
  * مراجعات الوحدات مجمّعة في بطاقات وحدات قابلة للطيّ على نسق صفحة المادة
- * (CurriculumExplorer): رأس الوحدة برقمها وعنوانها، وتحته بطاقات ألعابها.
+ * (CurriculumExplorer): رأس الوحدة برقمها وعنوانها، وتحته ألعابها تذاكر صغيرة
+ * بمحارة طافية على نسق تذكرة «عرض الدرس».
  */
 export function UnitReviewsGrid({ initialRows }: { initialRows: ReviewRow[] }) {
-  const [rows, setRows] = useState(initialRows);
-  const [isOwner, setIsOwner] = useState(false);
+  const rows = initialRows;
   const [subjectId, setSubjectId] = useState(ALL);
   // تُعرض عناوين الوحدات مطويّة كما في صفحة المادة، وتنسدل عند النقر
   const [open, setOpen] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    if (!isFirebaseConfigured) return;
-    let alive = true;
-    const unsub = watchAdmin((user) => {
-      if (!user) {
-        if (alive) setIsOwner(false);
-        return;
-      }
-      isOwnerUid(user.uid).then((ok) => {
-        if (alive) setIsOwner(ok);
-      });
-    });
-    return () => {
-      alive = false;
-      unsub();
-    };
-  }, []);
-
-  function handleChanged(id: string, patch: Partial<Activity> | null) {
-    setRows((current) =>
-      patch === null
-        ? current.filter((r) => r.activity.id !== id)
-        : current.map((r) => (r.activity.id === id ? { ...r, activity: { ...r.activity, ...patch } } : r))
-    );
-  }
 
   // تبويب لكل مادة فيها مراجعات فقط، بترتيب ظهورها
   const subjects = useMemo(() => {
@@ -82,13 +56,6 @@ export function UnitReviewsGrid({ initialRows }: { initialRows: ReviewRow[] }) {
 
   return (
     <>
-      {isOwner && (
-        <div className="owner-note mb-6">
-          <ShieldCheck className="h-5 w-5" />
-          وضع المشرف مفعّل — يمكنك تعديل عنوان المراجعة ووصفها أو حذفها مباشرة.
-        </div>
-      )}
-
       {subjects.length > 1 && (
         <div className="mb-7 flex flex-wrap gap-2" role="tablist" aria-label="المواد">
           {[[ALL, 'الكل'] as const, ...subjects].map(([id, title]) => (
@@ -136,15 +103,28 @@ export function UnitReviewsGrid({ initialRows }: { initialRows: ReviewRow[] }) {
 
               {isOpen && (
                 <div id={panelId} className="unit-body">
-                  <div className="mt-3 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-                    {items.map((a, i) => (
-                      <ActivityCard
+                  <div className="review-tickets">
+                    {items.map((a) => (
+                      <Link
                         key={a.id}
-                        activity={a}
-                        index={i}
-                        isOwner={isOwner}
-                        onChanged={handleChanged}
-                      />
+                        href={`/play/${a.id}`}
+                        className="review-ticket"
+                        aria-label={`العب ${a.title}`}
+                      >
+                        <span className="review-ticket-icon" aria-hidden>
+                          <HeritageIcon kind="oyster" />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="review-ticket-kicker">
+                            <Gamepad2 className="h-3.5 w-3.5" aria-hidden />
+                            مراجعة الوحدة • لعبة
+                          </span>
+                          <span className="review-ticket-title">{a.title}</span>
+                        </span>
+                        <span className="review-ticket-go" aria-hidden>
+                          <ArrowLeft className="h-5 w-5" />
+                        </span>
+                      </Link>
                     ))}
                   </div>
                 </div>
