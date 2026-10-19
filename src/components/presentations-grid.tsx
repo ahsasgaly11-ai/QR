@@ -93,7 +93,8 @@ export function PresentationsGrid({ initialRows }: { initialRows: PresentationRo
       {shown.length > 0 ? (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {shown.map((r, i) => (
-            <Reveal key={r.activity.id} delay={i * 70}>
+            // min-w-0: سطر السياق المقصوص (nowrap) لا يوسّع عمود الشبكة على الجوال
+            <Reveal key={r.activity.id} delay={i * 70} className="min-w-0">
               <p className="mb-2 truncate text-xs font-semibold text-muted-foreground">
                 {[r.subjectTitle, r.context].filter(Boolean).join(' • ')}
               </p>
