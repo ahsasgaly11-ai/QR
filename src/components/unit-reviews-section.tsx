@@ -5,8 +5,8 @@ import { UnitReviewsGrid, type ReviewRow } from '@/components/unit-reviews-grid'
 
 /**
  * قسم «مراجعات الوحدات» تحت الواجهة الأولى مباشرة ليراه الزائر فور دخوله.
- * يعرض ألعاب المراجعة التي يرفعها المشرف من تبويب «مراجعات الوحدات» ببطاقات
- * النشاط نفسها المستخدمة في الألعاب التعليمية والعروض التقديمية،
+ * يعرض ألعاب المراجعة التي يرفعها المشرف من تبويب «مراجعات الوحدات» مجمّعة
+ * في بطاقات وحدات قابلة للطيّ كما تُعرض الأنشطة في صفحات المواد،
  * ولا يظهر إطلاقًا ما لم تُرفع مراجعة.
  */
 export function UnitReviewsSection({
@@ -28,7 +28,11 @@ export function UnitReviewsSection({
       activity: r,
       subjectId: subject?.id ?? r.subjectId,
       subjectTitle: subject?.title ?? '',
-      context: [grade?.title, unit?.title].filter(Boolean).join(' • '),
+      gradeTitle: grade?.title ?? '',
+      unitKey: `${r.subjectId}/${r.gradeId}/${r.unitId}`,
+      unitTitle: unit?.title ?? 'وحدة غير محدّدة',
+      unitNumber: grade && unit ? grade.units.indexOf(unit) + 1 : 0,
+      unitColor: unit?.color,
     };
   });
 

@@ -1,10 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { ShieldCheck } from 'lucide-react';
+import { ChevronDown, ShieldCheck } from 'lucide-react';
 import type { Activity } from '@/lib/types';
 import { ActivityCard } from '@/components/activity-card';
-import { Reveal } from '@/components/reveal';
 import { isFirebaseConfigured, isOwnerUid, watchAdmin } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 
@@ -12,17 +11,27 @@ export type ReviewRow = {
   activity: Activity;
   subjectId: string;
   subjectTitle: string;
-  /** المستوى والوحدة كما يظهران فوق البطاقة */
-  context: string;
+  gradeTitle: string;
+  /** مفتاح الوحدة (المادة/المستوى/الوحدة) لتجميع مراجعاتها في بطاقة واحدة */
+  unitKey: string;
+  unitTitle: string;
+  /** ترتيب الوحدة في مستواها كما في صفحة المادة (0 إن لم تُعرف) */
+  unitNumber: number;
+  unitColor?: string;
 };
 
 const ALL = '__all__';
 
-/** شبكة بطاقات المراجعات على نسق صفحتي الألعاب والعروض التقديمية */
+/**
+ * مراجعات الوحدات مجمّعة في بطاقات وحدات قابلة للطيّ على نسق صفحة المادة
+ * (CurriculumExplorer): رأس الوحدة برقمها وعنوانها، وتحته بطاقات ألعابها.
+ */
 export function UnitReviewsGrid({ initialRows }: { initialRows: ReviewRow[] }) {
   const [rows, setRows] = useState(initialRows);
   const [isOwner, setIsOwner] = useState(false);
   const [subjectId, setSubjectId] = useState(ALL);
+  // تُعرض عناوين الوحدات مطويّة كما في صفحة المادة، وتنسدل عند النقر
+  const [open, setOpen] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (!isFirebaseConfigured) return;
@@ -56,7 +65,18 @@ export function UnitReviewsGrid({ initialRows }: { initialRows: ReviewRow[] }) {
     for (const r of rows) if (!seen.has(r.subjectId)) seen.set(r.subjectId, r.subjectTitle || 'أخرى');
     return [...seen.entries()];
   }, [rows]);
-  const shown = subjectId === ALL ? rows : rows.filter((r) => r.subjectId === subjectId);
+
+  // الوحدات بترتيب أحدث مراجعة فيها، ومراجعاتها بالترتيب نفسه
+  const units = useMemo(() => {
+    const shown = subjectId === ALL ? rows : rows.filter((r) => r.subjectId === subjectId);
+    const map = new Map<string, { head: ReviewRow; items: Activity[] }>();
+    for (const r of shown) {
+      const u = map.get(r.unitKey);
+      if (u) u.items.push(r.activity);
+      else map.set(r.unitKey, { head: r, items: [r.activity] });
+    }
+    return [...map.values()];
+  }, [rows, subjectId]);
 
   if (rows.length === 0) return null;
 
@@ -85,15 +105,53 @@ export function UnitReviewsGrid({ initialRows }: { initialRows: ReviewRow[] }) {
         </div>
       )}
 
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {shown.map((r, i) => (
-          <Reveal key={r.activity.id} delay={i * 70}>
-            <p className="mb-2 truncate text-xs font-semibold text-muted-foreground">
-              {[r.subjectTitle, r.context].filter(Boolean).join(' • ')}
-            </p>
-            <ActivityCard activity={r.activity} index={i} isOwner={isOwner} onChanged={handleChanged} />
-          </Reveal>
-        ))}
+      <div className="space-y-4">
+        {units.map(({ head, items }, ui) => {
+          const isOpen = !!open[head.unitKey];
+          const panelId = `review-unit-${ui}`;
+          return (
+            <div
+              key={head.unitKey}
+              className="unit-card"
+              style={{ '--c': head.unitColor ?? 'var(--maroon)' } as React.CSSProperties}
+            >
+              <button
+                onClick={() => setOpen((o) => ({ ...o, [head.unitKey]: !o[head.unitKey] }))}
+                aria-expanded={isOpen}
+                aria-controls={panelId}
+                className="unit-head"
+              >
+                <span className="unit-medal" aria-hidden>{head.unitNumber || ui + 1}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="unit-title">{head.unitTitle}</span>
+                  <span className="unit-summary">
+                    {[head.subjectTitle, head.gradeTitle].filter(Boolean).join(' • ')}
+                  </span>
+                </span>
+                <span className="unit-count">
+                  <span><b>{items.length}</b> {items.length === 1 ? 'مراجعة' : 'مراجعات'}</span>
+                </span>
+                <ChevronDown className={cn('unit-chev', isOpen && 'rotate-180')} aria-hidden />
+              </button>
+
+              {isOpen && (
+                <div id={panelId} className="unit-body">
+                  <div className="mt-3 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                    {items.map((a, i) => (
+                      <ActivityCard
+                        key={a.id}
+                        activity={a}
+                        index={i}
+                        isOwner={isOwner}
+                        onChanged={handleChanged}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </>
   );
