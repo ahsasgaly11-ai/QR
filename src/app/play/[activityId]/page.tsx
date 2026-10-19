@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { LocalPlay } from '@/components/local-play';
-import { ChevronLeft } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, Gamepad2 } from 'lucide-react';
 import {
   getActivity,
   getSubjects,
@@ -162,32 +162,69 @@ export default async function PlayPage({
                     ? 'أنشطة الدرس بعد العرض'
                     : 'أنشطة الدرس نفسه'}
             </h2>
-            <ul className="sibling-strip">
-              {siblings.map((a) => {
-                const current = a.id === activity.id;
-                const inner = (
-                  <>
-                    <HeritageIcon kind={activityIcon(a)} className="sibling-icon" />
-                    <span className="min-w-0">
-                      <span className="sibling-title">{a.title}</span>
-                      <span className="sibling-type">
-                        {activityLabel(a).label}
-                        {current && ' • تشاهده الآن'}
+            {activity.unitReview ? (
+              // مراجعات الوحدات تذاكر صغيرة بمحارة، كما في قسمها بالرئيسية
+              <ul className="review-tickets">
+                {siblings.map((a) => {
+                  const current = a.id === activity.id;
+                  const inner = (
+                    <>
+                      <span className="review-ticket-icon" aria-hidden>
+                        <HeritageIcon kind="oyster" />
                       </span>
-                    </span>
-                  </>
-                );
-                return (
-                  <li key={a.id}>
-                    {current ? (
-                      <span className="sibling is-current" aria-current="page">{inner}</span>
-                    ) : (
-                      <Link href={`/play/${a.id}`} className="sibling">{inner}</Link>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
+                      <span className="min-w-0 flex-1">
+                        <span className="review-ticket-kicker">
+                          <Gamepad2 className="h-3.5 w-3.5" aria-hidden />
+                          {current ? 'تشاهدها الآن' : 'مراجعة الوحدة • لعبة'}
+                        </span>
+                        <span className="review-ticket-title">{a.title}</span>
+                      </span>
+                      {!current && (
+                        <span className="review-ticket-go" aria-hidden>
+                          <ArrowLeft className="h-5 w-5" />
+                        </span>
+                      )}
+                    </>
+                  );
+                  return (
+                    <li key={a.id}>
+                      {current ? (
+                        <span className="review-ticket is-current" aria-current="page">{inner}</span>
+                      ) : (
+                        <Link href={`/play/${a.id}`} className="review-ticket">{inner}</Link>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <ul className="sibling-strip">
+                {siblings.map((a) => {
+                  const current = a.id === activity.id;
+                  const inner = (
+                    <>
+                      <HeritageIcon kind={activityIcon(a)} className="sibling-icon" />
+                      <span className="min-w-0">
+                        <span className="sibling-title">{a.title}</span>
+                        <span className="sibling-type">
+                          {activityLabel(a).label}
+                          {current && ' • تشاهده الآن'}
+                        </span>
+                      </span>
+                    </>
+                  );
+                  return (
+                    <li key={a.id}>
+                      {current ? (
+                        <span className="sibling is-current" aria-current="page">{inner}</span>
+                      ) : (
+                        <Link href={`/play/${a.id}`} className="sibling">{inner}</Link>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </section>
         )}
       </div>
