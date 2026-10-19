@@ -2497,7 +2497,8 @@ body { padding-bottom: var(--ticker-h); }
   .play-below { grid-template-columns: minmax(0, 22rem) minmax(0, 1fr); }
   /* بطاقتا الهدف التعليمي وتذكرة الخروج تمتدّان على العرض كلّه، لا في عمود «عن النشاط» الضيّق */
   .play-below > .objectives,
-  .play-below > .exit-ticket { grid-column: 1 / -1; }
+  .play-below > .exit-ticket,
+  .play-below > .play-below-wide { grid-column: 1 / -1; }
 }
 .play-below-title { margin-bottom: 0.8rem; padding-bottom: 0.55rem; border-bottom: 2px solid var(--ink); font-family: var(--font-display); font-weight: 700; font-size: 1.3rem; color: var(--ink); }
 .dark .play-below-title { border-bottom-color: var(--hairline-strong); }
