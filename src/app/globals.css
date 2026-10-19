@@ -1136,6 +1136,9 @@ body { padding-bottom: var(--ticker-h); }
   transition: transform 0.25s ease;
 }
 .review-ticket:hover .review-ticket-go { transform: translateX(-3px); }
+/* تذاكر المراجعات داخل بطاقة الوحدة في قسم «مراجعات الوحدات» */
+.review-tickets { display: grid; gap: 1.1rem 1.25rem; padding-top: 1rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr)); }
+.review-tickets .review-ticket { width: 100%; }
 
 /* --- العروض التقديمية الذكية (قسم تجريبي) ---------------------------------
    تذكرة «عرض الدرس» فوق أنشطة الدرس: بنفس بنية تذكرة المراجعة، بلون
