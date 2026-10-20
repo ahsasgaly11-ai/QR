@@ -91,7 +91,7 @@ function DeltaBadge({
   );
 }
 
-/** خطّ مصغّر بلا محاور — الزمن يجري من اليمين إلى اليسار (اتجاه القراءة). */
+/** خطّ مصغّر بلا محاور — الزمن يجري من اليسار إلى اليمين كالمخطّط اليومي. */
 export function Sparkline({
   values,
   width = 84,
@@ -104,12 +104,12 @@ export function Sparkline({
   const max = Math.max(1, ...values);
   const step = values.length > 1 ? width / (values.length - 1) : width;
   const pts = values.map((v, i) => {
-    const x = width - i * step;
+    const x = i * step;
     const y = height - 3 - (v / max) * (height - 6);
     return [x, y] as const;
   });
   const line = pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
-  const area = `${line} L${pts[pts.length - 1][0].toFixed(1)},${height} L${width},${height} Z`;
+  const area = `${line} L${pts[pts.length - 1][0].toFixed(1)},${height} L0,${height} Z`;
   const last = pts[pts.length - 1];
   return (
     <svg
