@@ -375,7 +375,7 @@ export function AdminUploader({
             {presentationOnly
               ? <>أصبح العرض «{result.activity.title}» متاحًا الآن في قسم «العروض التقديمية الذكية»، وزرًّا «عرض الدرس» فوق أنشطة درسه.</>
               : reviewOnly
-              ? <>أصبحت المراجعة «{result.activity.title}» ظاهرة الآن أعلى الصفحة الرئيسية في قسم «مراجعات الوحدات».</>
+              ? <>أصبحت المراجعة «{result.activity.title}» متاحة الآن، ويظهر لأحدث مراجعة زرّ ذهبي في الواجهة الأولى للموقع.</>
               : smartOnly
               ? <>أصبحت اللعبة «{result.activity.title}» متاحة الآن في قسم ألعاب التعزيز الذكية.</>
               : <>أصبح النشاط «{result.activity.title}» متاحًا الآن في المنصّة ضمن الدرس المحدّد. يمكن للزوّار تجربته وتحميله، وتُحتسب مشاهداته وتنزيلاته تلقائيًا.</>}
@@ -650,10 +650,10 @@ export function AdminUploader({
       {reviewOnly && (
         <div className="mt-5 rounded-2xl border border-[color:var(--gold)]/30 bg-[color:var(--gold)]/5 p-4">
           <p className="text-sm font-semibold text-[color:var(--maroon)]">
-            ستظهر المراجعة أعلى الصفحة الرئيسية في قسم «مراجعات الوحدات».
+            أحدث مراجعة مرفوعة يظهر لها زرّ ذهبي في الواجهة الأولى للموقع.
           </p>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            أحدث مراجعة مرفوعة يظهر لها أيضًا زرّ ذهبي في الواجهة الأولى للموقع.
+            وتظهر بقية المراجعات أسفل صفحة تشغيل أي مراجعة في قسم «مراجعات الوحدات».
           </p>
           <label className="mt-3 flex cursor-pointer items-center gap-2 text-sm font-bold text-foreground">
             <input

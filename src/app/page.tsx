@@ -6,7 +6,6 @@ import { Reveal } from '@/components/reveal';
 import { SiteStatsStrip } from '@/components/site-stats-strip';
 import { ActivityCard } from '@/components/activity-card';
 import { DownloadsSwitch } from '@/components/downloads-switch';
-import { UnitReviewsSection } from '@/components/unit-reviews-section';
 import { DohaWindow } from '@/components/home/doha-window';
 import { HeritageDoor } from '@/components/home/heritage-door';
 import { DOOR_PAINT, emblemFor } from '@/components/home/door-emblem';
@@ -91,15 +90,6 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
-    ),
-    // مراجعات الوحدات
-    'home.reviews': (
-        <UnitReviewsSection
-          reviews={reviews}
-          subjects={subjects}
-          kicker={e('home.reviews.kicker')}
-          title={e('home.reviews.title')}
-        />
     ),
     // أبواب المواد
     'home.doors': (

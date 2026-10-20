@@ -175,8 +175,8 @@ function AdminPanel({ subjects, structure, activities, uploadedIds, labels }: Sh
                 رفع مراجعة وحدة
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                ارفع ملف HTML للعبة المراجعة واختر المادة والمستوى والوحدة. تظهر
-                المراجعة أعلى الصفحة الرئيسية ليراها الزوّار فور دخولهم.
+                ارفع ملف HTML للعبة المراجعة واختر المادة والمستوى والوحدة. يظهر
+                لأحدث مراجعة زرّ ذهبي في الواجهة الأولى ليراها الزوّار فور دخولهم.
               </p>
             </div>
             <AdminUploader subjects={subjects} reviewOnly />
@@ -187,7 +187,7 @@ function AdminPanel({ subjects, structure, activities, uploadedIds, labels }: Sh
                 إدارة المراجعات
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                عدّل المراجعات المرفوعة أو احذفها — الحذف يُخفيها من الصفحة الرئيسية.
+                عدّل المراجعات المرفوعة أو احذفها — الحذف يُخفيها من الموقع.
               </p>
             </div>
             <ActivitiesManager
