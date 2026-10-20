@@ -14,8 +14,8 @@ import { shortDate } from '@/lib/dashboard-metrics';
 
 /**
  * مخطّط الاتجاه اليومي — سلسلة واحدة ومحور واحد، فلا حاجة لمفتاح: العنوان
- * يسمّي المقياس. الزمن يجري من اليمين إلى اليسار (محور X معكوس) ليوافق
- * اتجاه القراءة العربية، والمحور الرأسي على اليمين.
+ * يسمّي المقياس. الزمن يجري من اليسار إلى اليمين (الأقدم يسارًا والأحدث
+ * يمينًا) كما في المخطّطات المألوفة، والمحور الرأسي على اليسار.
  */
 export function TrendChart({
   days,
@@ -45,7 +45,6 @@ export function TrendChart({
           <CartesianGrid vertical={false} stroke="var(--hairline)" />
           <XAxis
             dataKey="day"
-            reversed
             tickLine={false}
             axisLine={false}
             interval="preserveStartEnd"
@@ -55,7 +54,7 @@ export function TrendChart({
             tickMargin={8}
           />
           <YAxis
-            orientation="right"
+            orientation="left"
             allowDecimals={false}
             tickLine={false}
             axisLine={false}
