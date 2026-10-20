@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#8a1538">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ركّب الأسنان">
+<meta name="description" content="لعبة صفّية على السبورة: يركّب الطلاب القواطع والأنياب والضواحك والطواحن في الفكّين بلمس السبورة بأيديهم، والآيباد يرى أيديهم بكاميرته.">
+<title>ركّب الأسنان</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="stylesheet" href="css/app.css">
+<link rel="modulepreload" href="js/main.js">
+</head>
+<body>
+<!-- الكاميرا: عنصر فيديو مخفي تمامًا — صورته لا تُعرض على الصفحة فلا تنتقل إلى السبورة -->
+<video id="cam" playsinline muted autoplay aria-hidden="true"></video>
+
+<main id="stage" data-screen="menu">
+  <svg id="board" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" aria-label="الفكّان"></svg>
+  <div id="hud"></div>
+  <svg id="fx" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" aria-hidden="true"></svg>
+</main>
+
+<!-- أدوات المعلم (تُلمس على شاشة الآيباد فقط، ولا تتفاعل مع يد الطالب) -->
+<nav id="teacher" aria-label="أدوات المعلم">
+  <span id="camChip" class="cam-chip" data-state="off">بلا كاميرا</span>
+  <button id="btnHome" class="tbtn" title="القائمة" aria-label="القائمة">⌂</button>
+  <button id="btnFull" class="tbtn" title="ملء الشاشة" aria-label="ملء الشاشة">⛶</button>
+  <button id="btnSettings" class="tbtn" title="الكاميرا والإعدادات" aria-label="الكاميرا والإعدادات">⚙</button>
+</nav>
+
+<aside id="panel" hidden>
+  <div class="panel-head">
+    <h2>الكاميرا والإعدادات</h2>
+    <button id="btnClose" class="tbtn" aria-label="إغلاق">✕</button>
+  </div>
+  <p id="panelMsg" class="panel-msg" aria-live="polite"></p>
+
+  <section>
+    <h3>١. الكاميرا <span id="camStatus" data-state="off"><span id="camText">الكاميرا متوقفة</span></span></h3>
+    <p class="help">ثبّت الآيباد على حامل في <b>زاوية جانبية</b> قريبة من السبورة (لا خلف الطلاب، حتى لا تحجب أجسامهم أيديهم)، ووجّه الكاميرا الخلفية لترى الصورة المعروضة كاملة.</p>
+    <div class="row">
+      <select id="camSelect" aria-label="اختيار الكاميرا"></select>
+      <button id="btnCam" class="btn">تشغيل الكاميرا</button>
+    </div>
+    <div class="row">
+      <button id="btnPreview" class="btn ghost">إظهار معاينة الكاميرا</button>
+      <span id="fps" class="muted" dir="rtl"></span>
+    </div>
+    <p class="help warn">المعاينة تظهر على السبورة أيضًا (لأن الشاشة منعكسة)؛ استعملها لضبط الحامل فقط ثم أخفِها.</p>
+    <canvas id="preview" hidden data-on="0"></canvas>
+  </section>
+
+  <section>
+    <h3>٢. المعايرة</h3>
+    <p class="help">تربط ما تراه الكاميرا بمكانه على السبورة. أعدها كلما تحرّك الحامل. ابتعدوا عن السبورة أثناءها (٨ ثوانٍ تقريبًا).</p>
+    <div class="row">
+      <button id="btnAuto" class="btn primary">معايرة تلقائية</button>
+      <button id="btnManual" class="btn ghost">معايرة يدوية</button>
+    </div>
+    <p id="calResult" class="cal-result"></p>
+  </section>
+
+  <section>
+    <h3>٣. اللعب</h3>
+    <label class="field">مدة إبقاء اليد <output id="dwellVal"></output>
+      <input id="dwell" type="range" min="400" max="1500" step="50">
+    </label>
+    <label class="field">لا يصل الطلاب إلى أعلى السبورة؟ أنزِل الأسنان <output id="reachVal"></output>
+      <input id="reach" type="range" min="0" max="45" step="1">
+    </label>
+    <fieldset class="field">
+      <legend>نقطة اللمس</legend>
+      <label><input type="radio" name="handPoint" value="palm"> منتصف الكف (أثبت)</label>
+      <label><input type="radio" name="handPoint" value="finger"> طرف السبابة (أدق للأيدي الصغيرة)</label>
+    </fieldset>
+    <label class="check"><input id="optHands" type="checkbox"> إظهار دائرة اليد على السبورة</label>
+    <label class="check"><input id="optSound" type="checkbox"> المؤثرات الصوتية</label>
+    <label class="check"><input id="optSpeech" type="checkbox"> نطق اسم السن عند وضعه</label>
+    <label class="check"><input id="optSim" type="checkbox"> تجربة بلا كاميرا: الماوس يتصرف كيد</label>
+  </section>
+
+  <section class="tips">
+    <h3>نصائح للحصة</h3>
+    <ul>
+      <li>من مركز التحكم في الآيباد اختر <b>انعكاس الشاشة</b> ← Apple TV.</li>
+      <li>أضف الصفحة إلى الشاشة الرئيسية (مشاركة ← إضافة إلى الشاشة الرئيسية) لتعمل بملء الشاشة.</li>
+      <li>اترك الآيباد على الشاحن، وفعّل «الوصول الموجّه» حتى لا يخرج أحد من اللعبة.</li>
+      <li>يمكنك أيضًا اللعب بلمس شاشة الآيباد مباشرة (بلا كاميرا).</li>
+    </ul>
+  </section>
+</aside>
+
+<div id="rotate" aria-hidden="true">أدِر الآيباد أفقيًا 🔄</div>
+<noscript>هذه اللعبة تحتاج JavaScript.</noscript>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

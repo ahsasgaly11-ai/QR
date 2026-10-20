@@ -2662,6 +2662,16 @@ a.ledger-row:hover .ledger-go { transform: translateX(-4px); }
   .qurs-go { align-self: stretch; justify-content: center; }
 }
 
+/* «ركّب الأسنان»: بطاقة «قرص التحدي» نفسها بألوان العنّابي */
+.asnan-card {
+  background: radial-gradient(ellipse at 85% 0%, #b3264f 0%, transparent 55%), linear-gradient(160deg, #7a1232, #4a0a1e 70%);
+  box-shadow: 0 6px 0 #6d4e12, 0 26px 40px -24px rgba(74, 10, 30, 0.8);
+}
+.asnan-card:hover { box-shadow: 0 9px 0 #6d4e12, 0 32px 46px -24px rgba(74, 10, 30, 0.85); }
+.asnan-disc { border-radius: 28%; }
+.asnan-disc img { border-radius: 28%; }
+.asnan-card:hover .asnan-disc img { transform: rotate(-8deg) scale(1.04); }
+
 /* البحث */
 .search-well {
   display: flex;
