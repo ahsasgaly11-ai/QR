@@ -10,7 +10,7 @@ import {
 } from '@/lib/content';
 import { SEED_ACTIVITIES } from '@/data/curriculum';
 import { ActivityPlayer } from '@/components/activity-player';
-import { ActivityCard } from '@/components/activity-card';
+import { ReviewCards } from '@/components/review-cards';
 import { PlayHeader } from '@/components/play-header';
 import { PlayPageMode } from '@/components/play-page-mode';
 import { IosDocumentsNotice } from '@/components/ios-documents-notice';
@@ -152,17 +152,13 @@ export default async function PlayPage({
               `${activityLabel(activity).label}${lesson ? ` من درس «${lesson.title}»` : ''} — شغّله داخل الموقع، أو بملء الشاشة على السبورة.`}
           </p>
         </section>
-        {activity.unitReview && siblings.length > 1 && (
-          // بقية مراجعات الوحدات ببطاقات بمعاينة حيّة كبطاقات أنشطة الدروس
+        {activity.unitReview && (
+          // كل مراجعات الوحدات (الأحدث أولًا) ببطاقات بمعاينة حيّة كبطاقات أنشطة الدروس
           <section className="play-below-wide min-w-0">
             <h2 className="play-below-title">مراجعات الوحدات</h2>
-            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-              {siblings
-                .filter((a) => a.id !== activity.id)
-                .map((a, i) => (
-                  <ActivityCard key={a.id} activity={a} index={i} />
-                ))}
-            </div>
+            <ReviewCards
+              initialReviews={[...siblings].sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))}
+            />
           </section>
         )}
         {!activity.unitReview && siblings.length > 1 && (
