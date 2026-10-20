@@ -175,8 +175,8 @@ function AdminPanel({ subjects, structure, activities, uploadedIds, labels }: Sh
                 رفع مراجعة وحدة
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                ارفع ملف HTML للعبة المراجعة واختر المادة والمستوى والوحدة. يظهر
-                لأحدث مراجعة زرّ ذهبي في الواجهة الأولى ليراها الزوّار فور دخولهم.
+                ارفع ملف HTML للعبة المراجعة واختر المادة والمستوى والوحدة. تظهر
+                في صفحة «مراجعات الوحدات» التي يفتحها الزرّ الذهبي في الواجهة الأولى.
               </p>
             </div>
             <AdminUploader subjects={subjects} reviewOnly />

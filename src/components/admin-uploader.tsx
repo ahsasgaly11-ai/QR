@@ -375,7 +375,7 @@ export function AdminUploader({
             {presentationOnly
               ? <>أصبح العرض «{result.activity.title}» متاحًا الآن في قسم «العروض التقديمية الذكية»، وزرًّا «عرض الدرس» فوق أنشطة درسه.</>
               : reviewOnly
-              ? <>أصبحت المراجعة «{result.activity.title}» متاحة الآن، ويظهر لأحدث مراجعة زرّ ذهبي في الواجهة الأولى للموقع.</>
+              ? <>أصبحت المراجعة «{result.activity.title}» متاحة الآن في صفحة «مراجعات الوحدات».</>
               : smartOnly
               ? <>أصبحت اللعبة «{result.activity.title}» متاحة الآن في قسم ألعاب التعزيز الذكية.</>
               : <>أصبح النشاط «{result.activity.title}» متاحًا الآن في المنصّة ضمن الدرس المحدّد. يمكن للزوّار تجربته وتحميله، وتُحتسب مشاهداته وتنزيلاته تلقائيًا.</>}
@@ -409,14 +409,14 @@ export function AdminUploader({
                 href={
                   presentationOnly
                     ? PRESENTATIONS_PATH
-                    : smartOnly ? '/smart-games' : reviewOnly ? '/' : `/subject/${result.activity.subjectId}`
+                    : smartOnly ? '/smart-games' : reviewOnly ? '/unit-reviews' : `/subject/${result.activity.subjectId}`
                 }
                 className="btn-ghost px-6 text-base"
               >
                 <BookOpen className="h-5 w-5" />
                 {presentationOnly
                   ? 'عرض قسم العروض'
-                  : smartOnly ? 'عرض قسم الألعاب' : reviewOnly ? 'عرض الصفحة الرئيسية' : 'عرضها في الدرس'}
+                  : smartOnly ? 'عرض قسم الألعاب' : reviewOnly ? 'عرض صفحة المراجعات' : 'عرضها في الدرس'}
               </Link>
             </div>
 
@@ -650,10 +650,10 @@ export function AdminUploader({
       {reviewOnly && (
         <div className="mt-5 rounded-2xl border border-[color:var(--gold)]/30 bg-[color:var(--gold)]/5 p-4">
           <p className="text-sm font-semibold text-[color:var(--maroon)]">
-            أحدث مراجعة مرفوعة يظهر لها زرّ ذهبي في الواجهة الأولى للموقع.
+            ستظهر المراجعة في صفحة «مراجعات الوحدات» ببطاقات الألعاب.
           </p>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            وتظهر بقية المراجعات أسفل صفحة تشغيل أي مراجعة في قسم «مراجعات الوحدات».
+            يفتح الزرّ الذهبي في الواجهة الأولى للموقع هذه الصفحة.
           </p>
           <label className="mt-3 flex cursor-pointer items-center gap-2 text-sm font-bold text-foreground">
             <input
