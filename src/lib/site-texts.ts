@@ -107,16 +107,6 @@ export const SITE_TEXT_GROUPS: SiteTextGroup[] = [
     ],
   },
   {
-    id: 'home.reviews',
-    label: 'الرئيسية • مراجعات الوحدات',
-    href: '/',
-    hideable: true,
-    fields: [
-      { key: 'home.reviews.kicker', label: 'السطر التمهيدي', default: 'جديد • استعدّ للاختبار' },
-      { key: 'home.reviews.title', label: 'عنوان القسم', default: 'مراجعات الوحدات' },
-    ],
-  },
-  {
     id: 'home.doors',
     label: 'الرئيسية • أبواب المواد',
     href: '/#doors',
