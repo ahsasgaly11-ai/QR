@@ -59,7 +59,6 @@ export default async function HomePage() {
   const reviews = activities
     .filter((a) => a.unitReview)
     .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
-  const latestReview = reviews[0];
   const smartGames = activities.filter((a) => a.smartReinforcement).length;
   const presentations = activities.filter((a) => a.presentation).length;
 
@@ -286,11 +285,12 @@ export default async function HomePage() {
                 {e('home.hero.cta')}
                 <ArrowLeft className="h-5 w-5" />
               </a>
-              {latestReview ? (
+              {reviews.length > 0 ? (
+                // يفتح صفحة «مراجعات الوحدات» ببطاقات ألعابها، لا اللعبة مباشرة
                 <Link
-                  href={`/play/${latestReview.id}`}
+                  href="/unit-reviews"
                   className="review-ticket"
-                  aria-label={`العب ${latestReview.title}`}
+                  aria-label={`مراجعات الوحدات: ${reviews.length} مراجعة`}
                 >
                   <span className="review-ticket-icon" aria-hidden>
                     <HeritageIcon kind="oyster" />
@@ -298,9 +298,9 @@ export default async function HomePage() {
                   <span className="min-w-0 flex-1">
                     <span className="review-ticket-kicker">
                       <Gamepad2 className="h-3.5 w-3.5" aria-hidden />
-                      مراجعة الوحدة • لعبة
+                      مراجعات الوحدات • {reviews.length} {reviews.length === 1 ? 'لعبة' : reviews.length <= 10 ? 'ألعاب' : 'لعبة'}
                     </span>
-                    <span className="review-ticket-title">{latestReview.title}</span>
+                    <span className="review-ticket-title">اختر مراجعة وحدتك وابدأ</span>
                   </span>
                   <span className="review-ticket-go" aria-hidden>
                     <ArrowLeft className="h-5 w-5" />

@@ -255,6 +255,17 @@ export const SITE_TEXT_GROUPS: SiteTextGroup[] = [
     ),
   },
   {
+    id: 'page.reviews',
+    label: 'صفحة مراجعات الوحدات',
+    href: '/unit-reviews',
+    fields: court(
+      'page.reviews',
+      'جديد • استعدّ للاختبار',
+      'مراجعات الوحدات',
+      'ألعاب مراجعة شاملة لكل وحدة دراسية: اختر مراجعة وحدتك وراجع دروسها كلّها قبل الاختبار.'
+    ),
+  },
+  {
     id: 'page.presentations',
     label: 'صفحة العروض التقديمية الذكية',
     href: '/smart-presentations',

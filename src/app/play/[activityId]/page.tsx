@@ -97,7 +97,7 @@ export default async function PlayPage({
               : activity.presentation
                 ? PRESENTATIONS_PATH
                 : activity.unitReview
-                ? '/'
+                ? '/unit-reviews'
                 : `/subject/${activity.subjectId}`
           }
         />
@@ -106,6 +106,16 @@ export default async function PlayPage({
           <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
           {activity.smartReinforcement ? (
             <Link href="/smart-games" className="hover:text-[color:var(--maroon)]">ألعاب التعزيز الذكية</Link>
+          ) : activity.unitReview ? (
+            <>
+              <Link href="/unit-reviews" className="hover:text-[color:var(--maroon)]">مراجعات الوحدات</Link>
+              {unit && (
+                <>
+                  <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
+                  <span>{unit.title}</span>
+                </>
+              )}
+            </>
           ) : (
             <>
               {subject && (
