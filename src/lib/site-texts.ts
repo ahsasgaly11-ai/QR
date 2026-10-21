@@ -61,6 +61,7 @@ export const SITE_TEXT_GROUPS: SiteTextGroup[] = [
       { key: 'header.tagline', label: 'السطر تحت اسم المنصّة', default: 'تجارب • محاكاة • أسئلة • ألعاب' },
       { key: 'nav.home', label: 'الرئيسية', default: 'الرئيسية' },
       { key: 'nav.browse', label: 'المناهج', default: 'المناهج' },
+      { key: 'nav.boardGames', label: 'ألعاب السبورة الذكية', default: 'ألعاب السبورة' },
       { key: 'nav.search', label: 'بحث', default: 'بحث' },
       { key: 'nav.dashboard', label: 'الإحصاءات', default: 'الإحصاءات' },
       { key: 'nav.heatmap', label: 'الخريطة الحرارية', default: 'الخريطة الحرارية' },
@@ -118,6 +119,24 @@ export const SITE_TEXT_GROUPS: SiteTextGroup[] = [
       { key: 'home.doors.action', label: 'الرابط الجانبي', default: 'كل المناهج' },
       { key: 'home.doors.games', label: 'باب ألعاب التعزيز', default: 'ألعاب التعزيز الذكية' },
       { key: 'home.doors.presentations', label: 'باب العروض التقديمية', default: 'العروض التقديمية الذكية' },
+      { key: 'home.doors.board', label: 'باب ألعاب السبورة الذكية', default: 'ألعاب السبورة الذكية' },
+    ],
+  },
+  {
+    id: 'home.boardGames',
+    label: 'الرئيسية • ألعاب السبورة الذكية',
+    href: '/#board-games',
+    hideable: true,
+    fields: [
+      { key: 'home.boardGames.kicker', label: 'السطر التمهيدي', default: 'قسم جديد • المس السبورة بيدك' },
+      { key: 'home.boardGames.title', label: 'عنوان القسم', default: 'ألعاب السبورة الذكية' },
+      {
+        key: 'home.boardGames.lead',
+        label: 'وصف القسم',
+        default: 'ألعاب يلعبها الصف كله بلمس السبورة بالأيدي، بلا أقلام إلكترونية ولا أجهزة للطلاب: جهاز المعلّم يعرض اللعبة على جهاز العرض ويرى أيدي الطلاب بكاميرته.',
+        long: true,
+      },
+      { key: 'home.boardGames.action', label: 'الرابط الجانبي', default: 'كل ألعاب السبورة' },
     ],
   },
   {
@@ -255,6 +274,17 @@ export const SITE_TEXT_GROUPS: SiteTextGroup[] = [
     ),
   },
   {
+    id: 'page.boardGames',
+    label: 'صفحة ألعاب السبورة الذكية',
+    href: '/board-games',
+    fields: court(
+      'page.boardGames',
+      'جديد • المس السبورة بيدك',
+      'ألعاب السبورة الذكية',
+      'ألعاب صفّية تُلعب بلمس السبورة بالأيدي، بلا أقلام إلكترونية ولا أجهزة للطلاب: جهاز المعلّم يعرض اللعبة على جهاز العرض ويرى أيدي الطلاب بكاميرته.'
+    ),
+  },
+  {
     id: 'page.reviews',
     label: 'صفحة مراجعات الوحدات',
     href: '/unit-reviews',
@@ -334,6 +364,7 @@ export const DOOR_EMBLEMS: Record<DoorEmblem, string> = {
   english: 'حرف لاتيني (إنجليزي)',
   games: 'ألعاب',
   slides: 'شاشة عرض',
+  board: 'يد على السبورة',
   letter: 'الحرف الأول من الاسم',
 };
 
@@ -344,6 +375,7 @@ export const DOOR_SWATCHES = ['#8a1538', '#2b6b62', '#2d5f7c', '#3f6b3a', '#5b3a
 export const SPECIAL_DOORS: Record<string, { label: string; color: string; emblem: DoorEmblem }> = {
   __games: { label: 'ألعاب التعزيز الذكية', color: '#2d5f7c', emblem: 'games' },
   __presentations: { label: 'العروض التقديمية الذكية', color: '#b5552b', emblem: 'slides' },
+  __board: { label: 'ألعاب السبورة الذكية', color: '#1d5c63', emblem: 'board' },
 };
 
 export interface DoorStyle {
@@ -361,6 +393,7 @@ export interface FooterLink {
 export const DEFAULT_FOOTER_LINKS: FooterLink[] = [
   { href: '/', label: 'الرئيسية' },
   { href: '/browse', label: 'تصفّح المناهج' },
+  { href: '/board-games', label: 'ألعاب السبورة الذكية' },
   { href: '/about', label: 'عن المنصّة' },
   { href: '/dashboard', label: 'لوحة الإحصاءات' },
   { href: '/admin', label: 'رفع نشاط جديد' },
@@ -382,7 +415,7 @@ export interface SiteTexts {
   hidden: string[];
   /** ترتيب أقسام الرئيسية — فارغ = الترتيب الأصلي */
   order: string[];
-  /** لون الباب ونقشه: معرّف المادة (أو __games / __presentations) ← نمط */
+  /** لون الباب ونقشه: معرّف المادة (أو __games / __presentations / __board) ← نمط */
   doors: Record<string, DoorStyle>;
   /** روابط التذييل — null = الروابط الأصلية */
   footerLinks: FooterLink[] | null;

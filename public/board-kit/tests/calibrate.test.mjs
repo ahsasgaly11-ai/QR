@@ -82,3 +82,49 @@ test('buildCalibration rejects a tiny or crossed quad', () => {
   assert.throws(() => buildCalibration([{ x: 0.5, y: 0.5 }, { x: 0.52, y: 0.5 }, { x: 0.52, y: 0.52 }, { x: 0.5, y: 0.52 }]), /صغيرة/);
   assert.throws(() => buildCalibration([{ x: 0.1, y: 0.1 }, { x: 0.9, y: 0.9 }, { x: 0.9, y: 0.1 }, { x: 0.1, y: 0.9 }]), /ترتيب/);
 });
+
+// ---------------------------------------------------------------------------
+// انعكاس الشاشة بتأخيرات مختلفة: كاميرا وهمية ترى ما عُرض قبل `latency` م.ث فقط.
+// ---------------------------------------------------------------------------
+import { runAutoCalibration, MAX_WAIT_MS } from '../js/calibrate.js';
+
+function fakeRig({ latency, screenToCam }) {
+  let clock = 0;
+  const shown = []; // [{at, target|null}]
+  const base = room();
+  const targets = [...MARKERS, { x: 0.5, y: 0.5 }];
+  return {
+    targets,
+    io: {
+      now: () => clock,
+      sleep: async (ms) => { clock += ms; },
+      show: (i) => shown.push({ at: clock, t: targets[i] }),
+      hide: () => shown.push({ at: clock, t: null }),
+      grab: () => {
+        clock += 33; // زمن التقاط إطار
+        // ما يظهر على السبورة الآن هو ما عُرض قبل `latency`
+        const visible = [...shown].reverse().find((s) => s.at <= clock - latency);
+        if (!visible?.t) return frame(withSpot(base, 0, 0, 0, 0));
+        const c = applyH(screenToCam, visible.t.x, visible.t.y);
+        return frame(withSpot(base, c.x, c.y));
+      },
+      aspect: 1180 / 820,
+      targets,
+    },
+  };
+}
+
+for (const [name, latency] of [['HDMI cable', 30], ['Apple TV', 180], ['Miracast', 450], ['iProjection (slow)', 1600]]) {
+  test(`auto-calibration works with ${name} mirroring delay (${latency} ms) and measures it`, async () => {
+    const screenToCam = [0.62, 0.1, 0.12, -0.06, 0.58, 0.22, 0.18, -0.1, 1];
+    const { io } = fakeRig({ latency, screenToCam });
+    const cal = await runAutoCalibration(io);
+    assert.ok(cal.error < 0.6, `center error ${cal.error.toFixed(2)}%`);
+    assert.ok(Math.abs(cal.latencyMs - latency) < 300, `measured ${cal.latencyMs} ms vs ${latency}`);
+  });
+}
+
+test('auto-calibration reports clearly when the projected marker never appears', async () => {
+  const { io } = fakeRig({ latency: MAX_WAIT_MS + 5000, screenToCam: [1, 0, 0, 0, 1, 0, 0, 0, 1] });
+  await assert.rejects(runAutoCalibration(io), /انعكاس الشاشة/);
+});

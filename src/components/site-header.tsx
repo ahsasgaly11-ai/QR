@@ -17,6 +17,7 @@ import { useSiteTexts } from './use-site-texts';
 const NAV_KEYS = [
   { href: '/', key: 'nav.home' },
   { href: '/browse', key: 'nav.browse' },
+  { href: '/board-games', key: 'nav.boardGames' },
   { href: '/search', key: 'nav.search' },
   { href: '/dashboard', key: 'nav.dashboard' },
   { href: '/heatmap', key: 'nav.heatmap' },

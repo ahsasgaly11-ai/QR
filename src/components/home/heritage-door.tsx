@@ -63,6 +63,20 @@ function Emblem({ kind, letter }: { kind: DoorEmblem; letter: string }) {
           <path d="M44 34v20l16-10z" fill="currentColor" stroke="none" />
         </g>
       );
+    case 'board':
+      // سبورة وكفّ تلمسها
+      return (
+        <g>
+          <rect x="12" y="16" width="76" height="50" rx="5" fill="none" stroke="currentColor" strokeWidth="5" />
+          <path d="M50 66v8M36 84h28" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" />
+          <path
+            d="M55 58V36a4 4 0 0 1 8 0v14V30a4 4 0 0 1 8 0v20V34a4 4 0 0 1 8 0v24c0 11-7 20-18 20h-3c-6 0-10-3-13-8l-8-12a4 4 0 0 1 7-5l5 6"
+            fill="currentColor"
+            stroke="none"
+            transform="translate(-10 -8)"
+          />
+        </g>
+      );
     default:
       return (
         <text x="50" y="72" textAnchor="middle" fontSize="56" fontWeight="700" fill="currentColor" fontFamily="'Readex Pro', sans-serif">

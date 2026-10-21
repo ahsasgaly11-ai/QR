@@ -3,8 +3,12 @@
 //   • يد الطالب على السبورة (من الكاميرا): «اللمس بالبقاء» — تبقى اليد على
 //     الهدف مدة قصيرة فتمتلئ حلقة حولها ثم يُنفَّذ الفعل. الكاميرا لا تعرف هل
 //     لامست اليد السبورة أم اقتربت منها، فالبقاء هو ما يميّز النية عن المرور.
-//   • لمس شاشة الآيباد أو الماوس: فوري (ضغط، سحب، إفلات).
+//   • لمس شاشة الجهاز أو الماوس: فوري (ضغط، سحب، إفلات).
 //   • محاكاة اليد بالماوس (للتجربة دون كاميرا): الماوس يتصرف كيد بالضبط.
+//
+// السن «المركون»: إن اختفت اليد الحاملة لسنّ (حجبها جسم الطفل أو صغرت عن
+// الكاميرا) لا يعود السن فورًا؛ يبقى مكانه بضع ثوانٍ مع دائرة نابضة، وأول يد
+// تظهر قربه تلتقطه وتكمل السحب.
 //
 // اللعبة تعرّف «الأهداف» (بطاقات، أزرار، خانات)، والمحرّك يقرر أي هدف تحت كل
 // مؤشر ومتى يُنفَّذ، ثم يستدعي game.press / game.drop / game.cancel.
@@ -15,6 +19,13 @@ const NS = 'http://www.w3.org/2000/svg';
 const RING_R = 30;
 const RING_LEN = 2 * Math.PI * RING_R;
 const HAND_COLORS = ['#8a1538', '#1d4ed8', '#047857', '#b45309', '#7c3aed', '#be185d'];
+/** بعد هذه المدة بلا رؤية يُعدّ السن المحمول «مركونًا». */
+const PARK_AFTER_MS = 250;
+/** أقصى مدة يبقى فيها السن مركونًا قبل أن يعود إلى بطاقته. */
+export const PARK_MS = 4000;
+/** نطاق التقاط السن المركون (بوحدات المسرح u)، ويتّسع مع الوقت. */
+const ADOPT_R0 = 150;
+const ADOPT_R1 = 330;
 
 function svgEl(tag, attrs = {}) {
   const e = document.createElementNS(NS, tag);
@@ -48,9 +59,13 @@ export class Interaction {
   }
 
   // ---------------------------------------------------------------- الأيدي
-  /** @param {{id:number,x:number,y:number}[]} hands إحداثيات شاشة مطبّعة */
+  /**
+   * @param {{id:number,x:number,y:number}[]} hands إحداثيات مطبّعة على نافذة الصفحة كلها
+   * (المعايرة تُرسم على النافذة، والمسرح قد يصغر عنها بحواف الشاشة الآمنة في الهواتف).
+   */
   updateHands(hands, t) {
     const { VW, VH } = this.game;
+    const r = this.stage.getBoundingClientRect();
     for (const h of hands) {
       const key = `h${h.id}`;
       let c = this.cursors.get(key);
@@ -58,9 +73,13 @@ export class Interaction {
         c = this._newCursor(key, 'hand');
         this.cursors.set(key, c);
       }
-      c.x = h.x * VW;
-      c.y = h.y * VH;
+      // يُحصر المؤشر داخل المسرح: كف عند الحافة الطرفية يبقى فوق البطاقة الطرفية
+      const x = ((h.x * innerWidth - r.left) / r.width) * VW;
+      const y = ((h.y * innerHeight - r.top) / r.height) * VH;
+      c.x = Math.max(0, Math.min(VW, x));
+      c.y = Math.max(0, Math.min(VH, y));
       c.seen = t;
+      if (c.parked) c.parked = false;
     }
   }
 
@@ -72,6 +91,9 @@ export class Interaction {
       y: 0,
       seen: performance.now(),
       holding: null,
+      team: null, // فريق السن المحمول: لا يوضع إلا في فك فريقه
+      born: performance.now(),
+      parked: false,
       dwellId: null,
       dwellStart: 0,
       consumed: null, // آخر هدف نُفّذ عليه فعل؛ لا يتكرر حتى تغادره اليد
@@ -82,28 +104,45 @@ export class Interaction {
   }
 
   // ---------------------------------------------------------------- الأهداف
-  _hit(t, x, y) {
+  /** المسافة إلى الهدف (0 داخل المستطيل)، أو Infinity خارجه. `grow` يوسّع الهدف (لليد ولثبات البقاء). */
+  _hit(t, x, y, grow = 0) {
     if (t.rect) {
       const { x: rx, y: ry, w, h } = t.rect;
-      const pad = t.pad ?? 12;
+      const pad = (t.pad ?? 12) + grow;
       const dx = Math.max(rx - pad - x, 0, x - (rx + w + pad));
       const dy = Math.max(ry - pad - y, 0, y - (ry + h + pad));
       return dx === 0 && dy === 0 ? 0 : Infinity;
     }
     const d = Math.hypot(t.x - x, t.y - y);
-    return d <= t.r ? d : Infinity;
+    return d <= t.r * (1 + grow / 60) ? d : Infinity;
+  }
+
+  /**
+   * هل يقبل الهدف ما تحمله اليد؟ للخانة أن تعرّف accepts(c) بنفسها، وإلا فخانة لها
+   * فريق (team) لا تقبل إلا ما التُقط من بطاقات الفريق نفسه.
+   */
+  _accepts(c, t) {
+    if (t.kind !== 'slot') return true;
+    if (typeof t.accepts === 'function') return t.accepts(c);
+    return !c.team || c.team === 'all' || !t.team || t.team === 'all' || t.team === c.team;
   }
 
   /** أقرب هدف مناسب لحالة المؤشر. */
   targetFor(c) {
     const targets = this.game.targets();
+    const hand = c.source !== 'pointer';
+    // ثبات البقاء: يبقى الهدف الحالي ما دامت اليد قريبة منه، وإن صارت خانة مجاورة أقرب قليلًا
+    if (hand && c.dwellId) {
+      const cur = targets.find((t) => t.id === c.dwellId && t.enabled !== false);
+      if (cur && this._accepts(c, cur) && this._hit(cur, c.x, c.y, 22) < Infinity) return cur;
+    }
     let best = null;
     let bestD = Infinity;
     const kinds = c.holding ? ['slot', 'card'] : ['card', 'button'];
     for (const kind of kinds) {
       for (const t of targets) {
-        if (t.kind !== kind || t.enabled === false) continue;
-        const d = this._hit(t, c.x, c.y);
+        if (t.kind !== kind || t.enabled === false || !this._accepts(c, t)) continue;
+        const d = this._hit(t, c.x, c.y, hand ? 10 : 0);
         if (d < bestD) {
           bestD = d;
           best = t;
@@ -127,13 +166,27 @@ export class Interaction {
         }
         continue;
       }
-      // اختفت اليد: أعِد السن الذي تحمله إلى مكانه
-      if (now - c.seen > TRACK_TTL_MS) {
-        if (c.holding) this.game.cancel(c);
+      const lost = now - c.seen;
+      if (c.holding) {
+        // اختفت اليد الحاملة: يُركن السن مكانه، ويعود إلى بطاقته إن طال الغياب
+        if (lost > PARK_MS) {
+          this.game.cancel(c);
+          c.g?.remove();
+          this.cursors.delete(key);
+          continue;
+        }
+        if (lost > PARK_AFTER_MS) {
+          c.parked = true;
+          c.dwellId = null;
+          c.progress = 0;
+          continue;
+        }
+      } else if (lost > TRACK_TTL_MS) {
         c.g?.remove();
         this.cursors.delete(key);
         continue;
       }
+      if (!c.holding) this._adopt(c, now);
       const t = this.targetFor(c);
       const id = t?.id ?? null;
       if (c.consumed && c.consumed !== id) c.consumed = null;
@@ -159,6 +212,30 @@ export class Interaction {
     }
     this.game.setHovered(this.hovered);
     this._draw(now);
+  }
+
+  /** يد ظهرت قرب سن مركون تلتقطه (غالبًا اليد نفسها بعد حجب، بهوية جديدة). */
+  _adopt(c, now) {
+    let best = null;
+    let bestD = Infinity;
+    for (const p of this.cursors.values()) {
+      if (!p.parked || !p.holding || p === c) continue;
+      if (c.born < p.seen) continue; // يد كانت ظاهرة قبل الركن ليست اليد المفقودة
+      const r = ADOPT_R0 + (ADOPT_R1 - ADOPT_R0) * Math.min(1, (now - p.seen) / 2000);
+      const d = Math.hypot(p.x - c.x, p.y - c.y);
+      if (d < r && d < bestD) {
+        best = p;
+        bestD = d;
+      }
+    }
+    if (!best) return;
+    c.holding = best.holding;
+    c.team = best.team;
+    c.consumed = null;
+    c.dwellId = null;
+    best.holding = null;
+    best.g?.remove();
+    this.cursors.delete(best.key);
   }
 
   _fire(c, t) {
@@ -194,12 +271,13 @@ export class Interaction {
       }
       if (c.heldType !== c.holding) {
         c.held.replaceChildren();
-        if (c.holding) c.held.appendChild(this.game.heldIcon(c.holding));
+        if (c.holding) c.held.appendChild(this.game.heldIcon(c.holding, c.team));
         c.heldType = c.holding;
       }
+      c.g.classList.toggle('parked', !!c.parked);
       const stale = c.source === 'hand' && now - c.seen > 160;
       c.g.setAttribute('transform', `translate(${c.x.toFixed(1)} ${c.y.toFixed(1)})`);
-      c.g.style.opacity = c.source === 'pointer' ? (c.holding ? '1' : '0') : stale ? '0.35' : '1';
+      c.g.style.opacity = c.source === 'pointer' ? (c.holding ? '1' : '0') : c.parked ? '0.8' : stale ? '0.35' : '1';
       const ringVisible = c.source !== 'pointer' && (show || c.holding);
       c.ringBg.style.display = ringVisible ? '' : 'none';
       c.ring.style.display = ringVisible ? '' : 'none';
@@ -234,8 +312,7 @@ export class Interaction {
     });
     stage.addEventListener('pointermove', (e) => {
       if (this.sim && e.pointerType === 'mouse') {
-        const r = stage.getBoundingClientRect();
-        this.simPos = { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height };
+        this.simPos = { x: e.clientX / innerWidth, y: e.clientY / innerHeight };
         return;
       }
       const c = this.cursors.get(`p${e.pointerId}`);
@@ -270,11 +347,12 @@ export class Interaction {
   reset() {
     for (const c of this.cursors.values()) {
       c.holding = null;
+      c.team = null;
       c.consumed = null;
       c.dwellId = null;
       c.g?.remove();
       c.g = null;
     }
-    for (const [k, c] of this.cursors) if (c.source === 'pointer') this.cursors.delete(k);
+    for (const [k, c] of this.cursors) if (c.source === 'pointer' || c.parked) this.cursors.delete(k);
   }
 }

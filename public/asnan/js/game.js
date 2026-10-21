@@ -8,11 +8,12 @@
 // الأوضاع:
 //   • «ركّب»: يلتقط الطالب سنًّا من بطاقة نوعه ويضعه في خانته على الفك.
 //   • «تعرّف»: تتوهج خانة، ويلمس الطالب بطاقة النوع الصحيح.
-//   • «سباق فريقين» (مع الفكّين في وضع ركّب): فريق للعلوي وفريق للسفلي.
+//   • «سباق فريقين» (مع الفكّين): فريق للعلوي وفريق للسفلي، ولكل فريق بطاقاته
+//     تحت فكّه، وأسنان بطاقاته لا توضع إلا في فكّه (فلا تتشابك أيدي الفريقين).
 // ---------------------------------------------------------------------------
 import { TYPES, TYPE_ORDER, jawTeeth, crownPath, rootPath, SLOT_PATH, CROWN_LEN } from './teeth.js';
-import { archCurve, placeOnArch, inwardNormal } from './geometry.js';
-import { sfx, say } from './audio.js';
+import { archCurve, placeOnArch, inwardNormal } from '../../board-kit/js/geometry.js';
+import { sfx, say } from '../../board-kit/js/audio.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 /** عمق القوس ÷ عرضه (الفك البشري أعرض من عمقه). */
@@ -71,7 +72,7 @@ export class Game {
     this.VW = 1600;
     this.screen = 'menu';
     this.opts = { level: 'upper', mode: 'build', race: false };
-    this.settings = { reachTop: 0 };
+    this.settings = { reachTop: 0, sideInset: 0 };
     this.input = null; // يُضبط من main.js
     this._targets = [];
     this._els = new Map(); // معرّف الهدف ← عنصره (لإبراز الهدف تحت اليد)
@@ -153,7 +154,9 @@ export class Game {
   _band() {
     const headerH = 96;
     const top = Math.max(headerH + 8, Math.round(this.settings.reachTop * this.VH));
-    return { headerH, top, bottom: this.VH - 14 };
+    // هامش جانبي يختاره المعلم إن كانت أطراف الصورة خارج السبورة أو تراها الكاميرا بصعوبة
+    const side = Math.round((this.settings.sideInset || 0) * this.VW) + 30;
+    return { headerH, top, bottom: this.VH - 14, left: side, right: this.VW - side };
   }
 
   // ------------------------------------------------------------------ تخطيط الأقواس
@@ -273,10 +276,10 @@ export class Game {
 
   // ------------------------------------------------------------------ القائمة
   _renderMenu() {
-    const { headerH } = this._band();
+    const { headerH, left, right } = this._band();
     this.stage.dataset.screen = 'menu';
     // الصورة: الفكّان كاملان بألوان الأنواع (للتعريف بالأنواع قبل اللعب)
-    const region = { x: 60, y: headerH + 6, w: this.VW - 120, h: this.VH * 0.5 - headerH };
+    const region = { x: left + 30, y: headerH + 6, w: right - left - 60, h: this.VH * 0.5 - headerH };
     this.board.classList.add('reveal');
     for (const box of this._jawBoxes('both', region)) this._drawJaw(this._fitArch(box, box.jaw), { interactive: false, filledAll: true });
 
@@ -291,6 +294,7 @@ export class Game {
 
     // الخيارات في النصف السفلي (في متناول الطلاب)
     const panel = html('div', 'menu-panel');
+    Object.assign(panel.style, { left: `calc(var(--u) * ${left + 20})`, right: `calc(var(--u) * ${this.VW - right + 20})` });
     const row = (items, key) => {
       const r = html('div', 'menu-row');
       for (const it of items) {
@@ -302,10 +306,10 @@ export class Game {
     };
     panel.appendChild(row(MODES, 'mode'));
     panel.appendChild(row(LEVELS, 'level'));
-    const raceOk = this.opts.level === 'both' && this.opts.mode === 'build';
+    const raceOk = this.opts.level === 'both';
     const extra = html('div', 'menu-row');
     const race = html('div', `opt toggle${this.opts.race && raceOk ? ' on' : ''}${raceOk ? '' : ' off'}`,
-      `<b>سباق فريقين</b><small>${raceOk ? (this.opts.race ? 'مفعّل: فريق لكل فك' : 'فريق لكل فك') : 'مع «الفكّان» و«ركّب»'}</small>`);
+      `<b>سباق فريقين</b><small>${raceOk ? (this.opts.race ? 'مفعّل: لكل فريق فكّه وبطاقاته' : 'لكل فريق فكّه وبطاقاته') : 'مع «الفكّان»'}</small>`);
     race.dataset.target = 'opt:race';
     if (!raceOk) race.dataset.disabled = '1';
     const start = html('div', 'opt start', '<b>ابدأ</b><small>المس وأبقِ يدك</small>');
@@ -315,32 +319,51 @@ export class Game {
     this.hud.appendChild(panel);
   }
 
+  // ------------------------------------------------------------------ الفرق
+  /** الفرق في اللعبة الحالية: فريقان في السباق (لكل فريق فك)، أو فريق واحد لكل الفكوك. */
+  _teamsFor(level, race) {
+    if (race) return [{ id: 'upper', jaws: ['upper'] }, { id: 'lower', jaws: ['lower'] }];
+    return [{ id: 'all', jaws: level === 'both' ? ['upper', 'lower'] : [level] }];
+  }
+
+  _teamSlots(team) {
+    const jaws = this.state.teams[team].jaws;
+    return this.slots.filter((s) => jaws.includes(s.jaw));
+  }
+
+  _teamOfJaw(jaw) {
+    return this.state.race ? jaw : 'all';
+  }
+
   // ------------------------------------------------------------------ اللعب
   newGame() {
     const { level, mode } = this.opts;
-    const race = this.opts.race && level === 'both' && mode === 'build';
+    const race = this.opts.race && level === 'both';
+    const teams = {};
+    for (const t of this._teamsFor(level, race)) {
+      teams[t.id] = { ...t, mistakes: 0, end: 0, wrongStreak: {}, quizTarget: null, quizWrong: 0, lastTypes: [] };
+    }
     this.state = {
       level,
       mode,
       race,
+      teams,
       start: performance.now(),
       end: 0,
-      mistakes: 0,
       byType: Object.fromEntries(TYPE_ORDER.map((t) => [t, 0])),
       seenFact: new Set(),
-      wrongStreak: {},
-      quizTarget: null,
-      quizWrong: 0,
-      jawDone: {},
       winner: null,
       filled: new Set(),
-      order: null,
     };
     this.screen = 'play';
     this.input?.reset();
     this._clearTimers();
     this.render();
-    if (mode === 'quiz') this._nextQuiz();
+    if (mode === 'quiz') for (const id in teams) this._nextQuiz(id);
+  }
+
+  get mistakes() {
+    return this.state ? Object.values(this.state.teams).reduce((s, t) => s + t.mistakes, 0) : 0;
   }
 
   _renderPlay() {
@@ -348,13 +371,16 @@ export class Game {
     const done = this.screen === 'done';
     this.stage.dataset.screen = this.screen;
     this.board.classList.toggle('reveal', done);
-    const { headerH, top, bottom } = this._band();
-    const trayH = Math.max(150, Math.min(205, (bottom - top) * 0.26));
+    const { top, bottom, left, right } = this._band();
+    // في السباق تحت كل صف بطاقات شريط للفريق (اسمه وتقدّمه)
+    const teamBarH = st.race ? 46 : 0;
+    const trayH = Math.max(150, Math.min(205, (bottom - top) * 0.26)) + teamBarH;
     const trayTop = bottom - trayH;
-    const region = { x: 40, y: top, w: this.VW - 80, h: trayTop - 18 - top };
+    const region = { x: left + 10, y: top, w: right - left - 20, h: trayTop - 18 - top };
 
     this.slots = [];
-    for (const box of this._jawBoxes(st.level, region)) {
+    const boxes = this._jawBoxes(st.level, region);
+    for (const box of boxes) {
       this.slots.push(...this._drawJaw(this._fitArch(box, box.jaw), { interactive: !done }));
     }
     for (const s of this.slots) {
@@ -371,16 +397,6 @@ export class Game {
     this.$mist = html('span', 'chip warn');
     chips.append(this.$progress, this.$time, this.$mist);
     head.appendChild(chips);
-    if (st.race) {
-      const race = html('div', 'race');
-      this.$race = {};
-      for (const jaw of ['upper', 'lower']) {
-        const r = html('div', `race-team ${jaw}`, `<span>فريق ${JAW_NAME[jaw]}</span><div class="bar"><i></i></div>`);
-        this.$race[jaw] = r.querySelector('i');
-        race.appendChild(r);
-      }
-      head.appendChild(race);
-    }
     this.hud.appendChild(head);
     this.$toast = html('div', 'toast');
     this.hud.appendChild(this.$toast);
@@ -388,29 +404,60 @@ export class Game {
     this.hud.appendChild(this.$fact);
 
     this.$cards = null;
+    this.$teams = null;
     if (done) {
-      this._renderResult({ trayTop, trayH });
+      this._renderResult({ trayTop, trayH, left, right });
     } else {
-      // البطاقات
-      const tray = html('div', 'tray');
-      Object.assign(tray.style, { top: `calc(var(--u) * ${trayTop})`, height: `calc(var(--u) * ${trayH})` });
       this.$cards = {};
-      for (const id of TYPE_ORDER) {
-        const T = TYPES[id];
-        const card = html('div', `card t-${id}`);
-        card.dataset.target = `card:${id}`;
-        card.appendChild(toothIconSvg(id));
-        const body = html('div', 'card-body', `<b>${T.name}</b><small>${T.job}</small>`);
-        const count = html('span', 'count');
-        body.appendChild(count);
-        card.appendChild(body);
-        tray.appendChild(card);
-        this.$cards[id] = { card, count };
+      this.$teams = {};
+      const mid = this.VW / 2;
+      for (const team of Object.keys(st.teams)) {
+        // السباق: بطاقات العلوي في اليمين تحت فكّه، والسفلي في اليسار تحت فكّه
+        const x0 = team === 'upper' ? mid + 14 : left;
+        const x1 = team === 'lower' ? mid - 14 : right;
+        this._renderTray(team, { x0, x1, top: trayTop, h: trayH, teamBarH });
       }
-      this.hud.appendChild(tray);
     }
     this._updateHud();
-    if (st.mode === 'quiz' && st.quizTarget && !done) this._markQuiz();
+    if (st.mode === 'quiz' && !done) this._markQuiz();
+  }
+
+  _renderTray(team, { x0, x1, top, h, teamBarH }) {
+    const st = this.state;
+    const wrap = html('div', `tray-wrap team-${team}`);
+    if (st.race) wrap.dataset.team = team;
+    Object.assign(wrap.style, {
+      left: `calc(var(--u) * ${x0})`,
+      width: `calc(var(--u) * ${x1 - x0})`,
+      top: `calc(var(--u) * ${top})`,
+      height: `calc(var(--u) * ${h})`,
+    });
+    if (st.race) {
+      const bar = html('div', 'team-bar', `<b>فريق ${JAW_NAME[team]}</b><span class="tb-bar"><i></i></span><span class="tb-mist"></span>`);
+      wrap.appendChild(bar);
+      this.$teams[team] = { bar: bar.querySelector('i'), mist: bar.querySelector('.tb-mist') };
+    }
+    const tray = html('div', 'tray');
+    const gap = 20;
+    const cardW = (x1 - x0 - 3 * gap) / 4;
+    const cardH = h - teamBarH;
+    // بطاقة ضيقة (سباق، أو هاتف بشاشة قصيرة عريضة): الأيقونة فوق الاسم
+    if (cardW < cardH * 1.35) tray.classList.add('compact');
+    this.$cards[team] = {};
+    for (const id of TYPE_ORDER) {
+      const T = TYPES[id];
+      const card = html('div', `card t-${id}`);
+      card.dataset.target = `card:${team}:${id}`;
+      card.appendChild(toothIconSvg(id));
+      const body = html('div', 'card-body', `<b>${T.name}</b><small>${T.job}</small>`);
+      const count = html('span', 'count');
+      body.appendChild(count);
+      card.appendChild(body);
+      tray.appendChild(card);
+      this.$cards[team][id] = { card, count };
+    }
+    wrap.appendChild(tray);
+    this.hud.appendChild(wrap);
   }
 
   _collectTargets() {
@@ -420,42 +467,57 @@ export class Game {
     for (const el of this.hud.querySelectorAll('[data-target]')) {
       const r = el.getBoundingClientRect();
       const id = el.dataset.target;
-      const kind = id.startsWith('card:') ? 'card' : 'button';
+      const isCard = id.startsWith('card:');
+      const [, team, type] = isCard ? id.split(':') : [];
       this._els.set(id, el);
+      // الهدف القريب من حافة الشاشة يمتد إليها: كف الطفل عند الحافة (أو خارجها قليلًا) يبقى عليه
+      let x = (r.left - sr.left) * k;
+      let y = (r.top - sr.top) * k;
+      let w = r.width * k;
+      let h = r.height * k;
+      const EDGE = 90;
+      if (x < EDGE) (w += x), (x = 0);
+      if (this.VW - (x + w) < EDGE) w = this.VW - x;
+      if (this.VH - (y + h) < EDGE) h = this.VH - y;
       targets.push({
         id,
-        kind,
+        kind: isCard ? 'card' : 'button',
+        team,
+        type,
         el,
-        rect: { x: (r.left - sr.left) * k, y: (r.top - sr.top) * k, w: r.width * k, h: r.height * k },
+        rect: { x, y, w, h },
         pad: 6,
         enabled: true,
         disabledEl: el.dataset.disabled === '1',
       });
     }
     if (this.screen === 'play') {
-      for (const s of this.slots) targets.push({ id: s.id, kind: 'slot', x: s.x, y: s.y, r: s.r, slot: s, enabled: !s.filled });
+      for (const s of this.slots) {
+        targets.push({ id: s.id, kind: 'slot', x: s.x, y: s.y, r: s.r, slot: s, team: this._teamOfJaw(s.jaw), enabled: !s.filled });
+      }
     }
     this._targets = targets;
     this._refreshEnabled();
   }
 
-  /** البطاقة معطّلة إن لم يبقَ من نوعها خانة فارغة (بعد طرح ما تحمله الأيدي الآن). */
-  available(type) {
-    if (!this.slots) return 0;
-    const empty = this.slots.filter((s) => s.type === type && !s.filled).length;
+  /** كم سنًّا من النوع يمكن التقاطه من بطاقات الفريق (الخانات الفارغة ناقص ما تحمله أيدي الفريق الآن). */
+  available(type, team = 'all') {
+    if (!this.slots || !this.state) return 0;
+    const empty = this._teamSlots(team).filter((s) => s.type === type && !s.filled).length;
     let held = 0;
-    for (const c of this.input?.cursors.values() || []) if (c.holding === type) held++;
+    for (const c of this.input?.cursors.values() || []) if (c.holding === type && c.team === team) held++;
     return empty - held;
   }
 
   _refreshEnabled() {
+    const cursors = [...(this.input?.cursors.values() || [])];
     for (const t of this._targets) {
       if (t.kind === 'slot') t.enabled = !t.slot.filled && this.state?.mode === 'build';
       else if (t.kind === 'card' && this.state?.mode === 'build') {
-        const type = t.id.slice(5);
-        // تبقى البطاقة هدفًا لمن يحمل سنًّا من نوعها (ليعيده)
+        // تبقى البطاقة هدفًا لمن يحمل سنًّا منها (ليعيده)
         t.enabled = true;
-        t.el.classList.toggle('empty', this.available(type) <= 0 && ![...this.input.cursors.values()].some((c) => c.holding === type));
+        const holdingIt = cursors.some((c) => c.holding === t.type && c.team === t.team);
+        t.el.classList.toggle('empty', this.available(t.type, t.team) <= 0 && !holdingIt);
       } else if (t.disabledEl) t.enabled = false;
     }
   }
@@ -466,19 +528,24 @@ export class Game {
     const total = this.slots.length;
     const n = this.slots.filter((s) => s.filled).length;
     this.$progress.textContent = `${ar(n)} / ${ar(total)}`;
-    this.$mist.textContent = `أخطاء: ${ar(st.mistakes)}`;
+    this.$mist.textContent = `أخطاء: ${ar(this.mistakes)}`;
     this.tickClock();
     if (this.$cards) {
-      for (const id of TYPE_ORDER) {
-        const left = this.slots.filter((s) => s.type === id && !s.filled).length;
-        this.$cards[id].count.textContent = st.mode === 'build' ? `بقي ${ar(left)}` : '';
-        this.$cards[id].card.classList.toggle('done', st.mode === 'build' && left === 0);
+      for (const team of Object.keys(this.$cards)) {
+        const ts = this._teamSlots(team);
+        for (const id of TYPE_ORDER) {
+          const left = ts.filter((s) => s.type === id && !s.filled).length;
+          const c = this.$cards[team][id];
+          c.count.textContent = st.mode === 'build' ? `بقي ${ar(left)}` : '';
+          c.card.classList.toggle('done', st.mode === 'build' && left === 0);
+        }
       }
     }
-    if (st.race && this.$race) {
-      for (const jaw of ['upper', 'lower']) {
-        const js = this.slots.filter((s) => s.jaw === jaw);
-        this.$race[jaw].style.width = `${(100 * js.filter((s) => s.filled).length) / js.length}%`;
+    if (this.$teams) {
+      for (const team of Object.keys(this.$teams)) {
+        const ts = this._teamSlots(team);
+        this.$teams[team].bar.style.width = `${(100 * ts.filter((s) => s.filled).length) / ts.length}%`;
+        this.$teams[team].mist.textContent = `أخطاء: ${ar(st.teams[team].mistakes)}`;
       }
     }
   }
@@ -512,24 +579,28 @@ export class Game {
   press(c, t) {
     if (t.kind === 'button') return this._button(t.id);
     if (t.kind !== 'card' || this.screen !== 'play') return;
-    const type = t.id.slice(5);
+    const { type, team } = t;
     const st = this.state;
-    if (st.mode === 'quiz') return this._answer(type, t.el);
+    if (!st.teams[team]) return;
+    if (st.mode === 'quiz') return this._answer(team, type, t.el);
     // ركّب: إعادة السن المحمول إلى بطاقته، أو تبديله، أو التقاط سن جديد
-    if (c.holding === type) {
+    if (c.holding === type && c.team === team) {
       c.holding = null;
+      c.team = null;
       sfx.back();
       this._refreshEnabled();
       return;
     }
-    const prev = c.holding;
+    const prev = [c.holding, c.team];
     c.holding = null;
-    if (this.available(type) <= 0) {
-      c.holding = prev;
+    c.team = null;
+    if (this.available(type, team) <= 0) {
+      [c.holding, c.team] = prev;
       this.toast(`وُضعت كل ${TYPES[type].name}`, 'info');
       return;
     }
     c.holding = type;
+    c.team = team;
     sfx.pick();
     this._refreshEnabled();
   }
@@ -539,25 +610,29 @@ export class Game {
     if (this.screen !== 'play' || st.mode !== 'build' || !c.holding) return;
     const slot = t.slot;
     if (!slot || slot.filled) return;
+    const team = st.teams[c.team] ? c.team : this._teamOfJaw(slot.jaw);
+    if (!st.teams[team].jaws.includes(slot.jaw)) return; // فك الفريق الآخر
+    const T = st.teams[team];
     const type = c.holding;
     if (slot.type === type) {
       c.holding = null;
-      st.wrongStreak[type] = 0;
+      c.team = null;
+      T.wrongStreak[type] = 0;
       this._fill(slot);
       return;
     }
     // خطأ: يبقى السن في يد الطالب ليجرّب خانة أخرى
-    st.mistakes++;
+    T.mistakes++;
     st.byType[type]++;
-    st.wrongStreak[type] = (st.wrongStreak[type] || 0) + 1;
+    T.wrongStreak[type] = (T.wrongStreak[type] || 0) + 1;
     sfx.wrong();
     slot.slotEl.classList.remove('wrong');
     void slot.slotEl.getBoundingClientRect();
     slot.slotEl.classList.add('wrong');
     this.later(() => slot.slotEl.classList.remove('wrong'), 700);
-    if (st.wrongStreak[type] >= 2) {
+    if (T.wrongStreak[type] >= 2) {
       this.toast(`تلميح: الخانات المضيئة لـ${TYPES[type].name}`, 'hint');
-      this._hint((s) => s.type === type && !s.filled);
+      this._hint((s) => s.type === type && !s.filled && T.jaws.includes(s.jaw));
     } else {
       this.toast(`ليس مكان ${TYPES[type].single}`, 'bad');
     }
@@ -567,6 +642,7 @@ export class Game {
   cancel(c) {
     if (c.holding) {
       c.holding = null;
+      c.team = null;
       this._refreshEnabled();
     }
   }
@@ -589,11 +665,13 @@ export class Game {
     for (const t of this._targets) if (t.id === slot.id) t.enabled = false;
     this._refreshEnabled();
     this._updateHud();
-    if (st.race && !st.winner) {
-      const js = this.slots.filter((s) => s.jaw === slot.jaw);
-      if (js.every((s) => s.filled)) {
-        st.winner = slot.jaw;
-        this.toast(`🏆 فاز فريق ${JAW_NAME[slot.jaw]}!`, 'win');
+    const team = this._teamOfJaw(slot.jaw);
+    const T = st.teams[team];
+    if (!T.end && this._teamSlots(team).every((s) => s.filled)) {
+      T.end = performance.now();
+      if (st.race && !st.winner) {
+        st.winner = team;
+        this.toast(`🏆 فاز فريق ${JAW_NAME[team]}!`, 'win');
         sfx.win();
       }
     }
@@ -604,48 +682,51 @@ export class Game {
   }
 
   // ------------------------------------------------------------------ وضع «تعرّف»
-  _nextQuiz() {
-    const st = this.state;
-    const empty = this.slots.filter((s) => !s.filled);
-    if (!empty.length) return;
+  _nextQuiz(team) {
+    const T = this.state.teams[team];
+    const empty = this._teamSlots(team).filter((s) => !s.filled);
+    T.quizTarget = null;
+    if (!empty.length) return this._markQuiz();
     // اختيار عشوائي، مع تجنّب تكرار النوع نفسه ثلاث مرات متتالية
     let pick = empty[Math.floor(Math.random() * empty.length)];
-    const last = st.lastTypes || [];
+    const last = T.lastTypes;
     if (last.length >= 2 && last.every((t) => t === pick.type)) {
       const other = empty.filter((s) => s.type !== pick.type);
       if (other.length) pick = other[Math.floor(Math.random() * other.length)];
     }
-    st.lastTypes = [...last, pick.type].slice(-2);
-    st.quizTarget = pick.id;
-    st.quizWrong = 0;
+    T.lastTypes = [...last, pick.type].slice(-2);
+    T.quizTarget = pick.id;
+    T.quizWrong = 0;
     this._markQuiz();
   }
 
   _markQuiz() {
-    for (const s of this.slots) s.slotEl.classList.toggle('target', s.id === this.state.quizTarget);
+    const targets = new Set(Object.values(this.state.teams).map((t) => t.quizTarget));
+    for (const s of this.slots) s.slotEl.classList.toggle('target', targets.has(s.id));
   }
 
-  _answer(type, cardEl) {
+  _answer(team, type, cardEl) {
     const st = this.state;
-    const slot = this.slots.find((s) => s.id === st.quizTarget);
+    const T = st.teams[team];
+    const slot = this.slots.find((s) => s.id === T.quizTarget);
     if (!slot || slot.filled) return;
     if (slot.type === type) {
       slot.slotEl.classList.remove('target');
+      T.quizTarget = null;
       this._fill(slot);
-      st.quizTarget = null;
-      if (!this.slots.every((s) => s.filled)) this.later(() => this._nextQuiz(), 650);
+      if (this._teamSlots(team).some((s) => !s.filled)) this.later(() => this._nextQuiz(team), 650);
       return;
     }
-    st.mistakes++;
+    T.mistakes++;
     st.byType[slot.type]++;
-    st.quizWrong++;
+    T.quizWrong++;
     sfx.wrong();
     cardEl.classList.remove('shake');
     void cardEl.offsetWidth;
     cardEl.classList.add('shake');
-    if (st.quizWrong >= 2) {
+    if (T.quizWrong >= 2) {
       this.toast('تلميح: انظر إلى البطاقة المضيئة', 'hint');
-      const right = this.$cards[slot.type].card;
+      const right = this.$cards[team][slot.type].card;
       right.classList.add('hint');
       this.later(() => right.classList.remove('hint'), 2600);
     } else {
@@ -662,17 +743,31 @@ export class Game {
     this.render();
   }
 
-  _renderResult({ trayTop, trayH }) {
+  _renderResult({ trayTop, trayH, left, right }) {
     const st = this.state;
     const total = this.slots.length;
-    const acc = Math.round((100 * total) / (total + st.mistakes));
-    const stars = st.mistakes === 0 ? 3 : st.mistakes <= Math.ceil(total * 0.15) ? 2 : 1;
+    const mistakes = this.mistakes;
+    const acc = Math.round((100 * total) / (total + mistakes));
+    const stars = mistakes === 0 ? 3 : mistakes <= Math.ceil(total * 0.15) ? 2 : 1;
     const worst = TYPE_ORDER.filter((t) => st.byType[t] > 0).sort((a, b) => st.byType[b] - st.byType[a])[0];
     const panel = html('div', 'result');
-    Object.assign(panel.style, { top: `calc(var(--u) * ${trayTop - 12})`, minHeight: `calc(var(--u) * ${trayH + 12})` });
+    Object.assign(panel.style, {
+      top: `calc(var(--u) * ${trayTop - 12})`,
+      minHeight: `calc(var(--u) * ${trayH + 12})`,
+      left: `calc(var(--u) * ${left})`,
+      right: `calc(var(--u) * ${this.VW - right})`,
+    });
     const starsHtml = [1, 2, 3].map((i) => `<span class="star${i <= stars ? ' on' : ''}">★</span>`).join('');
     const msg = stars === 3 ? 'ممتاز! بلا أي خطأ' : stars === 2 ? 'أحسنتم!' : 'جيد — جرّبوا مرة أخرى';
     const winner = st.race && st.winner ? `<div class="winner">🏆 الفائز: فريق ${JAW_NAME[st.winner]}</div>` : '';
+    const teamsHtml = st.race
+      ? ['upper', 'lower']
+          .map((id) => {
+            const T = st.teams[id];
+            return `<span class="res-team team-${id}">فريق ${JAW_NAME[id]}: <b>${fmtTime(T.end - st.start)}</b> • أخطاء <b>${ar(T.mistakes)}</b></span>`;
+          })
+          .join('')
+      : `<span>الوقت <b>${fmtTime(st.end - st.start)}</b></span><span>الأخطاء <b>${ar(mistakes)}</b></span>`;
     panel.innerHTML = `
       <div class="res-main">
         <div class="stars">${starsHtml}</div>
@@ -680,8 +775,7 @@ export class Game {
         ${winner}
       </div>
       <div class="res-stats">
-        <span>الوقت <b>${fmtTime(st.end - st.start)}</b></span>
-        <span>الأخطاء <b>${ar(st.mistakes)}</b></span>
+        ${teamsHtml}
         <span>الدقة <b>${ar(acc)}٪</b></span>
         ${worst ? `<span>راجعوا <b>${TYPES[worst].name}</b></span>` : ''}
       </div>`;
@@ -717,15 +811,16 @@ export class Game {
     this.state = null;
     this.slots = null;
     this.$cards = null;
+    this.$teams = null;
     this.$progress = null;
-    this.$race = null;
     this.input?.reset();
     this.render();
   }
 
-  /** أيقونة السن المحمول تحت اليد. */
-  heldIcon(type) {
-    const g = svg('g', { class: `held-tooth t-${type}` });
+  /** أيقونة السن المحمول تحت اليد (بإطار لون الفريق في السباق). */
+  heldIcon(type, team) {
+    const teamed = team && team !== 'all';
+    const g = svg('g', { class: `held-item held-tooth t-${type}${teamed ? ` team-${team}` : ''}`, 'data-team': teamed ? team : null });
     const icon = toothIconSvg(type);
     const size = 92;
     const crown = CROWN_LEN[type];

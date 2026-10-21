@@ -5,7 +5,8 @@ import { HeritageDoor } from '@/components/home/heritage-door';
 import { DOOR_PAINT, emblemFor } from '@/components/home/door-emblem';
 import { SectionHead } from '@/components/home/section-head';
 import { PageCourt } from '@/components/page-court';
-import { doorStyle, fetchSiteTextsServer, txt } from '@/lib/site-texts';
+import { doorStyle, fetchSiteTextsServer, SPECIAL_DOORS, txt } from '@/lib/site-texts';
+import { BOARD_GAMES } from '@/data/board-games';
 import { T } from '@/components/editable-text';
 import { SITE_NAME } from '@/lib/site';
 import { PRESENTATION_META, PRESENTATIONS_PATH, presentationsCount } from '@/lib/types';
@@ -78,6 +79,13 @@ export default async function BrowsePage() {
               meta={smartGames > 0 ? `${smartGames} لعبة` : 'تعلّم • العب • عزّز'}
               color="#2d5f7c"
               emblem="games"
+            />
+            <HeritageDoor
+              href="/board-games"
+              title="ألعاب السبورة الذكية"
+              meta={`جديد • ${BOARD_GAMES.length.toLocaleString('ar-EG')} ${BOARD_GAMES.length === 1 ? 'لعبة' : 'ألعاب'} • المس بيدك`}
+              color={SPECIAL_DOORS.__board.color}
+              emblem="board"
             />
             <HeritageDoor
               href={PRESENTATIONS_PATH}
