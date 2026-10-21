@@ -2,7 +2,7 @@
 
 | الأصل | المصدر | الرخصة | الحجم |
 |---|---|---|---|
-| three.js r180 (`three.module.min.js`، `three.core.min.js`) — مشترك في `/board-kit/vendor/three/` | حزمة npm `three@0.180.0` (https://github.com/mrdoob/three.js) — المؤلف: three.js authors | MIT (ملف `LICENSE` بجانبه) | ≈ ٧٠٠ ك.ب (مرة واحدة لكل الألعاب) |
+| three.js r186.1 (`three.module.min.js`، `three.core.min.js`) — مشترك في `/board-kit/vendor/three/` | حزمة npm `three@0.186.1` (https://github.com/mrdoob/three.js) — المؤلف: three.js authors | MIT (ملف `LICENSE` بجانبه) | ≈ ٧٠٠ ك.ب (مرة واحدة لكل الألعاب) |
 | مجسّم العدسة المكبّرة | مبني في الكود من أشكال three.js (`js/scene3d.js`) | من إنتاج المشروع | ٠ |
 | مجسّم المجهر (على هيئة مجهر الكتاب) | مبني في الكود من أشكال three.js (`js/scene3d.js`) | من إنتاج المشروع | ٠ |
 | رسوم العيّنات المكبّرة الإحدى عشرة | رسم إجرائي على canvas (`js/art.js`) | من إنتاج المشروع | ٠ |
