@@ -30,6 +30,7 @@ board-kit/
   js/settings.js   إعدادات الجهاز المشتركة بين كل الألعاب (المعايرة تُجرى مرة واحدة للصف)
   css/kit.css      التصميم المشترك ومكوّناته الجاهزة
   vendor/mediapipe MediaPipe Tasks Vision (محلي، Apache-2.0)
+  vendor/three     three.js r180 (محلي، MIT) للألعاب ثلاثية الأبعاد: import * as THREE from '/board-kit/vendor/three/three.module.min.js'
   models/          نموذج اليد (محلي)
   template/        لعبة بداية كاملة تعمل: انسخها لكل لعبة جديدة
   tests/           node --test public/board-kit/tests/*.test.mjs
