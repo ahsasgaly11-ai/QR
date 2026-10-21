@@ -492,7 +492,7 @@ export class Game {
     // الإظلام في منتصف اللعبة (تحت الأبعاد الثلاثة) ونصّه (فوق البطاقات)
     ui.dark = this._place(html('div', 'gh-dark', '<span class="gh-dark-hands">👐</span>'), L.x0 - 8, L.zone.top - 4, L.w + 16, L.zone.bottom - L.zone.top + 14);
     this.$scope.appendChild(ui.dark);
-    ui.over = this._place(html('div', 'gh-midtext'), L.x0, L.zone.top + 6, L.w, (L.zone.bottom - L.zone.top) * 0.3);
+    ui.over = this._place(html('div', 'gh-midtext', T.midHtml || ''), L.x0, L.zone.top + 6, L.w, (L.zone.bottom - L.zone.top) * 0.3);
     this.$over.appendChild(ui.over);
     // سطر التعليمات والرسائل
     ui.prompt = this._place(html('div', 'gh-prompt'), L.x0, L.promptTop, L.w, L.promptH);
@@ -872,7 +872,9 @@ export class Game {
     this._say(id, null);
     fxs.lightsOut();
     this.view.midHands(id, true);
+    // النص محفوظ في حالة الفريق: إعادة الرسم (حين ينهي الفريق الآخر منتصفه) لا تمحوه
     const line = (h) => {
+      T.midHtml = h;
       if (this.$teams[id]) this.$teams[id].over.innerHTML = h;
     };
     line('<b>🔦 أطفئوا الأنوار!</b>');
@@ -884,6 +886,7 @@ export class Game {
     this.later(() => line('<b>🦠 الجراثيم على أجسامنا وعلى أشياء تبدو نظيفة.</b><span>فكيف تنتشر؟ وكيف نمنعها؟</span>'), this._d(4600));
     this.later(() => {
       this.view.midHands(id, false);
+      T.midHtml = '';
       T.r = 1;
       T.left = [...T.rounds[1]];
       T.phase = 'play';
