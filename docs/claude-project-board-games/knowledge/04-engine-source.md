@@ -111,9 +111,16 @@ const PANEL_HTML = ({ speechLabel, reachLabel }) => `
   </section>
 
   <section class="tips">
+    <h3>عرض الشاشة على جهاز العرض (أي طريقة تكفي)</h3>
+    <ul>
+      <li><b>هاتف أندرويد:</b> «بث الشاشة» / Screen Mirroring مباشرة إلى جهاز العرض (Miracast مدمج في أجهزة Epson التفاعلية)، بلا أي جهاز إضافي.</li>
+      <li><b>آيفون أو آيباد بلا Apple TV:</b> تطبيق <b>Epson iProjection</b> المجاني ← اتصل بجهاز العرض (على شبكة Wi-Fi نفسها، أو بمسح رمز QR المعروض) ← «Mirror device screen»، ثم ارجع إلى Safari.</li>
+      <li><b>مع Apple TV:</b> مركز التحكم ← انعكاس الشاشة ← Apple TV.</li>
+      <li><b>بكابل:</b> محوّل USB-C أو Lightning إلى HDMI ← منفذ HDMI في جهاز العرض (أسرع طريقة وبلا تأخير).</li>
+      <li>المعايرة تقيس تأخير الانعكاس تلقائيًا وتعمل مع كل الطرق؛ إن كان التأخير كبيرًا فزِد «مدة إبقاء اليد».</li>
+    </ul>
     <h3>نصائح للحصة</h3>
     <ul>
-      <li>من مركز التحكم في الآيباد أو الآيفون اختر <b>انعكاس الشاشة</b> ← Apple TV (وفي أندرويد: «بث الشاشة»).</li>
       <li>أضف الصفحة إلى الشاشة الرئيسية (مشاركة ← إضافة إلى الشاشة الرئيسية) لتعمل بملء الشاشة.</li>
       <li>اترك الجهاز على الشاحن، وفعّل «الوصول الموجّه» حتى لا يخرج أحد من اللعبة.</li>
       <li>يمكنك أيضًا اللعب بلمس شاشة الجهاز مباشرة (بلا كاميرا).</li>
@@ -302,6 +309,11 @@ export function startBoardApp({
         res.dataset.q = cal.error < 1.5 ? 'good' : cal.error < 3 ? 'ok' : 'bad';
       } else res.dataset.q = 'ok';
       res.textContent = `معايَرة ${cal.method === 'manual' ? 'يدويًا' : 'تلقائيًا'} • ${when}${q}`;
+      // تأخير انعكاس الشاشة (يُقاس في المعايرة التلقائية): تطبيق iProjection عبر Wi-Fi أبطأ من الكابل أو Apple TV
+      if (typeof cal.latencyMs === 'number') {
+        res.textContent += ` • تأخير الانعكاس ${(cal.latencyMs / 1000).toLocaleString('ar-EG', { maximumFractionDigits: 1 })} ث`;
+        if (cal.latencyMs > 700) res.textContent += ' (كبير: زِد «مدة إبقاء اليد» قليلًا، أو استعمل كابل HDMI أو Screen Mirroring)';
+      }
       // السبورة صغيرة في عين الكاميرا = أيدي الأطفال صغيرة جدًا على الكاشف
       const share = tracker.boardShare();
       if (share !== null && share < 0.2) {
@@ -860,7 +872,7 @@ export class Interaction {
 // ---------------------------------------------------------------------------
 // الأصوات: مؤثرات مُركّبة بـ Web Audio (لا ملفات)، ونطق اسم السن بالعربية.
 // على iOS لا يعمل الصوت إلا بعد لمسة من المستخدم، فيُستدعى unlock() من أول زر.
-// الصوت ينتقل مع انعكاس الشاشة إلى Apple TV ثم إلى سمّاعة جهاز العرض.
+// الصوت ينتقل مع انعكاس الشاشة (Apple TV، أو Screen Mirroring، أو iProjection، أو HDMI) إلى سمّاعة جهاز العرض.
 // ---------------------------------------------------------------------------
 
 let ctx = null;
@@ -1830,16 +1842,6 @@ function averageFrames(frames) {
   return { gray: out, w: frames[0].w, h: frames[0].h };
 }
 
-async function grabAvg(tracker, n = 3, gap = 70) {
-  const frames = [];
-  for (let i = 0; i < n; i++) {
-    const f = tracker.grabGray(320);
-    if (!f) throw new CalibError('الكاميرا لا ترسل صورة.');
-    frames.push(f);
-    if (i < n - 1) await sleep(gap);
-  }
-  return averageFrames(frames);
-}
 
 /**
  * يحدد مركز البقعة التي أضاءت بين الإطارين A و B.
@@ -1938,39 +1940,127 @@ function spot(ov, p, r, color = '#fff') {
   return d;
 }
 
+/** متوسط الفرق المطلق بين إطارين: صغير = المشهد ثابت. */
+export function meanAbsDiff(A, B) {
+  let s = 0;
+  for (let i = 0; i < A.gray.length; i++) s += Math.abs(A.gray[i] - B.gray[i]);
+  return s / A.gray.length;
+}
+
+/** أقصى انتظار لظهور العلامة: يغطي أبطأ انعكاس شاشة (تطبيق iProjection عبر Wi-Fi قد يتأخر ثانية أو أكثر). */
+export const MAX_WAIT_MS = 6000;
+const POLL_MS = 120;
+
 /**
- * المعايرة التلقائية.
+ * قلب المعايرة التلقائية بلا DOM (قابل للاختبار): لا يفترض زمنًا ثابتًا لوصول الصورة إلى
+ * جهاز العرض. يختلف التأخير كثيرًا بين طرق الانعكاس: كابل HDMI (شبه فوري)، Apple TV،
+ * Screen Mirroring (Miracast) المدمج في جهاز العرض، وتطبيق Epson iProjection (الأبطأ).
+ * لذا: ننتظر حتى يثبت المشهد، ثم نُظهر كل علامة ونفحص الإطارات حتى نراها في مكانها
+ * مرتين متتاليتين، ونقيس التأخير، ولا نعرض العلامة التالية حتى تختفي السابقة.
+ *
+ * @param {{grab:()=>Promise<{gray,w,h}>|{gray,w,h}, show:(i:number)=>void, hide:()=>void,
+ *          sleep:(ms:number)=>Promise<void>, now:()=>number, aspect:number,
+ *          targets?:{x:number,y:number}[], onProgress?:(i:number,n:number)=>void}} io
+ */
+export async function runAutoCalibration({ grab, show, hide, sleep: wait, now, aspect, targets = [...MARKERS, CHECK], onProgress }) {
+  const grabAvgOf = async (n) => {
+    const frames = [];
+    for (let i = 0; i < n; i++) {
+      const f = await grab();
+      if (!f) throw new CalibError('الكاميرا لا ترسل صورة.');
+      frames.push(f);
+      if (i < n - 1) await wait(60);
+    }
+    return averageFrames(frames);
+  };
+
+  // ١) الشاشة السوداء وصلت والكاميرا كيّفت إضاءتها: إطاران متتاليان شبه متطابقين
+  let prev = await grabAvgOf(1);
+  const t0 = now();
+  let calm = 0;
+  await wait(500);
+  while (now() - t0 < MAX_WAIT_MS) {
+    const cur = await grabAvgOf(1);
+    calm = meanAbsDiff(prev, cur) < 2.5 ? calm + 1 : 0;
+    prev = cur;
+    if (calm >= 3) break;
+    await wait(POLL_MS * 2);
+  }
+
+  const found = [];
+  const delays = [];
+  for (let i = 0; i < targets.length; i++) {
+    onProgress?.(i, targets.length);
+    const A = await grabAvgOf(3);
+    show(i);
+    const shownAt = now();
+    let last = null;
+    let firstSeen = 0;
+    let lastErr = null;
+    let p = null;
+    while (now() - shownAt < MAX_WAIT_MS) {
+      await wait(POLL_MS);
+      try {
+        const q = locateSpot(A, await grabAvgOf(1));
+        if (!firstSeen) firstSeen = now();
+        if (last && Math.hypot(q.x - last.x, q.y - last.y) < 0.012) {
+          // ثبتت العلامة: قياس نهائي أدق بمتوسط عدة إطارات
+          p = locateSpot(A, await grabAvgOf(3));
+          break;
+        }
+        last = q;
+      } catch (err) {
+        lastErr = err;
+        last = null;
+      }
+    }
+    hide();
+    if (!p) {
+      if (lastErr && !/لم تظهر/.test(lastErr.message)) throw lastErr;
+      throw new CalibError('لم تظهر العلامة في الكاميرا خلال ٦ ثوانٍ. تأكّد أن الكاميرا ترى الصورة المعروضة كاملة، وأن انعكاس الشاشة يعمل.');
+    }
+    found.push(p);
+    const delay = firstSeen - shownAt;
+    delays.push(delay);
+    // لا نصوّر «قبل» العلامة التالية حتى تختفي هذه من الصورة المعروضة (بعد التأخير نفسه)
+    await wait(Math.min(3000, Math.max(300, delay + 250)));
+  }
+  const cal = buildCalibration(found.slice(0, 4));
+  if (found[4]) {
+    const pred = applyH(cal.H, found[4].x, found[4].y);
+    cal.error = pred ? errorPct(pred, targets[4], aspect) : 99;
+  }
+  const sorted = [...delays].sort((a, b) => a - b);
+  cal.latencyMs = Math.round(sorted[Math.floor(sorted.length / 2)]); // التأخير الوسيط
+  cal.method = 'auto';
+  return cal;
+}
+
+/**
+ * المعايرة التلقائية على الشاشة: خلفية سوداء ودائرة بيضاء في كل زاوية بالتتابع.
  * @param {import('./tracker.js').HandTracker} tracker
  * @param {HTMLElement} root
- * @param {{settleMs?:number, onProgress?:(i:number,n:number)=>void}} o
  */
-export async function autoCalibrate(tracker, root, { settleMs = 950, onProgress } = {}) {
+export async function autoCalibrate(tracker, root, { onProgress } = {}) {
   const ov = makeOverlay(root, '#000');
   const label = document.createElement('div');
   label.className = 'calib-label';
   label.textContent = 'معايرة… ابتعدوا عن السبورة';
   ov.appendChild(label);
   const r = Math.round(Math.min(innerWidth, innerHeight) * 0.06);
-  const aspect = innerWidth / innerHeight;
+  const targets = [...MARKERS, CHECK];
+  let current = null;
   try {
-    await sleep(1300); // زمن انتقال الصورة عبر Apple TV وتكيّف إضاءة الكاميرا
-    const targets = [...MARKERS, CHECK];
-    const found = [];
-    for (let i = 0; i < targets.length; i++) {
-      onProgress?.(i, targets.length);
-      const A = await grabAvg(tracker);
-      const s = spot(ov, targets[i], r);
-      await sleep(settleMs);
-      const B = await grabAvg(tracker);
-      s.remove();
-      found.push(locateSpot(A, B));
-      await sleep(settleMs * 0.8);
-    }
-    const cal = buildCalibration(found.slice(0, 4));
-    const pred = applyH(cal.H, found[4].x, found[4].y);
-    cal.error = pred ? errorPct(pred, CHECK, aspect) : 99;
-    cal.method = 'auto';
-    return cal;
+    return await runAutoCalibration({
+      grab: () => tracker.grabGray(320),
+      show: (i) => (current = spot(ov, targets[i], r)),
+      hide: () => current?.remove(),
+      sleep,
+      now: () => performance.now(),
+      aspect: innerWidth / innerHeight,
+      targets,
+      onProgress,
+    });
   } finally {
     ov.remove();
   }
@@ -1982,6 +2072,7 @@ export async function autoCalibrate(tracker, root, { settleMs = 950, onProgress 
  */
 export async function manualCalibrate(tracker, root) {
   const colors = ['#e11d48', '#2563eb', '#16a34a', '#d97706'];
+  const before = tracker.grabGray(160);
   const ov = makeOverlay(root, '#fff');
   const r = Math.round(Math.min(innerWidth, innerHeight) * 0.05);
   MARKERS.forEach((p, i) => {
@@ -1989,7 +2080,22 @@ export async function manualCalibrate(tracker, root) {
     s.textContent = String(i + 1);
     s.classList.add('numbered');
   });
-  await sleep(1500);
+  // ننتظر وصول العلامات إلى السبورة (يختلف تأخير الانعكاس بين HDMI وApple TV وMiracast وiProjection):
+  // تتغيّر الصورة عمّا قبلها ثم تثبت، أو تمضي ٦ ثوانٍ
+  const t0 = performance.now();
+  let prev = null;
+  let changed = false;
+  let calm = 0;
+  await sleep(400);
+  while (performance.now() - t0 < MAX_WAIT_MS) {
+    const cur = tracker.grabGray(160);
+    if (!cur || !before) break;
+    if (!changed && meanAbsDiff(before, cur) > 6) changed = true;
+    calm = changed && prev && meanAbsDiff(prev, cur) < 2.5 ? calm + 1 : 0;
+    if (calm >= 2) break;
+    prev = cur;
+    await sleep(200);
+  }
   const shot = tracker.snapshot();
   ov.innerHTML = '';
   if (!shot) {

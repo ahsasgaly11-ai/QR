@@ -104,9 +104,16 @@ const PANEL_HTML = ({ speechLabel, reachLabel }) => `
   </section>
 
   <section class="tips">
+    <h3>عرض الشاشة على جهاز العرض (أي طريقة تكفي)</h3>
+    <ul>
+      <li><b>هاتف أندرويد:</b> «بث الشاشة» / Screen Mirroring مباشرة إلى جهاز العرض (Miracast مدمج في أجهزة Epson التفاعلية)، بلا أي جهاز إضافي.</li>
+      <li><b>آيفون أو آيباد بلا Apple TV:</b> تطبيق <b>Epson iProjection</b> المجاني ← اتصل بجهاز العرض (على شبكة Wi-Fi نفسها، أو بمسح رمز QR المعروض) ← «Mirror device screen»، ثم ارجع إلى Safari.</li>
+      <li><b>مع Apple TV:</b> مركز التحكم ← انعكاس الشاشة ← Apple TV.</li>
+      <li><b>بكابل:</b> محوّل USB-C أو Lightning إلى HDMI ← منفذ HDMI في جهاز العرض (أسرع طريقة وبلا تأخير).</li>
+      <li>المعايرة تقيس تأخير الانعكاس تلقائيًا وتعمل مع كل الطرق؛ إن كان التأخير كبيرًا فزِد «مدة إبقاء اليد».</li>
+    </ul>
     <h3>نصائح للحصة</h3>
     <ul>
-      <li>من مركز التحكم في الآيباد أو الآيفون اختر <b>انعكاس الشاشة</b> ← Apple TV (وفي أندرويد: «بث الشاشة»).</li>
       <li>أضف الصفحة إلى الشاشة الرئيسية (مشاركة ← إضافة إلى الشاشة الرئيسية) لتعمل بملء الشاشة.</li>
       <li>اترك الجهاز على الشاحن، وفعّل «الوصول الموجّه» حتى لا يخرج أحد من اللعبة.</li>
       <li>يمكنك أيضًا اللعب بلمس شاشة الجهاز مباشرة (بلا كاميرا).</li>
@@ -295,6 +302,11 @@ export function startBoardApp({
         res.dataset.q = cal.error < 1.5 ? 'good' : cal.error < 3 ? 'ok' : 'bad';
       } else res.dataset.q = 'ok';
       res.textContent = `معايَرة ${cal.method === 'manual' ? 'يدويًا' : 'تلقائيًا'} • ${when}${q}`;
+      // تأخير انعكاس الشاشة (يُقاس في المعايرة التلقائية): تطبيق iProjection عبر Wi-Fi أبطأ من الكابل أو Apple TV
+      if (typeof cal.latencyMs === 'number') {
+        res.textContent += ` • تأخير الانعكاس ${(cal.latencyMs / 1000).toLocaleString('ar-EG', { maximumFractionDigits: 1 })} ث`;
+        if (cal.latencyMs > 700) res.textContent += ' (كبير: زِد «مدة إبقاء اليد» قليلًا، أو استعمل كابل HDMI أو Screen Mirroring)';
+      }
       // السبورة صغيرة في عين الكاميرا = أيدي الأطفال صغيرة جدًا على الكاشف
       const share = tracker.boardShare();
       if (share !== null && share < 0.2) {

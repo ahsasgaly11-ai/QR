@@ -56,18 +56,16 @@ export function ClassroomSetupDiagram() {
   return (
     <svg viewBox="0 0 460 340" role="img" aria-labelledby="bg-diagram-t" className="bg-diagram-svg">
       <title id="bg-diagram-t">
-        مخطط الصف من أعلى: السبورة وجهاز العرض فوقها، والطلاب أمامها، والجهاز على حامل في الزاوية الجانبية يرى السبورة، وجهاز Apple TV
-        متصل بجهاز العرض.
+        مخطط الصف من أعلى: السبورة وجهاز العرض فوقها، والطلاب أمامها، والجهاز على حامل في الزاوية الجانبية يرى السبورة ويعكس شاشته
+        على جهاز العرض لاسلكيًا.
       </title>
       {/* السبورة وجهاز العرض */}
       <rect x="70" y="22" width="320" height="18" rx="4" className="d-board" />
       <text x="230" y="35" textAnchor="middle" className="d-label-sm">السبورة (الصورة المعروضة)</text>
       <rect x="205" y="6" width="50" height="12" rx="3" className="d-device" />
       <text x="262" y="15" className="d-label-xs">جهاز العرض</text>
-      {/* Apple TV */}
-      <rect x="400" y="8" width="44" height="18" rx="4" className="d-device" />
-      <text x="422" y="40" textAnchor="middle" className="d-label-xs">Apple TV</text>
-      <path d="M392 17 h-128" className="d-cable" />
+      {/* انعكاس الشاشة لاسلكيًا من الجهاز إلى جهاز العرض مباشرة (أو عبر Apple TV أو كابل HDMI) */}
+      <text x="456" y="62" textAnchor="end" className="d-label-xs">انعكاس الشاشة</text>
       {/* الطلاب أمام السبورة */}
       {[150, 215, 285].map((x) => (
         <g key={x}>
@@ -83,8 +81,7 @@ export function ClassroomSetupDiagram() {
       </g>
       <text x="420" y="168" textAnchor="middle" className="d-ok-t">✓ هنا</text>
       <text x="456" y="186" textAnchor="end" className="d-label-xs">حامل في الزاوية، ١–١٫٥ م</text>
-      {/* موجة لاسلكية إلى Apple TV */}
-      <path d="M432 108 q14 -40 0 -66" className="d-wave" />
+      <path d="M432 108 Q 440 30 262 13" className="d-wave" />
       {/* الخطأ: طاولة خلف الطلاب */}
       <rect x="170" y="250" width="120" height="44" rx="6" className="d-desk" />
       <rect x="214" y="238" width="32" height="20" rx="4" className="d-bad" />

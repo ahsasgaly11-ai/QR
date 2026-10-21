@@ -169,7 +169,7 @@ export default async function HomePage() {
               <Hand className="h-5 w-5" aria-hidden /> لمس السبورة باليد فقط
             </li>
             <li>
-              <Camera className="h-5 w-5" aria-hidden /> آيباد أو هاتف + Apple TV
+              <Camera className="h-5 w-5" aria-hidden /> هاتف أو آيباد بانعكاس الشاشة
             </li>
             <li>
               <Users className="h-5 w-5" aria-hidden /> الصف كله أو سباق فريقين
