@@ -199,6 +199,16 @@ export const fxs = {
     for (let i = 0; i < 10; i++) noise(0.15 + Math.random() * 0.9, 0.025, { f0: 2500 + Math.random() * 2500, f1: 1800, q: 5, gain: 0.08 + Math.random() * 0.06, attack: 0.1, pan, type: 'bandpass' });
     [784, 1175, 1568].forEach((f, i) => tone(f, 0.12 + i * 0.07, 0.5, { type: 'sine', gain: 0.05, pan }));
   },
+  /** غوص في قطرة: «بلوب» مائي، وفقاعات، وصدى منخفض */
+  dive(pan = 0) {
+    tone(520, 0, 0.35, { type: 'sine', gain: 0.25, slideTo: 140, pan });
+    noise(0, 0.6, { f0: 1200, f1: 300, q: 1.5, gain: 0.18, attack: 0.1, pan, type: 'lowpass' });
+    for (let i = 0; i < 8; i++) {
+      const f = 400 + Math.random() * 700;
+      tone(f, 0.3 + i * 0.12, 0.12, { type: 'sine', gain: 0.07, slideTo: f * 1.6, pan });
+    }
+    tone(70, 0.1, 2.4, { type: 'sine', gain: 0.12, pan, attack: 0.4 });
+  },
   /** ضربة منخفضة للافتتاح */
   boom() {
     tone(90, 0, 1.4, { type: 'sine', gain: 0.45, slideTo: 38 });

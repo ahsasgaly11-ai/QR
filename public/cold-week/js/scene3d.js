@@ -13,16 +13,19 @@
 // الرسم ٣٠ إطارًا/ث على الأكثر، ويتوقف عند إخفاء الصفحة.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three/webgpu';
-import { float, mix, pass, renderOutput, screenUV, smoothstep, uniform, vec3, vec4 } from 'three/tsl';
+import { float, mix, pass, renderOutput, screenUV, smoothstep, uniform, vec3, vec4, uv, time, oneMinus, sin, abs } from 'three/tsl';
+import { dof } from 'three/addons/tsl/display/DepthOfFieldNode.js';
 import { bloom } from 'three/addons/tsl/display/BloomNode.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { buildWorld, roomLayout, DIM } from './world.js';
-import { POSES } from './dolls.js';
+import { POSES, applyPose, clonePose } from './dolls.js';
 import { Spray, KIND, motes } from './particles.js';
 import { badge } from './textures.js';
 import { OUTBREAK } from './content.js';
 import { UILayer } from './ui.js';
+import { MicroWorld } from './micro.js';
 import { enamel, tissuePaper, bottlePlastic, bubbleMat, glass, gold, chrome, beam } from './materials.js';
 
 const FPS_MS = 1000 / 30;
@@ -116,6 +119,7 @@ class Scene3D {
     this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     this.scene.environmentIntensity = 0.42;
     pmrem.dispose();
+    this._loadHDRI();
 
     // ثلاثة أضواء: سماء/أرض، وشمس من خلف النوافذ (ظل حيّ)، وضوء أمامي ناعم للوجوه
     this.hemi = new THREE.HemisphereLight(0xdbeeff, 0xefdcc0, 1.0);
@@ -151,6 +155,31 @@ class Scene3D {
     document.addEventListener('visibilitychange', this._vis);
   }
 
+  /**
+   * إضاءة بيئية حقيقية: صورة HDRI مصوّرة (Poly Haven «Blouberg Sunrise 2»، CC0) لشاطئ رملي عند الشروق،
+   * مصغّرة إلى 256×128 (١٣١ ك.ب). تنعكس على اللؤلؤ والذهب والمينا انعكاسًا طبيعيًا. حتى تُحمَّل: استوديو RoomEnvironment.
+   */
+  _loadHDRI() {
+    new HDRLoader().load(new URL('../assets/env/blouberg_sunrise_2_256.hdr', import.meta.url).href, (tex) => {
+      try {
+        tex.mapping = THREE.EquirectangularReflectionMapping;
+        const pm = new THREE.PMREMGenerator(this.renderer);
+        const env = pm.fromEquirectangular(tex).texture;
+        pm.dispose();
+        tex.dispose();
+        this.scene.environment = env;
+        // الشمس في الصورة تُدار لتأتي من خلف النوافذ مثل الشمس في المشهد
+        this.scene.environmentRotation = new THREE.Euler(0, 2.3, 0);
+        if (this.ui) {
+          this.ui.scene.environment = env;
+          this.ui.scene.environmentRotation = new THREE.Euler(0, -0.6, 0);
+        }
+      } catch (e) {
+        console.warn('HDRI', e);
+      }
+    }, undefined, (e) => console.warn('HDRI غير متاح، يبقى الاستوديو', e));
+  }
+
   // ------------------------------------------------------------------ المعالجة اللاحقة
   _buildPipeline() {
     const r = this.renderer;
@@ -164,40 +193,64 @@ class Scene3D {
       R.pass = p;
       return p;
     });
-    let world;
-    if (rooms.length === 2) {
-      const A = this.rooms.a.pass.getTextureNode('output');
-      const B = this.rooms.b.pass.getTextureNode('output');
-      world = screenUV.x.greaterThan(0.5).select(A.rgb, B.rgb); // الفريق الأول يمين الشاشة
-      r.setScissorTest(true); // يفعّل قصّ مرور كل صف (قصّ اللوحة نفسها يبقى كاملًا)
-    } else {
-      world = this.passes[0].getTextureNode('output').rgb;
-      r.setScissorTest(false);
-    }
+    // عمق الميدان: في اللقطات القريبة فقط (R.uDof من 0 إلى 1)، والطبقة A فقط.
+    // يُبنى خطّان للمعالجة: بلا عمق ميدان (اللعب العادي) ومعه (اللقطة القريبة)، فلا تُدفع كلفة التمويه في اللقطة العامة.
+    const colorOf = (R, withDof) => {
+      const c = R.pass.getTextureNode('output');
+      if (!withDof) return c.rgb;
+      R.uFocus ||= uniform(1.5);
+      R.uDof ||= uniform(0);
+      // ما هو أقرب من الوجه يبقى حادًّا (بلا تمويه قريب يسيل على الذراع والوجه): نمرّر العمق مقصوصًا عند مسافة التركيز
+      const viewZ = R.pass.getViewZNode().min(R.uFocus.negate());
+      const blurred = dof(c, viewZ, R.uFocus, float(1.6), float(5));
+      return mix(c.rgb, blurred.rgb, R.uDof);
+    };
+    // ومضة دخول القطرة وخروجها (لكل صف وحده)، بتوهّج دائري من مركز نصفه
+    const flashed = (R, rgb) => {
+      const cx = rooms.length === 2 ? (R.id === 'a' ? 0.75 : 0.25) : 0.5;
+      const d = screenUV.sub(vec3(cx, 0.36, 0).xy).length();
+      const k = R.uFlash.mul(smoothstep(0.9, 0.0, d.sub(R.uFlash.mul(0.5))).mul(0.6).add(0.4)).clamp(0, 1);
+      return mix(rgb, vec3(0.86, 0.97, 1.0).mul(1.5), k);
+    };
+    r.setScissorTest(rooms.length === 2); // في السباق: قصّ مرور كل صف (قصّ اللوحة نفسها يبقى كاملًا)
+    const worldOf = (withDof) =>
+      rooms.length === 2
+        ? screenUV.x.greaterThan(0.5).select(flashed(this.rooms.a, colorOf(this.rooms.a, withDof)), flashed(this.rooms.b, colorOf(this.rooms.b, withDof))) // الفريق الأول يمين الشاشة
+        : flashed(rooms[0], colorOf(rooms[0], withDof));
     // طبقة البطاقات (مضروبة مسبقًا بالشفافية) فوق الصف
     const uiTex = pass(this.ui.scene, this.ui.camera).getTextureNode('output');
+    this.pipelineDof = null;
+    this.bloomNodes = [];
     if (this.cardsMode) {
       const m = renderOutput(vec4(uiTex.rgb, 1)).rgb;
       this.pipeline = new THREE.RenderPipeline(r, vec4(mix(vec3(1, 1, 1), m, uiTex.a), 1));
       this.pipeline.outputColorTransform = false;
       return;
     }
-    let hdr = world.mul(float(1).sub(uiTex.a)).add(uiTex.rgb);
-    this.bloomNode = null;
-    if (this.tier === 'A') {
-      // التوهّج من الصف ومن اللهب فقط: لوحات البطاقات البيضاء تبقى تحت العتبة فلا تغشى المجسّمات
-      const glowIn = world.mul(float(1).sub(uiTex.a)).add(uiTex.rgb.mul(0.42));
-      this.bloomNode = bloom(vec4(glowIn, 1), this._theme?.bloom ?? 0.38, 0.4, 1.12);
-      hdr = hdr.add(this.bloomNode.rgb);
-    }
-    // تدرّج سينمائي: تظليل أطراف ناعم + دفء خفيف (قبل التدرّج اللوني)
-    const d = screenUV.sub(0.5).length();
-    const vig = mix(float(1), float(1).sub(this.uVig), smoothstep(0.32, 0.9, d));
-    hdr = hdr.mul(vig).mul(this.uWarm);
-    const mapped = renderOutput(vec4(hdr, 1)); // ACES + sRGB حسب إعداد المحرّك
-    const lifted = mapped.rgb.mul(float(1).sub(this.uLift)).add(this.uLift);
-    this.pipeline = new THREE.RenderPipeline(r, vec4(lifted, 1));
-    this.pipeline.outputColorTransform = false;
+    const build = (withDof) => {
+      const world = worldOf(withDof);
+      let hdr = world.mul(float(1).sub(uiTex.a)).add(uiTex.rgb);
+      if (this.tier === 'A') {
+        // التوهّج من الصف ومن اللهب فقط: لوحات البطاقات البيضاء تبقى تحت العتبة فلا تغشى المجسّمات
+        const glowIn = world.mul(float(1).sub(uiTex.a)).add(uiTex.rgb.mul(0.42));
+        const b = bloom(vec4(glowIn, 1), this._theme?.bloom ?? 0.38, 0.4, 1.12);
+        this.bloomNodes.push(b);
+        hdr = hdr.add(b.rgb);
+      }
+      // تدرّج سينمائي: تظليل أطراف ناعم + دفء خفيف (قبل التدرّج اللوني)
+      const d = screenUV.sub(0.5).length();
+      const vig = mix(float(1), float(1).sub(this.uVig), smoothstep(0.32, 0.9, d));
+      hdr = hdr.mul(vig).mul(this.uWarm);
+      const mapped = renderOutput(vec4(hdr, 1)); // ACES + sRGB حسب إعداد المحرّك
+      const lifted = mapped.rgb.mul(float(1).sub(this.uLift)).add(this.uLift);
+      const P = new THREE.RenderPipeline(r, vec4(lifted, 1));
+      P.outputColorTransform = false;
+      return P;
+    };
+    this.pipeline = build(false);
+    // عمق الميدان في الطبقة A لطالب واحد فقط (في السباق صورتان: كلفة مضاعفة لأثر صغير)
+    if (this.tier === 'A' && rooms.length === 1) this.pipelineDof = build(true);
+    this._warmDof = 3; // تُرسم إطارات أولى بخطّ عمق الميدان (وقيمته صفر فلا فرق في الصورة) ليُترجَم قبل أول لقطة قريبة
   }
 
   /** قصّ مرور كل صف على نصفه (بكسلات الرسم الفعلية) */
@@ -246,6 +299,7 @@ class Scene3D {
     for (const R of Object.values(this.rooms)) {
       R.cam = new THREE.PerspectiveCamera(32, 1.6, 0.1, 200);
       R.uSim = uniform(0); // زمن الرذاذ في هذا الصف (يتباطأ وحده في لقطة العطسة)
+      R.uFlash = uniform(0); // ومضة الغوص في القطرة
       R.simT = 0;
       R.timeScale = 1;
       R.anim = false;
@@ -471,7 +525,7 @@ class Scene3D {
       this.fill.intensity = L('fill');
       this.scene.environmentIntensity = L('env');
       this.beamBoost = L('beam');
-      if (this.bloomNode) this.bloomNode.strength.value = L('bloom');
+      for (const b of this.bloomNodes || []) b.strength.value = L('bloom');
       if (e >= 1) this._theme = { ...T };
     };
     if (!dur || this.reduced) return apply(1);
@@ -528,20 +582,42 @@ class Scene3D {
     D.target = POSES[name] || POSES.rest;
     D.poseName = name;
   }
-  /** انزلاق الدمية (مع قفزة صغيرة) إلى موضع، ودورانها */
-  glide(R, D, to, { dur = 0.9, rotY = null, hop = 0.12, delay = 0 } = {}) {
+  /**
+   * الشخصية تقوم من كرسيها وتمشي إلى موضع (عالمي)، وتستدير؛ إن كان الموضع مقعدها تجلس عند الوصول.
+   * الكرسي يبقى مكانه.
+   */
+  glide(R, D, to, { dur = 0.9, rotY = null, delay = 0, pose = 'walk' } = {}) {
     let from = null;
     let r0 = 0;
+    const local = to.clone().sub(D.root.position);
+    const home = local.length() < 0.05;
     this.task(dur, (p) => {
       if (!from) {
-        from = D.root.position.clone();
+        from = D.doll.position.clone();
         r0 = D.doll.rotation.y;
+        D.standT = 1;
+        if (pose) this.pose(D, pose);
       }
       const e = easeIO(p);
-      D.root.position.lerpVectors(from, to, e);
-      D.doll.position.y = Math.sin(p * Math.PI) * hop;
-      if (rotY !== null) D.doll.rotation.y = r0 + (rotY - r0) * e;
-    }, { room: R.id, delay });
+      D.doll.position.x = from.x + (local.x - from.x) * e;
+      D.doll.position.z = from.z + (local.z - from.z) * e;
+      D.walk = Math.sin(Math.PI * Math.min(1, p * 1.15)) > 0.05 ? 1 : 0;
+      if (rotY !== null) D.doll.rotation.y = r0 + (rotY - r0) * Math.min(1, e * 1.6);
+    }, { room: R.id, delay, onDone: () => {
+      D.walk = 0;
+      if (home) {
+        D.standT = 0;
+        this.pose(D, 'rest');
+      }
+    } });
+  }
+  /** الشخصية تعود فورًا إلى مقعدها جالسة */
+  _seat(D) {
+    D.doll.position.set(0, 0, 0);
+    D.doll.rotation.y = 0;
+    D.standT = 0;
+    D.stand = 0;
+    D.walk = 0;
   }
   _icon(D, kind) {
     if (!kind) {
@@ -673,6 +749,50 @@ class Scene3D {
     return R.bubbles;
   }
 
+  // ------------------------------------------------------------------ أقواس العدوى
+  /**
+   * قوس ضوئي أحمر برتقالي من المريض إلى من أصابه: ينمو من المصدر، ونبضات ضوء تجري عليه نحو الهدف،
+   * ثم يخبو. يُظهر سلسلة العدوى أمام الطلاب.
+   */
+  _arc(R, from, to, { dur = 1.9, delay = 0, hue = 0xff5a2a } = {}) {
+    const mid = from.clone().lerp(to, 0.5);
+    mid.y += 0.35 + from.distanceTo(to) * 0.18;
+    const curve = new THREE.QuadraticBezierCurve3(from.clone(), mid, to.clone());
+    const geo = new THREE.TubeGeometry(curve, 48, 0.028, 10, false);
+    const uP = uniform(0);
+    const uF = uniform(1);
+    const m = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false });
+    const x = uv().x;
+    const pulse = sin(x.mul(40).sub(time.mul(14))).mul(0.5).add(0.5).pow(3);
+    const head = smoothstep(uP.sub(0.12), uP, x).mul(oneMinus(smoothstep(uP, uP.add(0.01), x)));
+    const c = new THREE.Color(hue);
+    m.colorNode = vec3(c.r, c.g, c.b).mul(pulse.mul(2.5).add(0.8).add(head.mul(4)));
+    m.opacityNode = smoothstep(uP.add(0.01), uP, x).mul(uF).mul(pulse.mul(0.25).add(0.75));
+    const tube = new THREE.Mesh(geo, m);
+    tube.renderOrder = 22;
+    tube.frustumCulled = false;
+    this.task(dur, (p) => {
+      if (!tube.parent) R.group.add(tube);
+      uP.value = Math.min(1.02, easeIO(Math.min(1, p / 0.45)) * 1.02);
+      uF.value = p < 0.7 ? 1 : 1 - (p - 0.7) / 0.3;
+    }, { delay, room: R.id, onDone: () => {
+      R.group.remove(tube);
+      geo.dispose();
+      m.dispose();
+    } });
+  }
+  /** أقرب زميل مريض من قبل (مصدر العدوى المرجّح) */
+  _source(R, D) {
+    let best = null;
+    let bd = 1e9;
+    for (const X of R.dolls) {
+      if (X === D || !X.sick) continue;
+      const d = X.root.position.distanceTo(D.root.position);
+      if (d < bd) (bd = d), (best = X);
+    }
+    return best;
+  }
+
   // ------------------------------------------------------------------ أحداث الجسيمات
   _heads(R, except = -1) {
     return R.dolls.filter((D) => D.idx !== except && !D.away).map((D) => ({ c: arr(D.headWorld()), r: 0.19 }));
@@ -682,6 +802,12 @@ class Scene3D {
   }
   /** عطسة من دمية نحو نقطة (أو للأمام) */
   _sneeze(R, D, { toward = null, shield = null, power = 1, count = 9000, cough = false } = {}) {
+    const prev = D.poseName;
+    if (['rest', 'sick', 'ha', 'handMouth', 'handUp'].includes(prev)) {
+      this.pose(D, 'achoo');
+      this.at(0.8, () => D.poseName === 'achoo' && this.pose(D, prev === 'ha' ? 'rest' : prev), R.id);
+      D.doll.updateMatrixWorld(true);
+    }
     const m = D.mouthWorld();
     const dir = toward ? toward.clone().sub(m).normalize().add(V(0, 0.12, 0)).normalize() : V(0, 0.08, 1).normalize();
     this.onSound('achoo', R.id, cough);
@@ -706,6 +832,11 @@ class Scene3D {
     R.timeScale = 1;
     R.anim = false;
     R.mode = 'play';
+    if (R.diving) {
+      R.diving = false;
+      R.pass.scene = this.scene;
+    }
+    if (R.uFlash) R.uFlash.value = 0;
     if (R.playShot) this._applyShot(R, R.playShot);
     R.spray.clear({ tAt: R.simT - 1 });
     this._hideProps(R);
@@ -717,9 +848,7 @@ class Scene3D {
       D.hi = 0;
       D.away = false;
       D.root.visible = true;
-      D.root.position.copy(D.home);
-      D.doll.rotation.y = 0;
-      D.doll.position.y = 0;
+      this._seat(D);
       D.cheer = false;
       D.breath = false;
       this._icon(D, null);
@@ -752,6 +881,7 @@ class Scene3D {
     // ١) لقطة واسعة تقترب من المريض الأول في كل صف (هنا يقيس المنظّم الأداء)
     rooms.forEach((R) => {
       const first = R.dolls[OUTBREAK.first];
+      R.focus = first;
       this._applyShot(R, this._wideShot(R));
       R.mode = 'close';
       this._shotTo(R, this._closeShot(R, first, { side: 1, dist: 1.75 }), 2.4);
@@ -763,8 +893,8 @@ class Scene3D {
       this.at(2.75, () => this.pose(D, 'rest'));
       this.at(2.95, () => this.pose(D, 'ha'));
       this.at(3.35, () => {
-        this.pose(D, 'rest');
-        D.cur.H[0] = 0.32;
+        this.pose(D, 'achoo');
+        this.at(1.2, () => this.pose(D, 'rest'));
         R.timeScale = 0.22;
         this._sneeze(R, D, { power: 1.15, count: 14000, toward: R.dolls[4].headWorld().add(V(0, 0.1, 1.2)) });
       });
@@ -775,6 +905,8 @@ class Scene3D {
         this.task(0.8, (p) => (R.timeScale = 0.22 + 0.78 * easeIO(p)), { room: R.id });
         R.mode = 'play';
         this._shotTo(R, R.playShot, 1.6);
+        // تتلاشى سحابة العطسة فتظهر أقواس العدوى بين الزملاء
+        this.at(1.3, () => R.spray.clear({ tAt: R.simT }), R.id);
       });
       this.setTheme('morning', 1.6);
     });
@@ -783,7 +915,12 @@ class Scene3D {
         const t = 5.6 + d * 0.95;
         this.at(t, () => {
           this._roomTime(R, WINDOW.am, 8, 0.85, d > 0);
-          list.forEach((i, j) => this.at(0.35 + j * 0.15, () => this._makeSick(R, R.dolls[i])));
+          list.forEach((i, j) => this.at(0.35 + j * 0.15, () => {
+            const X = R.dolls[i];
+            const src = this._source(R, X);
+            if (src) this._arc(R, src.headWorld(), X.headWorld(), { dur: 1.6 });
+            this._makeSick(R, X);
+          }));
         });
       });
       // ٤) نُعيد الأسبوع: الرذاذ يختفي والجميع يُشفى
@@ -914,6 +1051,7 @@ class Scene3D {
       if (X.iconKind === 'alert') this._icon(X, null);
     }
     R.mode = 'close';
+    R.focus = R.dolls[s.anim === 'distance' ? s.near : s.doll];
     this._shotTo(R, this._solveShot(R, s), lead);
     this._base = lead; // كل مهام المشهد تبدأ بعد اقتراب الكاميرا
     let d = 0;
@@ -1099,15 +1237,14 @@ class Scene3D {
       }
       case 'rest': {
         const door = R.door;
-        this.glide(R, D, door.pos.clone(), { dur: 1.0, rotY: R.side > 0 ? Math.PI / 2 : -Math.PI / 2, hop: 0.1 });
+        this.glide(R, D, door.pos.clone(), { dur: 1.1, rotY: R.side > 0 ? Math.PI / 2 : -Math.PI / 2 });
         this.task(0.5, (p) => (door.pivot.rotation.y = door.out * 1.7 * easeOut(p)), { delay: 0.7, room: id });
         this.at(0.7, () => this.onSound('door', id), id);
-        this.glide(R, D, door.outside.clone(), { dur: 0.9, delay: 1.1, hop: 0.05 });
+        this.glide(R, D, door.outside.clone(), { dur: 0.9, delay: 1.1 });
         this.at(2.0, () => {
           D.root.visible = false;
           D.away = true;
-          D.root.position.copy(D.home);
-          D.doll.rotation.y = 0;
+          this._seat(D);
         }, id);
         this.task(0.5, (p) => (door.pivot.rotation.y = door.out * 1.7 * (1 - easeIO(p))), { delay: 2.0, room: id });
         return 2.6;
@@ -1115,7 +1252,8 @@ class Scene3D {
       case 'distance': {
         // يوسف/الزميل يعطس، وأحمد ابتعد قليلًا فلا يصله الرذاذ
         const away = D.home.clone().add(V((R.desks[D.idx].x - R.desks[N.idx].x > 0 ? 1 : -1) * 0.62, 0, 0.1));
-        this.glide(R, D, away, { dur: 0.8, hop: 0.06 });
+        this.glide(R, D, away, { dur: 0.9 });
+        this.at(0.95, () => this.pose(D, 'rest'), id);
         N.breath = false;
         this._slowmo(R, { delay: 0.95, hold: 0.8, k: 0.35 });
         this.at(1.0, () => this._sneeze(R, N, { toward: D.home.clone().add(V(0, 1.0, 0.1)), power: 0.55, count: 3000 }), id);
@@ -1140,6 +1278,7 @@ class Scene3D {
     this.task(0.4, (p) => (src.doll.rotation.z = Math.sin(p * Math.PI * 4) * 0.08 * (1 - p)), { room: id });
     R.spray.sneeze({ origin: arr(src.mouthWorld()), dir: arr(tgt.headWorld().sub(src.mouthWorld()).normalize()), count: this._scale(900) || 60, t0: R.simT, power: 0.5, mistFrac: 0.3, germFrac: 0.3, heads: this._heads(R, src.idx), desks: R.deskTops, life: 2.5 });
     const was = tgt.sick;
+    this._arc(R, src.mouthWorld(), tgt.headWorld(), { dur: 1.7, delay: 0.15 });
     this.at(0.45, () => {
       tgt.sick = Math.max(was, 0.5);
     }, id);
@@ -1175,7 +1314,7 @@ class Scene3D {
           }
           if (X.displaced) {
             X.displaced = false;
-            X.root.position.copy(X.home);
+            this._seat(X);
           }
           if (X.sick) this._heal(R, X);
         }
@@ -1184,28 +1323,69 @@ class Scene3D {
     return dur;
   }
 
-  /** منتصف الأسبوع «سرّ العدوى»: عدسة زجاجية أمام وجه زميل يتنفّس الرذاذ. يعيد المدة. */
+  /**
+   * منتصف الأسبوع «داخل قطرة رذاذ»: زميل يعطس نحو آخر، فتقترب الكاميرا من قطرة أمام أنفه،
+   * وتغوص فيها بومضة: عالم مائي فيه جراثيم تسبح، ثم تخرج والزميل يتنفّس الرذاذ. يعيد المدة.
+   */
   midgame(id) {
     const R = this.rooms[id];
     if (!R) return 0;
     const D = R.dolls[3];
     const S = R.dolls[4];
-    const lens = this._magnifier(R);
-    const face = D.headWorld().add(V(0, -0.02, 0.32));
-    lens.position.copy(face);
-    lens.scale.setScalar(0.001);
-    this.task(0.5, (p) => lens.scale.setScalar(Math.max(0.001, easeBack(p) * 0.9)), { room: id });
-    this.at(0.4, () => this.pose(D, 'ha'), id);
-    // رذاذ ناعم يُتنفَّس: ينطلق من الزميل ويصل إلى الأنف والفم
-    this.at(0.5, () => R.spray.sneeze({
-      origin: arr(S.mouthWorld()), dir: arr(D.mouthWorld().sub(S.mouthWorld()).normalize()), count: this._scale(2500) || 180,
-      t0: R.simT, power: 0.45, spread: 0.18, mistFrac: 0.4, germFrac: 0.35, heads: [{ c: arr(D.headWorld()), r: 0.17 }], life: 3,
-    }), id);
-    this.at(1.9, () => this.pose(D, 'rest'), id);
-    this.task(0.45, (p) => lens.scale.setScalar(Math.max(0.001, 0.9 * (1 - easeIO(p)))), { delay: 2.5, room: id, onDone: () => (lens.visible = false) });
-    this.at(2.9, () => R.spray.clear({ tAt: R.simT }), id);
+    if (this.reduced) {
+      this.at(0.2, () => this._sneeze(R, S, { toward: D.headWorld(), power: 0.45, count: 1500 }), id);
+      this.onSound('mid', id);
+      return 1.6;
+    }
+    this.micro ||= new MicroWorld(this.tier);
+    R.mode = 'close';
+    R.focus = D;
+    const face = this._closeShot(R, D, { dist: 1.25 });
+    this._shotTo(R, face, 0.8);
+    this.at(0.25, () => this.pose(D, 'ha'), id);
+    // رذاذ ناعم من الزميل يصل إلى الأنف والفم، بالتصوير البطيء
+    this.at(0.5, () => {
+      R.spray.sneeze({
+        origin: arr(S.mouthWorld()), dir: arr(D.mouthWorld().sub(S.mouthWorld()).normalize()), count: this._scale(2500) || 180,
+        t0: R.simT, power: 0.45, spread: 0.18, mistFrac: 0.4, germFrac: 0.35, heads: [{ c: arr(D.headWorld()), r: 0.17 }], life: 4,
+      });
+      this.onSound('achoo', id);
+    }, id);
+    this._slowmo(R, { delay: 0.6, hold: 3.6, k: 0.18 });
+    // اقتراب أشد من قطرة أمام الأنف، ثم ومضة الدخول
+    this.at(0.95, () => {
+      const nose = D.mouthWorld().add(V(0, 0.02, 0.12));
+      this._shotTo(R, this._focusShot(R, nose, { dist: 0.35, up: 0.1 }), 0.45);
+    }, id);
+    this.task(0.3, (p) => (R.uFlash.value = easeIO(p)), { delay: 1.25, room: id });
+    this.at(1.55, () => {
+      R.saved = R.shotNow;
+      R.pass.scene = this.micro.scene;
+      this.micro.scene.environment = this.scene.environment;
+      this.micro.reset();
+      R.diving = true;
+      R.cam.clearViewOffset();
+      const k = this.wPx / this.VW;
+      const off = this._centerOff(R);
+      R.cam.setViewOffset(this.wPx, this.hPx, off.x * k, off.y * k, this.wPx, this.hPx);
+      R.cam.updateProjectionMatrix();
+      this.onSound('dive', id);
+    }, id);
+    this.task(0.45, (p) => (R.uFlash.value = 1 - easeIO(p)), { delay: 1.6, room: id });
+    // ٢٫٨ ثانية داخل القطرة، ثم الخروج
+    this.task(0.3, (p) => (R.uFlash.value = easeIO(p)), { delay: 4.25, room: id });
+    this.at(4.55, () => {
+      R.diving = false;
+      R.pass.scene = this.scene;
+      this._applyShot(R, face);
+      this.pose(D, 'rest');
+    }, id);
+    this.task(0.4, (p) => (R.uFlash.value = 1 - easeIO(p)), { delay: 4.6, room: id });
+    this.at(5.1, () => R.spray.clear({ tAt: R.simT }), id);
+    this.at(5.1, () => (R.mode = 'play'), id);
+    this._shotTo(R, R.playShot, 0.9, { delay: 5.1 });
     this.onSound('mid', id);
-    return 3.0;
+    return 6.1;
   }
 
   /** الفريق أنهى أسبوعه: احتفال في صفّه */
@@ -1220,7 +1400,7 @@ class Scene3D {
         D.away = false;
         D.root.visible = true;
       }
-      D.root.position.copy(D.home);
+      this._seat(D);
       D.sick = 0;
       D.cheer = true;
       this.pose(D, 'cheer');
@@ -1230,12 +1410,18 @@ class Scene3D {
   }
 
   /** الختام: الأسبوع كله بحماية (الساعة تدور عبر الأيام، والجميع سليم) ثم غروب ذهبي قصير. يعيد المدة. */
+  /**
+   * الختام. في وضع «طالب واحد»: الأسبوعان جنبًا إلى جنب — يُبنى صفّان: الأيسر «بلا حماية» (الجميع مرضى،
+   * والرذاذ معلّق، وأقواس العدوى)، والأيمن «بحمايتكم» (يهتفون تحت القصاصات). في السباق: احتفال الصفّين.
+   * يعيد { dur, split }.
+   */
   outro() {
     const rooms = Object.values(this.rooms);
     if (this.reduced) {
       rooms.forEach((R) => this.celebrate(R.id));
-      return 1.2;
+      return { dur: 1.2, split: false };
     }
+    if (rooms.length === 1 && !this.cardsMode) return this._splitOutro();
     this.setTheme('sunset', 1.2);
     rooms.forEach((R) => {
       if (!R.celebrate) this.celebrate(R.id);
@@ -1243,7 +1429,35 @@ class Scene3D {
       this.at(1.2, () => R.spray.rain({ x0: R.cx - R.w * 0.45, x1: R.cx + R.w * 0.45, z0: -1.8, z1: 1.8, y: 2.8 }, { t0: R.simT, count: this._scale(1600) || 160, life: 4 }));
     });
     this.at(2.6, () => this.setTheme('morning', 1.0));
-    return 3.0;
+    return { dur: 3.0, split: false };
+  }
+
+  _splitOutro() {
+    const R0 = Object.values(this.rooms)[0];
+    // ومضة تخفي إعادة البناء
+    this.task(0.35, (p) => (R0.uFlash.value = easeIO(p)));
+    this.at(0.4, () => {
+      this.setTeams(['a', 'b']);
+      this.layout(this.wPx, this.hPx, this.VW, this.VH, this.frame);
+      const A = this.rooms.a; // يمين: بحمايتكم
+      const B = this.rooms.b; // يسار: بلا حماية
+      A.uFlash.value = 1;
+      B.uFlash.value = 1;
+      this.task(0.5, (p) => (A.uFlash.value = B.uFlash.value = 1 - easeIO(p)));
+      this.setTheme('morning', 0);
+      // بلا حماية: الجميع مرضى، وأقواس العدوى من المريض الأول، ورذاذ معلّق في الهواء
+      B.dolls.forEach((D, i) => this.at(0.15 + i * 0.12, () => {
+        this._makeSick(B, D);
+        if (i !== OUTBREAK.first) this._arc(B, B.dolls[OUTBREAK.first].headWorld(), D.headWorld(), { dur: 2.6 });
+      }));
+      this.at(0.1, () => this._sneeze(B, B.dolls[OUTBREAK.first], { power: 1, count: 8000, toward: B.dolls[4].headWorld().add(V(0, 0.1, 1.2)) }));
+      this._roomTime(B, WINDOW.pm, 14, 0);
+      // بحمايتكم: الجميع سالمون يهتفون
+      this.celebrate('a');
+      this._roomTime(A, WINDOW.pm, 14, 0);
+    });
+    this.onSound('cheer', 'a');
+    return { dur: 4.2, split: true };
   }
 
   /** للأداة tools/prerender.py: صندوق الصف المسقط ومواضع رؤوس الدمى بوحدة المسرح (u) */
@@ -1299,47 +1513,63 @@ class Scene3D {
         else k.onDone?.();
       }
     }
-    // الدمى: أوضاع ناعمة، ومرض، وإبراز، وتنفّس ما قبل العطسة، وهتاف
-    const a = 1 - Math.exp(-dt * 9);
+    // الشخصيات: الهيكل العظمي (dolls.js)، ومرض، وإبراز، وهتاف
     for (const R of Object.values(this.rooms)) {
       for (const D of R.dolls) {
-        const P = D.target;
-        for (const part of ['L', 'R', 'H']) for (let i = 0; i < 3; i++) D.cur[part][i] += (P[part][i] - D.cur[part][i]) * a;
-        let hx = D.cur.H[0];
-        if (D.breath) hx += -0.18 * (0.5 + 0.5 * Math.sin(t * 4.2 + D.idx)); // ها… ها…
-        D.armL.rotation.set(D.cur.L[0], D.cur.L[1], D.cur.L[2]);
-        D.armR.rotation.set(D.cur.R[0], D.cur.R[1], D.cur.R[2]);
-        D.head.rotation.set(hx + Math.sin(t * 1.3 + D.idx * 2) * 0.03, D.cur.H[1] + Math.sin(t * 0.7 + D.idx) * 0.06, D.cur.H[2]);
-        if (D.cheer) D.doll.position.y = Math.abs(Math.sin(t * 6 + D.idx)) * 0.12;
+        applyPose(D, dt, t);
+        D.doll.position.y = D.cheer ? Math.abs(Math.sin(t * 6 + D.idx)) * 0.06 : 0;
         D.uSick.value += (D.sick - D.uSick.value) * (1 - Math.exp(-dt * 4));
-        D.uHi.value += (D.hi - D.uHi.value) * (1 - Math.exp(-dt * 6));
+        // في اللقطة القريبة يخفت الإبراز الذهبي فلا يغشى الوجه
+        const hi = R.mode === 'close' ? D.hi * 0.12 : D.hi;
+        D.uHi.value += (hi - D.uHi.value) * (1 - Math.exp(-dt * 6));
         const want = D.iconKind ? 0.34 : 0.001;
         const sc = D.icon.scale.x + (want - D.icon.scale.x) * (1 - Math.exp(-dt * 10));
         D.icon.scale.setScalar(sc);
         D.icon.position.y = 1.5 + Math.sin(t * 2.4 + D.idx) * 0.03;
       }
       // من يقترب من الكاميرا (أقل من ٠٫٩ م) يختفي مؤقتًا فلا يحجب اللقطة
+      // يُخفى فقط من يقف بين الكاميرا وصاحب اللقطة (لا صاحب اللقطة نفسه)
       const cp = R.cam.position;
+      const fd = R.focus && !R.focus.away ? R.focus.headWorld().distanceTo(cp) : 99;
       for (const X of R.dolls) {
         if (X.away) continue;
-        const near = R.mode === 'close' || R.anim ? X.headWorld().distanceTo(cp) < 0.95 : false;
+        let near = false;
+        if ((R.mode === 'close' || R.anim) && X !== R.focus) {
+          const d = X.headWorld().distanceTo(cp);
+          // قرب العدسة يُخفى دائمًا؛ ومن يقف أمام صاحب اللقطة يُخفى في اللقطة القريبة فقط (لا في اللقطة العامة)
+          near = d < 0.95 || (R.mode === 'close' && fd < 4 && d < fd - 0.25);
+        }
         X.root.visible = !near;
       }
       const H = R.dolls.find((X) => X.hi > 0.5);
       if (H) R.pillar.position.set(H.root.position.x, 0, H.root.position.z);
-      R.uPillar.value += ((H ? 1 : 0) - R.uPillar.value) * (1 - Math.exp(-dt * 5));
+      R.uPillar.value += ((H && R.mode !== 'close' ? 1 : 0) - R.uPillar.value) * (1 - Math.exp(-dt * 5));
       R.pillar.visible = R.uPillar.value > 0.02;
       // الساعة
       const h = R.clockH ?? 8;
       R.clock.hour.rotation.z = -(h / 12) * Math.PI * 2;
       R.clock.minute.rotation.z = -(h % 1) * Math.PI * 2 - (t % 60) * 0.001;
-      R.uBeam.value = (R.beamBase ?? 0.16) * (this.beamBoost ?? 1);
+      // في اللقطة القريبة تدخل الكاميرا في حزم ضوء النافذة فتغشى الصورة: نخفّفها حتى تعود الكاميرا
+      R.closeK = (R.closeK ?? 0) + ((R.mode === 'close' ? 1 : 0) - (R.closeK ?? 0)) * (1 - Math.exp(-dt * 5));
+      R.uBeam.value = (R.beamBase ?? 0.16) * (this.beamBoost ?? 1) * (1 - 0.85 * R.closeK);
       R.uPatch.value = Math.min(1.2, (R.patchBase ?? 0.55) * Math.sqrt(this.beamBoost ?? 1));
       R.spray.step(this.renderer, dt * R.timeScale);
+      if (R.uDof) {
+        const want = R.mode === 'close' && !R.diving && R.focus ? 1 : 0;
+        R.uDof.value += (want - R.uDof.value) * (1 - Math.exp(-dt * 4));
+        if (R.focus) R.uFocus.value = R.focus.headWorld().distanceTo(R.cam.position);
+      }
+      if (R.diving && this.micro) this.micro.update(dt, R.cam);
     }
     if (!this.pipeline) return;
     try {
-      this.pipeline.render();
+      const rs = Object.values(this.rooms);
+      let P = this.pipelineDof && rs.some((R) => R.uDof && R.uDof.value > 0.01) ? this.pipelineDof : this.pipeline;
+      if (this.pipelineDof && this._warmDof > 0) {
+        this._warmDof--;
+        P = this.pipelineDof;
+      }
+      P.render();
     } catch (e) {
       this.onFail?.(e.message);
       this.renderer.setAnimationLoop(null);
@@ -1389,7 +1619,6 @@ class Scene3D {
     this.tier = 'B';
     this.sun.castShadow = false;
     this.renderer.shadowMap.enabled = false;
-    this.bloomNode = null;
     this._buildPipeline();
     for (const R of Object.values(this.rooms)) {
       R.spray.setDrawCount(1200);
@@ -1401,6 +1630,3 @@ class Scene3D {
   }
 }
 
-function clonePose(p) {
-  return { L: [...p.L], R: [...p.R], H: [...p.H] };
-}

@@ -235,7 +235,7 @@ export class Spray {
     const spread = o.spread ?? 0.42;
     const mistFrac = o.mistFrac ?? 0.55;
     const germFrac = o.germFrac ?? 0.12;
-    const life = o.life ?? 7;
+    const life = o.life ?? 9;
     const tmp = [0, 0, 0];
     const prev = [0, 0, 0];
     const hits = { shield: 0, desk: 0, head: 0 };
@@ -252,8 +252,10 @@ export class Spray {
         dir[1] * Math.cos(r) + (ux[1] * Math.cos(a) + uy[1] * Math.sin(a)) * sr,
         dir[2] * Math.cos(r) + (ux[2] * Math.cos(a) + uy[2] * Math.sin(a)) * sr,
       ]);
-      const speed = power * (mist ? 2.2 + Math.random() * 3 : 3.5 + Math.random() * 6);
-      const k = mist ? 2.2 + Math.random() * 2.5 : 0.9 + Math.random() * 1.6;
+      // مُعايَر على القياسات المنشورة: القطرات الكبيرة تسقط خلال ١–٢٫٥ م (أقل من ثانية لقطرة ١ مم)،
+      // والرذاذ الناعم تحمله سحابة العطسة حتى ٣–٨ م ويبقى معلّقًا (Bourouiba 2020؛ منحنى Wells).
+      const speed = power * (mist ? 3 + Math.random() * 4 : 4 + Math.random() * 5);
+      const k = mist ? 0.6 + Math.random() * 0.6 : 2.4 + Math.random() * 2.0;
       const v0 = [d[0] * speed, d[1] * speed, d[2] * speed];
       const t0 = o.t0 + Math.random() * 0.12 * (mist ? 2 : 1);
       const p0 = [o.origin[0] + (Math.random() - 0.5) * 0.03, o.origin[1] + (Math.random() - 0.5) * 0.02, o.origin[2] + (Math.random() - 0.5) * 0.03];
@@ -262,8 +264,8 @@ export class Spray {
       let tStop = 30;
       let stuck = false;
       prev[0] = p0[0]; prev[1] = p0[1]; prev[2] = p0[2];
-      const T = mist ? 3 : 2.2;
-      const dt = mist ? 1 / 30 : 1 / 120;
+      const T = mist ? 6 : 2.2;
+      const dt = mist ? 1 / 20 : 1 / 120;
       for (let tt = dt; tt <= T; tt += dt) {
         at(tmp, p0, v0, k, gs, tt);
         if (o.shield && dist2(tmp, o.shield.c) < o.shield.r * o.shield.r) {
