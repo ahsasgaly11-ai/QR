@@ -33,10 +33,13 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { ITEM_MODELS, setUV, pmat, studioEnvScene, head, tissueSheet, tissueBall, elbowArm, table, sandwich, bin, bottle, bubble } from './models.js';
+import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
+import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
+import { ITEM_MODELS, setUV, pmat, nmap, studioEnvScene, head, tissueSheet, tissueBall, elbowArm, table, sandwich, bin, bottle, bubble } from './models.js';
 import { Germs, sampleSurface } from './germs.js';
 import { buildCardModel } from './cards3d.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { labEnvironment } from './env.js';
 
 const FPS_MS = 1000 / 30;
 const IDLE_MS = 1000 / 15;
@@ -50,8 +53,9 @@ const TEAM_COLOR = { a: '#8a1538', b: '#0e7490', all: '#6d28d9', hero: '#6d28d9'
 
 /** إعدادات الطبقات */
 const TIER = {
-  A: { dpr: 1.5, maxPx: 2.6e6, msaa: 4, bloomRes: 0.5, shadows: true, germs: 3200, dust: 220, lensPx: 640, lensMsaa: 4, micro: 220, seg: 140, glass: true },
-  B: { dpr: 1.15, maxPx: 1.4e6, msaa: 0, bloomRes: 0.33, shadows: false, germs: 1100, dust: 90, lensPx: 420, lensMsaa: 0, micro: 120, seg: 80, glass: false },
+  // A السينمائية: إظلال محيطي GTAO بنصف الدقة، وظلال VSM ناعمة، وSMAA حين لا يتوفّر MSAA، وتدرّج لوني كامل
+  A: { dpr: 1.5, maxPx: 2.6e6, msaa: 4, bloomRes: 0.5, shadows: true, vsm: true, ao: true, smaa: true, grade: 1, germs: 3200, dust: 220, lensPx: 640, lensMsaa: 4, micro: 340, seg: 140, glass: true },
+  B: { dpr: 1.15, maxPx: 1.4e6, msaa: 0, bloomRes: 0.33, shadows: false, vsm: false, ao: false, smaa: false, grade: 0.6, germs: 1100, dust: 90, lensPx: 420, lensMsaa: 0, micro: 170, seg: 80, glass: false },
 };
 
 /** وحدات داخل العدسة: الحامل بمقياس S، ونصف قطر ما تراه العدسة R_IN (بوحدات الحامل) */
@@ -194,16 +198,40 @@ function microHeight(kind, x, z) {
 
 // ------------------------------------------------------------------ مظلِّلات
 
-/** تصحيح جهاز العرض بعد OutputPass: تظليل أطراف خفيف + رفع الأسود (السبورة في صف مضاء) */
+/** ظلال الطبقة A بنظام VSM: تمويه أوسع وانحياز أصغر (VSM لا يعاني «حبّ الظل» كـ PCF) */
+function soften(sh, cfg, radius, bias) {
+  if (cfg.vsm) {
+    sh.radius = radius * 1.6;
+    sh.blurSamples = 12;
+    sh.bias = bias * 0.3;
+  } else {
+    sh.radius = radius;
+    sh.bias = bias;
+  }
+}
+
+/**
+ * التدرّج اللوني السينمائي + تصحيح جهاز العرض، بعد OutputPass (قيم sRGB):
+ *  - تشبّع أعلى قليلًا ومنحنى S لطيف (عمق بلا سواد مطبق)،
+ *  - تلوين منفصل: الأضواء دافئة (نحاس/مصباح) والظلال باردة بنفسجية (هوية المختبر)،
+ *  - تظليل أطراف خفيف ورفع الأسود (السبورة في صف مضاء).
+ * لا حبيبات ولا تغيّر زمني: صورة ثابتة لا ترتعش على جهاز العرض.
+ */
 const ProjectorShader = {
-  uniforms: { tDiffuse: { value: null }, uLift: { value: 0.045 }, uVig: { value: 0.2 } },
+  uniforms: { tDiffuse: { value: null }, uLift: { value: 0.045 }, uVig: { value: 0.2 }, uGrade: { value: 1 } },
   vertexShader: /* glsl */ `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
   fragmentShader: /* glsl */ `
-    uniform sampler2D tDiffuse; uniform float uLift, uVig; varying vec2 vUv;
+    uniform sampler2D tDiffuse; uniform float uLift, uVig, uGrade; varying vec2 vUv;
     void main(){
-      vec4 t = texture2D(tDiffuse, vUv);
+      vec3 c = clamp(texture2D(tDiffuse, vUv).rgb, 0.0, 1.0);
+      float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+      c = mix(vec3(l), c, 1.0 + 0.1 * uGrade);
+      c = mix(c, c * c * (3.0 - 2.0 * c), 0.16 * uGrade);
+      float hi = smoothstep(0.5, 1.0, l);
+      float lo = 1.0 - smoothstep(0.0, 0.4, l);
+      c += uGrade * (vec3(0.014, 0.005, -0.012) * hi + vec3(-0.004, -0.002, 0.016) * lo);
       float v = 1.0 - smoothstep(0.45, 1.0, length((vUv - 0.5) * vec2(1.0, 0.9)) * 1.25);
-      vec3 c = t.rgb * mix(1.0, v, uVig);
+      c = clamp(c, 0.0, 1.0) * mix(1.0, v, uVig);
       gl_FragColor = vec4(uLift + c * (1.0 - uLift), 1.0);
     }`,
 };
@@ -280,10 +308,10 @@ function wallMaterial() {
  */
 function lensMaterial(tex) {
   return new THREE.ShaderMaterial({
-    uniforms: { tLens: { value: tex }, uZoom: { value: 0 }, uFlash: { value: 0 }, uUV: { value: 0 }, uDof: { value: 1 } },
+    uniforms: { tLens: { value: tex }, uZoom: { value: 0 }, uFlash: { value: 0 }, uUV: { value: 0 }, uDof: { value: 1 }, uFocus: { value: 0 } },
     vertexShader: /* glsl */ `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
     fragmentShader: /* glsl */ `
-      uniform sampler2D tLens; uniform float uZoom, uFlash, uUV, uDof; varying vec2 vUv;
+      uniform sampler2D tLens; uniform float uZoom, uFlash, uUV, uDof, uFocus; varying vec2 vUv;
       vec3 tap(vec2 uv){ return texture2D(tLens, clamp(uv, vec2(0.002), vec2(0.998))).rgb; }
       void main(){
         vec2 p = vUv * 2.0 - 1.0;
@@ -301,8 +329,8 @@ function lensMaterial(tex) {
           }
           c = acc / 10.0;
         }
-        // عمق ميدان عند الحافة (تمويه على «الزاوية الذهبية» كما في مختبر العدسة)
-        float e = smoothstep(0.55, 1.0, r) * uDof;
+        // سحب التركيز بين محطات المجهر: الصورة كلها تتموّه ثم تتّضح (كضبط مقبض المجهر)
+        float e = max(smoothstep(0.55, 1.0, r) * uDof, uFocus);
         if (e > 0.002) {
           vec3 b = vec3(0.0);
           for (int i = 0; i < 8; i++) {
@@ -370,6 +398,67 @@ function coneMaterial() {
   });
 }
 
+/**
+ * قطرات العطاس: آلاف النقاط تُحسب حركتها كلها في مظلِّل الرؤوس (سرعة ابتدائية، ومقاومة هواء، وجاذبية):
+ * الدقيقة تطير أبعد، والكبيرة تسقط على الطاولة. وإن وُجد حاجز (منديل/مرفق) تعلق القطرات عنده.
+ * الإحداثيات بوحدات الحامل داخل العدسة.
+ */
+function droplets(n, origin, { floor = -10, stopX = 1e6, dir = 1 } = {}) {
+  const vel = new Float32Array(n * 3);
+  const seed = new Float32Array(n * 4);
+  for (let i = 0; i < n; i++) {
+    const fine = Math.random() < 0.7; // ٧٠٪ قطرات دقيقة جدًا
+    const sp = fine ? rnd(2.2, 5.2) : rnd(1.4, 3.0);
+    const a = rnd(-0.42, 0.32);
+    const b = rnd(-0.55, 0.55);
+    vel.set([Math.cos(a) * Math.cos(b) * sp * dir, Math.sin(a) * sp, Math.sin(b) * sp * 0.8], i * 3);
+    seed.set([rnd(0, 0.18), fine ? rnd(0.6, 1.1) : rnd(1.4, 2.4), fine ? rnd(0.9, 1.5) : rnd(1.9, 3.0), Math.random()], i * 4);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 3), 3));
+  geo.setAttribute('aV', new THREE.BufferAttribute(vel, 3));
+  geo.setAttribute('aSeed', new THREE.BufferAttribute(seed, 4));
+  const mat = new THREE.ShaderMaterial({
+    uniforms: { uT: { value: 0 }, uO: { value: origin.clone() }, uFloor: { value: floor }, uStopX: { value: stopX }, uPx: { value: 1000 }, uS: { value: 100 } },
+    vertexShader: /* glsl */ `
+      attribute vec3 aV; attribute vec4 aSeed;
+      uniform float uT, uFloor, uStopX, uPx, uS; uniform vec3 uO;
+      varying float vA;
+      vec3 at(float t, float k){ return uO + aV * (1.0 - exp(-k * t)) / k + vec3(0.0, -0.9 * t * t, 0.0) * (aSeed.y * 0.6); }
+      void main(){
+        float k = aSeed.z;
+        float t = max(0.0, uT - aSeed.x);
+        // زمن الاصطدام بالحاجز (إن وُجد): تعلق القطرة عنده
+        float q = (uStopX - uO.x) * k / aV.x;
+        float stuck = 0.0;
+        if (aV.x > 0.0 && q > 0.0 && q < 1.0) {
+          float th = -log(1.0 - q) / k;
+          stuck = step(th, t);
+          t = min(t, th);
+        }
+        vec3 p = at(t, k);
+        float landed = step(p.y, uFloor);
+        p.y = max(p.y, uFloor);
+        // القطرات التي استقرّت (على الطاولة أو عند الحاجز) أخفت: لا تتراكم خطًّا أبيض ساطعًا
+        // القطرة التي علقت بالحاجز تذوب فيه تقريبًا (المنديل يمتصّها) فلا تتكدّس آلاف النقاط في بقعة واحدة
+        vA = smoothstep(0.0, 0.05, uT - aSeed.x) * (0.55 + 0.45 * aSeed.w) * mix(1.0, 0.22, landed) * mix(1.0, 0.04, stuck);
+        vec4 mv = modelViewMatrix * vec4(p, 1.0);
+        gl_Position = projectionMatrix * mv;
+        gl_PointSize = aSeed.y * 2.6 * uS * uPx / 100.0 / -mv.z;
+      }`,
+    fragmentShader: /* glsl */ `
+      varying float vA;
+      void main(){ float d = length(gl_PointCoord - 0.5) * 2.0; if (d > 1.0) discard; float a = pow(1.0 - d, 1.6) * vA; gl_FragColor = vec4(vec3(0.75, 0.95, 1.25) * a * 1.4, a); }`,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, premultipliedAlpha: true,
+  });
+  const pts = new THREE.Points(geo, mat);
+  pts.frustumCulled = false;
+  pts.renderOrder = 11;
+  pts.userData.sample = false;
+  pts.userData.drops = true;
+  return pts;
+}
+
 /** غبار يسبح في ضوء المختبر */
 function dustPoints(n) {
   const pos = new Float32Array(n * 3);
@@ -434,7 +523,8 @@ class Scene3D {
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 0.92;
     renderer.shadowMap.enabled = this.cfg.shadows;
-    renderer.shadowMap.type = THREE.PCFShadowMap; // r186: النعومة من shadow.radius
+    // VSM في A: ظلال ناعمة الأطراف (تمويه حقيقي بـ radius وblurSamples)؛ PCF غير ذلك (r186: النعومة من shadow.radius)
+    renderer.shadowMap.type = this.cfg.vsm ? THREE.VSMShadowMap : THREE.PCFShadowMap;
     renderer.setClearColor('#efe9f6', 1);
 
     const scene = (this.scene = new THREE.Scene());
@@ -480,6 +570,20 @@ class Scene3D {
       agar: keep(new THREE.MeshPhysicalMaterial({ color: '#f3dd8c', roughness: 0.3, clearcoat: 1, transparent: true, opacity: 0.85 })),
     };
 
+    // انعكاسات مختبر حقيقي (بانوراما مصوّرة) حين تتحمّل
+    labEnvironment(renderer).then((rt) => {
+      if (!rt || this._disposed) return rt?.dispose();
+      const old = this.envRT;
+      this.envRT = rt;
+      this.scene.environment = rt.texture;
+      for (const T of [...Object.values(this.teams), this._hero].filter(Boolean)) {
+        T.ls.environment = rt.texture;
+        T.lensDirty = true;
+      }
+      this.dirty = true;
+      old.dispose();
+    });
+
     this.teams = {};
     this.VW = 1600;
     this.VH = 1000;
@@ -519,15 +623,31 @@ class Scene3D {
     if (!this._post) return;
     try {
       const coarse = matchMedia('(pointer: coarse)').matches;
-      const rt = new THREE.WebGLRenderTarget(4, 4, { type: THREE.HalfFloatType, samples: this.cfg.msaa && !coarse ? this.cfg.msaa : 0 });
+      const samples = this.cfg.msaa && !coarse ? this.cfg.msaa : 0;
+      const rt = new THREE.WebGLRenderTarget(4, 4, { type: THREE.HalfFloatType, samples });
       const c = (this.composer = new EffectComposer(r, rt));
       c.addPass(new RenderPass(this.scene, this.camera));
+      // إظلال محيطي (GTAO) في A: ظلال التلامس بين العُدد والرف والحلقة النحاسية. بنصف الدقة مع إزالة ضجيج،
+      // ويُطبَّق على الصورة الخطية قبل التوهّج. النقاط (الجراثيم والغبار) يستثنيها GTAOPass تلقائيًا.
+      this.gtao = null;
+      if (this.cfg.ao) {
+        const ao = (this.gtao = new GTAOPass(this.scene, this.camera, 4, 4));
+        ao.updateGtaoMaterial({ radius: 40, distanceExponent: 1.5, thickness: 22, scale: 1, samples: 12, distanceFallOff: 1, screenSpaceRadius: false });
+        ao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: 12 });
+        ao.blendIntensity = 0.8;
+        const half = GTAOPass.prototype.setSize;
+        ao.setSize = (w, h) => half.call(ao, Math.max(4, Math.round(w / 2)), Math.max(4, Math.round(h / 2)));
+        c.addPass(ao);
+      }
       // العتبة 1.6 (قيمة خطية قبل التدرّج): لا يتوهّج إلا الجراثيم والمصابيح، لا الجدار الفاتح ولا النحاس.
       this.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.5, 0.3, 1.6);
       c.addPass(this.bloom);
       c.addPass(new OutputPass());
       this.proj = new ShaderPass(ProjectorShader);
+      this.proj.uniforms.uGrade.value = this.cfg.grade;
       c.addPass(this.proj);
+      // تنعيم الحواف SMAA على الصورة النهائية حين لا يتوفّر MSAA (الأجهزة اللمسية في A)
+      if (this.cfg.smaa && !samples) c.addPass(new SMAAPass());
     } catch (e) {
       console.warn('المعالجة اللاحقة غير متاحة', e);
       this.composer = null;
@@ -535,6 +655,7 @@ class Scene3D {
   }
 
   dispose() {
+    this._disposed = true;
     this.renderer.setAnimationLoop(null);
     document.removeEventListener('visibilitychange', this._vis);
     this.renderer.domElement.removeEventListener('webglcontextlost', this._lost);
@@ -652,8 +773,7 @@ class Scene3D {
     key.position.set(260, 420, 520);
     key.castShadow = cfg.shadows;
     key.shadow.mapSize.set(1024, 1024);
-    key.shadow.radius = 5;
-    key.shadow.bias = -0.0006;
+    soften(key.shadow, cfg, 5, -0.0006);
     key.shadow.normalBias = 1.2;
     Object.assign(key.shadow.camera, { left: -320, right: 320, top: 320, bottom: -320, near: 50, far: 2000 });
     const rim = new THREE.DirectionalLight('#cfd9ff', 0.8);
@@ -880,7 +1000,7 @@ class Scene3D {
   /** مركز عدسة الفريق بوحدة u (لطيران النموذج إليها) */
   lensCenter(id) {
     const T = this.teams[id];
-    return T?.center ? { x: T.center.x, y: T.center.y } : null;
+    return T?.center ? { x: T.center.x, y: T.center.y, r: T.R } : null;
   }
 
   /**
@@ -1113,6 +1233,11 @@ class Scene3D {
     }
     T.model = null;
     T.modelId = key;
+    if (T.multN) {
+      T.multN = 0;
+      T.germs.clear();
+      if (!T.uvTo) T.germs.glow(0);
+    }
     if (!key || (!ITEM_MODELS[key] && !key.startsWith('s:'))) return;
     T.ped.visible = true;
     // الجولة ٢: نموذج البطاقة نفسه (رأس، منديل، صابون…) يظهر في العدسة كما يظهر على البطاقة
@@ -1202,11 +1327,222 @@ class Scene3D {
   dive(id, item) {
     const T = this.teams[id];
     if (!T || T.micro) return;
+    if (T.dive) T.dive = null;
     const rough = item.cat === 'rough';
     const kind = rough ? (['hand', 'sponge', 'wool', 'ball', 'log', 'rock'].includes(item.model) ? item.model : 'rough') : 'smooth';
     const color = this._modelColor(T.model) || (rough ? '#c9a27e' : '#dfe8f2');
-    T.dive = { phase: 'in', t0: performance.now(), dur: this.reduced ? 120 : 650, build: { kind, rough, color } };
+    T.diveBuild = { kind, rough, color };
+    // المحطة ١ (×١٠): العدسة تقترب من سطح الشيء نفسه، والجراثيم المضيئة عليه أوضح
+    T.stage = 1;
+    this._camTo(T, new THREE.Vector3(0, S_IN * 0.12, T.camDist * 0.42), new THREE.Vector3(0, 0, 0), 900);
     this.onSound(id, 'whoosh');
+  }
+
+  /**
+   * محطات المجهر: 2 = ×١٠٠ (سطح الشيء المجهري وعليه الجراثيم)، 3 = ×١٠٠٠ (جرثومة عن قرب).
+   * الانتقال إلى العالم المجهري بتمويه تكبير شعاعي، وبين المحطتين بسحب تركيز (تمويه ثم وضوح).
+   */
+  zoomTo(id, n) {
+    const T = this.teams[id];
+    if (!T || !T.diveBuild) return;
+    if (n === 2 && !T.micro) {
+      T.dive = { phase: 'in', t0: performance.now(), dur: this.reduced ? 120 : 600 };
+      this.onSound(id, 'whoosh');
+    } else if (n === 2 && T.micro) {
+      this._stage2(T, 1100);
+    } else if (n === 3 && T.micro) {
+      const g = T.micro.focus;
+      T.ls.fog.density = 0.0005;
+      this._camTo(T, new THREE.Vector3(g.x + 70, g.y + 170, g.z + 235), new THREE.Vector3(g.x, g.y, g.z), 1500, true);
+      this.onSound(id, 'whoosh');
+    }
+    T.stage = n;
+  }
+  _stage2(T, dur) {
+    T.ls.fog.density = 0.00022;
+    this._camTo(T, new THREE.Vector3(0, 1250, 1300), new THREE.Vector3(0, 0, -80), dur, true);
+  }
+  /** حركة كاميرا العدسة نحو موضع ونقطة نظر (مع سحب تركيز اختياري) */
+  _camTo(T, pos, look, dur, focus = false) {
+    const cur = T.camAnim;
+    T.camAnim = {
+      from: T.lcam.position.clone(), to: pos,
+      lookFrom: cur ? cur.lookTo.clone() : new THREE.Vector3(0, 0, 0), lookTo: look,
+      t0: performance.now(), dur: this.reduced ? 1 : dur, focus,
+    };
+    T.lensDirty = true;
+  }
+
+  /**
+   * ما يُكتب تحت العدسة: درجة التكبير، وشريط مقياس محسوب من المشهد نفسه
+   * (في العالم المجهري ١٤ وحدة = ١ ميكرومتر؛ العصيّة نحو ٢ ميكرومتر والكُرَيّة نحو ١).
+   * @returns {null|{mag:string, label?:string, u?:number, cx:number, y:number}}
+   */
+  scaleInfo(id) {
+    const T = this.teams[id];
+    if (!T?.stage || !T.center) return null;
+    const base = { cx: T.center.x, y: T.center.y + T.R * 0.62 };
+    if (T.stage === 1) return { ...base, mag: '×١٠' };
+    if (T.stage === 4) {
+      if (!T.micro?.soap) return null;
+      const d = T.lcam.position.length();
+      const uPerWorld = (2 * T.R * 0.955) / (2 * d * Math.tan(THREE.MathUtils.degToRad(15)));
+      return { ...base, mag: '×٢٠٠٠٠', label: '١ ميكرومتر', u: 100 * uPerWorld };
+    }
+    if (!T.micro) return { ...base, mag: '×١٠٠' };
+    const look = T.camAnim ? T.camAnim.lookTo : new THREE.Vector3();
+    const d = T.lcam.position.distanceTo(look);
+    const uPerWorld = (2 * T.R * 0.955) / (2 * d * Math.tan(THREE.MathUtils.degToRad(15)));
+    const um = T.stage === 3 ? 5 : 20;
+    const label = T.stage === 3 ? '٥ ميكرومترات' : '٢٠ ميكرومترًا';
+    return { ...base, mag: T.stage === 3 ? '×١٠٠٠' : '×١٠٠', label, u: um * 14 * uPerWorld };
+  }
+
+  /**
+   * «الصابون يفكّك الجرثومة» (الجولة ٢، غسل اليدين): العدسة تغوص إلى جرثومة واحدة كبيرة، فتسبح نحوها
+   * جزيئات الصابون (رأس يحب الماء وذيل يغرس في الغلاف)، فيتمزّق الغلاف وتتناثر قطعه، ويحملها الماء بعيدًا.
+   */
+  soap(id) {
+    const T = this.teams[id];
+    if (!T || T.micro) return;
+    T.diveBuild = { soap: true };
+    T.dive = { phase: 'in', t0: performance.now(), dur: this.reduced ? 120 : 600 };
+    T.stage = 4;
+    this.onSound(id, 'whoosh');
+  }
+
+  _buildSoap(T) {
+    this._dropMicro(T, false);
+    const A = this.tier === 'A';
+    const g = new THREE.Group();
+    // الجرثومة: عصيّة كبيرة (١ ميكرومتر = ١٠٠ وحدة هنا: طولها نحو ٢ ميكرومتر)
+    const body = new THREE.Mesh(
+      new THREE.CapsuleGeometry(46, 120, 12, 32).rotateZ(Math.PI / 2),
+      new THREE.MeshPhysicalMaterial({ color: '#5f8f16', emissive: '#b6ff2e', emissiveIntensity: 0.55, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.12, sheen: 0.6, sheenColor: '#efffbf', transparent: true, opacity: 0.92 }),
+    );
+    body.castShadow = this.cfg.shadows;
+    g.add(body);
+    // قطع الغلاف بعد التمزّق (مخفية حتى لحظتها)
+    const shardGeo = new THREE.IcosahedronGeometry(1, 1);
+    const shards = [];
+    for (let i = 0; i < 26; i++) {
+      const sh = new THREE.Mesh(shardGeo, body.material);
+      const a = rnd(0, Math.PI * 2);
+      const x = rnd(-95, 95);
+      sh.position.set(x, Math.cos(a) * 40, Math.sin(a) * 40);
+      sh.scale.set(rnd(14, 26), rnd(10, 20), rnd(12, 22));
+      sh.visible = false;
+      sh.userData.v = sh.position.clone().normalize().multiplyScalar(rnd(60, 140));
+      sh.userData.spin = new THREE.Vector3(rnd(-2, 2), rnd(-2, 2), rnd(-2, 2));
+      g.add(sh);
+      shards.push(sh);
+    }
+    // جزيئات الصابون: رأس كروي أزرق وذيل أصفر رفيع
+    const n = A ? 90 : 46;
+    const heads = new THREE.InstancedMesh(new THREE.SphereGeometry(8, 16, 12), new THREE.MeshPhysicalMaterial({ color: '#38bdf8', emissive: '#7dd3fc', emissiveIntensity: 0.6, roughness: 0.25, clearcoat: 1 }), n);
+    const tails = new THREE.InstancedMesh(new THREE.CapsuleGeometry(2.4, 26, 4, 8).translate(0, -19, 0), new THREE.MeshPhysicalMaterial({ color: '#facc15', emissive: '#fde68a', emissiveIntensity: 0.4, roughness: 0.4 }), n);
+    heads.frustumCulled = tails.frustumCulled = false;
+    g.add(heads, tails);
+    const mols = [];
+    for (let i = 0; i < n; i++) {
+      // نقطة على سطح الكبسولة واتجاهها إلى الخارج
+      const x = rnd(-60, 60) * (i % 5 === 0 ? 1.4 : 1);
+      const a = rnd(0, Math.PI * 2);
+      const nrm = new THREE.Vector3(Math.abs(x) > 60 ? Math.sign(x) * 0.6 : 0, Math.cos(a), Math.sin(a)).normalize();
+      const p = new THREE.Vector3(x, 0, 0).addScaledVector(nrm, 46);
+      const from = nrm.clone().multiplyScalar(rnd(380, 620)).add(new THREE.Vector3(rnd(-120, 120), rnd(-80, 80), 0));
+      mols.push({ p, nrm, from, delay: rnd(0, 0.5), shard: i % shards.length, off: new THREE.Vector3(rnd(-1, 1), rnd(-1, 1), rnd(-1, 1)).normalize().multiplyScalar(rnd(26, 40)) });
+    }
+    const sun = new THREE.DirectionalLight('#e2d6ff', 2.2);
+    sun.position.set(-300, 420, 380);
+    const spot = new THREE.PointLight('#9a6bff', 1.2, 2400, 0);
+    spot.position.set(150, 300, 260);
+    g.add(sun, spot);
+    // فقاعات ماء في الخلفية
+    for (let i = 0; i < (A ? 10 : 5); i++) {
+      const b = bubble();
+      b.scale.setScalar(rnd(30, 70));
+      b.position.set(rnd(-320, 320), rnd(-200, 200), rnd(-300, -100));
+      g.add(b);
+    }
+    T.ls.fog = new THREE.FogExp2('#1a0838', 0.0006);
+    T.ls.add(g);
+    T.micro = { g, soap: true, t: 0, body, shards, heads, tails, mols, burst: false };
+    T.lcam.position.set(0, 150, 640);
+    T.camAnim = { from: new THREE.Vector3(60, 180, 700), to: new THREE.Vector3(0, 130, 600), lookFrom: new THREE.Vector3(0, 0, 0), lookTo: new THREE.Vector3(0, 0, 0), t0: performance.now(), dur: 3800, focus: false };
+  }
+
+  /** حركة مشهد الصابون (٤ ث): اقتراب الجزيئات، غرس الذيول، تمزّق الغلاف، ثم يحمل الماء القطع */
+  _soapUpdate(T, dt) {
+    const M = T.micro;
+    M.t += this.reduced ? dt * 2.5 : dt;
+    const t = M.t;
+    const o = new THREE.Object3D();
+    const up = new THREE.Vector3(0, 1, 0);
+    const wash = Math.max(0, t - 3.0); // بعد ٣ ث: الماء يحمل كل شيء إلى الأسفل
+    // الغلاف يرتجف ثم يتمزّق
+    if (!M.burst) {
+      const w = t > 1.3 ? Math.min(1, (t - 1.3) / 0.7) : 0;
+      M.body.scale.set(1 + Math.sin(t * 22) * 0.03 * w, 1 + Math.cos(t * 19) * 0.04 * w, 1 + Math.sin(t * 17) * 0.04 * w);
+      if (t > 2.0) {
+        M.burst = true;
+        M.body.visible = false;
+        for (const s of M.shards) s.visible = true;
+        this.onSound(T.id, 'thud');
+      }
+    } else {
+      for (const s of M.shards) {
+        s.position.addScaledVector(s.userData.v, dt * 0.6);
+        s.position.y -= wash * wash * 60 * dt;
+        s.rotation.x += s.userData.spin.x * dt;
+        s.rotation.y += s.userData.spin.y * dt;
+        s.userData.v.multiplyScalar(1 - dt * 0.8);
+      }
+    }
+    M.mols.forEach((m, i) => {
+      const k = Math.min(1, Math.max(0, (t - m.delay) / 1.2));
+      let pos;
+      let dir = m.nrm;
+      if (!M.burst) {
+        // تسبح نحو الغلاف ثم تغرس ذيلها فيه
+        const reach = m.p.clone().addScaledVector(m.nrm, 30 - Math.min(1, Math.max(0, (t - 1.2) / 0.6)) * 18);
+        pos = m.from.clone().lerp(reach, easeIO(k));
+      } else {
+        // تلتف حول القطع (كالكُرَيّات الصغيرة التي يحملها الماء)
+        const s = M.shards[m.shard];
+        dir = m.off.clone().normalize();
+        pos = s.position.clone().add(m.off);
+      }
+      o.position.copy(pos);
+      o.quaternion.setFromUnitVectors(up, dir);
+      const fade = wash > 0.6 ? Math.max(0, 1 - (wash - 0.6)) : 1;
+      o.scale.setScalar(Math.max(0.001, fade));
+      o.updateMatrix();
+      M.heads.setMatrixAt(i, o.matrix);
+      M.tails.setMatrixAt(i, o.matrix);
+    });
+    M.heads.instanceMatrix.needsUpdate = true;
+    M.tails.instanceMatrix.needsUpdate = true;
+  }
+
+  /**
+   * الجراثيم تتكاثر على الشيء المعروض حين تبقى البطاقة في اليد طويلًا: كل جرثومة تنقسم إلى اثنتين.
+   * @param {number} n العدد الجديد (يتضاعف)
+   */
+  multiply(id, n) {
+    const T = this.teams[id];
+    if (!T?.model || T.dive || T.micro) return;
+    const prev = T.multN || 0;
+    const pts = sampleSurface(T.model, n, T.S);
+    T.germs.glow(0.85);
+    T.germs.event({
+      count: pts.length,
+      from: (i, r) => (i < prev ? r : pts[i - prev] ? [pts[i - prev].p.x, pts[i - prev].p.y, pts[i - prev].p.z, 0.6] : [0, 0, 0, 0]),
+      to: (i, r) => (i < prev ? r : pts[i] ? [pts[i].p.x, pts[i].p.y, pts[i].p.z, 1] : null),
+      dur: 0.6,
+    });
+    T.multN = n;
+    T.lensDirty = true;
   }
 
   /** اللون الغالب لمواد المجسّم (لون السطح المجهري) */
@@ -1230,7 +1566,7 @@ class Scene3D {
 
   /** يبني العالم المجهري داخل العدسة */
   _buildMicro(T, { kind, rough, color }) {
-    this._dropMicro(T);
+    this._dropMicro(T, false);
     const cfg = this.cfg;
     const g = new THREE.Group();
     const size = 1800;
@@ -1264,6 +1600,11 @@ class Scene3D {
     const mat = rough
       ? new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: 0.82, sheen: 1, sheenColor: '#7c4dff', sheenRoughness: 0.5, envMapIntensity: 0.3 })
       : new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: 0.06, clearcoat: 1, clearcoatRoughness: 0.03, envMapIntensity: 0.9, sheen: 0.3, sheenColor: '#7c4dff' });
+    // تفاصيل السطح الحقيقية فوق التضاريس (مسام الجلد، ثقوب الإسفنج، ألياف الصوف…)
+    const TEX = { hand: ['skin', 9, 0.9], sponge: ['sponge', 5, 1.2], wool: ['fabric', 7, 1.0], ball: ['pebble', 6, 1.0], log: ['bark', 3, 1.2], rock: ['rock', 3, 1.3], rough: ['rock', 3, 1.3], smooth: ['micro', 3, 0.12] };
+    const [tn, tr, tk] = TEX[kind] || TEX.rough;
+    mat.normalMap = nmap(tn, tr);
+    mat.normalScale = new THREE.Vector2(tk, tk);
     const ground = new THREE.Mesh(geo, mat);
     ground.receiveShadow = cfg.shadows;
     g.add(ground);
@@ -1326,8 +1667,11 @@ class Scene3D {
     const cand = [];
     const want = n * 2;
     for (let i = 0; i < want * (rough ? 4 : 1); i++) {
-      const x = rnd(-330, 330);
-      const z = rnd(-380, 200);
+      // توزيع طبيعي (أكثف قرب المركز ويخفّ نحو الأطراف) على كل ما تراه محطة ×١٠٠
+      const gx = (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
+      const gz = (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
+      const x = gx * 720;
+      const z = -100 + gz * 560;
       cand.push({ x, z, h: microHeight(kind, x, z) });
     }
     if (rough) {
@@ -1370,32 +1714,39 @@ class Scene3D {
     sun.castShadow = cfg.shadows;
     if (cfg.shadows) {
       sun.shadow.mapSize.set(1024, 1024);
-      sun.shadow.radius = 3;
-      sun.shadow.bias = -0.0008;
+      soften(sun.shadow, cfg, 3, -0.0008);
       Object.assign(sun.shadow.camera, { left: -500, right: 500, top: 500, bottom: -500, near: 50, far: 2500 });
     }
     g.add(spot, sun, sun.target);
     T.ls.add(g);
     T.micro = { g, kind, rough, germs, rods, cocs, wind, streaks, windOn: 0, t: 0, ground, spot };
     this._microUpdate(T, 0, 0);
-    // كاميرا مجهرية: من فوق السطح بزاوية مائلة، تتحرك ببطء
-    T.microCam = { from: new THREE.Vector3(0, 560, 760), to: new THREE.Vector3(0, 400, 600), look: new THREE.Vector3(0, -10, -60), t0: performance.now(), dur: 4200 };
+    // جرثومة قريبة من المركز لمحطة ×١٠٠٠
+    let best = germs[0];
+    for (const q of germs) if (Math.hypot(q.x, q.z + 60) < Math.hypot(best.x, best.z + 60)) best = q;
+    T.micro.focus = { x: best.x, y: best.y0, z: best.z };
   }
 
-  _dropMicro(T) {
-    if (!T.micro) return;
-    T.ls.remove(T.micro.g);
-    this._free(T.micro.g);
-    T.ls.fog = null;
-    T.micro = null;
-    T.microCam = null;
-    // الكاميرا تعود إلى مكانها أمام القاعدة
+  /** يزيل العالم المجهري؛ home = تعود الكاميرا أمام القاعدة وتنتهي محطات المجهر */
+  _dropMicro(T, home = true) {
+    if (T.micro) {
+      T.ls.remove(T.micro.g);
+      this._free(T.micro.g);
+      T.ls.fog = null;
+      T.micro = null;
+    }
+    if (!home) return;
+    T.camAnim = null;
+    T.stage = 0;
+    T.diveBuild = null;
+    T.focus = 0;
     T.lcam.position.set(0, S_IN * 0.18, T.camDist);
     T.lcam.lookAt(0, 0, 0);
     T.holder.visible = true;
     T.germs.object.visible = true;
     T.lensDirty = true;
   }
+
 
   /** حركة الجراثيم المجهرية (حياة دائمة، والنفخ) */
   _microUpdate(T, now, dt) {
@@ -1508,6 +1859,11 @@ class Scene3D {
     this._clearTimers(T);
     this.lampOff(id);
     if (T.micro) T.dive = { phase: 'back', t0: performance.now(), dur: this.reduced ? 120 : 500 };
+    else {
+      this._dropMicro(T); // توقّف عند ×١٠: الكاميرا تعود
+      // انتهى العرض والغوص لم يكتمل (جهاز بطيء): يتلاشى التمويه بدل بناء عالم لم يعد مطلوبًا
+      if (T.dive) T.dive = { phase: 'out', t0: performance.now(), dur: this.reduced ? 100 : 300 };
+    }
     this.preview(id, null);
     this._clearProps(T);
     this.later(() => T.germs.clear(), 450, T);
@@ -1574,6 +1930,22 @@ class Scene3D {
       this.later(() => {
         this.tween(T, h, { rot: new THREE.Euler(0, 0, -0.28), dur: 150, onDone: () => this.tween(T, h, { rot: new THREE.Euler(0, 0, 0), dur: 450 }) });
         const m = mouthW(h);
+        // آلاف القطرات من الفم: إلى الطاولة وما بعدها، أو تعلق بالمنديل/المرفق
+        {
+          T.holder.updateMatrixWorld(true);
+          const o = T.holder.worldToLocal(m.clone());
+          let floor = -10;
+          if (tb.userData.top) {
+            const bb = new THREE.Box3().setFromObject(tb.userData.top);
+            floor = T.holder.worldToLocal(new THREE.Vector3(0, bb.max.y, 0)).y + 0.01;
+          }
+          const stopX = shield ? shield.position.x - 0.04 : 1e6;
+          const d = droplets(this.tier === 'A' ? 2400 : 900, o, { floor, stopX });
+          d.material.uniforms.uS.value = T.S;
+          T.holder.add(d);
+          T.propList.push(d);
+          T.drops = { obj: d, t0: performance.now() };
+        }
         if (sc === 'spray') {
           const onTable = surf(tb.userData.top, nA);
           G.event({
@@ -1587,7 +1959,8 @@ class Scene3D {
           });
         } else {
           const stop = shield ? surf(shield, nA) : [];
-          G.event({ count: nA, from: () => at3(m, 1, 4), to: toPts(stop), dur: 0.45, arc: [0, 10, 10] });
+          // الجراثيم المحتجزة على المنديل/المرفق أخفت: لا تتجمّع بقعةً بيضاء تبهر العين
+          G.event({ count: Math.round(nA * 0.22), from: () => at3(m, 1, 4), to: toPts(stop, 0.5), dur: 0.45, arc: [0, 10, 10] });
           this.later(() => snd('thud'), 250);
         }
       }, 820, T);
@@ -1681,6 +2054,7 @@ class Scene3D {
       }, 1150, T);
       return;
     }
+
 
     if (sc === 'bin') {
       const bn = this._addProp(T, bin(), 1.1 * k, -0.55 * k, 0, 0.95 * k);
@@ -1839,6 +2213,8 @@ class Scene3D {
       else this.renderer.compile(T.ls, T.lcam);
       this._buildMicro(T, { kind: 'smooth', rough: false, color: '#999999' });
       this.renderer.compile(T.ls, T.lcam);
+      this._buildSoap(T);
+      this.renderer.compile(T.ls, T.lcam);
     } catch {
       /* التجميع المسبق تحسين فقط */
     }
@@ -1913,9 +2289,22 @@ class Scene3D {
         live = true;
         if (D.phase === 'in') {
           T.zoom = easeIO(k);
-          T.lcam.position.z = lerp(T.camDist, T.camDist * 0.45, easeIO(k));
-          if (k >= 1) {
-            this._buildMicro(T, D.build);
+          if (k >= 1 && T.diveBuild?.soap) {
+            T.camAnim = null;
+            this._buildSoap(T);
+            T.holder.visible = false;
+            T.germs.object.visible = false;
+            T.flash = 0.3;
+            T.dive = { phase: 'out', t0: now, dur: this.reduced ? 100 : 520 };
+          } else if (k >= 1 && !T.diveBuild) {
+            // أُلغي الغوص أثناءه: لا عالم يُبنى، يتلاشى التمويه فقط
+            T.dive = { phase: 'out', t0: now, dur: this.reduced ? 100 : 300 };
+          } else if (k >= 1) {
+            T.camAnim = null;
+            this._buildMicro(T, T.diveBuild);
+            T.lcam.position.set(0, 1150, 1200);
+            T.camAnim = { from: new THREE.Vector3(0, 1150, 1200), to: new THREE.Vector3(0, 1250, 1300), lookFrom: new THREE.Vector3(0, 0, -80), lookTo: new THREE.Vector3(0, 0, -80), t0: now, dur: 2500, focus: false };
+            T.ls.fog.density = 0.00022;
             T.holder.visible = false;
             T.germs.object.visible = false;
             T.flash = 0.35;
@@ -1938,12 +2327,31 @@ class Scene3D {
       }
       if (T.micro) {
         live = true;
-        this._microUpdate(T, now, dt);
-        const C = T.microCam;
-        if (C) {
-          const k = this.reduced ? 1 : Math.min(1, (now - C.t0) / C.dur);
-          T.lcam.position.lerpVectors(C.from, C.to, easeIO(k));
-          T.lcam.lookAt(C.look);
+        if (T.micro.soap) this._soapUpdate(T, dt);
+        else this._microUpdate(T, now, dt);
+      }
+      // حركة كاميرا العدسة بين محطات المجهر، وسحب التركيز أثناءها
+      if (T.camAnim) {
+        const C = T.camAnim;
+        const k = Math.min(1, (now - C.t0) / C.dur);
+        const e = easeIO(k);
+        T.lcam.position.lerpVectors(C.from, C.to, e);
+        T.lcam.lookAt(new THREE.Vector3().lerpVectors(C.lookFrom, C.lookTo, e));
+        T.focus = C.focus && !this.reduced ? Math.sin(k * Math.PI) * 0.9 : 0;
+        live = true;
+        if (k >= 1) {
+          T.focus = 0;
+          C.done = true;
+        }
+      } else T.focus = 0;
+      if (T.drops) {
+        const D = T.drops;
+        if (!D.obj.parent) T.drops = null;
+        else {
+          const u = D.obj.material.uniforms;
+          u.uT.value = this.reduced ? 3 : (now - D.t0) / 1000;
+          u.uPx.value = T.rt.height / (2 * Math.tan(THREE.MathUtils.degToRad(15)));
+          live = true;
         }
       }
       if (T.flash > 0.001) {
@@ -1965,6 +2373,7 @@ class Scene3D {
       if (T.lensMat) {
         const u = T.lensMat.uniforms;
         u.uZoom.value = T.zoom;
+        u.uFocus.value = T.focus || 0;
         u.uFlash.value = T.flash;
         u.uUV.value = T.uv;
       }

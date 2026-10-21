@@ -9,6 +9,7 @@
 // الرسم ٣٠ إطارًا/ث حين يتحرك شيء، و١٥ حين تتمايل النماذج فقط، ويتوقف عند إخفاء الصفحة.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
+import { labEnvironment } from './env.js';
 import { ITEM_MODELS, pmat, studioEnvScene, head, tissueSheet, tissueBall, elbowArm, sandwich, bin, bottle, bubble } from './models.js';
 
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -151,6 +152,13 @@ export class Cards3D {
     });
     pmrem.dispose();
     scene.environment = this.envRT.texture;
+    labEnvironment(r).then((rt) => {
+      if (!rt || this._disposed) return rt?.dispose();
+      this.envRT.dispose();
+      this.envRT = rt;
+      scene.environment = rt.texture;
+      this.dirty = true;
+    });
     scene.environmentIntensity = 1.0;
     scene.add(new THREE.HemisphereLight('#ffffff', '#c9bde0', 0.9));
     const key = new THREE.DirectionalLight('#fff3e3', 2.3);
@@ -177,6 +185,7 @@ export class Cards3D {
   }
 
   dispose() {
+    this._disposed = true;
     this.canvas.removeEventListener('webglcontextlost', this._lost);
     this.scene.traverse((o) => {
       o.geometry?.dispose();
