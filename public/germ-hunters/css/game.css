@@ -617,3 +617,9 @@ html[data-motion='reduce'] .gh-c3, html[data-motion='reduce'] .gh-c3-shine { ani
 /* ظلّ ناعم على وجه البطاقة تحت النموذج */
 .gh-c3 .gh-slot { background: radial-gradient(50% 18% at 50% 88%, rgba(34, 14, 70, 0.28), rgba(34, 14, 70, 0)); }
 .gh-held-label { paint-order: stroke; stroke: #fff; stroke-width: 8px; fill: var(--ink); }
+
+/* اللعب المتواصل: السلة لا تختفي أبدًا بعد الصواب (pop المشتركة تبدأ من شفافية صفر)،
+   بل ترتدّ ارتدادة خفيفة فتبقى مقروءة وجاهزة لبطاقة الزميل التالية */
+@keyframes ghBump { 0% { transform: scale(1); } 35% { transform: scale(1.06); } 100% { transform: scale(1); } }
+.gh-bin.good { animation: ghBump 0.45s cubic-bezier(0.3, 1.6, 0.5, 1); }
+.gh-bin.good.fire { animation: ghBump 0.45s cubic-bezier(0.3, 1.6, 0.5, 1), ghFire 1.3s ease-out; }

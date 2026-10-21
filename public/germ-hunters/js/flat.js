@@ -34,12 +34,25 @@ export class FlatView {
   team(id) {
     return this.teams[id];
   }
-  later(fn, ms) {
+  /** مؤقت؛ وإن ذُكر الفريق يُحفظ في مؤقتاته فيمكن إيقاف مشهده وحده (abortTest) */
+  later(fn, ms, id = null) {
     const t = setTimeout(() => {
       this._timers.delete(t);
+      if (id) this._tt?.[id]?.delete(t);
       fn();
     }, this.reduced ? ms * 0.4 : ms);
     this._timers.add(t);
+    if (id) ((this._tt ||= {})[id] ||= new Set()).add(t);
+  }
+  /** يقطع مشهد الفريق الجاري فورًا (بطاقة صحيحة جديدة قبل انتهائه) */
+  abortTest(id) {
+    for (const t of this._tt?.[id] || []) {
+      clearTimeout(t);
+      this._timers.delete(t);
+    }
+    this._tt?.[id]?.clear();
+    const T = this.teams[id];
+    if (T) T.dots.clear();
   }
   _clearTimers() {
     for (const t of this._timers) clearTimeout(t);
@@ -77,11 +90,12 @@ export class FlatView {
     const T = this.teams[id];
     if (!T) return;
     this.lampOff(id);
-    this.later(() => T.dots.clear(), 450);
+    this.later(() => T.dots.clear(), 450, id);
   }
   shake() {}
 
   vignette(id, item) {
+    const later = (fn, ms) => this.later(fn, ms, id);
     const T = this.teams[id];
     if (!T) return;
     const { c, R } = T;
@@ -90,21 +104,21 @@ export class FlatView {
     const sc = item.scene;
     const left = { x: c.x - R * 1.15, y: c.y - R * 0.1 };
     if (sc === 'spray' || sc === 'tissue' || sc === 'elbow') {
-      this.later(() => this.onSound(id, 'achoo'), 300);
-      this.later(() => {
+      later(() => this.onSound(id, 'achoo'), 300);
+      later(() => {
         const pts = sc === 'spray'
           ? Array.from({ length: 60 }, () => ({ x: c.x + rnd(-0.4, 2.0) * R, y: c.y + rnd(-0.5, 0.9) * R }))
           : this._disc(c.x - R * 0.15, c.y, R * 0.12, R * 0.4, 60);
         D.set(pts, { from: () => ({ x: left.x + rnd(-6, 6), y: left.y + rnd(-6, 6) }), alphaFrom: 1, dur: sc === 'spray' ? 1.1 : 0.45 });
-        if (sc !== 'spray') this.later(() => this.onSound(id, 'thud'), 250);
+        if (sc !== 'spray') later(() => this.onSound(id, 'thud'), 250);
       }, 820);
-      if (sc === 'tissue') this.later(() => D.move(() => ({ x: c.x - R * 0.15 + rnd(-8, 8), y: c.y + rnd(-8, 8) }), { dur: 0.35 }), 1700);
+      if (sc === 'tissue') later(() => D.move(() => ({ x: c.x - R * 0.15 + rnd(-8, 8), y: c.y + rnd(-8, 8) }), { dur: 0.35 }), 1700);
       return;
     }
     if (sc === 'shake' || sc === 'food') {
       const a = this._disc(c.x - R * 1.1, c.y, R * 0.45, R * 0.55, 56);
-      this.later(() => D.set(a, { from: (i) => ({ x: a[i].x, y: a[i].y - 50 }), dur: 0.5 }), 350);
-      this.later(() => {
+      later(() => D.set(a, { from: (i) => ({ x: a[i].x, y: a[i].y - 50 }), dur: 0.5 }), 350);
+      later(() => {
         this.onSound(id, 'whoosh');
         D.move((d, i) => (i % 2 === 0 ? { x: d.tx + R * 2.2, y: d.ty } : null), { dur: 0.7 });
       }, 1420);
@@ -114,34 +128,34 @@ export class FlatView {
       const band = () => ({ x: c.x + rnd(-1.6, 1.6) * R, y: c.y + R * 0.55 + rnd(-0.15, 0.15) * R });
       if (sc === 'leave') {
         const a = this._disc(c.x - R * 0.15, c.y + R * 0.2, R * 0.25, R * 0.25, 56);
-        this.later(() => D.set(a, { from: (i) => ({ x: a[i].x, y: a[i].y - 50 }), dur: 0.5 }), 300);
-        this.later(() => D.move(() => band(), { dur: 1.2 }), 1100);
+        later(() => D.set(a, { from: (i) => ({ x: a[i].x, y: a[i].y - 50 }), dur: 0.5 }), 300);
+        later(() => D.move(() => band(), { dur: 1.2 }), 1100);
       } else {
         const a = Array.from({ length: 56 }, band);
-        this.later(() => D.set(a, { from: (i) => ({ x: a[i].x, y: a[i].y - 50 }), dur: 0.6 }), 300);
-        this.later(() => this.onSound(id, 'swish'), 900);
+        later(() => D.set(a, { from: (i) => ({ x: a[i].x, y: a[i].y - 50 }), dur: 0.6 }), 300);
+        later(() => this.onSound(id, 'swish'), 900);
         for (let s = 0; s < 4; s++) {
           const xCut = c.x - 1.6 * R + (s + 1) * 0.8 * R;
-          this.later(() => D.move((d) => (d.tx < xCut ? { x: d.tx, y: d.ty - 20, a: 0 } : null), { dur: 0.35 }), 1000 + s * 260);
+          later(() => D.move((d) => (d.tx < xCut ? { x: d.tx, y: d.ty - 20, a: 0 } : null), { dur: 0.35 }), 1000 + s * 260);
         }
       }
       return;
     }
     if (sc === 'wash') {
       const a = this._disc(c.x, c.y, R * 0.7, R * 0.8, 60);
-      this.later(() => D.set(a, { from: (i) => ({ x: a[i].x, y: a[i].y - 50 }), dur: 0.5 }), 250);
-      this.later(() => this.onSound(id, 'bubbles'), 800);
-      this.later(() => D.move((d) => ({ x: d.tx + rnd(-40, 40), y: d.ty + rnd(250, 500), a: 0 }), { dur: 1.2 }), 1150);
+      later(() => D.set(a, { from: (i) => ({ x: a[i].x, y: a[i].y - 50 }), dur: 0.5 }), 250);
+      later(() => this.onSound(id, 'bubbles'), 800);
+      later(() => D.move((d) => ({ x: d.tx + rnd(-40, 40), y: d.ty + rnd(250, 500), a: 0 }), { dur: 1.2 }), 1150);
       return;
     }
     if (sc === 'bin') {
       const a = this._disc(c.x - R * 1.2, c.y - R * 0.4, R * 0.3, R * 0.3, 50);
-      this.later(() => D.set(a, { from: (i) => ({ x: a[i].x, y: a[i].y - 40 }), dur: 0.45 }), 250);
-      this.later(() => {
+      later(() => D.set(a, { from: (i) => ({ x: a[i].x, y: a[i].y - 40 }), dur: 0.45 }), 250);
+      later(() => {
         this.onSound(id, 'bin');
         D.move(() => ({ x: c.x + R * 1.1 + rnd(-15, 15), y: c.y + R * 0.4 + rnd(-15, 15) }), { dur: 0.6 });
       }, 900);
-      this.later(() => D.move((d) => ({ x: d.tx, y: d.ty + 40, a: 0 }), { dur: 0.35 }), 1550);
+      later(() => D.move((d) => ({ x: d.tx, y: d.ty + 40, a: 0 }), { dur: 0.35 }), 1550);
     }
   }
 
