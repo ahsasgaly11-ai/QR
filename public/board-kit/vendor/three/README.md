@@ -7,9 +7,18 @@
 | `three.core.min.js` | النواة المشتركة (يستوردها الملفّان التاليان) |
 | `three.webgpu.min.js` | محرّك WebGPU مع الرجوع التلقائي إلى WebGL2 (`WebGPURenderer`) + المواد العقدية |
 | `three.tsl.min.js` | دوال TSL (تستورد `three/webgpu` عبر خريطة الاستيراد) |
-| `three.module.min.js` | المحرّك القديم `WebGLRenderer` (لعبة «عالَمٌ تحت العدسة») |
+| `three.module.min.js` | **المسار السينمائي الأساسي** `WebGLRenderer` (الملف 10؛ «صيّادو الجراثيم» و«عالَمٌ تحت العدسة») |
+| `addons/` | إضافات من `examples/jsm` للنسخة نفسها كما هي (بلا تصغير): المعالجة اللاحقة (`EffectComposer` و`RenderPass` و`UnrealBloomPass` و`ShaderPass` و`OutputPass` ومظلِّلاتها)، و`environments/RoomEnvironment.js`، و`loaders/GLTFLoader.js` مع `utils/`، و`libs/meshopt_decoder.module.js` |
 
-**ألعاب النخبة (WebGPU + TSL)** تضع خريطة الاستيراد في `index.html` قبل سكربت اللعبة (كما في أمثلة three.js الرسمية):
+**المسار السينمائي (الأساسي، الملف 10):**
+```html
+<script type="importmap">{ "imports": {
+  "three": "/board-kit/vendor/three/three.module.min.js",
+  "three/addons/": "/board-kit/vendor/three/addons/"
+} }</script>
+```
+
+**المسار الاختياري (WebGPU + TSL)** يضع خريطة الاستيراد في `index.html` قبل سكربت اللعبة (كما في أمثلة three.js الرسمية):
 ```html
 <script type="importmap">{ "imports": {
   "three": "/board-kit/vendor/three/three.webgpu.min.js",
@@ -30,5 +39,6 @@ for f in three.core three.module three.webgpu three.tsl; do
 done
 sed -i 's#"./three.core.js"#"./three.core.min.js"#g' public/board-kit/vendor/three/*.min.js
 cp package/LICENSE public/board-kit/vendor/three/LICENSE
+# الإضافات كما هي (تحفظ المجلدات): انسخ من package/examples/jsm/ الملفات المذكورة في الجدول أعلاه إلى addons/
 ```
 ثم جرّب كل الألعاب ثلاثية الأبعاد (`?sim`، و`?tier=A|B|C` في ألعاب النخبة) قبل الدمج.

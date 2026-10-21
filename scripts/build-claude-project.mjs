@@ -15,7 +15,7 @@ const LANG = { '.js': 'js', '.mjs': 'js', '.ts': 'ts', '.css': 'css', '.html': '
 
 /** ملف معرفة: مقدّمة ثم كل ملف مصدري في كتلة كود معنونة بمساره. */
 function bundle(name, intro, files) {
-  const parts = [intro.trim(), ''];
+  const parts = [intro.trim(), '', NOTE, ''];
   for (const f of files) {
     const fence = f.endsWith('.md') ? '````' : '```';
     parts.push(`## \`${f}\``, '', `${fence}${LANG[path.extname(f)] || ''}`, read(f).trimEnd(), fence, '');
@@ -26,6 +26,8 @@ function bundle(name, intro, files) {
 
 fs.mkdirSync(OUT, { recursive: true });
 const stamp = new Date().toISOString().slice(0, 10);
+/** تنبيه في أول كل ملف مولَّد: مستوى الرسوميات يحدّده الملف 10 */
+const NOTE = `> **مستوى الرسوميات لكل لعبة يحدّده الملف 10** (تقنية «دانة الصف» و«مختبر العدسة المكبّرة»): three.js الكلاسيكي (\`three.module.min.js\` مع \`three/addons/\`)، وإضاءة بيئية PMREM، ومواد فيزيائية، وعالم بالمظلِّلات، و\`EffectComposer\` للتوهّج والتدرّج اللوني. أي عبارة هنا تقدّم WebGPU على أنه المسار الأساسي، أو تمنع \`ShaderMaterial\` و\`EffectComposer\`، يحلّ محلّها الملف 10. مثال مطبَّق: \`public/germ-hunters/\`.`;
 const made = [];
 
 made.push(

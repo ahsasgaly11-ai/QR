@@ -1,111 +1,154 @@
 // ---------------------------------------------------------------------------
-// مجسّمات «صيّادو الجراثيم» إجرائية بالكامل (بلا ملفات GLB ولا أنسجة): أشكال three.js
-// بسيطة بمواد TSL على طريقة «واضح على جهاز العرض» (الملف 09، ٤.١):
-//   • تظليل كرتوني (MeshToonNodeMaterial) بثلاث درجات مشبعة.
-//   • حدود داكنة سميكة بطريقة «الهيكل المقلوب» (نسخة بـ BackSide)، تتوهّج بنفسجيًا تحت الضوء.
-//   • ضوء حافة (fresnel) يفصل المجسّم عن الخلفية.
-//   • الخشونة حقيقية: إزاحة الرؤوس بضجيج (fractal/worley) مع تظليل التجاويف،
-//     والنعومة لمعة حادّة بيضاء — فيرى الطلاب الفرق بين الخشن والناعم بأعينهم.
-//   • الوضع البنفسجي (uUV من 0 إلى 1): يُعتم المجسّم ويتلوّن بنفسجيًا كأنه في غرفة مظلمة.
+// مجسّمات «صيّادو الجراثيم» بمعيار الملف 10 (تقنية «دانة الصف»): مواد فيزيائية حقيقية
+// (MeshPhysicalMaterial) تعكس بيئة الاستوديو، بلا ملفات GLB ولا أنسجة خارجية.
+//
+//   • الخشونة حقيقية: رؤوس الشكل تُزاح بضجيج على المعالج المركزي مرة واحدة (ضجيج كسري
+//     أو خلايا «ورلي» للثقوب)، وتُغمَّق التجاويف بألوان الرؤوس. لذلك تجلس الجراثيم على
+//     السطح الحقيقي، ويرى الطلاب الفرق بين الخشن والناعم بأعينهم.
+//   • الناعم لامع: طبقة لمعة (clearcoat) أو معدن يعكس الاستوديو، أو زجاج.
+//   • الوضع البنفسجي (setUV): يُعتم المجسّم ويكتسب حافة بنفسجية من «اللمعة الناعمة» (sheen)
+//     كأنه في غرفة مظلمة تحت مصباح الأشعة فوق البنفسجية. لا يُعاد تجميع أي مظلِّل.
 // كل مجسّم بمقياس الوحدة (يتسع في كرة نصف قطرها ≈ ١)، ويكبّره المشهد حسب الحجرة.
-// يعمل الكود نفسه على WebGPU (الطبقة A) وعلى WebGL2 (الطبقة B): TSL يُترجَم تلقائيًا.
 // ---------------------------------------------------------------------------
-import * as THREE from 'three/webgpu';
-import {
-  abs, color, dot, float, mix, mx_fractal_noise_float, mx_worley_noise_float, normalLocal, normalView,
-  oneMinus, positionLocal, positionViewDirection, saturate, sin, smoothstep, uniform, vec3, normalize, length, uv,
-} from 'three/tsl';
+import * as THREE from 'three';
 
-/** تدرّج الظل الكرتوني: ثلاث درجات واضحة (تبقى مقروءة على جهاز العرض) */
-let GRADIENT = null;
-function gradient() {
-  if (GRADIENT) return GRADIENT;
-  GRADIENT = new THREE.DataTexture(new Uint8Array([95, 175, 255]), 3, 1, THREE.RedFormat);
-  GRADIENT.minFilter = GRADIENT.magFilter = THREE.NearestFilter;
-  GRADIENT.generateMipmaps = false;
-  GRADIENT.needsUpdate = true;
-  return GRADIENT;
+// ------------------------------------------------------------------ ضجيج ثلاثي الأبعاد (CPU)
+const PERM = new Uint8Array(512);
+{
+  const p = Array.from({ length: 256 }, (_, i) => i);
+  let s = 1337;
+  for (let i = 255; i > 0; i--) {
+    s = (s * 16807) % 2147483647;
+    const j = s % (i + 1);
+    [p[i], p[j]] = [p[j], p[i]];
+  }
+  for (let i = 0; i < 512; i++) PERM[i] = p[i & 255];
 }
-
-const INK = color(0x2b1d3a); // لون الحدود
-const UV_EDGE = color(0xc39bff); // الحدود تحت الضوء البنفسجي
-const UV_TINT = vec3(0.14, 0.05, 0.3);
+const fade = (t) => t * t * t * (t * (t * 6 - 15) + 10);
+const lerp = (a, b, t) => a + (b - a) * t;
+const hash3 = (x, y, z) => PERM[PERM[PERM[x & 255] + (y & 255)] + (z & 255)] / 255;
+/** ضجيج قيمي ناعم بين 0 و1 */
+function vnoise(x, y, z) {
+  const X = Math.floor(x), Y = Math.floor(y), Z = Math.floor(z);
+  const u = fade(x - X), v = fade(y - Y), w = fade(z - Z);
+  return lerp(
+    lerp(lerp(hash3(X, Y, Z), hash3(X + 1, Y, Z), u), lerp(hash3(X, Y + 1, Z), hash3(X + 1, Y + 1, Z), u), v),
+    lerp(lerp(hash3(X, Y, Z + 1), hash3(X + 1, Y, Z + 1), u), lerp(hash3(X, Y + 1, Z + 1), hash3(X + 1, Y + 1, Z + 1), u), v),
+    w,
+  );
+}
+function fbm(x, y, z, oct = 4) {
+  let a = 0.5, f = 1, s = 0, n = 0;
+  for (let i = 0; i < oct; i++) {
+    s += a * vnoise(x * f, y * f, z * f);
+    n += a;
+    a *= 0.5;
+    f *= 2.03;
+  }
+  return s / n;
+}
+/** ضجيج الخلايا (ورلي): المسافة إلى أقرب نقطة عشوائية — للثقوب */
+function worley(x, y, z) {
+  const X = Math.floor(x), Y = Math.floor(y), Z = Math.floor(z);
+  let d = 9;
+  for (let i = -1; i <= 1; i++)
+    for (let j = -1; j <= 1; j++)
+      for (let k = -1; k <= 1; k++) {
+        const cx = X + i, cy = Y + j, cz = Z + k;
+        const px = cx + hash3(cx, cy, cz), py = cy + hash3(cy + 17, cz + 3, cx + 9), pz = cz + hash3(cz + 31, cx + 7, cy + 13);
+        d = Math.min(d, Math.hypot(px - x, py - y, pz - z));
+      }
+  return d;
+}
 
 /**
- * ضجيج السطح (إن كان خشنًا): يُعيد { n, disp } حيث n بين 0 و1 تقريبًا، وdisp إزاحة على طول العمود.
- * @param {{rough?:number, freq?:number|number[], worley?:boolean}} o
+ * يزيح رؤوس الشكل على طول أعمدتها (خشونة حقيقية) ويكتب ألوان الرؤوس (تجاويف أغمق).
+ * @param {THREE.BufferGeometry} geo
+ * @param {{rough?:number, freq?:number|number[], worley?:boolean, tint?:(p:THREE.Vector3)=>number}} o
  */
-function surfaceNoise(o) {
-  if (!o.rough) return null;
-  const f = Array.isArray(o.freq) ? vec3(...o.freq) : float(o.freq || 8);
-  const p = positionLocal.mul(f);
-  if (o.worley) {
-    // ثقوب: الإزاحة سالبة قرب مراكز الخلايا (كالإسفنجة)
-    const w = mx_worley_noise_float(p);
-    const n = smoothstep(0.05, 0.5, w);
-    return { n, disp: n.sub(1).mul(o.rough) };
+function sculpt(geo, o = {}) {
+  geo.computeVertexNormals();
+  const pos = geo.attributes.position;
+  const nor = geo.attributes.normal;
+  const col = new Float32Array(pos.count * 3);
+  const f = Array.isArray(o.freq) ? o.freq : [o.freq || 8, o.freq || 8, o.freq || 8];
+  const p = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    p.fromBufferAttribute(pos, i);
+    let shade = 1;
+    if (o.rough) {
+      let n, d;
+      if (o.worley) {
+        const w = worley(p.x * f[0], p.y * f[1], p.z * f[2]);
+        n = THREE.MathUtils.smoothstep(w, 0.05, 0.5);
+        d = (n - 1) * o.rough;
+      } else {
+        n = fbm(p.x * f[0] + 11.3, p.y * f[1] + 4.1, p.z * f[2] + 7.7);
+        d = (n - 0.5) * o.rough * 2;
+      }
+      pos.setXYZ(i, p.x + nor.getX(i) * d, p.y + nor.getY(i) * d, p.z + nor.getZ(i) * d);
+      shade = lerp(0.6, 1.16, n);
+    }
+    if (o.tint) shade *= o.tint(p);
+    col[i * 3] = col[i * 3 + 1] = col[i * 3 + 2] = shade;
   }
-  const n = mx_fractal_noise_float(p, 3, 2.0, 0.5).mul(0.5).add(0.5);
-  return { n, disp: n.sub(0.5).mul(o.rough * 2) };
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  if (o.rough) geo.computeVertexNormals();
+  return geo;
 }
+
+// ------------------------------------------------------------------ المواد
+const VIOLET = new THREE.Color('#a77bff');
+const UV_BODY = new THREE.Color('#2a1052');
+const tmpC = new THREE.Color();
 
 /**
- * مادة سطح كرتونية مع إزاحة الخشونة واللمعة والوضع البنفسجي.
- * @param {number} hex
- * @param {{rough?:number, freq?:number|number[], worley?:boolean, gloss?:boolean, uUV:any, colorNode?:any, opacity?:number}} o
+ * مادة فيزيائية جاهزة للوضع البنفسجي. sheen ≥ 0.05 دائمًا حتى لا يُعاد تجميع المظلِّل.
+ * @param {string|number} color
+ * @param {object} o خصائص MeshPhysicalMaterial إضافية
  */
-export function surfaceMat(hex, o) {
-  const m = new THREE.MeshToonNodeMaterial({ gradientMap: gradient() });
-  const sn = surfaceNoise(o);
-  let base = o.colorNode || color(hex);
-  if (sn) {
-    m.positionNode = positionLocal.add(normalLocal.mul(sn.disp));
-    // تجاويف أغمق ونتوءات أفتح: الخشونة تُرى حتى من بعيد
-    base = base.mul(mix(float(0.62), float(1.18), sn.n));
-  }
-  m.colorNode = mix(base, base.mul(0.16).add(UV_TINT), o.uUV);
-  const facing = abs(dot(normalView, positionViewDirection));
-  const fres = oneMinus(facing).pow(2.2);
-  let em = mix(vec3(1, 0.97, 0.9).mul(fres.mul(0.22)), vec3(0.62, 0.38, 1.0).mul(fres.mul(1.15)), o.uUV);
-  if (o.gloss) {
-    // لمعة حادة (سطح أملس): بقعة بيضاء صغيرة ثابتة باتجاه الضوء
-    const spec = smoothstep(0.93, 0.975, dot(normalView, normalize(vec3(-0.35, 0.55, 0.76))));
-    em = em.add(vec3(1, 1, 1).mul(spec.mul(oneMinus(o.uUV.mul(0.6)))));
-  }
-  m.emissiveNode = em;
-  if (o.opacity !== undefined && o.opacity < 1) {
-    m.transparent = true;
-    m.opacity = o.opacity;
-    m.depthWrite = false;
-  }
-  m.userData.noise = o; // لإعادة الإزاحة نفسها في الحدود
+export function pmat(color, o = {}) {
+  const m = new THREE.MeshPhysicalMaterial({
+    color, roughness: 0.55, metalness: 0, vertexColors: true, sheen: 0.05, sheenColor: '#000000', sheenRoughness: 0.35, ...o,
+  });
+  if (m.sheen < 0.05) m.sheen = 0.05;
+  m.userData.base = {
+    color: m.color.clone(), emissive: m.emissive.clone(), ei: m.emissiveIntensity,
+    env: m.envMapIntensity, sheen: m.sheen, sheenColor: m.sheenColor.clone(), opacity: m.opacity,
+  };
   return m;
 }
+const skin = () => pmat('#e3a383', { roughness: 0.62, sheen: 0.45, sheenColor: '#ffd6c2', sheenRoughness: 0.5, clearcoat: 0.08, clearcoatRoughness: 0.6 });
+const gloss = (c, o = {}) => pmat(c, { roughness: 0.22, clearcoat: 1, clearcoatRoughness: 0.05, ...o });
+const metal = (c, r = 0.18, o = {}) => pmat(c, { metalness: 1, roughness: r, vertexColors: false, envMapIntensity: 1.3, ...o });
+const matte = (c, o = {}) => pmat(c, { roughness: 0.92, ...o });
+const fabric = (c, o = {}) => pmat(c, { roughness: 0.85, sheen: 0.9, sheenColor: '#ffffff', sheenRoughness: 0.55, ...o });
 
-/** مادة الحدود (الهيكل المقلوب) بالإزاحة نفسها + سُمك ثابت */
-function outlineMat(o, thick) {
-  const m = new THREE.MeshBasicNodeMaterial({ side: THREE.BackSide });
-  const sn = surfaceNoise(o);
-  const disp = sn ? sn.disp.add(thick) : float(thick);
-  m.positionNode = positionLocal.add(normalLocal.mul(disp));
-  m.colorNode = mix(INK, UV_EDGE, o.uUV);
-  return m;
+/**
+ * الوضع البنفسجي لكل مواد المجسّم (k من 0 إلى 1): يُعتم، وحافة بنفسجية، وانعكاس أضعف.
+ * لا يُغيّر إلا القيم، فلا يُعاد تجميع أي مظلِّل.
+ */
+export function setUV(root, k) {
+  root.traverse((o) => {
+    const m = o.material;
+    const b = m?.userData?.base;
+    if (!b) return;
+    m.color.copy(b.color).multiplyScalar(lerp(1, 0.38, k)).lerp(UV_BODY, k * 0.3);
+    m.emissive.copy(b.emissive).lerp(tmpC.set('#3a1677'), k * 0.5);
+    m.emissiveIntensity = lerp(b.ei, Math.max(b.ei, 0.35), k);
+    m.envMapIntensity = lerp(b.env, b.env * 0.25, k);
+    m.sheen = lerp(b.sheen, 1, k);
+    m.sheenColor.copy(b.sheenColor).lerp(VIOLET, k);
+  });
 }
 
-/** يبني مجسّمًا مع حدوده. thick بوحدة المجسّم المحلية. */
-function part(geo, hex, o, { thick = 0.035, outline = true } = {}) {
-  const g = new THREE.Group();
-  const mesh = new THREE.Mesh(geo, surfaceMat(hex, o));
-  mesh.userData.sample = o.sample !== false;
-  mesh.userData.lift = (o.rough || 0) + 0.02;
-  g.add(mesh);
-  if (outline) {
-    const line = new THREE.Mesh(geo, outlineMat(o, thick));
-    line.userData.outline = true;
-    g.add(line);
-  }
-  g.userData.mesh = mesh;
-  return g;
+// ------------------------------------------------------------------ أدوات
+function mesh(geo, mat, { sample = true, lift = 0.012 } = {}) {
+  const m = new THREE.Mesh(geo, mat);
+  m.castShadow = true;
+  m.userData.sample = sample;
+  m.userData.lift = lift;
+  return m;
 }
 const at = (obj, x, y, z, rx = 0, ry = 0, rz = 0, s = null) => {
   obj.position.set(x, y, z);
@@ -113,14 +156,22 @@ const at = (obj, x, y, z, rx = 0, ry = 0, rz = 0, s = null) => {
   if (s) Array.isArray(s) ? obj.scale.set(...s) : obj.scale.setScalar(s);
   return obj;
 };
+/** نسيج لوحي صغير مرسوم بالكود (حلقات الخشب، الحبيبات…) */
+function canvasTex(size, draw) {
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  draw(c.getContext('2d'), size);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 4;
+  return t;
+}
 
-// ------------------------------------------------------------------ الجولة ١
-const SKIN = 0xe7ad86;
-
-function hand(u, mirror = false) {
+// ------------------------------------------------------------------ الجولة ١: خشن
+function hand(mirror = false) {
   const g = new THREE.Group();
-  const o = { rough: 0.014, freq: 26, uUV: u };
-  const palm = part(new THREE.SphereGeometry(0.5, 40, 28), SKIN, o, { thick: 0.04 });
+  const o = { rough: 0.012, freq: 24 };
+  const palm = mesh(sculpt(new THREE.SphereGeometry(0.5, 48, 32), o), skin(), { lift: 0.02 });
   at(palm, 0, -0.18, 0, 0, 0, 0, [1.0, 1.18, 0.42]);
   g.add(palm);
   const fingers = [
@@ -130,100 +181,136 @@ function hand(u, mirror = false) {
     [0.33, 0.48, 0.1, 0.38, 0.14],
   ];
   for (const [x, y, r, len, rz] of fingers) {
-    const f = part(new THREE.CapsuleGeometry(r, len, 6, 14, 4), SKIN, o, { thick: 0.035 });
+    const f = mesh(sculpt(new THREE.CapsuleGeometry(r, len, 8, 16, 6), o), skin(), { lift: 0.02 });
     at(f, x, y, 0, 0, 0, rz);
+    // ظفر لامع صغير
+    const nail = mesh(new THREE.SphereGeometry(r * 0.72, 16, 10), gloss('#f2c3ad', { vertexColors: false }), { sample: false });
+    at(nail, 0, len / 2 + r * 0.35, r * 0.62, -0.5, 0, 0, [1, 0.8, 0.35]);
+    f.add(nail);
     g.add(f);
   }
-  const thumb = part(new THREE.CapsuleGeometry(0.115, 0.36, 6, 14, 4), SKIN, o, { thick: 0.035 });
+  const thumb = mesh(sculpt(new THREE.CapsuleGeometry(0.115, 0.36, 8, 16, 6), o), skin(), { lift: 0.02 });
   at(thumb, 0.55, -0.2, 0.06, 0, 0, -0.95);
   g.add(thumb);
   if (mirror) g.scale.x = -1;
   return g;
 }
 
-function sponge(u) {
+function sponge() {
   const g = new THREE.Group();
-  const body = part(new THREE.BoxGeometry(1.5, 0.78, 0.7, 36, 20, 18), 0xf6c443, { rough: 0.16, freq: 5.5, worley: true, uUV: u }, { thick: 0.03 });
-  const scrub = part(new THREE.BoxGeometry(1.5, 0.22, 0.7, 30, 6, 14), 0x2f9e55, { rough: 0.05, freq: 14, uUV: u }, { thick: 0.03 });
+  const body = mesh(sculpt(new THREE.BoxGeometry(1.5, 0.78, 0.7, 48, 26, 24), { rough: 0.14, freq: 5.5, worley: true }), pmat('#f4c443', { roughness: 0.95 }), { lift: 0.03 });
+  const scrub = mesh(sculpt(new THREE.BoxGeometry(1.5, 0.22, 0.7, 40, 8, 18), { rough: 0.05, freq: 14 }), fabric('#2f9e55', { sheenColor: '#9fe8b8' }), { lift: 0.03 });
   at(scrub, 0, 0.5, 0);
   g.add(body, scrub);
   g.rotation.set(0.35, -0.45, 0.1);
   return g;
 }
 
-function wool(u) {
-  // خيوط ملفوفة: خطوط متقاطعة في اللون + نتوءات
-  const p = positionLocal;
-  const s1 = sin(p.x.mul(0.8).add(p.y.mul(0.6)).mul(34)).mul(0.5).add(0.5);
-  const s2 = sin(p.y.mul(0.9).sub(p.z.mul(0.5)).mul(30)).mul(0.5).add(0.5);
-  const stripes = mix(float(0.72), float(1.12), s1.max(s2.mul(0.85)));
-  const g = part(new THREE.SphereGeometry(0.85, 64, 48), 0, { rough: 0.05, freq: 11, uUV: u, colorNode: color(0xe0536b).mul(stripes) }, { thick: 0.035 });
-  const tail = part(new THREE.CapsuleGeometry(0.06, 0.7, 4, 10, 6), 0xe0536b, { rough: 0.02, freq: 20, uUV: u }, { thick: 0.03 });
+function wool() {
+  // خيوط ملفوفة: خطوط متقاطعة في ألوان الرؤوس + نتوءات + لمعة قماش
+  const tint = (p) => {
+    const s1 = Math.sin((p.x * 0.8 + p.y * 0.6) * 34) * 0.5 + 0.5;
+    const s2 = Math.sin((p.y * 0.9 - p.z * 0.5) * 30) * 0.5 + 0.5;
+    return lerp(0.72, 1.1, Math.max(s1, s2 * 0.85));
+  };
+  const body = mesh(sculpt(new THREE.SphereGeometry(0.85, 96, 72), { rough: 0.05, freq: 11, tint }), fabric('#e0536b', { sheenColor: '#ffc2cf' }), { lift: 0.03 });
+  const g = new THREE.Group();
+  g.add(body);
+  const tail = mesh(sculpt(new THREE.CapsuleGeometry(0.06, 0.7, 4, 12, 8), { rough: 0.02, freq: 20 }), fabric('#e0536b', { sheenColor: '#ffc2cf' }));
   at(tail, 0.7, -0.75, 0.15, 0, 0, 0.9);
   g.add(tail);
   return g;
 }
 
-function rock(u) {
-  const g = part(new THREE.IcosahedronGeometry(0.85, 6), 0x948d82, { rough: 0.17, freq: 2.6, uUV: u }, { thick: 0.04 });
+function rock() {
+  const g = new THREE.Group();
+  const geo = sculpt(new THREE.IcosahedronGeometry(0.85, 7), { rough: 0.16, freq: 2.6 });
+  // حبيبات معدنية صغيرة: تفاوت إضافي في اللون
+  const c = geo.attributes.color;
+  const p = new THREE.Vector3();
+  for (let i = 0; i < c.count; i++) {
+    p.fromBufferAttribute(geo.attributes.position, i);
+    const speck = vnoise(p.x * 40, p.y * 40, p.z * 40) > 0.82 ? 1.25 : 1;
+    c.setXYZ(i, c.getX(i) * speck, c.getY(i) * speck, c.getZ(i) * speck);
+  }
+  const m = mesh(geo, matte('#958b7e', { roughness: 0.96 }), { lift: 0.03 });
+  g.add(m);
   g.scale.set(1.2, 0.82, 0.95);
   g.rotation.set(0.3, 0.6, 0.15);
   return g;
 }
 
-function log(u) {
+let RINGS = null;
+function log() {
   const g = new THREE.Group();
-  const bark = part(new THREE.CylinderGeometry(0.46, 0.5, 1.75, 56, 26, true), 0x7f5236, { rough: 0.09, freq: [11, 1.4, 11], uUV: u }, { thick: 0.035 });
-  const p = positionLocal;
-  const rings = sin(length(p.xz).mul(46)).mul(0.5).add(0.5);
-  const capO = { uUV: u, colorNode: mix(color(0xd9a96c), color(0xb98247), rings) };
-  const capA = part(new THREE.CylinderGeometry(0.45, 0.45, 0.04, 48), 0, capO, { thick: 0.03 });
-  const capB = part(new THREE.CylinderGeometry(0.49, 0.49, 0.04, 48), 0, { ...capO }, { thick: 0.03 });
-  at(capA, 0, 0.87, 0);
-  at(capB, 0, -0.87, 0);
+  const bark = mesh(sculpt(new THREE.CylinderGeometry(0.46, 0.5, 1.75, 72, 36, true), { rough: 0.09, freq: [11, 1.4, 11] }), matte('#7a4e33'), { lift: 0.03 });
+  RINGS ||= canvasTex(256, (x, s) => {
+    for (let r = s / 2; r > 0; r -= 5) {
+      x.fillStyle = (r / 5) % 2 ? '#d7a66a' : '#bd8a4e';
+      x.beginPath();
+      x.arc(s / 2 + Math.sin(r) * 2, s / 2, r, 0, Math.PI * 2);
+      x.fill();
+    }
+  });
+  const capMat = pmat('#ffffff', { map: RINGS, roughness: 0.75, vertexColors: false });
+  const capA = mesh(new THREE.CircleGeometry(0.455, 48), capMat);
+  const capB = mesh(new THREE.CircleGeometry(0.495, 48), capMat.clone());
+  capB.material.userData.base = { ...capMat.userData.base, color: capMat.userData.base.color.clone(), emissive: capMat.userData.base.emissive.clone(), sheenColor: capMat.userData.base.sheenColor.clone() };
+  at(capA, 0, 0.875, 0, -Math.PI / 2, 0, 0);
+  at(capB, 0, -0.875, 0, Math.PI / 2, 0, 0);
   g.add(bark, capA, capB);
   g.rotation.set(0.25, 0.4, Math.PI / 2 - 0.15);
   return g;
 }
 
-function ball(u) {
-  const p = positionLocal;
-  const seam = smoothstep(0.035, 0.015, abs(p.y)).max(smoothstep(0.035, 0.015, abs(p.x)))
-    .max(smoothstep(0.035, 0.015, abs(length(p.xy.sub(vec3(0.95, 0, 0).xy)).sub(0.62))))
-    .max(smoothstep(0.035, 0.015, abs(length(p.xy.add(vec3(0.95, 0, 0).xy)).sub(0.62))));
-  const col = mix(color(0xe8762b), color(0x2b1d1a), seam);
-  const g = part(new THREE.SphereGeometry(0.85, 64, 48), 0, { rough: 0.022, freq: 30, uUV: u, colorNode: col }, { thick: 0.035 });
+function ball() {
+  const g = new THREE.Group();
+  const body = mesh(sculpt(new THREE.SphereGeometry(0.85, 96, 72), { rough: 0.016, freq: 34 }), pmat('#e8742a', { roughness: 0.7, sheen: 0.3, sheenColor: '#ffb27a' }), { lift: 0.02 });
+  g.add(body);
+  // درزات حقيقية (حلقات داكنة على السطح)
+  const seam = pmat('#2a1a14', { roughness: 0.6, vertexColors: false });
+  const ring = (rx, ry, r = 0.853) => {
+    const t = mesh(new THREE.TorusGeometry(r, 0.016, 8, 120), seam, { sample: false });
+    t.rotation.set(rx, ry, 0);
+    g.add(t);
+  };
+  ring(Math.PI / 2, 0);
+  ring(0, 0);
+  ring(0, Math.PI / 2);
+  for (const sx of [-1, 1]) {
+    const t = mesh(new THREE.TorusGeometry(0.62, 0.016, 8, 100), seam, { sample: false });
+    t.position.x = sx * 0.58;
+    t.rotation.y = Math.PI / 2;
+    g.add(t);
+  }
   g.rotation.set(0.35, 0.5, 0.2);
   return g;
 }
 
-function windowPane(u) {
+// ------------------------------------------------------------------ الجولة ١: ناعم
+function windowPane(tier) {
   const g = new THREE.Group();
-  const frame = 0xf2efe8;
-  const o = { uUV: u, gloss: true };
+  const frame = gloss('#f4f1ea', { vertexColors: false, roughness: 0.3 });
   for (const [x, y, w, h] of [[0, 0.62, 1.5, 0.12], [0, -0.62, 1.5, 0.12], [-0.69, 0, 0.12, 1.36], [0.69, 0, 0.12, 1.36], [0, 0, 0.07, 1.2], [0, 0, 1.3, 0.07]]) {
-    const b = part(new THREE.BoxGeometry(w, h, 0.12), frame, o, { thick: 0.025 });
+    const b = mesh(new THREE.BoxGeometry(w, h, 0.12), frame);
     at(b, x, y, 0);
     g.add(b);
   }
-  const glass = part(new THREE.PlaneGeometry(1.32, 1.2, 8, 8), 0xbfe5ff, { uUV: u, gloss: true, opacity: 0.55 }, { outline: false });
-  // لمعة قطرية على الزجاج
-  glass.userData.mesh.material.emissiveNode = glass.userData.mesh.material.emissiveNode.add(
-    vec3(1, 1, 1).mul(smoothstep(0.08, 0.0, abs(uv().x.add(uv().y).sub(0.75))).mul(0.55).mul(oneMinus(u))),
-  );
+  const glassMat = tier === 'A'
+    ? pmat('#d8f1ff', { vertexColors: false, roughness: 0.02, transmission: 1, thickness: 0.05, ior: 1.5, envMapIntensity: 1.4 })
+    : pmat('#bfe5ff', { vertexColors: false, roughness: 0.03, clearcoat: 1, transparent: true, opacity: 0.4, depthWrite: false, envMapIntensity: 1.6 });
+  const glass = mesh(new THREE.BoxGeometry(1.3, 1.2, 0.02), glassMat);
   g.add(glass);
   g.rotation.set(0.12, -0.35, 0);
   return g;
 }
 
-function mirror(u) {
+function mirror() {
   const g = new THREE.Group();
-  const face = part(new THREE.CylinderGeometry(0.72, 0.72, 0.05, 64), 0xdde7f0, { uUV: u, gloss: true }, { thick: 0.02 });
+  const face = mesh(new THREE.CylinderGeometry(0.72, 0.72, 0.04, 96), metal('#eef3f8', 0.03, { envMapIntensity: 1.6 }));
   face.rotation.x = Math.PI / 2;
-  const glint = face.userData.mesh.material;
-  glint.emissiveNode = glint.emissiveNode.add(vec3(1, 1, 1).mul(smoothstep(0.07, 0.0, abs(positionLocal.x.add(positionLocal.z).sub(0.25))).mul(0.6).mul(oneMinus(u))));
-  const rim = part(new THREE.TorusGeometry(0.76, 0.08, 18, 72), 0xc9a227, { uUV: u, gloss: true }, { thick: 0.03 });
-  const handle = part(new THREE.CapsuleGeometry(0.09, 0.55, 4, 12), 0xc9a227, { uUV: u, gloss: true }, { thick: 0.03 });
+  const rim = mesh(new THREE.TorusGeometry(0.76, 0.08, 24, 96), metal('#d2a838', 0.22));
+  const handle = mesh(new THREE.CapsuleGeometry(0.09, 0.55, 6, 16), metal('#d2a838', 0.22));
   at(handle, 0, -1.08, 0);
   g.add(face, rim, handle);
   g.rotation.set(0.1, -0.3, 0.15);
@@ -231,81 +318,83 @@ function mirror(u) {
   return g;
 }
 
-function plate(u) {
+function plate() {
   const pts = [];
-  for (let i = 0; i <= 14; i++) {
-    const t = i / 14;
+  for (let i = 0; i <= 18; i++) {
+    const t = i / 18;
     const r = t * 0.95;
     const y = t < 0.62 ? 0 : Math.pow((t - 0.62) / 0.38, 1.6) * 0.22;
     pts.push(new THREE.Vector2(Math.max(0.0001, r), y));
   }
   const g = new THREE.Group();
-  const dish = part(new THREE.LatheGeometry(pts, 72), 0xfbfaf5, { uUV: u, gloss: true }, { thick: 0.025 });
-  dish.userData.mesh.material.side = THREE.DoubleSide;
-  const band = part(new THREE.TorusGeometry(0.8, 0.02, 8, 72), 0x3b82f6, { uUV: u, gloss: true }, { outline: false });
+  const dish = mesh(new THREE.LatheGeometry(pts, 96), gloss('#fbfaf6', { vertexColors: false, side: THREE.DoubleSide, roughness: 0.15 }));
+  const band = mesh(new THREE.TorusGeometry(0.8, 0.018, 8, 96), gloss('#2f6fd1', { vertexColors: false }), { sample: false });
   at(band, 0, 0.1, 0, Math.PI / 2, 0, 0);
   g.add(dish, band);
   g.rotation.set(1.05, 0, 0.1);
   return g;
 }
 
-function spoon(u) {
+function spoon() {
   const g = new THREE.Group();
-  const o = { uUV: u, gloss: true };
-  const bowl = part(new THREE.SphereGeometry(0.42, 40, 24), 0xcfd8e3, o, { thick: 0.03 });
+  const steel = metal('#dfe6ee', 0.12);
+  const bowl = mesh(new THREE.SphereGeometry(0.42, 48, 32), steel);
   at(bowl, 0, 0.42, 0, 0, 0, 0, [0.72, 1, 0.22]);
-  const handle = part(new THREE.CapsuleGeometry(0.075, 1.0, 6, 12), 0xcfd8e3, o, { thick: 0.03 });
+  const handle = mesh(new THREE.CapsuleGeometry(0.075, 1.0, 8, 16), steel);
   at(handle, 0, -0.5, 0.03);
   g.add(bowl, handle);
   g.rotation.set(0.3, -0.4, -0.55);
   return g;
 }
 
-function apple(u) {
+function apple() {
   const g = new THREE.Group();
-  const body = part(new THREE.SphereGeometry(0.75, 56, 40), 0xd7263d, { uUV: u, gloss: true }, { thick: 0.035 });
+  // قشرة لامعة بخطوط لونية ناعمة
+  const tint = (p) => lerp(0.85, 1.08, Math.sin(Math.atan2(p.z, p.x) * 9 + p.y * 3) * 0.5 + 0.5) * lerp(1.05, 0.9, p.y * 0.5 + 0.5);
+  const body = mesh(sculpt(new THREE.SphereGeometry(0.75, 72, 52), { tint }), gloss('#c8202f', { roughness: 0.28, clearcoatRoughness: 0.08 }));
   body.scale.set(1.05, 0.92, 1.05);
-  const stem = part(new THREE.CylinderGeometry(0.035, 0.045, 0.32, 10), 0x6b4423, { uUV: u }, { thick: 0.025 });
+  const stem = mesh(new THREE.CylinderGeometry(0.035, 0.045, 0.32, 10), matte('#6b4423', { vertexColors: false }), { sample: false });
   at(stem, 0.02, 0.78, 0, 0, 0, -0.2);
-  const leaf = part(new THREE.SphereGeometry(0.2, 24, 12), 0x3fa34d, { uUV: u, gloss: true }, { thick: 0.025 });
+  const leaf = mesh(new THREE.SphereGeometry(0.2, 24, 12), gloss('#3fa34d', { vertexColors: false, roughness: 0.4 }), { sample: false });
   at(leaf, 0.22, 0.82, 0, 0, 0, -0.6, [1, 0.45, 0.25]);
   g.add(body, stem, leaf);
   g.rotation.set(0.15, 0.3, 0);
   return g;
 }
 
-function balloon(u) {
+function balloon() {
   const g = new THREE.Group();
-  const body = part(new THREE.SphereGeometry(0.62, 56, 40), 0x3b82f6, { uUV: u, gloss: true }, { thick: 0.035 });
+  const body = mesh(new THREE.SphereGeometry(0.62, 72, 52), gloss('#2f74f0', { vertexColors: false, roughness: 0.18, sheen: 0.4, sheenColor: '#9cc2ff' }));
   body.scale.set(1, 1.2, 1);
   body.position.y = 0.2;
-  const knot = part(new THREE.ConeGeometry(0.08, 0.14, 12), 0x2563eb, { uUV: u }, { thick: 0.02 });
+  const knot = mesh(new THREE.ConeGeometry(0.08, 0.14, 16), gloss('#2563eb', { vertexColors: false }), { sample: false });
   at(knot, 0, -0.56, 0, Math.PI, 0, 0);
-  const str = part(new THREE.CylinderGeometry(0.012, 0.012, 0.55, 6), 0x475569, { uUV: u, sample: false }, { outline: false });
+  const str = mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.55, 6), matte('#475569', { vertexColors: false }), { sample: false });
   at(str, 0.04, -0.88, 0, 0, 0, 0.12);
   g.add(body, knot, str);
   g.rotation.z = 0.12;
   return g;
 }
 
+/** كل دالة تأخذ الطبقة (A/B) لأن الزجاج الحقيقي للطبقة A فقط */
 export const ITEM_MODELS = { hand, sponge, wool, rock, log, ball, window: windowPane, mirror, plate, spoon, apple, balloon };
 
 // ------------------------------------------------------------------ الجولة ٢: قطع المشاهد القصيرة
-/** وجه طفل كرتوني ينظر إلى اليمين؛ userData.mouth = نقطة خروج الرذاذ */
-export function head(u) {
+/** وجه طفل ينظر إلى اليمين؛ userData.mouth = نقطة خروج الرذاذ */
+export function head() {
   const g = new THREE.Group();
-  const face = part(new THREE.SphereGeometry(0.55, 48, 32), SKIN, { uUV: u }, { thick: 0.04 });
-  const hair = part(new THREE.SphereGeometry(0.58, 40, 24, 0, Math.PI * 2, 0, Math.PI * 0.42), 0x3a2618, { uUV: u, rough: 0.03, freq: 18 }, { thick: 0.035 });
+  const face = mesh(new THREE.SphereGeometry(0.55, 56, 40), skin());
+  const hair = mesh(sculpt(new THREE.SphereGeometry(0.58, 48, 28, 0, Math.PI * 2, 0, Math.PI * 0.42), { rough: 0.025, freq: 18 }), fabric('#3a2618', { sheenColor: '#a07850' }));
   at(hair, -0.04, 0.05, 0, 0, 0, 0.25);
-  const eyeO = { uUV: u, sample: false };
-  // عينان مغمضتان (لحظة العطاس): خطّان قصيران
-  const e1 = part(new THREE.CapsuleGeometry(0.03, 0.12, 4, 8), 0x231815, eyeO, { outline: false });
-  const e2 = part(new THREE.CapsuleGeometry(0.03, 0.12, 4, 8), 0x231815, eyeO, { outline: false });
-  at(e1, 0.2, 0.1, 0.48, 0, 0, Math.PI / 2 - 0.2);
-  at(e2, 0.42, 0.1, 0.3, 0, 0.6, Math.PI / 2 - 0.2);
-  const nose = part(new THREE.SphereGeometry(0.075, 16, 12), 0xd99673, eyeO, { thick: 0.02 });
+  const ink = pmat('#231815', { vertexColors: false });
+  // عينان مغمضتان (لحظة العطاس)
+  const e1 = mesh(new THREE.CapsuleGeometry(0.028, 0.12, 4, 8), ink, { sample: false });
+  const e2 = mesh(new THREE.CapsuleGeometry(0.028, 0.12, 4, 8), ink, { sample: false });
+  at(e1, 0.2, 0.1, 0.49, 0, 0, Math.PI / 2 - 0.2);
+  at(e2, 0.42, 0.1, 0.31, 0, 0.6, Math.PI / 2 - 0.2);
+  const nose = mesh(new THREE.SphereGeometry(0.075, 16, 12), skin(), { sample: false });
   at(nose, 0.47, -0.02, 0.32);
-  const cheek = part(new THREE.SphereGeometry(0.07, 12, 8), 0xf08a8a, eyeO, { outline: false });
+  const cheek = mesh(new THREE.SphereGeometry(0.07, 12, 8), pmat('#f08a8a', { vertexColors: false, transparent: true, opacity: 0.7 }), { sample: false });
   at(cheek, 0.28, -0.12, 0.47, 0, 0, 0, [1.2, 0.7, 0.4]);
   const mouth = new THREE.Object3D();
   mouth.position.set(0.56, -0.2, 0.18);
@@ -314,35 +403,47 @@ export function head(u) {
   return g;
 }
 
-export function tissueSheet(u) {
-  const g = part(new THREE.PlaneGeometry(0.7, 0.8, 10, 10), 0xffffff, { uUV: u, rough: 0.04, freq: 4 }, { thick: 0.02 });
-  g.userData.mesh.material.side = THREE.DoubleSide;
-  return g;
+export function tissueSheet() {
+  const geo = sculpt(new THREE.PlaneGeometry(0.7, 0.8, 16, 16), { rough: 0.035, freq: 4 });
+  return mesh(geo, fabric('#ffffff', { side: THREE.DoubleSide, sheenColor: '#ffffff' }));
 }
-export function tissueBall(u) {
-  return part(new THREE.IcosahedronGeometry(0.26, 3), 0xf8f8f6, { uUV: u, rough: 0.12, freq: 5 }, { thick: 0.03 });
+export function tissueBall() {
+  return mesh(sculpt(new THREE.IcosahedronGeometry(0.26, 4), { rough: 0.1, freq: 5 }), fabric('#f8f8f6'), { lift: 0.03 });
 }
-/** ذراع مثنية على شكل «<»: رأس الزاوية (المرفق) عند الأصل، يوضع أمام الفم */
-export function elbowArm(u) {
+/** ذراع مثنية على شكل «<»: المرفق عند الأصل، يوضع أمام الفم */
+export function elbowArm() {
   const g = new THREE.Group();
-  const sleeve = 0x2563eb;
-  const o = { uUV: u, rough: 0.02, freq: 14 };
-  // العضد: من الكتف (أسفل الخلف) إلى المرفق
-  const upper = part(new THREE.CapsuleGeometry(0.15, 0.62, 6, 14), sleeve, o, { thick: 0.035 });
+  const sleeve = () => fabric('#2563eb', { sheenColor: '#9ec0ff' });
+  const o = { rough: 0.015, freq: 14 };
+  const upper = mesh(sculpt(new THREE.CapsuleGeometry(0.15, 0.62, 8, 16, 6), o), sleeve());
   at(upper, -0.2, -0.36, 0, 0, 0, -0.52);
-  // الساعد: من المرفق راجعًا فوق الوجه
-  const fore = part(new THREE.CapsuleGeometry(0.14, 0.6, 6, 14), sleeve, { ...o }, { thick: 0.035 });
+  const fore = mesh(sculpt(new THREE.CapsuleGeometry(0.14, 0.6, 8, 16, 6), o), sleeve());
   at(fore, -0.24, 0.3, 0.05, 0, 0, 0.7);
-  const cuff = part(new THREE.SphereGeometry(0.13, 16, 12), SKIN, { uUV: u, sample: false }, { thick: 0.03 });
+  const cuff = mesh(new THREE.SphereGeometry(0.13, 16, 12), skin(), { sample: false });
   at(cuff, -0.5, 0.6, 0.05);
   g.add(upper, fore, cuff);
   return g;
 }
-export function table(u) {
+let GRAIN = null;
+export function table() {
   const g = new THREE.Group();
-  const top = part(new THREE.BoxGeometry(2.6, 0.12, 1.0, 20, 2, 8), 0xd9a46a, { uUV: u, gloss: true }, { thick: 0.03 });
-  const legA = part(new THREE.BoxGeometry(0.12, 0.7, 0.12), 0xa86f3c, { uUV: u, sample: false }, { thick: 0.025 });
-  const legB = part(new THREE.BoxGeometry(0.12, 0.7, 0.12), 0xa86f3c, { uUV: u, sample: false }, { thick: 0.025 });
+  GRAIN ||= canvasTex(256, (x, s) => {
+    x.fillStyle = '#d9a46a';
+    x.fillRect(0, 0, s, s);
+    for (let i = 0; i < 70; i++) {
+      x.strokeStyle = `rgba(120,70,30,${0.05 + Math.random() * 0.12})`;
+      x.lineWidth = 1 + Math.random() * 2;
+      x.beginPath();
+      const y = Math.random() * s;
+      x.moveTo(0, y);
+      x.bezierCurveTo(s * 0.3, y + Math.random() * 8 - 4, s * 0.6, y + Math.random() * 8 - 4, s, y);
+      x.stroke();
+    }
+  });
+  const top = mesh(new THREE.BoxGeometry(2.6, 0.12, 1.0, 20, 2, 8), gloss('#ffffff', { vertexColors: false, map: GRAIN, roughness: 0.35, clearcoat: 0.6 }));
+  const legMat = matte('#a86f3c', { vertexColors: false });
+  const legA = mesh(new THREE.BoxGeometry(0.12, 0.7, 0.12), legMat, { sample: false });
+  const legB = mesh(new THREE.BoxGeometry(0.12, 0.7, 0.12), legMat, { sample: false });
   at(legA, -1.1, -0.41, 0.3);
   at(legB, 1.1, -0.41, 0.3);
   g.add(top, legA, legB);
@@ -350,13 +451,13 @@ export function table(u) {
   g.rotation.x = 0.35;
   return g;
 }
-export function sandwich(u) {
+export function sandwich() {
   const g = new THREE.Group();
-  const bread = { uUV: u, rough: 0.03, freq: 9 };
-  const b1 = part(new THREE.BoxGeometry(0.9, 0.16, 0.7, 12, 3, 10), 0xe7bf73, bread, { thick: 0.03 });
-  const b2 = part(new THREE.BoxGeometry(0.9, 0.16, 0.7, 12, 3, 10), 0xe7bf73, { ...bread }, { thick: 0.03 });
-  const leaf = part(new THREE.BoxGeometry(0.96, 0.05, 0.76), 0x4caf50, { uUV: u, sample: false }, { thick: 0.02 });
-  const cheese = part(new THREE.BoxGeometry(0.92, 0.05, 0.72), 0xffc94a, { uUV: u, sample: false }, { thick: 0.02 });
+  const bread = () => mesh(sculpt(new THREE.BoxGeometry(0.9, 0.16, 0.7, 16, 4, 12), { rough: 0.025, freq: 9 }), pmat('#e3b765', { roughness: 0.85 }));
+  const b1 = bread();
+  const b2 = bread();
+  const leaf = mesh(sculpt(new THREE.BoxGeometry(0.98, 0.05, 0.78, 14, 1, 10), { rough: 0.02, freq: 6 }), gloss('#4caf50', { roughness: 0.4 }), { sample: false });
+  const cheese = mesh(new THREE.BoxGeometry(0.92, 0.05, 0.72), pmat('#ffc94a', { vertexColors: false, roughness: 0.5 }), { sample: false });
   at(b1, 0, -0.14, 0);
   at(leaf, 0, -0.04, 0);
   at(cheese, 0, 0.02, 0);
@@ -365,43 +466,33 @@ export function sandwich(u) {
   g.rotation.set(0.45, -0.5, 0);
   return g;
 }
-export function bin(u) {
+export function bin() {
   const g = new THREE.Group();
-  const body = part(new THREE.CylinderGeometry(0.42, 0.34, 0.8, 40, 1, true), 0x64748b, { uUV: u, sample: false }, { thick: 0.03 });
-  body.userData.mesh.material.side = THREE.DoubleSide;
-  const lid = part(new THREE.CylinderGeometry(0.46, 0.46, 0.06, 40), 0x475569, { uUV: u, sample: false }, { thick: 0.025 });
+  const body = mesh(new THREE.CylinderGeometry(0.42, 0.34, 0.8, 48, 1, true), metal('#8a97a8', 0.35, { side: THREE.DoubleSide }), { sample: false });
+  const lid = mesh(new THREE.CylinderGeometry(0.46, 0.46, 0.06, 48), metal('#5d6b7d', 0.3), { sample: false });
   at(lid, 0, 0.45, 0);
   g.add(body, lid);
   g.userData.lid = lid;
   return g;
 }
-export function bottle(u) {
+export function bottle() {
   const g = new THREE.Group();
-  const body = part(new THREE.CylinderGeometry(0.2, 0.22, 0.65, 28), 0x22c55e, { uUV: u, gloss: true, sample: false }, { thick: 0.03 });
-  const neck = part(new THREE.CylinderGeometry(0.09, 0.12, 0.16, 18), 0xf8fafc, { uUV: u, sample: false }, { thick: 0.02 });
+  const body = mesh(new THREE.CylinderGeometry(0.2, 0.22, 0.65, 32), gloss('#22c55e', { vertexColors: false, roughness: 0.15 }), { sample: false });
+  const white = gloss('#f8fafc', { vertexColors: false });
+  const neck = mesh(new THREE.CylinderGeometry(0.09, 0.12, 0.16, 18), white, { sample: false });
   at(neck, 0, 0.4, 0);
-  const headB = part(new THREE.BoxGeometry(0.32, 0.14, 0.14), 0xf8fafc, { uUV: u, sample: false }, { thick: 0.02 });
+  const headB = mesh(new THREE.BoxGeometry(0.32, 0.14, 0.14), white, { sample: false });
   at(headB, 0.08, 0.53, 0);
   g.add(body, neck, headB);
   return g;
 }
-/** فقاعة صابون: كرة شفافة بحافة مضيئة */
-export function bubble(u) {
-  const m = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false });
-  const fres = oneMinus(abs(dot(normalView, positionViewDirection))).pow(2.0);
-  m.colorNode = mix(vec3(0.75, 0.95, 1.0), vec3(0.9, 0.75, 1.0), u);
-  m.opacityNode = saturate(fres.mul(0.9).add(0.08));
-  const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.16, 24, 16), m);
-  return mesh;
+/** فقاعة صابون: كرة متقزّحة شفافة (كلؤلؤ «دانة الصف») */
+export function bubble() {
+  const m = pmat('#ffffff', {
+    vertexColors: false, roughness: 0.05, metalness: 0, iridescence: 1, iridescenceIOR: 1.3, iridescenceThicknessRange: [180, 620],
+    transparent: true, opacity: 0.35, depthWrite: false, envMapIntensity: 2,
+  });
+  const b = mesh(new THREE.SphereGeometry(0.16, 32, 20), m, { sample: false });
+  b.castShadow = false;
+  return b;
 }
-/** مخروط ضوء المصباح البنفسجي (إضافي، بلا عمق) */
-export function lampCone(u) {
-  const m = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
-  m.colorNode = vec3(0.55, 0.3, 1.0);
-  m.opacityNode = uv().y.pow(1.6).mul(0.32).mul(u);
-  const mesh = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 1, 1, 48, 1, true), m);
-  mesh.renderOrder = 5;
-  return mesh;
-}
-
-export { uniform };

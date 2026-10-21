@@ -13,9 +13,9 @@
 //   الأهداف: البطاقات (تُلتقط)، والسلّتان (خانات إفلات مستطيلة)، وأزرار القائمة.
 //   في السباق: نصف الشاشة لكل فريق بحجرته وسلّتيه وبطاقاته ولونه، ولا تقبل سلّتاه إلا بطاقاته.
 //
-// الطبقات: #board (زخرفة SVG) ← .gh-scope (الحجرات والإظلام) ← .gh-gl (المشهد ثلاثي الأبعاد)
-//          ← #hud (البطاقات والسلال والنصوص) ← .gh-px (جسيمات 2D) ← .gh-over (نص منتصف اللعبة)
-//          ← .gh-cine (الافتتاح/الختام) ← #fx (الأيدي)
+// الطبقات: #board (زخرفة SVG للطبقة C) ← .gh-gl (المختبر ثلاثي الأبعاد كاملًا، غير شفاف)
+//          ← .gh-scope (أسماء الخزائن ورموز الجولة ٢؛ وفي C الحجرات والإظلام) ← #hud (البطاقات والسلال)
+//          ← .gh-px (جسيمات 2D) ← .gh-over (نص منتصف اللعبة) ← .gh-cine (الافتتاح/الختام) ← #fx (الأيدي)
 // طبقات الجودة: A/B عبر scene3d.js، وC عبر flat.js — والأهداف نفسها في الثلاث.
 // ---------------------------------------------------------------------------
 import { sfx, say } from '/board-kit/js/audio.js';
@@ -86,8 +86,8 @@ export class Game {
     this.$px = html('canvas', 'gh-px');
     this.$over = html('div', 'gh-over');
     this.$cine = html('div', 'gh-cine');
-    stage.insertBefore(this.$scope, hud);
     stage.insertBefore(this.$gl, hud);
+    stage.insertBefore(this.$scope, hud);
     stage.insertBefore(this.$px, fx);
     stage.insertBefore(this.$over, fx);
     stage.insertBefore(this.$cine, fx);
@@ -101,7 +101,7 @@ export class Game {
     // ?tier=A|B|C يفرض طبقة للتجربة (ولا ينزل منها منظّم الجودة)
     const forced = new URLSearchParams(location.search).get('tier')?.toUpperCase() || null;
     this.forcedTier = ['A', 'B', 'C'].includes(forced) ? forced : null;
-    if (!this.reduced && forced !== 'C') this._load3D(forced === 'B' ? 'B' : null);
+    if (!this.reduced && forced !== 'C') this._load3D(this.forcedTier);
 
     this._lastFrame = performance.now();
     const loop = (now) => {
@@ -301,6 +301,8 @@ export class Game {
     if (this.screen === 'play' && this.state) for (const [id, L] of Object.entries(this.L)) spec[id] = { booth: L.booth, zone: L.zone };
     this.view.layout(r.width, r.height, this.VW, this.VH);
     this.view.setTeams(spec);
+    // لحظة القائمة في الطبقتين A وB: يد تتوهّج عليها الجراثيم بين صف الخطوات والأزرار
+    this.view.hero?.(this.screen === 'menu' ? { x: this.VW / 2, y: 565, h: 160 } : null);
     if (this.screen === 'play' && this.state) for (const id of Object.keys(this.state.teams)) this._syncPreview(id);
     const layer = svg('g', { class: 'cursors' });
     this.fx.appendChild(layer);
@@ -343,7 +345,7 @@ export class Game {
       <span><i>🃏</i>التقط بطاقة</span><b>←</b>
       <span><i>🧺</i>ضعها في سلّتها</span><b>←</b>
       <span><i>🔦</i>نضيء الضوء البنفسجي</span><b>←</b>
-      <span><i>🦠</i>تظهر الجراثيم!</span>`;
+      <span><i>🔬</i>نكبّر بالعدسة!</span>`;
     this.hud.appendChild(how);
     const panel = html('div', 'menu-panel');
     Object.assign(panel.style, { left: `calc(var(--u) * ${left + 20})`, right: `calc(var(--u) * ${this.VW - right + 20})` });
@@ -550,7 +552,10 @@ export class Game {
       for (const iid of shown) {
         const it = this.item[iid];
         const card = html('div', `card gh-card${held.has(iid) ? ' taken' : ''}${it.name.length > 15 ? ' long' : ''}`);
-        card.innerHTML = `<span class="gh-emoji">${esc(it.emoji)}</span><div class="card-body"><b>${esc(it.name)}</b></div>`;
+        // في الطبقتين A وB: صورة المجسّم نفسه (scene3d.makeThumbs)، وإلا الرمز
+        const thumb = this.view.thumbs?.[it.model];
+        const icon = thumb ? `<img class="gh-thumb" src="${thumb}" alt="">` : `<span class="gh-emoji">${esc(it.emoji)}</span>`;
+        card.innerHTML = `${icon}<div class="card-body"><b>${esc(it.name)}</b></div>`;
         card.dataset.target = `card:${id}:${iid}`;
         card.dataset.kind = 'card';
         tray.appendChild(card);
@@ -806,21 +811,30 @@ export class Game {
       say(it.name);
       this._flash(id, `✨ ظهرت جراثيم كانت مختفية على <b>${esc(it.name)}</b>!`, 'reveal', 60000);
     }, this._d(1000));
+    // اللحظة المدهشة (الطبقتان A وB): العدسة تغوص في السطح بتكبير هائل
+    const micro = this.view.tier !== 'C' && !!this.view.dive;
+    if (micro) {
+      this.later(() => {
+        this.view.dive(id, it);
+        this._flash(id, `🔬 نقترب بالعدسة… تكبير كبير جدًا!`, 'reveal', 60000);
+      }, this._d(1900));
+    }
+    const tBlow = micro ? 3300 : 1900;
     this.later(() => {
       this._snd(id, 'fan');
       this.view.blow(id, rough ? 0.86 : 0.14);
-      this._flash(id, '💨 ننفخ الهواء على السطح…', 'reveal', 60000);
-    }, this._d(1900));
+      this._flash(id, rough ? '💨 ننفخ الهواء… هل تختبئ الجراثيم في الوديان؟' : '💨 ننفخ الهواء على السطح الأملس…', 'reveal', 60000);
+    }, this._d(tBlow));
     this.later(() => {
       this._snd(id, 'shimmer');
-      const lead = rough ? '🦠 <b>سطح خشن:</b> بقيت الجراثيم عالقة!' : '💨 <b>سطح ناعم:</b> طارت معظم الجراثيم.';
+      const lead = rough ? '🦠 <b>سطح خشن:</b> بقيت الجراثيم عالقة بين النتوءات!' : '💨 <b>سطح ناعم:</b> انزلقت معظم الجراثيم وطارت.';
       this._flash(id, `${lead} ${esc(it.fact)}`, 'reveal', 60000);
-    }, this._d(3200));
+    }, this._d(tBlow + 1400));
     this.later(() => {
       this.view.endTest(id);
       this._setBooth(id, { item: null, uv: false });
       this._next(T);
-    }, this._d(5600));
+    }, this._d(tBlow + (micro ? 4000 : 3700)));
   }
 
   /** الجولة ٢ بعد الصواب: مشهد قصير يكشف ما يحدث للجراثيم (≈ ٤ ث) */
@@ -1028,9 +1042,14 @@ export class Game {
     const g = svg('g', { class: 'held-item gh-held', 'data-team': teamed ? team : null });
     if (teamed) g.style.setProperty('--team', TEAMS[team].color);
     g.appendChild(svg('circle', { r: 60, class: 'held-halo' }));
-    const em = svg('text', { y: 4, 'text-anchor': 'middle', 'dominant-baseline': 'middle', class: 'gh-held-emoji' });
-    em.textContent = it?.emoji || '🃏';
-    g.appendChild(em);
+    const thumb = this.view.thumbs?.[it?.model];
+    if (thumb) {
+      g.appendChild(svg('image', { href: thumb, x: -56, y: -56, width: 112, height: 112, class: 'gh-held-thumb' }));
+    } else {
+      const em = svg('text', { y: 4, 'text-anchor': 'middle', 'dominant-baseline': 'middle', class: 'gh-held-emoji' });
+      em.textContent = it?.emoji || '🃏';
+      g.appendChild(em);
+    }
     const lb = svg('text', { y: 96, 'text-anchor': 'middle', class: 'gh-held-label' });
     lb.textContent = it?.name || '';
     g.appendChild(lb);
