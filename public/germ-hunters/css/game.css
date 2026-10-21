@@ -357,3 +357,143 @@
 @media (prefers-reduced-motion: reduce) {
   .gh-booth, .gh-dark { transition-duration: 0.1s; }
 }
+
+/* ---------------------------------------------------------------- الطبقتان A وB: المختبر ثلاثي الأبعاد
+   المشهد يرسم الخزائن والمصباح والإظلام بنفسه؛ يبقى من .gh-booth رمز الجولة ٢ واسم الشيء فقط. */
+#stage:not([data-tier='C']) .gh-booth { background: none; box-shadow: none; overflow: visible; }
+#stage:not([data-tier='C']) .gh-lamp,
+#stage:not([data-tier='C']) .gh-booth-q,
+#stage:not([data-tier='C']) .gh-dark { display: none; }
+#stage:not([data-tier='C']) .gh-booth-tag { top: auto; bottom: calc(var(--u) * -2); color: rgba(255, 255, 255, 0.92); font-size: calc(var(--u) * 20); text-shadow: 0 1px 2px rgba(0,0,0,.35); }
+#stage:not([data-tier='C']) .gh-booth.shake { animation: none; }
+
+/* ================================================================================
+   الهوية السينمائية (الملف 10): لوحات زجاجية فاتحة عالية التباين فوق المختبر ثلاثي الأبعاد،
+   بطاقات لامعة بصور المجسّمات نفسها، وظلال ناعمة بدل الحواف المسطّحة. تنطبق على كل الطبقات،
+   والضبابية خلف الزجاج (backdrop-filter) في الطبقة A فقط لأنها مكلفة على الهاتف.
+================================================================================ */
+#stage {
+  --plum: #3b2a5c;
+  --glass-bg: rgba(255, 255, 255, 0.86);
+  --glass-line: rgba(255, 255, 255, 0.95);
+  --glass-shadow: 0 calc(var(--u) * 10) calc(var(--u) * 28) rgba(34, 14, 70, 0.22), 0 calc(var(--u) * 2) calc(var(--u) * 4) rgba(34, 14, 70, 0.12);
+}
+#stage[data-tier='A'] .gh-prompt,
+#stage[data-tier='A'] .gh-bin,
+#stage[data-tier='A'] .chip,
+#stage[data-tier='A'] .result { -webkit-backdrop-filter: blur(12px) saturate(1.25); backdrop-filter: blur(12px) saturate(1.25); }
+
+.gh-title { color: var(--plum); text-shadow: 0 calc(var(--u) * 2) 0 rgba(255, 255, 255, 0.9), 0 0 calc(var(--u) * 18) rgba(255, 255, 255, 0.85); }
+.chip { background: var(--glass-bg); border-color: var(--glass-line); box-shadow: var(--glass-shadow); }
+
+/* سطر التعليمات */
+.gh-prompt {
+  background: var(--glass-bg);
+  border: calc(var(--u) * 3) solid var(--glass-line);
+  box-shadow: var(--glass-shadow), inset 0 calc(var(--u) * -4) 0 color-mix(in srgb, var(--team) 55%, transparent);
+  color: #1f1530;
+}
+.gh-prompt.reveal { background: rgba(255, 255, 255, 0.94); border-color: var(--glass-line); box-shadow: var(--glass-shadow), inset 0 calc(var(--u) * -4) 0 var(--uv); }
+
+/* السلّتان: «أدراج» زجاجية بإطار منقّط داخلي بلون الفريق */
+.gh-bin {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.93), rgba(243, 238, 252, 0.88));
+  border: calc(var(--u) * 3) solid var(--glass-line);
+  box-shadow: var(--glass-shadow), inset 0 0 0 calc(var(--u) * 7) rgba(255, 255, 255, 0.6);
+  outline: calc(var(--u) * 4) dashed color-mix(in srgb, var(--team) 60%, #c9b8e8);
+  outline-offset: calc(var(--u) * -16);
+  border-radius: calc(var(--u) * 30);
+}
+.gh-bin-icon { filter: drop-shadow(0 calc(var(--u) * 2) calc(var(--u) * 2) rgba(0, 0, 0, 0.12)); }
+.gh-bin b { color: #1f1530; }
+.gh-bin.hover { outline-style: solid; outline-color: var(--gold); box-shadow: 0 0 0 calc(var(--u) * 10) rgba(201, 150, 26, 0.35), var(--glass-shadow); }
+.gh-bin.good { outline-style: solid; outline-color: var(--ok); }
+.gh-bin.hint { outline-style: solid; outline-color: var(--gold); }
+
+/* البطاقات: لامعة، بصورة المجسّم الحقيقي */
+.gh-card {
+  background: linear-gradient(180deg, #ffffff 0%, #ffffff 55%, #f4effb 100%);
+  border-width: calc(var(--u) * 3);
+  border-color: rgba(255, 255, 255, 0.95);
+  border-top-width: calc(var(--u) * 12);
+  box-shadow: 0 calc(var(--u) * 10) calc(var(--u) * 22) rgba(34, 14, 70, 0.2), inset 0 calc(var(--u) * -3) 0 rgba(59, 42, 92, 0.08);
+}
+.gh-card::before {
+  content: '';
+  position: absolute; left: 0; right: 0; top: 0; height: 40%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0));
+  pointer-events: none;
+}
+.gh-thumb { width: calc(var(--u) * 108); height: calc(var(--u) * 108); flex: none; mix-blend-mode: multiply; object-fit: contain; }
+.gh-tray.compact .gh-thumb { width: calc(var(--u) * 86); height: calc(var(--u) * 86); }
+.gh-held-thumb { mix-blend-mode: multiply; }
+.gh-held .held-halo { fill: rgba(255, 255, 255, 0.82); stroke: rgba(59, 42, 92, 0.55); }
+
+/* شريط الفريق ونقاط التقدّم */
+.gh-wrap .team-bar { background: linear-gradient(180deg, color-mix(in srgb, var(--team) 88%, #fff), var(--team)); box-shadow: 0 calc(var(--u) * 6) calc(var(--u) * 14) rgba(34, 14, 70, 0.18); }
+
+/* الافتتاح والختام: أشرطة بنفسجية داكنة وعنوان يتوهّج */
+.cine-bar { background: linear-gradient(180deg, #1a0b38, #2a1052); }
+.cine-title { color: #fff; text-shadow: 0 0 calc(var(--u) * 28) rgba(167, 123, 255, 0.95), 0 calc(var(--u) * 4) calc(var(--u) * 10) rgba(20, 6, 48, 0.6); }
+.cine-pre { color: #fff; text-shadow: 0 calc(var(--u) * 2) calc(var(--u) * 10) rgba(20, 6, 48, 0.7); }
+.finale .cine-title { color: #fff; }
+
+/* القائمة والنتيجة */
+.gh-how span { background: var(--glass-bg); border-color: var(--glass-line); box-shadow: var(--glass-shadow); }
+.gh-tip { background: var(--glass-bg); border-color: var(--glass-line); box-shadow: var(--glass-shadow); }
+.result { background: rgba(255, 255, 255, 0.9); border-color: var(--glass-line); box-shadow: var(--glass-shadow); }
+.gh-tips-title { color: var(--plum); text-shadow: 0 0 calc(var(--u) * 14) rgba(255, 255, 255, 0.9); }
+
+/* ============================================================================
+   هوية «العدسة العملاقة» (إعادة التصميم، الملف 10): نحاس العدسات + بنفسجي الضوء + لون الفريق.
+   الألواح زجاج فاتح عالي التباين بحافة نحاسية رفيعة؛ والنص داكن (جهاز العرض في صف مضاء).
+============================================================================ */
+:root {
+  --brass: #c8933f;
+  --brass-l: #f3dcae;
+  --brass-d: #8a5f22;
+}
+.gh-title { color: #2a0f5c; }
+.hud-header .gh-title { text-shadow: 0 calc(var(--u) * 2) 0 rgba(255, 255, 255, 0.9); }
+/* خط نحاسي تحت عنوان القائمة */
+.menu-head .gh-title::after {
+  content: '';
+  display: block;
+  width: 40%;
+  height: calc(var(--u) * 6);
+  margin: calc(var(--u) * 6) auto 0;
+  border-radius: 99px;
+  background: linear-gradient(90deg, transparent, var(--brass), var(--brass-l), var(--brass), transparent);
+}
+/* خطوات القائمة: بطاقات زجاجية بحافة نحاسية، والأخيرتان «تحت الضوء البنفسجي» */
+.gh-how span {
+  background: rgba(255, 255, 255, 0.9);
+  border: calc(var(--u) * 3) solid var(--brass-l);
+  box-shadow: 0 calc(var(--u) * 10) calc(var(--u) * 24) rgba(42, 15, 92, 0.12);
+}
+.gh-how span:nth-of-type(3), .gh-how span:nth-of-type(4) {
+  background: radial-gradient(120% 120% at 50% 0%, #4c1d95 0%, #1e0b46 75%);
+  border-color: var(--brass);
+}
+/* سطر التعليمات: زجاج فاتح بخط نحاسي علوي */
+.gh-prompt {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(250, 247, 255, 0.94));
+  border-width: calc(var(--u) * 3);
+  box-shadow: inset 0 calc(var(--u) * 4) 0 var(--brass-l), 0 calc(var(--u) * 8) calc(var(--u) * 20) rgba(42, 15, 92, 0.1);
+}
+.gh-prompt.reveal { border-color: #7c3aed; box-shadow: inset 0 calc(var(--u) * 4) 0 #c4b5fd, 0 0 calc(var(--u) * 24) rgba(124, 58, 237, 0.25); }
+/* السلّتان: «صوانٍ» زجاجية بإطار نحاسي خارجي، والحدّ المتقطّع بلون الفريق يبقى علامة الإفلات */
+.gh-bin {
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(255, 255, 255, 1) 0%, rgba(248, 244, 255, 0.96) 70%),
+    #fff;
+  box-shadow: 0 0 0 calc(var(--u) * 4) var(--brass-l), 0 calc(var(--u) * 10) calc(var(--u) * 22) rgba(42, 15, 92, 0.12);
+}
+.gh-bin.hover { box-shadow: 0 0 0 calc(var(--u) * 10) rgba(201, 150, 26, 0.4), 0 calc(var(--u) * 12) calc(var(--u) * 24) rgba(0, 0, 0, 0.14); }
+/* البطاقات: خط نحاسي رفيع أسفل كل بطاقة */
+.gh-card { box-shadow: inset 0 calc(var(--u) * -5) 0 var(--brass-l), 0 calc(var(--u) * 8) calc(var(--u) * 18) rgba(42, 15, 92, 0.1); }
+/* في الطبقتين A وB: العدسة نفسها هي «الحجرة»؛ لا نكرّر اسمها */
+#stage:not([data-tier='C']) .gh-booth-tag { display: none; }
+/* رمز الجولة ٢ داخل العدسة: يطفو وسط الزجاج */
+#stage:not([data-tier='C']) .gh-booth-emoji { filter: drop-shadow(0 calc(var(--u) * 8) calc(var(--u) * 14) rgba(30, 10, 70, 0.35)); }
+#stage:not([data-tier='C']) .gh-booth.uv .gh-booth-name { color: #f5f0ff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); }

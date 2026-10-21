@@ -1,38 +1,63 @@
 // ---------------------------------------------------------------------------
-// نظام «الجراثيم المضيئة» ثلاثي الأبعاد (الملف 09، ٤.٢).
-// كل جرثومة نقطة مضيئة (Sprite) تنتقل بين موضعين: «من» و«إلى» (مع شفافية لكل منهما)
-// بتأخير خاص بها، فيصنع المشهد كل الأحداث بالواجهة نفسها: تعلق على سطح، تطير مع الهواء،
-// تتناثر مع العطاس، تتوقف عند المنديل، تنتقل من يد إلى يد، تسقط مع الماء والصابون.
+// «الجراثيم المضيئة» ثلاثية الأبعاد: نقاط (Points) بمظلِّل GLSL خاص، لونها أقوى من الأبيض
+// (قيم HDR) فتلتقطها مرحلة التوهّج (UnrealBloom) وتشعّ كما في الصورة تحت الضوء البنفسجي.
 //
-//   الطبقة A (WebGPU): المواضع تُحسب على معالج الرسوم كل إطار (compute) بنابض ناعم نحو
-//                      الهدف + ضجيج حيّ (الجراثيم «تتحرك» كأنها حيّة). حتى ~٨ آلاف لكل فريق.
-//   الطبقة B (WebGL2): الهدف نفسه يُحسب في مظلّل الرؤوس مع تموّج بسيط، ≤ ٩٠٠ لكل فريق.
+// كل جرثومة تنتقل بين موضعين: «من» و«إلى» (مع شفافية لكل منهما) بتأخير خاص بها، فيصنع المشهد
+// كل الأحداث بالواجهة نفسها: تعلق على سطح، تطير مع الهواء، تتناثر مع العطاس، تتوقف عند المنديل،
+// تنتقل من يد إلى يد، تسقط مع الماء والصابون. الحساب كله في مظلِّل الرؤوس، والمعالج المركزي
+// لا يكتب إلا عند بداية كل حدث.
+//   الطبقة A: ≈ ٤٠٠٠ لكل فريق، تتلوّى حيّة (ضجيج في مظلِّل الرؤوس).
+//   الطبقة B: ≈ ١٢٠٠ لكل فريق، بتموّج أبسط.
 // الإحداثيات بوحدة المسرح u في فضاء العالم (انظر محاذاة الكاميرا في scene3d.js).
 // ---------------------------------------------------------------------------
-import * as THREE from 'three/webgpu';
-import {
-  Fn, If, PI, cos, float, instanceIndex, instancedArray, instancedDynamicBufferAttribute, mix, mx_noise_vec3,
-  oneMinus, saturate, sin, smoothstep, uniform, uv, vec3,
-} from 'three/tsl';
+import * as THREE from 'three';
 
 const SPREAD = 0.35; // أقصى تأخير لجرثومة (من مدة الحدث)
 
-/** تقدّم الجرثومة وموضعها الهدف وشفافيتها (نفس المعادلة في المعالجين) */
-function targetOf(f, t, s, uP, uArc) {
-  const k = saturate(uP.sub(s.x).div(1 - SPREAD));
-  const e = k.mul(k).mul(float(3).sub(k.mul(2)));
-  const pos = mix(f.xyz, t.xyz, e).add(uArc.mul(sin(k.mul(PI))).mul(s.w.mul(0.8).add(0.6)));
-  const alpha = mix(f.w, t.w, e);
-  return { pos, alpha };
-}
+const VERT = /* glsl */ `
+  attribute vec4 aFrom;
+  attribute vec4 aTo;
+  attribute vec4 aSeed;
+  uniform float uP, uTime, uSize, uPx, uWander;
+  uniform vec3 uArc;
+  varying float vA;
+  varying float vHue;
+  void main(){
+    float k = clamp((uP - aSeed.x) / (1.0 - ${SPREAD.toFixed(2)}), 0.0, 1.0);
+    float e = k * k * (3.0 - 2.0 * k);
+    vec3 p = mix(aFrom.xyz, aTo.xyz, e) + uArc * sin(k * 3.14159265) * (aSeed.w * 0.8 + 0.6);
+    // حياة: كل جرثومة تتلوّى في مكانها
+    float t = uTime * (0.8 + aSeed.w);
+    p += vec3(sin(t * 2.1 + aSeed.w * 40.0), cos(t * 1.7 + aSeed.z * 23.0), sin(t * 1.3 + aSeed.y * 9.0)) * uWander;
+    vA = mix(aFrom.w, aTo.w, e);
+    vHue = aSeed.z;
+    vec4 mv = modelViewMatrix * vec4(p, 1.0);
+    gl_Position = projectionMatrix * mv;
+    gl_PointSize = uSize * aSeed.y * (0.45 + 0.55 * vA) * uPx / -mv.z;
+  }`;
+
+const FRAG = /* glsl */ `
+  uniform float uGlow;
+  varying float vA;
+  varying float vHue;
+  void main(){
+    vec2 c = gl_PointCoord - 0.5;
+    float d = length(c) * 2.0;
+    if (d > 1.0) discard;
+    float soft = pow(1.0 - d, 2.2);
+    float core = 1.0 - smoothstep(0.0, 0.45, d);
+    // أصفر مخضرّ وسماوي (كصورة الكتاب)، أقوى من الأبيض فيتوهّج
+    vec3 col = mix(vec3(0.82, 1.0, 0.22), vec3(0.45, 0.95, 1.0), step(0.62, vHue));
+    col *= 0.55 + core * 2.2;
+    float a = soft * vA * uGlow;
+    gl_FragColor = vec4(col * a, a);
+  }`;
 
 export class Germs {
-  /**
-   * @param {{count:number, gpu:boolean}} o
-   */
-  constructor({ count, gpu }) {
+  /** @param {{count:number, tier:string}} o */
+  constructor({ count, tier }) {
     this.n = count;
-    this.gpu = gpu;
+    this.tier = tier;
     this.from = new Float32Array(count * 4);
     this.to = new Float32Array(count * 4);
     this.seed = new Float32Array(count * 4);
@@ -42,97 +67,46 @@ export class Germs {
       this.seed[i * 4 + 2] = Math.random();
       this.seed[i * 4 + 3] = Math.random();
     }
-    this.uP = uniform(1);
-    this.uArc = uniform(new THREE.Vector3());
-    this.uGlow = uniform(0);
-    this.uSize = uniform(12);
-    this.uTime = uniform(0);
+    const geo = new THREE.BufferGeometry();
+    // موضع وهمي (كل الحساب من aFrom/aTo)؛ three يحتاج سمة position لعدد النقاط
+    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
+    this.fromA = new THREE.BufferAttribute(this.from, 4).setUsage(THREE.DynamicDrawUsage);
+    this.toA = new THREE.BufferAttribute(this.to, 4).setUsage(THREE.DynamicDrawUsage);
+    geo.setAttribute('aFrom', this.fromA);
+    geo.setAttribute('aTo', this.toA);
+    geo.setAttribute('aSeed', new THREE.BufferAttribute(this.seed, 4));
+    this.uniforms = {
+      uP: { value: 1 },
+      uTime: { value: 0 },
+      uSize: { value: 8 },
+      uPx: { value: 1000 },
+      uWander: { value: tier === 'A' ? 3.2 : 1.8 },
+      uArc: { value: new THREE.Vector3() },
+      uGlow: { value: 0 },
+    };
+    this.material = new THREE.ShaderMaterial({
+      uniforms: this.uniforms, vertexShader: VERT, fragmentShader: FRAG,
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, premultipliedAlpha: true,
+    });
+    this.object = new THREE.Points(geo, this.material);
+    this.object.frustumCulled = false;
+    this.object.renderOrder = 10;
+    this.geo = geo;
     this.glowTo = 0;
     this.dur = 1;
     this.active = 0;
-
-    const m = new THREE.SpriteNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
-    let f, t, s;
-    if (gpu) {
-      // الطبقة A: مخازن على معالج الرسوم، والمواضع تُكامل في compute
-      this.fromN = instancedArray(this.from, 'vec4');
-      this.toN = instancedArray(this.to, 'vec4');
-      this.seedN = instancedArray(this.seed, 'vec4');
-      this.posN = instancedArray(count, 'vec3');
-      this.velN = instancedArray(count, 'vec3');
-      this.uDt = uniform(0);
-      this.uSnap = uniform(1);
-      this.uWander = uniform(7);
-      const { fromN, toN, seedN, posN, velN, uP, uArc, uDt, uSnap, uWander, uTime } = this;
-      this.update = Fn(() => {
-        const i = instanceIndex;
-        const tg = targetOf(fromN.element(i), toN.element(i), seedN.element(i), uP, uArc);
-        const pos = posN.element(i);
-        const vel = velN.element(i);
-        If(uSnap.greaterThan(0.5), () => {
-          pos.assign(tg.pos);
-          vel.assign(vec3(0, 0, 0));
-        }).Else(() => {
-          // نابض نحو الهدف + ضجيج حيّ: الجراثيم «تتلوّى» في أماكنها
-          const w = seedN.element(i).w;
-          const wander = mx_noise_vec3(pos.mul(0.02).add(vec3(w.mul(13), w.mul(7), uTime.mul(0.7)))).mul(uWander);
-          const acc = tg.pos.add(wander).sub(pos).mul(110).sub(vel.mul(15));
-          vel.addAssign(acc.mul(uDt));
-          pos.addAssign(vel.mul(uDt));
-        });
-      })().compute(count);
-      m.positionNode = posN.toAttribute();
-      f = fromN.toAttribute();
-      t = toN.toAttribute();
-      s = seedN.toAttribute();
-    } else {
-      // الطبقة B: سمات مثيلات تُحدَّث من المعالج المركزي عند كل حدث فقط
-      this.fromA = new THREE.InstancedBufferAttribute(this.from, 4);
-      this.toA = new THREE.InstancedBufferAttribute(this.to, 4);
-      this.seedA = new THREE.InstancedBufferAttribute(this.seed, 4);
-      f = instancedDynamicBufferAttribute(this.fromA, 'vec4');
-      t = instancedDynamicBufferAttribute(this.toA, 'vec4');
-      s = instancedDynamicBufferAttribute(this.seedA, 'vec4');
-      const tg = targetOf(f, t, s, this.uP, this.uArc);
-      const wob = vec3(sin(this.uTime.mul(3).add(s.w.mul(40))), cos(this.uTime.mul(2.3).add(s.w.mul(17))), 0).mul(2.5);
-      m.positionNode = tg.pos.add(wob);
-    }
-    const { alpha } = targetOf(f, t, s, this.uP, this.uArc);
-    const d = uv().sub(0.5).length().mul(2);
-    const soft = saturate(oneMinus(d));
-    const core = oneMinus(smoothstep(0.0, 0.5, d));
-    // ألوان التوهّج تحت الأشعة فوق البنفسجية: أصفر مخضرّ وسماوي (كصورة الكتاب)
-    m.colorNode = mix(vec3(0.85, 1.0, 0.28), vec3(0.55, 0.98, 1.0), smoothstep(0.6, 0.64, s.z)).mul(core.mul(1.3).add(0.6));
-    m.opacityNode = soft.pow(1.4).mul(alpha).mul(this.uGlow);
-    m.scaleNode = this.uSize.mul(s.y).mul(alpha.mul(0.55).add(0.45));
-    this.material = m;
-    this.object = new THREE.Sprite(m);
-    this.object.count = count;
-    this.object.frustumCulled = false;
-    this.object.renderOrder = 10;
   }
 
   _flush() {
-    if (this.gpu) {
-      this.fromN.value.needsUpdate = true;
-      this.toN.value.needsUpdate = true;
-    } else {
-      this.fromA.needsUpdate = true;
-      this.toA.needsUpdate = true;
-    }
-  }
-
-  /** الموضع الحالي (المستقر) للجرثومة i */
-  rest(i) {
-    const k = i * 4;
-    return [this.to[k], this.to[k + 1], this.to[k + 2], this.to[k + 3]];
+    this.fromA.needsUpdate = true;
+    this.toA.needsUpdate = true;
   }
 
   /**
    * حدث جديد: لكل جرثومة i موضع البداية (افتراضيًا: حيث استقرت) والوصول.
-   * @param {{to:(i:number, rest:number[])=>number[]|null, from?:(i:number, rest:number[])=>number[], dur?:number, arc?:number[], count?:number, snap?:boolean}} o
+   * @param {{to:(i:number, rest:number[])=>number[]|null, from?:(i:number, rest:number[])=>number[], dur?:number, arc?:number[], count?:number}} o
    */
-  event({ to, from = null, dur = 0.8, arc = [0, 0, 0], count = this.active, snap = false }) {
+  event({ to, from = null, dur = 0.8, arc = [0, 0, 0], count = this.active }) {
     const n = Math.min(this.n, count);
     for (let i = 0; i < this.n; i++) {
       const k = i * 4;
@@ -144,10 +118,9 @@ export class Germs {
       this.to.set(t, k);
     }
     this.active = Math.max(this.active, n);
-    this.uArc.value.set(...arc);
-    this.uP.value = 0;
+    this.uniforms.uArc.value.set(...arc);
+    this.uniforms.uP.value = 0;
     this.dur = Math.max(0.05, dur);
-    if (snap && this.gpu) this.uSnap.value = 1;
     this._flush();
   }
 
@@ -156,8 +129,7 @@ export class Germs {
     this.from.fill(0);
     this.to.fill(0);
     this.active = 0;
-    this.uP.value = 1;
-    if (this.gpu) this.uSnap.value = 1;
+    this.uniforms.uP.value = 1;
     this._flush();
   }
 
@@ -165,21 +137,19 @@ export class Germs {
     this.glowTo = v;
   }
 
-  frame(renderer, now, dt, reduced) {
-    this.uTime.value = now / 1000;
-    this.uP.value = Math.min(1, this.uP.value + dt / this.dur);
-    this.uGlow.value += (this.glowTo - this.uGlow.value) * Math.min(1, dt * (reduced ? 30 : 7));
-    const live = this.uP.value < 1 || this.uGlow.value > 0.01 || this.glowTo > 0;
-    if (this.gpu && live) {
-      this.uDt.value = Math.min(0.05, dt);
-      this.uWander.value = reduced ? 0 : 7;
-      renderer.compute(this.update);
-      this.uSnap.value = 0;
-    }
-    return this.uP.value < 1 || this.uGlow.value > 0.01;
+  /** @returns {boolean} هل تحتاج إطارًا جديدًا */
+  frame(now, dt, reduced, pxScale) {
+    const u = this.uniforms;
+    u.uTime.value = now / 1000;
+    u.uPx.value = pxScale;
+    u.uWander.value = reduced ? 0 : this.tier === 'A' ? 3.2 : 1.8;
+    u.uP.value = Math.min(1, u.uP.value + dt / this.dur);
+    u.uGlow.value += (this.glowTo - u.uGlow.value) * Math.min(1, dt * (reduced ? 30 : 7));
+    return u.uP.value < 1 || u.uGlow.value > 0.01;
   }
 
   dispose() {
+    this.geo.dispose();
     this.material.dispose();
   }
 }
@@ -187,7 +157,7 @@ export class Germs {
 // ------------------------------------------------------------------ أخذ عيّنات من سطح مجسّم
 /**
  * نقاط عشوائية على سطوح المجسّم (حسب المساحة) بإحداثيات العالم، مع العمود.
- * تُستبعد الحدود والأجزاء المعلَّمة sample=false، وتُفضَّل الوجوه المقابلة للكاميرا.
+ * تُستبعد الأجزاء المعلَّمة sample=false، وتُفضَّل الوجوه المقابلة للكاميرا.
  * @returns {{p:THREE.Vector3, n:THREE.Vector3}[]}
  */
 export function sampleSurface(root, count, scale = 1) {
@@ -198,14 +168,12 @@ export function sampleSurface(root, count, scale = 1) {
   const b = new THREE.Vector3();
   const c = new THREE.Vector3();
   const nrm = new THREE.Vector3();
-  const nm = new THREE.Matrix3();
   root.traverse((o) => {
-    if (!o.isMesh || o.userData.outline || o.userData.sample === false || !o.visible) return;
+    if (!o.isMesh || o.userData.sample === false || !o.visible) return;
     const g = o.geometry;
     const pos = g.attributes.position;
     const idx = g.index;
-    const lift = (o.userData.lift || 0.02) * scale;
-    nm.getNormalMatrix(o.matrixWorld);
+    const lift = (o.userData.lift || 0.012) * scale;
     const tc = idx ? idx.count / 3 : pos.count / 3;
     const flip = o.matrixWorld.determinant() < 0 ? -1 : 1;
     for (let t = 0; t < tc; t++) {

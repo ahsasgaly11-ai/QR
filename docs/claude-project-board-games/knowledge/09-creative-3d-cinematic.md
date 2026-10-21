@@ -1,8 +1,9 @@
-# الإبداع، والأبعاد الثلاثة، والمؤثرات السينمائية والصوتية — إصدار النخبة (أكتوبر ٢٠٢٦)
+# الإبداع، والأبعاد الثلاثة، والمؤثرات السينمائية والصوتية — إصدار النخبة (محدَّث أكتوبر ٢٠٢٦ بمعيار الملف 10)
 
 هدف كل لعبة: **لحظة يتذكّرها الطلاب**. هذه اللحظة تكشف المفهوم العلمي ولا تشتّت عنه، وتبقى ممكنة لأيدي أطفال على سبورة في صف مضاء.
 
-هذا الإصدار يرفع السقف التقني: محرّك **WebGPU** مع لغة التظليل **TSL**، وجسيمات تُحسب على معالج الرسوم، ومجسّمات **Gaussian Splatting** مصوّرة من الواقع، وأصول مولّدة بالذكاء الاصطناعي ومضغوطة. لكن القاعدة الأولى لا تتغير: **كل لعبة تعمل كاملة على أضعف جهاز**، والتقنية العليا طبقة إضافية فوقها.
+**مستوى الرسوميات يحدّده الملف 10** (تقنية «دانة الصف» و«مختبر العدسة المكبّرة»): three.js الكلاسيكي بـ `WebGLRenderer`، وإضاءة بيئية منعكسة، ومواد فيزيائية، وعالم مرسوم بالمظلِّلات، وتوهّج وتدرّج لوني سينمائي. هذا هو **المسار الأساسي** لكل لعبة.
+محرّك **WebGPU** مع **TSL**، وجسيمات الحوسبة، ومجسّمات **Gaussian Splatting** مسار **اختياري** لما لا يقدّمه WebGL فقط. والقاعدة الأولى لا تتغير: **كل لعبة تعمل كاملة على أضعف جهاز**، والتقنية العليا طبقة إضافية فوقها.
 
 > **قاعدة التحقق:** واجهات three.js تتغير كل شهر. قبل كتابة أي كود ثلاثي الأبعاد:
 > 1. اقرأ نسخة `three` في `package.json` بالمستودع.
@@ -45,38 +46,43 @@
 
 | الطبقة | متى | ما يُسمح به |
 |---|---|---|
-| **A — النخبة** | WebGPU متاح (Safari 26+ على iOS/iPadOS، وكروم الحديث على أندرويد) والأداء ثابت | مواد TSL كاملة، وجسيمات GPU حتى ~٣٠ ألفًا، ومجسّم Splat واحد، ومعالجة لاحقة خفيفة |
-| **B — القياسية** | WebGPU غير متاح، فيعمل `WebGPURenderer` تلقائيًا على WebGL2، أو هبط الأداء من A | الكود نفسه (TSL يُترجَم إلى GLSL)، وجسيمات ≤ ٢٠٠٠ بـ InstancedMesh، **بلا Splat** (يحلّ محلّه GLB أو صورة)، وبلا معالجة لاحقة |
-| **C — الهادئة** | تقليل الحركة، أو جهاز ضعيف جدًا، أو فشل تهيئة 3D | بلا WebGL: SVG وCSS فقط، والمجسّمات صور ثابتة. **اللعبة قابلة للعب بالكامل** |
+| **A — السينمائية** | WebGL2 متاح والأداء ثابت | كل ما في الملف 10: بيئة PMREM، ومواد فيزيائية (لؤلؤ، زجاج حقيقي، ذهب)، وعالم بالمظلِّلات، وظل حيّ واحد، وتوهّج وتدرّج لوني بـ `EffectComposer` (MSAA 4 على غير اللمس). وفي المسار الاختياري: جسيمات GPU حتى ~٣٠ ألفًا ومجسّم Splat واحد |
+| **B — القياسية** | جهاز أضعف، أو هبط الأداء من A | المشهد والمواد نفسها، بلا زجاج حقيقي ولا ظل حيّ (أقراص ظل)، وتوهّج بثلث الدقة أو بلا معالجة لاحقة، وجسيمات ≤ ٢٠٠٠، **بلا Splat** |
+| **C — الهادئة** | تقليل الحركة، أو جهاز ضعيف جدًا، أو فشل تهيئة 3D | بلا WebGL: **صور مُصيَّرة مسبقًا من الطبقة A** (WebP) للمجسّمات والخلفية، مع SVG وCSS. **اللعبة قابلة للعب بالكامل** |
 
-**الاكتشاف:**
+**الاكتشاف** (نمط مرجعي للمسار السينمائي؛ طابقه مع r186):
 ```js
-// /board-kit/… أو داخل js/scene3d.js للعبة — نمط مرجعي
-import * as THREE from 'three/webgpu';
+// js/scene3d.js للعبة
+import * as THREE from 'three'; // خريطة الاستيراد: three → three.module.min.js
 
-export async function createRenderer(canvas) {
+export function detectTier() {
+  const q = new URLSearchParams(location.search).get('tier');      // للتجربة: ?tier=A|B|C
+  if (q && /^[abc]$/i.test(q)) return { tier: q.toUpperCase(), forced: true };
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
     || document.documentElement.dataset.motion === 'reduce';
-  const forced = new URLSearchParams(location.search).get('tier'); // للتجربة: ?tier=A|B|C
-  if (reduce || forced === 'C') return { tier: 'C' };
+  if (reduce) return { tier: 'C' };
+  const gl = document.createElement('canvas').getContext('webgl2');
+  if (!gl) return { tier: 'C' };
+  const weak = (navigator.deviceMemory && navigator.deviceMemory <= 3) || (navigator.hardwareConcurrency || 8) <= 4;
+  return { tier: weak ? 'B' : 'A' };
+}
+
+export function createRenderer(canvas, tier) {
   try {
-    const renderer = new THREE.WebGPURenderer({
-      canvas, alpha: true, antialias: true,
-      forceWebGL: forced === 'B',              // لتجربة الطبقة B على جهاز يدعم WebGPU
-    });
-    await renderer.init();                       // إلزامي قبل أول إطار
-    renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
-    renderer.setClearColor(0x000000, 0);         // شفاف فوق #board
-    const tier = renderer.backend.isWebGPUBackend ? 'A' : 'B';
-    return { renderer, tier };
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.setPixelRatio(Math.min(devicePixelRatio, tier === 'A' ? 1.5 : 1.15));
+    return renderer;
   } catch (e) {
     console.warn('3D غير متاح، الطبقة C', e);
-    return { tier: 'C' };
+    return null;
   }
 }
 ```
+- في **المسار الاختياري (WebGPU)**: `new THREE.WebGPURenderer({ canvas })` من `three/webgpu`، ثم `await renderer.init()` قبل أول إطار، و`forceWebGL: true` لتجربة B.
 
-**منظّم الجودة التلقائي:** قِس متوسط الزمن بين الإطارات في أول ثانيتين (أثناء الافتتاح، حين لا أهداف لليد). إن تجاوز ٤٥ م.ث فانزل طبقة: من A إلى B (قلّل الجسيمات، وأخفِ الـ Splat، ودقة البكسل 1)، ومن B إلى C. لا ترفع الطبقة أثناء اللعب، ولا تغيّر الطبقة إلا في لحظة بلا أهداف.
+**منظّم الجودة التلقائي** (كما في «دانة الصف»): قِس معدل الإطارات أثناء الافتتاح (حين لا أهداف لليد). إن نزل عن ~٢٦ إطارًا في الثانية مرتين متتاليتين فخفّض دقة البكسل أولًا (×0.75)، ثم انزل طبقة: من A إلى B (أوقف الزجاج الحقيقي والظل الحيّ وMSAA، وقلّل الجسيمات، وأخفِ الـ Splat)، ثم أوقف المعالجة اللاحقة، ثم C. واستدعِ `renderer.compile(scene, camera)` قبل الافتتاح حتى لا يتقطّع أول ظهور. لا ترفع الطبقة أثناء اللعب، ولا تغيّر الطبقة إلا في لحظة بلا أهداف.
 
 ---
 
@@ -85,17 +91,24 @@ export async function createRenderer(canvas) {
 ### الاستضافة المحلية (إلزامي)
 سياسة أمان المحتوى (CSP) تسمح بالسكربتات من الموقع نفسه فقط. لا CDN ولا روابط خارجية.
 
-- **مجلد المكتبة المشترك:** `public/board-kit/vendor/three/`، من حزمة npm `three` نفسها في المستودع (`node_modules/three/build/` و`examples/jsm/`). النسخة **r186 أو أحدث** (لازمة لـ Splat الأصلي).
+- **مجلد المكتبة المشترك:** `public/board-kit/vendor/three/`، وفيه الآن **r186.1**. الإضافات (`addons/`) **غير موجودة بعد**، وقائمتها للمسار السينمائي في الملف 10، القسم ١.
   | الملف | الغرض |
   |---|---|
   | `three.core.min.js` | النواة المشتركة (يستوردها ما بعده) |
   | `three.webgpu.min.js` | محرّك WebGPU مع الرجوع التلقائي إلى WebGL2 |
   | `three.tsl.min.js` | دوال TSL |
-  | `three.module.min.js` | للألعاب القديمة فقط (WebGLRenderer) |
-  | `addons/…` | ما تحتاجه اللعبة من `examples/jsm/` **مع تبعياته**: مثل `loaders/GLTFLoader.js`، و`loaders/KTX2Loader.js`، و`libs/meshopt_decoder.module.js`، و`libs/basis/` |
+  | `three.module.min.js` | **المسار السينمائي الأساسي** (`WebGLRenderer`) |
+  | `addons/…` | ما تحتاجه اللعبة من `examples/jsm/` **مع تبعياته**: المعالجة اللاحقة (`EffectComposer` و`UnrealBloomPass` و`OutputPass`…)، و`environments/RoomEnvironment.js`، و`loaders/GLTFLoader.js`، و`loaders/KTX2Loader.js`، و`libs/meshopt_decoder.module.js`، و`libs/basis/` |
   | `LICENSE` | رخصة MIT |
 - إن لم تكن الملفات موجودة فاذكر في التسليم أنها تُضاف، ويضيفها Claude Code بنسخها من `node_modules`.
-- **خريطة الاستيراد** في `index.html` قبل سكربت اللعبة. `three` و`three/webgpu` يشيران إلى الملف نفسه، كما في أمثلة three.js الرسمية:
+- **خريطة الاستيراد** في `index.html` قبل سكربت اللعبة. للمسار السينمائي (الأساسي):
+  ```html
+  <script type="importmap">{ "imports": {
+    "three": "/board-kit/vendor/three/three.module.min.js",
+    "three/addons/": "/board-kit/vendor/three/addons/"
+  } }</script>
+  ```
+  وللمسار الاختياري (WebGPU)، حيث `three` و`three/webgpu` يشيران إلى الملف نفسه:
   ```html
   <script type="importmap">{ "imports": {
     "three": "/board-kit/vendor/three/three.webgpu.min.js",
@@ -110,9 +123,10 @@ export async function createRenderer(canvas) {
 
 ### ترتيب الطبقات
 ```
-#board (SVG)  →  لوحة 3D شفافة  →  #hud (البطاقات والنصوص)  →  طبقة الجسيمات  →  #fx (مؤشرات الأيدي)
+#board (SVG، للطبقة C)  →  لوحة 3D (العالم كاملًا)  →  #hud (البطاقات والنصوص)  →  #fx (مؤشرات الأيدي)
 ```
 - لوحة 3D: `pointer-events: none`، وتُدرج قبل `#hud`.
+- **اللوحة غير شفافة** وترسم العالم كله (سماء، ماء، مختبر) كما في «دانة الصف»؛ المعالجة اللاحقة تُفسد الشفافية. إن احتاجت لعبة لوحة شفافة فوق `#board` فبلا توهّج، وتُستعمل هالات مرسومة.
 - النص العربي يبقى في HTML، لا في المشهد ثلاثي الأبعاد.
 - البطاقات فوق المجسّمات تكون شفافة حيث يظهر المجسّم، وإلا بدا باهتًا خلفها.
 
@@ -151,12 +165,14 @@ function hitCircle(cam, obj, VW, VH, pad = 16) {
 ```js
 // ٣٠ إطارًا في الثانية على الأكثر، وإيقاف عند إخفاء الصفحة
 let last = 0;
-renderer.setAnimationLoop((t) => {          // لا requestAnimationFrame مع WebGPURenderer
+const loop = (t) => {
   if (t - last < 33) return;
   last = t;
   update(t);
-  renderer.render(scene, camera);
-});
+  if (composer) composer.render();            // المسار السينمائي بالمعالجة اللاحقة
+  else renderer.render(scene, camera);
+};
+renderer.setAnimationLoop(loop);
 document.addEventListener('visibilitychange', () => {
   renderer.setAnimationLoop(document.hidden ? null : loop);
 });
@@ -166,27 +182,28 @@ document.addEventListener('visibilitychange', () => {
 | البند | الطبقة A | الطبقة B |
 |---|---|---|
 | الإطارات | ≤ ٣٠/ث | ≤ ٣٠/ث |
-| دقة البكسل | ≤ 1.5 | 1 |
-| المثلثات في المشهد | ≤ ١٠٠ ألف | ≤ ٥٠ ألفًا |
-| الجسيمات | ≤ ٣٠ ألفًا (GPU) | ≤ ٢٠٠٠ (InstancedMesh) |
+| دقة البكسل | ≤ 1.5 (حد ~2.6 مليون بكسل) | ≤ 1.15 (حد ~1.4 مليون) |
+| المثلثات في المشهد | ≤ ١٥٠ ألفًا | ≤ ٨٠ ألفًا |
+| الجسيمات | ≤ ٣٠ ألفًا (GPU) أو ≤ ٥٠٠٠ (Points) | ≤ ٢٠٠٠ |
 | Splat | واحد، ≤ ١٥٠ ألف splat | لا |
-| المعالجة اللاحقة | تمريرة واحدة خفيفة | لا |
+| المعالجة اللاحقة | توهّج + تدرّج لوني + OutputPass، وMSAA 4 على غير اللمس | توهّج بثلث الدقة بلا MSAA، أو بلا |
+| الظلال | ظل حيّ واحد (خريطة ١٠٢٤) | أقراص ظل متدرّجة |
 
-- لا ظلال حيّة على الهاتف. ظل ناعم تحت المجسّم = قرص شفاف بنسيج متدرّج.
-- لا SSAO ولا bloom قوي (انظر ٤.٤).
+- لا SSAO ولا SSR ولا أكثر من ضوء يلقي ظلًا.
+- التوهّج بعتبة عالية على الخلفيات الفاتحة (انظر ٤.٤ والملف 10).
 - جرّب على الهاتف الأفقي مع تشغيل الكاميرا والتتبّع، فهو الأضعف، ويسخن بعد دقائق.
 
 ---
 
 ## ٤. تقنيات النخبة
 
-### ٤.١ المواد بـ TSL وأسلوب «واضح على جهاز العرض»
-- كل مادة مخصّصة تُكتب بـ **TSL** و`NodeMaterial` (مثل `MeshStandardNodeMaterial`). **لا `ShaderMaterial` ولا GLSL خام** مع `WebGPURenderer`. TSL يُترجَم إلى WGSL أو GLSL تلقائيًا.
-- جهاز العرض في صف مضاء يمسح التفاصيل الدقيقة والظلال الخافتة. لذلك الأسلوب الأوضح:
-  - **تظليل كرتوني** (`MeshToonNodeMaterial`) بدرجات لون قليلة مشبعة.
-  - **حدود داكنة سميكة** لكل مجسّم: طريقة «الهيكل المقلوب» (نسخة مكبّرة قليلًا بـ `side: BackSide` ولون داكن). رخيصة وتعمل في كل الطبقات.
-  - **ضوء حافة** (rim/fresnel) بـ TSL يفصل المجسّم عن الخلفية الفاتحة.
-- الواقعية التصويرية مكانها اللحظة المدهشة فقط (Splat)، لا عناصر اللعب.
+### ٤.١ المواد: فيزيائية لامعة بأسلوب الملف 10
+- **العناصر المهمة** `MeshPhysicalMaterial`: لؤلؤ متقزّح، ومينا لامعة، وذهب ومعدن، وزجاج. القيم المجرّبة في الملف 10، القسم ٢.٣.
+- **الإضاءة البيئية** (`RoomEnvironment` عبر `PMREMGenerator`) إلزامية، فبدونها تبدو المواد الفيزيائية باهتة.
+- **المظلِّلات الخاصة** (`ShaderMaterial` بـ GLSL) للعالم: سماء، ماء، ضوء متموّج، أشعة، جسيمات. أضف في آخرها `#include <tonemapping_fragment>` و`#include <colorspace_fragment>`.
+- **التظليل الكرتوني** (`MeshToonMaterial`) والألوان المسطّحة **ليست الأسلوب الافتراضي**. تُستعمل فقط إن طلبها المعلّم لدرس للصفوف الأولى، أو للبديل في C.
+- **الوضوح على جهاز العرض** يأتي من: لون مشبع للعنصر، وضوء حافة (fresnel)، و`emissive` خفيف (~0.05–0.2)، وظل ناعم تحته، وخلفية متباينة. لا من الحدود السوداء السميكة.
+- في المسار الاختياري (WebGPU): المكافئات `MeshPhysicalNodeMaterial` ودوال TSL، بلا `ShaderMaterial`.
 
 ### ٤.٢ جسيمات معالج الرسوم (Compute)
 - في الطبقة A تُحسب مواضع الجسيمات على المعالج الرسومي بـ `instancedArray` و`Fn(...).compute(count)` و`renderer.compute()`، وتُرسم بـ `SpriteNodeMaterial`.
@@ -209,10 +226,12 @@ document.addEventListener('visibilitychange', () => {
   - في الطبقتين B وC يظهر بديله: مجسّم GLB أو صورة.
   - الألوان الواقعية تبهت على جهاز العرض؛ ضعه على خلفية بلون متباين وأضف هالة خلفه.
 
-### ٤.٤ المعالجة اللاحقة (خفيفة جدًا)
-- بنظام `PostProcessing` مع عقد TSL، **لا** `EffectComposer` القديم.
-- المسموح في الطبقة A تمريرة واحدة: توهج انتقائي صغير على عنصر الصواب، أو تدرّج لوني سينمائي في الافتتاح والختام.
-- الـ bloom على خلفية فاتحة يبهت الصورة كلها؛ استعمل بدله هالة مرسومة (قرص شفاف) أو ضوء حافة.
+### ٤.٤ المعالجة اللاحقة السينمائية
+- **المسار الأساسي:** `EffectComposer` بالترتيب المعتمد في «دانة الصف» (الملف 10، القسم ٢.٥):
+  `RenderPass` ← تنظيف القيم الشاذة ← `UnrealBloomPass` ← تدرّج لوني (`ShaderPass`: تظليل أطراف، تلوين، انحراف لوني خفيف) ← `OutputPass`.
+- هدف التوهّج حبيبات اللؤلؤ وبريق الصواب والشمس، لا الصورة كلها. **على الخلفيات الفاتحة العتبة ≥ 1** (قيمة خطية)، وإلا ابيضّت الصورة.
+- تمريرة أخيرة لجهاز العرض ترفع الأسود (~٧٪).
+- المسار الاختياري (WebGPU): `PostProcessing` مع عقد TSL (`bloom()` وغيرها)، بلا `EffectComposer`.
 
 ### ٤.٥ انتقالات الشاشات
 - **View Transitions API** (`document.startViewTransition`) للانتقال بين القائمة واللعب والنتيجة: انزلاق أو تكبير ناعم بسطر CSS، مدعوم في Safari الحديث وكروم.
@@ -294,8 +313,8 @@ document.addEventListener('visibilitychange', () => {
 | أنسجة وخلفيات | Poly Haven، وambientCG | CC0 |
 | أصوات | Kenney Audio، وFreesound (المرشّح CC0 فقط) | CC0 |
 | أيقونات ورموز | Lucide، وTabler Icons، ورموز تعبيرية Unicode | ISC أو MIT |
-| خطوط | المستضافة في الموقع (`/fonts/`) | OFL |
-| كود وتقنيات | أمثلة three.js الرسمية (WebGPU وTSL)، ومستودعات GitHub العامة | MIT أو حسب المستودع |
+| خطوط | المستضافة في الموقع (`/fonts/`)، وTajawal وNoto Kufi Arabic من Google Fonts (تُنزَّل وتُستضاف محليًا) | OFL |
+| كود وتقنيات | أمثلة three.js الرسمية (`webgl_postprocessing_unreal_bloom`، و`webgl_shaders_ocean`، و`webgl_materials_physical_*`، وأمثلة WebGPU وTSL)، ومستودعات GitHub العامة | MIT أو حسب المستودع |
 
 **الشروط:**
 - سجّل كل أصل في `public/<slug>/ASSETS.md`: الاسم، والرابط، والرخصة، والمؤلف إن طلبت الرخصة ذكره، وطريقة التوليد إن كان مولّدًا.
@@ -308,10 +327,11 @@ document.addEventListener('visibilitychange', () => {
 - [ ] اللحظة المدهشة تكشف المفهوم، ويمكن قول ذلك في جملة.
 - [ ] **الطبقات الثلاث** تعمل: A بكامل المؤثرات، وB على WebGL2 بلا Splat، وC بلا 3D وقابلة للعب بالكامل. الأهداف في المواضع نفسها في الثلاث.
 - [ ] منظّم الجودة يقيس في الافتتاح وينزل طبقة عند الحاجة.
-- [ ] كل الكود ثلاثي الأبعاد من `three/webgpu` و`three/tsl` فقط، بلا `ShaderMaterial` ولا `EffectComposer`، ومطابق لأمثلة نسخة المستودع.
+- [ ] **الجودة البصرية بمستوى الملف 10** (قائمة المقارنة فيه): بيئة PMREM، ومواد فيزيائية، وعالم بالمظلِّلات، وتوهّج وتدرّج لوني.
+- [ ] الكود من مسار واحد في الصفحة (السينمائي `three` + `three/addons`، أو WebGPU)، ومطابق لأمثلة r186 في المستودع.
 - [ ] افتتاح وختام سينمائيان، وأثناءهما لا أهداف لليد.
 - [ ] كل صواب: حركة، وجسيمات، وصوت، ونطق، ومعلومة. كل خطأ: لطيف، ويبقى العنصر في اليد، وتلميح بعد خطأين.
 - [ ] الأداء ضمن جدول الميزانية، والرسم يتوقف عند إخفاء الصفحة.
 - [ ] كل GLB مضغوط (meshopt + KTX2 أو WebP)، والأصول ضمن الحجم.
-- [ ] خلفية فاتحة، وحدود واضحة للمجسّمات، ولا شكل أو لون يكشف الإجابة.
+- [ ] سمة مضيئة أثناء اللعب (الداكنة لثوانٍ في الافتتاح والختام فقط)، ورفع الأسود، ولا شكل أو لون يكشف الإجابة.
 - [ ] كل مكتبة وأصل مستضاف محليًا ومسجّل برخصته في `ASSETS.md`، وCSP تسمح بما يلزم.
