@@ -75,6 +75,9 @@ const nextConfig: NextConfig = {
       // «عالَمٌ تحت العدسة» (لعبة سبورة على board-kit: العدسة المكبّرة والمجهر)
       { source: '/under-the-lens', destination: '/under-the-lens/index.html', permanent: false },
       { source: '/under-the-lens/', destination: '/under-the-lens/index.html', permanent: false },
+      // «صيّادو الجراثيم» (لعبة سبورة ثلاثية الأبعاد على WebGPU: درس أين توجد الجراثيم؟)
+      { source: '/germ-hunters', destination: '/germ-hunters/index.html', permanent: false },
+      { source: '/germ-hunters/', destination: '/germ-hunters/index.html', permanent: false },
     ];
   },
   images: {

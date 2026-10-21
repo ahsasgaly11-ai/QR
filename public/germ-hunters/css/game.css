@@ -1,0 +1,359 @@
+/* ----------------------------------------------------------------------------
+   «صيّادو الجراثيم» — ما يخص هذه اللعبة فقط. التصميم المشترك في /board-kit/css/kit.css.
+   الهوية: «مختبر النظافة» فاتح (خزامى ونعناع) وحجرة بنفسجية تُظلم عند إضاءة المصباح،
+   وجراثيم تتوهّج أصفر مخضرًّا وسماويًّا (كصورة الكتاب). لون الفريق حول حجرته وسلّتيه وبطاقاته.
+---------------------------------------------------------------------------- */
+:root {
+  --uv: #6d28d9;
+  --uv-d: #2e1065;
+  --uv-l: #ede4ff;
+  --mint: #10b981;
+  --glow: #d9ff4a;
+}
+#stage {
+  background:
+    radial-gradient(80% 65% at 18% 25%, rgba(229, 216, 255, 0.85) 0%, rgba(229, 216, 255, 0) 60%),
+    radial-gradient(80% 65% at 85% 78%, rgba(209, 250, 229, 0.75) 0%, rgba(209, 250, 229, 0) 60%),
+    radial-gradient(120% 90% at 50% 40%, #fdfcff 0%, #f5f2fa 70%, #ebe5f3 100%);
+}
+.gh-deco circle { fill: var(--uv); fill-opacity: 0.06; }
+.gh-divider { stroke: #c9b8e8; stroke-width: 6; stroke-dasharray: 4 22; stroke-linecap: round; }
+.gh-title { color: var(--uv-d); letter-spacing: 0; }
+
+/* طبقات اللعبة الدائمة */
+.gh-scope, .gh-gl, .gh-px, .gh-over, .gh-cine { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.gh-gl, .gh-px { display: block; }
+#stage[data-tier='C'] .gh-gl { display: none; }
+
+/* ---------------------------------------------------------------- القائمة */
+.gh-how {
+  position: absolute;
+  left: 0; right: 0;
+  top: calc(var(--u) * 250);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: calc(var(--u) * 16);
+  font-family: var(--fh);
+  font-weight: 800;
+  font-size: calc(var(--u) * 32);
+  color: var(--ink);
+}
+.gh-how span {
+  display: flex; flex-direction: column; align-items: center;
+  padding: calc(var(--u) * 14) calc(var(--u) * 20);
+  border-radius: calc(var(--u) * 26);
+  background: #fff;
+  border: calc(var(--u) * 4) solid #ddd0f3;
+}
+.gh-how span:nth-of-type(3), .gh-how span:nth-of-type(4) { background: var(--uv-d); color: #fff; border-color: var(--uv); }
+.gh-how span:nth-of-type(4) { color: var(--glow); text-shadow: 0 0 calc(var(--u) * 14) rgba(217, 255, 74, 0.7); }
+.gh-how i { font-style: normal; font-size: calc(var(--u) * 62); line-height: 1.1; }
+.gh-how b { color: var(--uv); font-size: calc(var(--u) * 40); }
+
+/* ---------------------------------------------------------------- الحجرة البنفسجية */
+.gh-booth {
+  position: absolute;
+  border-radius: calc(var(--u) * 34);
+  background:
+    radial-gradient(70% 70% at 50% 60%, #ffffff 0%, #f3edff 70%, #e7dcfb 100%);
+  box-shadow:
+    inset 0 0 0 calc(var(--u) * 5) #fff,
+    0 0 0 calc(var(--u) * 6) color-mix(in srgb, var(--team) 55%, #ddd0f3),
+    0 calc(var(--u) * 14) calc(var(--u) * 34) rgba(46, 16, 101, 0.18);
+  overflow: hidden;
+  transition: background 0.35s, box-shadow 0.35s;
+}
+.gh-booth.uv {
+  background:
+    radial-gradient(60% 75% at 50% 55%, #3b1477 0%, #220a4a 60%, #14062e 100%);
+  box-shadow:
+    inset 0 0 0 calc(var(--u) * 5) #4c1d95,
+    0 0 0 calc(var(--u) * 6) var(--team),
+    0 0 calc(var(--u) * 60) rgba(124, 58, 237, 0.55);
+}
+/* مصباح الأشعة فوق البنفسجية في أعلى الحجرة */
+.gh-lamp {
+  position: absolute;
+  top: calc(var(--u) * 14);
+  left: 22%; right: 22%;
+  height: calc(var(--u) * 26);
+  border-radius: 999px;
+  background: #d8d2e4;
+  border: calc(var(--u) * 4) solid #8b7fa6;
+}
+.gh-lamp i {
+  position: absolute; inset: calc(var(--u) * 4);
+  border-radius: 999px;
+  background: #b9b0cc;
+  transition: background 0.25s, box-shadow 0.25s;
+}
+.gh-booth.uv .gh-lamp { border-color: #c4b5fd; background: #5b21b6; }
+.gh-booth.uv .gh-lamp i { background: #e9d5ff; box-shadow: 0 0 calc(var(--u) * 24) calc(var(--u) * 8) rgba(167, 139, 250, 0.9); }
+.gh-booth-tag {
+  position: absolute;
+  top: calc(var(--u) * 46);
+  left: 0; right: 0;
+  text-align: center;
+  font-family: var(--fh); font-weight: 800;
+  font-size: calc(var(--u) * 24);
+  color: color-mix(in srgb, var(--uv-d) 70%, transparent);
+  transition: color 0.3s;
+}
+.gh-booth.uv .gh-booth-tag { color: #c4b5fd; }
+.gh-booth-q {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  padding-top: calc(var(--u) * 40);
+  font-family: var(--fh); font-weight: 800;
+  font-size: calc(var(--u) * 110);
+  color: color-mix(in srgb, var(--uv) 22%, transparent);
+  transition: opacity 0.25s;
+}
+.gh-booth.has .gh-booth-q, .gh-booth.uv .gh-booth-q { opacity: 0; }
+.gh-booth-item {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding-top: calc(var(--u) * 50);
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 0.25s, transform 0.35s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+.gh-booth.emoji .gh-booth-item { opacity: 1; transform: none; }
+.gh-booth-emoji { font-size: calc(var(--u) * 130); line-height: 1.05; filter: drop-shadow(0 calc(var(--u) * 6) calc(var(--u) * 8) rgba(0, 0, 0, 0.18)); }
+.gh-booth-name { font-family: var(--fh); font-weight: 800; font-size: calc(var(--u) * 30); color: var(--uv-d); text-align: center; padding: 0 calc(var(--u) * 20); }
+.gh-booth.uv .gh-booth-name { color: #e9d5ff; }
+.gh-booth.uv .gh-booth-emoji { filter: saturate(0.5) brightness(0.55) drop-shadow(0 0 calc(var(--u) * 16) rgba(167, 139, 250, 0.9)); }
+.gh-booth.shake { animation: ghShake 0.4s; }
+@keyframes ghShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(calc(var(--u) * -12)); }
+  50% { transform: translateX(calc(var(--u) * 10)); }
+  75% { transform: translateX(calc(var(--u) * -6)); }
+}
+
+/* ---------------------------------------------------------------- إظلام منتصف اللعبة */
+.gh-dark {
+  position: absolute;
+  border-radius: calc(var(--u) * 30);
+  background: radial-gradient(70% 70% at 50% 50%, #2a0d5a 0%, #160632 60%, #0d0420 100%);
+  opacity: 0;
+  transition: opacity 0.6s;
+  display: flex; align-items: center; justify-content: center;
+}
+.gh-dark.show { opacity: 0.97; }
+.gh-dark-hands { font-size: calc(var(--u) * 260); opacity: 0; filter: brightness(0.5) saturate(0.6) drop-shadow(0 0 calc(var(--u) * 30) rgba(167, 139, 250, 0.9)); }
+#stage[data-tier='C'] .gh-dark.show .gh-dark-hands { opacity: 1; }
+.gh-midtext {
+  position: absolute;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: calc(var(--u) * 10);
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.4s;
+  padding: 0 calc(var(--u) * 30);
+}
+.gh-midtext.show { opacity: 1; }
+.gh-midtext b {
+  font-family: var(--fh); font-weight: 800;
+  font-size: calc(var(--u) * 50);
+  line-height: 1.2;
+  color: #fff;
+  text-shadow: 0 0 calc(var(--u) * 20) rgba(167, 139, 250, 0.9);
+  animation: ghIn 0.5s ease;
+}
+.gh-midtext span {
+  font-family: var(--fh); font-weight: 700;
+  font-size: calc(var(--u) * 34);
+  color: var(--glow);
+  text-shadow: 0 0 calc(var(--u) * 14) rgba(217, 255, 74, 0.6);
+  animation: ghIn 0.5s ease;
+}
+@keyframes ghIn { from { opacity: 0; transform: translateY(calc(var(--u) * 14)); } to { opacity: 1; transform: none; } }
+.gh-wrap.busy, .gh-bin.busy { opacity: 0.55; }
+/* منتصف اللعبة: الظلام يغلب، فتكاد أدوات الفريق تختفي */
+.gh-wrap.mid, .gh-bin.mid, .gh-prompt.mid { opacity: 0.1; }
+#hud .gh-wrap.busy { transition: opacity 0.3s; }
+
+/* ---------------------------------------------------------------- سطر التعليمات والرسائل */
+.gh-prompt {
+  position: absolute;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 calc(var(--u) * 22);
+  border-radius: calc(var(--u) * 22);
+  background: rgba(255, 255, 255, 0.94);
+  border: calc(var(--u) * 4) solid color-mix(in srgb, var(--team) 35%, #ddd0f3);
+  font-family: var(--fh); font-weight: 700;
+  font-size: calc(var(--u) * 27);
+  line-height: 1.12;
+  text-align: center;
+  color: var(--ink);
+  overflow: hidden;
+}
+.gh-prompt b { color: var(--team); }
+.gh-prompt.bad { color: var(--bad); border-color: #f2b6b6; background: #fff5f5; }
+.gh-prompt.bad b { color: var(--bad); }
+.gh-prompt.hint { color: #7a4f00; border-color: var(--gold); background: #fff8e1; }
+.gh-prompt.info { color: var(--uv-d); }
+.gh-prompt.reveal { font-size: calc(var(--u) * 23); background: #fff; border-color: var(--uv); color: var(--ink); }
+.gh-prompt.reveal b { color: var(--uv); }
+
+/* ---------------------------------------------------------------- السلّتان (خانات الإفلات) */
+.gh-bin {
+  position: absolute;
+  display: grid;
+  grid-template-rows: auto auto auto;
+  align-content: center;
+  justify-items: center;
+  gap: calc(var(--u) * 2);
+  padding: calc(var(--u) * 10) calc(var(--u) * 14);
+  border-radius: calc(var(--u) * 30) calc(var(--u) * 30) calc(var(--u) * 44) calc(var(--u) * 44);
+  background:
+    repeating-linear-gradient(90deg, rgba(109, 40, 217, 0.05) 0 calc(var(--u) * 18), rgba(109, 40, 217, 0) calc(var(--u) * 18) calc(var(--u) * 36)),
+    linear-gradient(#ffffff, #f4efff);
+  border: calc(var(--u) * 5) dashed color-mix(in srgb, var(--team) 60%, #c9b8e8);
+  box-shadow: 0 calc(var(--u) * 8) 0 #ddd0f3;
+  text-align: center;
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s, opacity 0.3s;
+  color: var(--uv-d);
+}
+.gh-bin-icon { display: block; width: calc(var(--u) * 110); height: calc(var(--u) * 50); color: var(--team); }
+.gh-bin-icon svg { width: 100%; height: 100%; display: block; }
+.gh-bin b { font-family: var(--fh); font-weight: 800; font-size: calc(var(--u) * 38); line-height: 1.1; color: var(--ink); }
+.gh-bin small { font-size: calc(var(--u) * 20); color: var(--muted); line-height: 1.2; }
+.gh-bin em { display: none; }
+.gh-bin.hover {
+  transform: translateY(calc(var(--u) * -4)) scale(1.03);
+  border-style: solid;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 calc(var(--u) * 10) rgba(201, 150, 26, 0.35), 0 calc(var(--u) * 10) calc(var(--u) * 20) rgba(0, 0, 0, 0.12);
+}
+.gh-bin.good { border-style: solid; border-color: var(--ok); background: #effaf1; animation: pop 0.45s; }
+.gh-bin.shake { animation: shake 0.45s; background: #fff0f0; }
+.gh-bin.hint { animation: glow 0.8s ease-in-out infinite; border-style: solid; border-color: var(--gold); }
+
+/* ---------------------------------------------------------------- شريط الفريق ونقاط التقدّم */
+.gh-wrap .team-bar { background: var(--team); }
+.gh-dots { flex: 1; display: flex; gap: calc(var(--u) * 7); justify-content: center; }
+.gh-dots i {
+  width: calc(var(--u) * 22); height: calc(var(--u) * 22);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  border: calc(var(--u) * 3) solid rgba(255, 255, 255, 0.6);
+}
+.gh-dots i.r2 { border-style: dashed; }
+.gh-dots i.on { background: var(--glow); border-color: #fff; box-shadow: 0 0 calc(var(--u) * 10) rgba(217, 255, 74, 0.9); animation: pop 0.45s; }
+
+/* ---------------------------------------------------------------- البطاقات */
+.gh-tray {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr));
+  grid-template-rows: 100%;
+  gap: calc(var(--u) * 16);
+}
+.gh-card { --c: var(--team, var(--uv)); }
+.gh-emoji { font-size: calc(var(--u) * 66); line-height: 1; flex: none; }
+.gh-card .card-body b { color: var(--ink); font-size: calc(var(--u) * 34); }
+.gh-card.long .card-body b { font-size: calc(var(--u) * 27); line-height: 1.15; }
+.gh-tray.compact .gh-card { flex-direction: column; justify-content: center; gap: calc(var(--u) * 4); padding: calc(var(--u) * 8) calc(var(--u) * 6); text-align: center; }
+.gh-tray.compact .card-body { align-items: center; }
+.gh-tray.compact .gh-emoji { font-size: calc(var(--u) * 54); }
+.gh-tray.compact .gh-card .card-body b { font-size: calc(var(--u) * 28); line-height: 1.12; }
+.gh-tray.compact .gh-card.long .card-body b { font-size: calc(var(--u) * 22); }
+.gh-card.taken { opacity: 0.35; }
+.gh-wait { justify-content: center; }
+.gh-wait .card-body b { color: var(--uv); }
+
+/* البطاقة المحمولة (هالة محايدة: لا تكشف السلة الصحيحة) */
+.gh-held .held-halo { fill: rgba(255, 255, 255, 0.4); stroke: #6b5a85; stroke-width: 5; stroke-dasharray: 12 8; }
+.gh-held-emoji { font-size: 66px; }
+.gh-held-label { font: 800 28px var(--fh); fill: var(--ink); paint-order: stroke; stroke: #fff; stroke-width: 8px; }
+
+/* ---------------------------------------------------------------- الافتتاح والختام */
+.gh-cine { opacity: 0; transition: opacity 0.3s; overflow: hidden; }
+.gh-cine.show { opacity: 1; }
+.cine-bar {
+  position: absolute; left: 0; right: 0;
+  height: calc(var(--u) * 120);
+  background: var(--uv-d);
+}
+.cine-bar.top { top: 0; animation: ghBarTop 2.4s ease forwards; }
+.cine-bar.bottom { bottom: 0; animation: ghBarBot 2.4s ease forwards; }
+@keyframes ghBarTop { 0% { transform: translateY(-100%); } 15%, 85% { transform: translateY(0); } 100% { transform: translateY(-100%); } }
+@keyframes ghBarBot { 0% { transform: translateY(100%); } 15%, 85% { transform: translateY(0); } 100% { transform: translateY(100%); } }
+.cine-pre {
+  position: absolute; left: 0; right: 0; top: 30%;
+  text-align: center;
+  font-family: var(--fh); font-weight: 700;
+  font-size: calc(var(--u) * 40);
+  color: var(--muted);
+  animation: ghFadeUp 2.4s ease forwards;
+}
+.cine-title {
+  position: absolute; left: 0; right: 0; top: 40%;
+  text-align: center;
+  font-family: var(--fh); font-weight: 800;
+  font-size: calc(var(--u) * 116);
+  color: var(--uv-d);
+  text-shadow: 0 calc(var(--u) * 6) 0 #fff, 0 0 calc(var(--u) * 40) rgba(167, 139, 250, 0.7);
+  animation: ghTitle 2.4s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+}
+.finale .cine-title { color: var(--uv); top: 36%; font-size: calc(var(--u) * 96); }
+.cine-sub {
+  position: absolute; left: 0; right: 0; top: 58%;
+  text-align: center;
+  font-family: var(--fh); font-weight: 800;
+  font-size: calc(var(--u) * 64);
+  color: var(--team);
+  animation: ghFadeUp 2.3s ease forwards;
+}
+/* ومضة ضوء بنفسجية واحدة ناعمة (ليست وميضًا متكررًا) */
+.cine-flash {
+  position: absolute; inset: 0;
+  background: radial-gradient(closest-side, rgba(216, 196, 255, 0.95), rgba(216, 196, 255, 0));
+  opacity: 0;
+  animation: ghFlash 2.4s ease forwards;
+}
+@keyframes ghTitle {
+  0%, 25% { opacity: 0; transform: scale(0.6); letter-spacing: -0.05em; }
+  45% { opacity: 1; transform: scale(1.04); }
+  60%, 88% { opacity: 1; transform: scale(1); letter-spacing: 0.03em; }
+  100% { opacity: 0; transform: scale(1.1); }
+}
+@keyframes ghFadeUp { 0% { opacity: 0; transform: translateY(20px); } 15%, 80% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+@keyframes ghFlash { 0%, 35% { opacity: 0; } 42% { opacity: 1; } 70%, 100% { opacity: 0; } }
+/* تقليل الحركة: بلا انزلاق ولا ومضة، وظهور سريع */
+.gh-cine.reduced .cine-bar, .gh-cine.reduced .cine-pre, .gh-cine.reduced .cine-title, .gh-cine.reduced .cine-sub { animation: none; }
+.gh-cine.reduced .cine-flash, .gh-cine.reduced .cine-bar, .gh-cine.reduced .cine-pre { display: none; }
+
+/* ---------------------------------------------------------------- لوحة النصائح في النتيجة */
+.gh-tips {
+  position: absolute;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: calc(var(--u) * 20);
+}
+.gh-tips-title { font-family: var(--fh); font-weight: 800; font-size: calc(var(--u) * 42); color: var(--uv-d); }
+.gh-tips-row { display: flex; justify-content: center; gap: calc(var(--u) * 24); flex-wrap: nowrap; }
+.gh-tip {
+  display: flex; flex-direction: column; align-items: center; gap: calc(var(--u) * 6);
+  width: calc(var(--u) * 300);
+  padding: calc(var(--u) * 18) calc(var(--u) * 14);
+  border-radius: calc(var(--u) * 28);
+  background: #fff;
+  border: calc(var(--u) * 4) solid #ddd0f3;
+  box-shadow: 0 calc(var(--u) * 8) 0 #e6dcf6;
+}
+.gh-tip span { font-size: calc(var(--u) * 78); line-height: 1; }
+.gh-tip b { font-family: var(--fh); font-weight: 800; font-size: calc(var(--u) * 30); text-align: center; line-height: 1.2; color: var(--ink); }
+.gh-tips-note { font-size: calc(var(--u) * 26); color: var(--muted); text-align: center; }
+.gh-tips-note b { color: var(--uv); }
+.gh-review { color: #7a4f00 !important; font-family: var(--fh); font-weight: 700; }
+.gh-review b { font-size: inherit !important; color: var(--uv) !important; }
+.result .res-msg { color: var(--uv-d); }
+
+@media (prefers-reduced-motion: reduce) {
+  .gh-booth, .gh-dark { transition-duration: 0.1s; }
+}
