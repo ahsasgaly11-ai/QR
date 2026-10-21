@@ -33,8 +33,10 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { ITEM_MODELS, setUV, pmat, head, tissueSheet, tissueBall, elbowArm, table, sandwich, bin, bottle, bubble } from './models.js';
+import { ITEM_MODELS, setUV, pmat, studioEnvScene, head, tissueSheet, tissueBall, elbowArm, table, sandwich, bin, bottle, bubble } from './models.js';
 import { Germs, sampleSurface } from './germs.js';
+import { buildCardModel } from './cards3d.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 const FPS_MS = 1000 / 30;
 const IDLE_MS = 1000 / 15;
@@ -75,7 +77,8 @@ export async function createScene3D(canvas, { forced = null } = {}) {
     const tier = forced === 'A' || forced === 'B' ? forced : autoTier();
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: false, powerPreference: 'high-performance' });
     const view = new Scene3D(renderer, tier);
-    view.makeThumbs();
+    // البطاقات تعرض نماذج حيّة (cards3d.js)، فلا حاجة لصور مسبقة؛ makeThumbs تبقى متاحة عند الحاجة
+    view.thumbs = {};
     return view;
   } catch (e) {
     console.warn('3D غير متاح ← الطبقة C', e);
@@ -130,6 +133,24 @@ function cell2(x, y) {
   return d;
 }
 
+/** الفرق بين أقرب نقطتي خلية (صغير عند الحدود): لحدود خلايا الجلد */
+function cellEdge(x, y) {
+  const xi = Math.floor(x);
+  const yi = Math.floor(y);
+  let d1 = 9;
+  let d2 = 9;
+  for (let j = -1; j <= 1; j++) {
+    for (let i = -1; i <= 1; i++) {
+      const cx = xi + i + h2(xi + i, yi + j);
+      const cy = yi + j + h2(xi + i + 57, yi + j + 113);
+      const d = Math.hypot(x - cx, y - cy);
+      if (d < d1) (d2 = d1), (d1 = d);
+      else if (d < d2) d2 = d;
+    }
+  }
+  return d2 - d1;
+}
+
 /**
  * ارتفاع السطح المجهري (بوحدات العالم المجهري) حسب نوع الشيء.
  * الخشن: جبال ووديان (لكل شيء طابعه)، والناعم: سهل لامع بتموّج ضئيل.
@@ -137,10 +158,12 @@ function cell2(x, y) {
 function microHeight(kind, x, z) {
   switch (kind) {
     case 'hand': {
-      // خطوط الجلد (بصمات) + مسام + نتوءات
+      // كما يبدو الجلد تحت المجهر: خطوط البصمة، وخلايا متراصّة بحدود غائرة، ومسام
       const w = fbm2(x * 0.004, z * 0.004, 3) * 6;
       const ridge = Math.pow(Math.abs(Math.sin(x * 0.045 + z * 0.012 + w)), 0.6);
-      return ridge * 46 + fbm2(x * 0.02, z * 0.02, 4) * 50 - 30;
+      const cells = Math.min(1, cellEdge(x * 0.022, z * 0.022) * 6);
+      const pore = cell2(x * 0.009 + 3.1, z * 0.009 - 1.7) < 0.09 ? -26 : 0;
+      return ridge * 42 + cells * 16 + fbm2(x * 0.02, z * 0.02, 4) * 34 + pore - 34;
     }
     case 'sponge': {
       const c = cell2(x * 0.011, z * 0.011);
@@ -164,45 +187,12 @@ function microHeight(kind, x, z) {
     case 'rough':
       return fbm2(x * 0.008, z * 0.008, 5) * 210 - 105;
     default:
-      // ناعم: تموّج ضئيل جدًا
-      return (fbm2(x * 0.004, z * 0.004, 2) - 0.5) * 6;
+      // ناعم: تموّج ضئيل جدًا وخدوش دقيقة بالكاد تُرى
+      return (fbm2(x * 0.004, z * 0.004, 2) - 0.5) * 6 + Math.pow(Math.abs(Math.sin(x * 0.11 + z * 0.37 + fbm2(x * 0.01, z * 0.01, 2) * 4)), 40) * 1.6;
   }
 }
 
 // ------------------------------------------------------------------ مظلِّلات
-/**
- * «استوديو» الانعكاسات: قبة بتدرّج دافئ وألواح ضوء ناعمة، قيمها كلها أقل من عتبة التوهّج.
- * (RoomEnvironment الجاهز ألواحه أقوى بعشرات المرات، فتتوهّج كل لمعة على النحاس وتغطي العدسة بهالة.)
- */
-function studioEnvScene() {
-  const s = new THREE.Scene();
-  const dome = new THREE.Mesh(
-    new THREE.SphereGeometry(10, 48, 24),
-    new THREE.ShaderMaterial({
-      side: THREE.BackSide,
-      vertexShader: /* glsl */ `varying vec3 vD; void main(){ vD = normalize(position); gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
-      fragmentShader: /* glsl */ `
-        varying vec3 vD;
-        void main(){
-          float y = vD.y;
-          vec3 c = mix(vec3(0.28, 0.24, 0.30), vec3(0.78, 0.74, 0.80), smoothstep(-0.6, 0.15, y));
-          c = mix(c, vec3(1.0, 0.96, 0.9), smoothstep(0.3, 1.0, y));
-          gl_FragColor = vec4(c, 1.0);
-        }`,
-    }),
-  );
-  s.add(dome);
-  const panel = (w, h, x, y, z, v) => {
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(v, v * 0.97, v * 0.93), side: THREE.DoubleSide }));
-    m.position.set(x, y, z);
-    m.lookAt(0, 0, 0);
-    s.add(m);
-  };
-  panel(6, 3, 2, 6, 5, 1.35); // ضوء رئيسي أعلى الأمام
-  panel(3, 5, -7, 2, 2, 0.9); // ضوء جانبي
-  panel(4, 2, 5, 1, -6, 0.7); // ضوء خلفي
-  return s;
-}
 
 /** تصحيح جهاز العرض بعد OutputPass: تظليل أطراف خفيف + رفع الأسود (السبورة في صف مضاء) */
 const ProjectorShader = {
@@ -887,6 +877,11 @@ class Scene3D {
   team(id) {
     return this.teams[id];
   }
+  /** مركز عدسة الفريق بوحدة u (لطيران النموذج إليها) */
+  lensCenter(id) {
+    const T = this.teams[id];
+    return T?.center ? { x: T.center.x, y: T.center.y } : null;
+  }
 
   /**
    * لحظة القائمة: عدسة كبيرة تُظهر يدًا «نظيفة» تتأرجح تحت الضوء البنفسجي وعليها جراثيم مضيئة.
@@ -946,25 +941,37 @@ class Scene3D {
    * فتطابق البطاقةُ الشيءَ الذي يظهر في العدسة.
    */
   makeThumbs(size = 192) {
+    // صور شفافة الخلفية (PNG بقناة ألفا) تُرسم في نسيج بضعف الدقة ثم تُصغَّر:
+    // فيبرز المجسّم من البطاقة ثلاثية الأبعاد بظلّه الحقيقي، لا مربعًا أبيض.
     this.thumbs = {};
+    const r = this.renderer;
+    const big = size * 2;
+    const rt = new THREE.WebGLRenderTarget(big, big, { type: THREE.UnsignedByteType });
+    rt.texture.colorSpace = THREE.SRGBColorSpace;
     try {
-      const r = this.renderer;
       const sc = new THREE.Scene();
       sc.environment = this.scene.environment;
-      sc.environmentIntensity = 0.7;
-      sc.add(new THREE.HemisphereLight('#ffffff', '#c9bde0', 0.9));
-      const k = new THREE.DirectionalLight('#fff4e6', 2.0);
+      sc.environmentIntensity = 0.85;
+      sc.add(new THREE.HemisphereLight('#ffffff', '#c9bde0', 1.0));
+      const k = new THREE.DirectionalLight('#fff4e6', 2.2);
       k.position.set(2, 3, 4);
       sc.add(k);
+      const rim = new THREE.DirectionalLight('#d9e4ff', 1.0);
+      rim.position.set(-3, 1, -2);
+      sc.add(rim);
       const cam = new THREE.PerspectiveCamera(30, 1, 0.1, 50);
-      cam.position.set(0, 0.25, 7);
+      cam.position.set(0, 0.35, 7);
       cam.lookAt(0, 0, 0);
-      r.setPixelRatio(1);
-      r.setSize(size, size, false);
-      r.setClearColor('#ffffff', 1);
+      r.setClearColor(0x000000, 0);
+      const px = new Uint8Array(big * big * 4);
+      const tmp = document.createElement('canvas');
+      tmp.width = tmp.height = big;
+      const tctx = tmp.getContext('2d');
+      const img = tctx.createImageData(big, big);
       const out = document.createElement('canvas');
       out.width = out.height = size;
       const ctx = out.getContext('2d');
+      ctx.imageSmoothingQuality = 'high';
       for (const key of Object.keys(ITEM_MODELS)) {
         const m = ITEM_MODELS[key](this.tier);
         m.updateMatrixWorld(true);
@@ -976,9 +983,15 @@ class Scene3D {
         g.scale.setScalar(3.0 / Math.max(sz.x, sz.y, 0.001));
         g.rotation.y = -0.5;
         sc.add(g);
+        r.setRenderTarget(rt);
+        r.clear();
         r.render(sc, cam);
+        r.readRenderTargetPixels(rt, 0, 0, big, big, px);
+        // الصفوف مقلوبة في النسيج: نعيدها
+        for (let y = 0; y < big; y++) img.data.set(px.subarray((big - 1 - y) * big * 4, (big - y) * big * 4), y * big * 4);
+        tctx.putImageData(img, 0, 0);
         ctx.clearRect(0, 0, size, size);
-        ctx.drawImage(r.domElement, 0, 0, size, size);
+        ctx.drawImage(tmp, 0, 0, size, size);
         this.thumbs[key] = out.toDataURL('image/png');
         sc.remove(g);
         this._free(g);
@@ -987,8 +1000,11 @@ class Scene3D {
       console.warn('تعذّر رسم صور البطاقات، تبقى الرموز', e);
       this.thumbs = {};
     }
-    this.renderer.setClearColor('#efe9f6', 1);
+    r.setRenderTarget(null);
+    rt.dispose();
+    r.setClearColor('#efe9f6', 1);
   }
+
 
   // ------------------------------------------------------------------ أدوات صغيرة
   later(fn, ms, T = null) {
@@ -1083,7 +1099,7 @@ class Scene3D {
   preview(id, item) {
     const T = this.teams[id];
     if (!T) return;
-    const key = item?.model || null;
+    const key = item?.model || (item?.scene ? `s:${item.scene}` : null);
     if (key === T.modelId) return;
     if (T.model) {
       const old = T.model;
@@ -1097,9 +1113,14 @@ class Scene3D {
     }
     T.model = null;
     T.modelId = key;
-    if (!key || !ITEM_MODELS[key]) return;
+    if (!key || (!ITEM_MODELS[key] && !key.startsWith('s:'))) return;
     T.ped.visible = true;
-    const m = this._model(key);
+    // الجولة ٢: نموذج البطاقة نفسه (رأس، منديل، صابون…) يظهر في العدسة كما يظهر على البطاقة
+    const m = key.startsWith('s:') ? buildCardModel(key, this.tier) : this._model(key);
+    if (!m) return;
+    m.traverse((o) => {
+      if (o.isMesh) o.castShadow = this.cfg.shadows;
+    });
     // تأطير موحّد: كل مجسّم يملأ العدسة بالقدر نفسه، ويقف فوق القاعدة
     m.updateMatrixWorld(true);
     const box = new THREE.Box3().setFromObject(m, true);
@@ -1249,16 +1270,57 @@ class Scene3D {
 
     // الجراثيم المجهرية: عصيّات (كبسولات) وكُرَيّات، مضيئة (HDR) فتتوهّج
     const n = Math.round(cfg.micro / 2); // لكل شكل (عصيّات وكُرَيّات)
-    const rodGeo = new THREE.CapsuleGeometry(6, 20, 4, 10);
-    rodGeo.rotateZ(Math.PI / 2);
-    const cocGeo = new THREE.IcosahedronGeometry(8, 1);
-    const rodMat = new THREE.MeshStandardMaterial({ color: '#1d2a08', emissive: '#c8ff3a', emissiveIntensity: 1.9, roughness: 0.35 });
-    const cocMat = new THREE.MeshStandardMaterial({ color: '#08222a', emissive: '#5cf2ff', emissiveIntensity: 1.8, roughness: 0.35 });
-    const rods = new THREE.InstancedMesh(rodGeo, rodMat, n);
+    // عصيّة: كبسولة منحنية قليلًا بسطح محبّب، ولها سوط رفيع متموّج (كصور المجهر الإلكتروني)
+    const rodGeo = new THREE.CapsuleGeometry(6, 20, 6, 14);
+    {
+      const p = rodGeo.attributes.position;
+      const v = new THREE.Vector3();
+      for (let i = 0; i < p.count; i++) {
+        v.fromBufferAttribute(p, i);
+        const bend = Math.pow(v.y / 16, 2) * 2.2; // انحناء
+        const bump = 1 + (fbm2(v.x * 0.6 + v.y * 0.3, v.z * 0.6 - v.y * 0.2, 2) - 0.5) * 0.12;
+        p.setXYZ(i, v.x * bump + bend, v.y, v.z * bump);
+      }
+      rodGeo.computeVertexNormals();
+    }
+    const tail = (len, amp, ph) => {
+      const pts = [];
+      for (let i = 0; i <= 16; i++) {
+        const t = i / 16;
+        pts.push(new THREE.Vector3(Math.sin(t * Math.PI * 3 + ph) * amp * t, -16 - t * len, Math.cos(t * Math.PI * 3 + ph) * amp * 0.6 * t));
+      }
+      return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24, 0.9, 5, false);
+    };
+    const flag = mergeGeometries([tail(34, 5, 0), tail(26, 4, 2)]);
+    const rodFull = mergeGeometries([rodGeo.toNonIndexed(), flag.toNonIndexed()]);
+    rodFull.rotateZ(Math.PI / 2);
+    // كُرَيّة: عنقود من خلايا كروية ملتصقة (كالمكوّرات العنقودية)
+    const cl = [];
+    for (const [x, y, z, r] of [[0, 0, 0, 7.5], [9, 3, 2, 7], [3, 8, -3, 6.5], [-6, 5, 4, 6.2], [5, -5, 6, 5.5]]) {
+      const sg = new THREE.IcosahedronGeometry(r, 2);
+      sg.translate(x, y, z);
+      cl.push(sg);
+    }
+    const cocGeo = mergeGeometries(cl);
+    // مواد فيزيائية: جسم شبه شفاف بلمعة غشاء، يتوهّج من الداخل تحت الضوء البنفسجي
+    const rodMat = new THREE.MeshPhysicalMaterial({ color: '#6f9a18', emissive: '#c8ff3a', emissiveIntensity: 0.6, roughness: 0.32, clearcoat: 1, clearcoatRoughness: 0.12, sheen: 0.45, sheenColor: '#f0ffc0', sheenRoughness: 0.35 });
+    const cocMat = new THREE.MeshPhysicalMaterial({ color: '#17708a', emissive: '#5cf2ff', emissiveIntensity: 0.55, roughness: 0.32, clearcoat: 1, clearcoatRoughness: 0.12, sheen: 0.45, sheenColor: '#d0fbff', sheenRoughness: 0.35 });
+    const rods = new THREE.InstancedMesh(rodFull, rodMat, n);
     const cocs = new THREE.InstancedMesh(cocGeo, cocMat, n);
     rods.castShadow = cocs.castShadow = cfg.shadows;
     rods.frustumCulled = cocs.frustumCulled = false;
     g.add(rods, cocs);
+    // ذرّات عائمة أمام العدسة وخلفها (عمق، كما في صور المجهر)
+    {
+      const nm = this.tier === 'A' ? 160 : 70;
+      const mp = new Float32Array(nm * 3);
+      for (let i = 0; i < nm; i++) mp.set([rnd(-600, 600), rnd(20, 520), rnd(-700, 500)], i * 3);
+      const mg = new THREE.BufferGeometry();
+      mg.setAttribute('position', new THREE.BufferAttribute(mp, 3));
+      const motes = new THREE.Points(mg, new THREE.PointsMaterial({ color: new THREE.Color(0.55, 0.45, 0.9), size: 7, sizeAttenuation: true, transparent: true, opacity: 0.45, depthWrite: false, blending: THREE.AdditiveBlending }));
+      motes.frustumCulled = false;
+      g.add(motes);
+    }
     // المواضع: في الخشن نختار أخفض النقاط (الوديان والثقوب)، وفي الناعم مواضع عشوائية
     // ما تراه الكاميرا المجهرية تقريبًا: x في ±330، وz من −380 إلى 200
     const cand = [];
@@ -1301,7 +1363,18 @@ class Scene3D {
     T.ls.fog = new THREE.FogExp2('#1a0838', 0.00045);
     const spot = new THREE.PointLight('#9a6bff', 1.1, 2400, 0);
     spot.position.set(-150, 520, 260);
-    g.add(spot);
+    // ضوء مائل من المصباح يجسّم الجراثيم (لمعة الغشاء وظلّها على السطح) كصور المجهر الحقيقية
+    const sun = new THREE.DirectionalLight('#d6c6ff', 2.4);
+    sun.position.set(-420, 620, 380);
+    sun.target.position.set(0, 0, -60);
+    sun.castShadow = cfg.shadows;
+    if (cfg.shadows) {
+      sun.shadow.mapSize.set(1024, 1024);
+      sun.shadow.radius = 3;
+      sun.shadow.bias = -0.0008;
+      Object.assign(sun.shadow.camera, { left: -500, right: 500, top: 500, bottom: -500, near: 50, far: 2500 });
+    }
+    g.add(spot, sun, sun.target);
     T.ls.add(g);
     T.micro = { g, kind, rough, germs, rods, cocs, wind, streaks, windOn: 0, t: 0, ground, spot };
     this._microUpdate(T, 0, 0);

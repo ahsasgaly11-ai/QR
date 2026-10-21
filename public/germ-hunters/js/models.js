@@ -496,3 +496,39 @@ export function bubble() {
   b.castShadow = false;
   return b;
 }
+
+// ------------------------------------------------------------------ الاستوديو المشترك للانعكاسات
+/**
+ * «استوديو» الانعكاسات: قبة بتدرّج دافئ وألواح ضوء ناعمة، قيمها كلها أقل من عتبة التوهّج.
+ * (RoomEnvironment الجاهز ألواحه أقوى بعشرات المرات، فتتوهّج كل لمعة على النحاس وتغطي العدسة بهالة.)
+ */
+export function studioEnvScene() {
+  const s = new THREE.Scene();
+  const dome = new THREE.Mesh(
+    new THREE.SphereGeometry(10, 48, 24),
+    new THREE.ShaderMaterial({
+      side: THREE.BackSide,
+      vertexShader: /* glsl */ `varying vec3 vD; void main(){ vD = normalize(position); gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+      fragmentShader: /* glsl */ `
+        varying vec3 vD;
+        void main(){
+          float y = vD.y;
+          vec3 c = mix(vec3(0.28, 0.24, 0.30), vec3(0.78, 0.74, 0.80), smoothstep(-0.6, 0.15, y));
+          c = mix(c, vec3(1.0, 0.96, 0.9), smoothstep(0.3, 1.0, y));
+          gl_FragColor = vec4(c, 1.0);
+        }`,
+    }),
+  );
+  s.add(dome);
+  const panel = (w, h, x, y, z, v) => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(v, v * 0.97, v * 0.93), side: THREE.DoubleSide }));
+    m.position.set(x, y, z);
+    m.lookAt(0, 0, 0);
+    s.add(m);
+  };
+  panel(6, 3, 2, 6, 5, 1.35); // ضوء رئيسي أعلى الأمام
+  panel(3, 5, -7, 2, 2, 0.9); // ضوء جانبي
+  panel(4, 2, 5, 1, -6, 0.7); // ضوء خلفي
+  return s;
+}
+

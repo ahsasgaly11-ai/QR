@@ -497,3 +497,123 @@
 /* رمز الجولة ٢ داخل العدسة: يطفو وسط الزجاج */
 #stage:not([data-tier='C']) .gh-booth-emoji { filter: drop-shadow(0 calc(var(--u) * 8) calc(var(--u) * 14) rgba(30, 10, 70, 0.35)); }
 #stage:not([data-tier='C']) .gh-booth.uv .gh-booth-name { color: #f5f0ff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); }
+
+/* ============================================================================
+   البطاقات ثلاثية الأبعاد
+   البطاقة الخارجية (.gh-card) هدف اليد: ثابتة وشفافة، فلا يتحرك مستطيل اللمس.
+   داخلها .gh-c3: بطاقة بسُمك وظلّ، مائلة إلى الخلف كأنها على طاولة، تطفو ببطء،
+   وصورة المجسّم تبرز منها (translateZ) بظلّها، ولمعة ضوء تمرّ على وجهها.
+   حين تقف اليد عليها تنهض نحو الطلاب، وحين تُلتقط تنقلب وتبهت (صارت في اليد).
+============================================================================ */
+.gh-tray { perspective: calc(var(--u) * 1100); perspective-origin: 50% 20%; }
+.gh-card,
+.tray-wrap[data-team] .gh-card {
+  background: none;
+  border: 0;
+  box-shadow: none;
+  overflow: visible;
+  padding: 0;
+  transform-style: preserve-3d;
+}
+.gh-card::before { display: none; }
+.gh-card.hover { transform: none; box-shadow: none; }
+.gh-card.taken { opacity: 1; }
+.gh-c3 {
+  position: absolute;
+  inset: calc(var(--u) * 4) calc(var(--u) * 2) calc(var(--u) * 10);
+  transform-style: preserve-3d;
+  transform-origin: 50% 100%;
+  transform: rotateX(16deg);
+  transition: transform 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.25), opacity 0.3s;
+  animation: ghFloat 4.8s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * -1.6s);
+}
+@keyframes ghFloat { 0%, 100% { translate: 0 0; } 50% { translate: 0 calc(var(--u) * -6); } }
+.gh-c3-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 12);
+  padding: calc(var(--u) * 10) calc(var(--u) * 16);
+  border-radius: calc(var(--u) * 24);
+  background: linear-gradient(180deg, #ffffff 0%, #fbf8ff 55%, #efe8fa 100%);
+  border-top: calc(var(--u) * 12) solid var(--team, var(--uv));
+  transform-style: preserve-3d;
+  /* السُّمك: طبقات ظل صلبة متدرّجة (حافة الورق المقوّى ثم النحاس)، ثم ظل ناعم على الطاولة */
+  box-shadow:
+    0 calc(var(--u) * 2) 0 #ece3f6,
+    0 calc(var(--u) * 4) 0 #ddd0ee,
+    0 calc(var(--u) * 6) 0 #cdbde4,
+    0 calc(var(--u) * 8) 0 var(--brass),
+    0 calc(var(--u) * 22) calc(var(--u) * 26) rgba(34, 14, 70, 0.32);
+}
+/* الصورة تبرز من البطاقة بظلّها الحقيقي (صور شفافة الخلفية) */
+.gh-c3 .gh-thumb {
+  mix-blend-mode: normal;
+  transform: translateZ(calc(var(--u) * 46)) scale(1.06);
+  filter: drop-shadow(0 calc(var(--u) * 12) calc(var(--u) * 8) rgba(34, 14, 70, 0.38));
+  transition: transform 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.25);
+}
+.gh-c3 .gh-emoji {
+  transform: translateZ(calc(var(--u) * 40));
+  filter: drop-shadow(0 calc(var(--u) * 10) calc(var(--u) * 6) rgba(34, 14, 70, 0.35));
+}
+.gh-c3 .card-body { transform: translateZ(calc(var(--u) * 18)); }
+/* لمعة ضوء تمرّ ببطء على وجه البطاقة */
+.gh-c3-shine {
+  position: absolute;
+  inset: 0;
+  border-radius: calc(var(--u) * 24);
+  background: linear-gradient(110deg, rgba(255, 255, 255, 0) 35%, rgba(255, 255, 255, 0.75) 48%, rgba(255, 255, 255, 0) 60%);
+  background-size: 260% 100%;
+  background-position: 120% 0;
+  animation: ghShine 6.5s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * 1.1s);
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+@keyframes ghShine { 0%, 70% { background-position: 120% 0; } 100% { background-position: -40% 0; } }
+.gh-tray.compact .gh-c3-face { flex-direction: column; justify-content: center; gap: calc(var(--u) * 2); padding: calc(var(--u) * 6); text-align: center; }
+.gh-tray.compact .gh-c3 .gh-thumb { transform: translateZ(calc(var(--u) * 36)); }
+/* اليد واقفة على البطاقة: تنهض نحو الطلاب وتتوهّج حافتها */
+.gh-card.hover .gh-c3 { transform: rotateX(0deg) translateZ(calc(var(--u) * 50)) scale(1.04); animation-play-state: paused; }
+.gh-card.hover .gh-c3-face { box-shadow: 0 0 0 calc(var(--u) * 7) rgba(201, 150, 26, 0.55), 0 calc(var(--u) * 8) 0 var(--brass), 0 calc(var(--u) * 30) calc(var(--u) * 34) rgba(34, 14, 70, 0.35); }
+.gh-card.hover .gh-c3 .gh-thumb { transform: translateZ(calc(var(--u) * 70)) scale(1.14) rotate(-4deg); }
+/* التُقطت: تنقلب إلى الخلف وتبهت (البطاقة الآن في يد الطالب) */
+.gh-card.taken .gh-c3 { transform: rotateX(62deg) translateZ(calc(var(--u) * -10)); opacity: 0.32; animation: none; }
+.gh-card.gh-wait .gh-c3 { transform: none; animation: none; }
+
+/* البطاقة المحمولة تحت اليد: بطاقة صغيرة مائلة بسُمك وظلّ (لونها محايد: لا يكشف السلة) */
+.gh-held-shadow { fill: rgba(34, 14, 70, 0.28); filter: blur(6px); }
+.gh-held-edge { fill: #c8933f; }
+.gh-held-face { fill: #ffffff; stroke: rgba(59, 42, 92, 0.25); stroke-width: 2; }
+.gh-held-band { fill: #7c6a99; }
+.gh-held-card .gh-held-thumb { mix-blend-mode: normal; }
+.gh-held-label { font: 800 26px var(--fh); }
+
+/* السلة التي اشتعل فوقها اللهب: وهج دافئ يخبو */
+.gh-bin.fire { animation: ghFire 1.3s ease-out; }
+@keyframes ghFire {
+  0% { box-shadow: 0 0 0 calc(var(--u) * 4) var(--brass-l), 0 0 calc(var(--u) * 10) rgba(255, 140, 40, 0); }
+  25% { box-shadow: 0 0 0 calc(var(--u) * 6) #ffb347, 0 0 calc(var(--u) * 60) calc(var(--u) * 10) rgba(255, 120, 30, 0.55); }
+  100% { box-shadow: 0 0 0 calc(var(--u) * 4) var(--brass-l), 0 0 calc(var(--u) * 10) rgba(255, 140, 40, 0); }
+}
+
+/* تقليل الحركة: بطاقات ثابتة بلا طفو ولا لمعة */
+html[data-motion='reduce'] .gh-c3, html[data-motion='reduce'] .gh-c3-shine { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .gh-c3, .gh-c3-shine { animation: none; }
+}
+.gh-bin.good.fire { animation: pop 0.45s cubic-bezier(0.3, 1.6, 0.5, 1), ghFire 1.3s ease-out; }
+
+/* ============================================================================
+   النماذج الحيّة (A وB): «نافذة» البطاقة يقف فوقها النموذج ثلاثي الأبعاد من cards3d.js
+============================================================================ */
+.gh-top { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; display: block; }
+#stage[data-tier='C'] .gh-top { display: none; }
+.gh-slot { display: block; flex: none; width: calc(var(--u) * 112); height: calc(var(--u) * 112); }
+.gh-tray.compact .gh-slot { width: calc(var(--u) * 90); height: calc(var(--u) * 90); }
+/* ظلّ ناعم على وجه البطاقة تحت النموذج */
+.gh-c3 .gh-slot { background: radial-gradient(50% 18% at 50% 88%, rgba(34, 14, 70, 0.28), rgba(34, 14, 70, 0)); }
+.gh-held-label { paint-order: stroke; stroke: #fff; stroke-width: 8px; fill: var(--ink); }

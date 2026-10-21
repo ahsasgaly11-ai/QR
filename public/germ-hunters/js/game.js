@@ -22,6 +22,7 @@ import { sfx, say } from '/board-kit/js/audio.js';
 import { fxs, music, setFxSound, Particles } from './fx.js';
 import { FlatView } from './flat.js';
 import { pickRound } from './content.js';
+import { cardKey } from './cards3d.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 const TEAMS = {
@@ -89,6 +90,10 @@ export class Game {
     stage.insertBefore(this.$gl, hud);
     stage.insertBefore(this.$scope, hud);
     stage.insertBefore(this.$px, fx);
+    // نماذج البطاقات الحيّة (A وB): فوق البطاقات واللهب، وتحت مؤشرات الأيدي
+    this.$top = html('canvas', 'gh-top');
+    stage.insertBefore(this.$top, fx);
+    this.cards = null;
     stage.insertBefore(this.$over, fx);
     stage.insertBefore(this.$cine, fx);
     this.particles = new Particles(this.$px);
@@ -153,7 +158,45 @@ export class Game {
     v.onSound = (id, n) => this._snd(id, n);
     v.onFail = () => setTimeout(() => this._gpuFallback(v), 0);
     this._setTier(v.tier);
+    this._setupCards(v.tier);
     this.render();
+  }
+
+  /** طبقة النماذج الحيّة فوق البطاقات: في A وB فقط (C بالرموز) */
+  async _setupCards(tier) {
+    const want = tier === 'A' || tier === 'B';
+    if (this.cards && (!want || this.cards.tier !== tier)) {
+      this.cards.dispose();
+      this.cards = null;
+      const c = html('canvas', 'gh-top');
+      this.$top.replaceWith(c);
+      this.$top = c;
+    }
+    if (!want || this.cards) return;
+    try {
+      const { Cards3D } = await import('./cards3d.js');
+      if (this.view.tier !== tier || this.cards) return;
+      this.cards = new Cards3D(this.$top, tier);
+      this.cards.reduced = this.reduced;
+      this.render();
+    } catch (e) {
+      console.warn('تعذّر تحميل نماذج البطاقات، تبقى الرموز', e);
+      this.cards = null;
+    }
+  }
+
+  /** يربط كل بطاقة ظاهرة بنموذجها الحيّ */
+  _syncCards() {
+    if (!this.cards) return;
+    const list = [];
+    for (const card of this.hud.querySelectorAll('.gh-card[data-target]')) {
+      const slot = card.querySelector('.gh-slot');
+      const iid = card.dataset.target.split(':')[2];
+      const it = this.item[iid];
+      const key = it && cardKey(it);
+      if (slot && key) list.push({ id: card.dataset.target, key, el: slot, card });
+    }
+    this.cards.setSlots(list);
   }
 
   /** تعطّل المشهد (خطأ معالج رسوم أو فقدان سياق): ننزل طبقة فورًا. الأهداف HTML فلا يتأثر اللعب. */
@@ -304,6 +347,11 @@ export class Game {
     // لحظة القائمة في الطبقتين A وB: يد تتوهّج عليها الجراثيم بين صف الخطوات والأزرار
     this.view.hero?.(this.screen === 'menu' ? { x: this.VW / 2, y: 565, h: 160 } : null);
     if (this.screen === 'play' && this.state) for (const id of Object.keys(this.state.teams)) this._syncPreview(id);
+    this.$top.style.display = this.cards ? '' : 'none';
+    if (this.cards) {
+      this.cards.layout(r.width, r.height, this.scale);
+      this._syncCards();
+    }
     const layer = svg('g', { class: 'cursors' });
     this.fx.appendChild(layer);
     this.input?.attachLayer(layer);
@@ -549,21 +597,24 @@ export class Game {
       tray.style.setProperty('--n', Math.max(1, shown.length));
       const compact = L.w / Math.max(1, shown.length) < (L.trayH - L.barH) * 1.9;
       tray.classList.toggle('compact', compact);
-      for (const iid of shown) {
+      shown.forEach((iid, n) => {
         const it = this.item[iid];
+        // البطاقة الخارجية هدف اليد (ثابتة لا تتحرك)، وداخلها بطاقة ثلاثية الأبعاد (.gh-c3) تميل وتطفو وتبرز
         const card = html('div', `card gh-card${held.has(iid) ? ' taken' : ''}${it.name.length > 15 ? ' long' : ''}`);
+        card.style.setProperty('--i', n);
         // في الطبقتين A وB: صورة المجسّم نفسه (scene3d.makeThumbs)، وإلا الرمز
-        const thumb = this.view.thumbs?.[it.model];
-        const icon = thumb ? `<img class="gh-thumb" src="${thumb}" alt="">` : `<span class="gh-emoji">${esc(it.emoji)}</span>`;
-        card.innerHTML = `${icon}<div class="card-body"><b>${esc(it.name)}</b></div>`;
+        // في A وB: «نافذة» يقف فوقها النموذج الحيّ ثلاثي الأبعاد (cards3d.js)؛ وفي C الرمز
+        const icon = this.cards ? '<span class="gh-slot"></span>' : `<span class="gh-emoji">${esc(it.emoji)}</span>`;
+        card.innerHTML = `<div class="gh-c3"><div class="gh-c3-face">${icon}<div class="card-body"><b>${esc(it.name)}</b></div><i class="gh-c3-shine"></i></div></div>`;
         card.dataset.target = `card:${id}:${iid}`;
         card.dataset.kind = 'card';
         tray.appendChild(card);
         this._els.set(card.dataset.target, card);
-      }
+      });
     }
     if (!this.state.cine) this._say(id, T.msg);
     else ui.prompt.textContent = 'استعدّوا…';
+    this._syncCards();
     this._updateHud();
   }
 
@@ -678,7 +729,8 @@ export class Game {
     el.classList.toggle('uv', !!T.booth.uv);
     el.classList.toggle('has', !!it);
     // الرمز يظهر في الطبقة C دائمًا، وفي الجولة ٢ في كل الطبقات (المشهد ثلاثي الأبعاد يأتي بعد الصواب)
-    el.classList.toggle('emoji', !!it && (this.view.tier === 'C' || !it.model) && !T.booth.scene);
+    // في A وB كل البطاقات (والجولة ٢) نماذج ثلاثية الأبعاد في العدسة؛ الرمز للطبقة C فقط
+    el.classList.toggle('emoji', !!it && this.view.tier === 'C' && !T.booth.scene);
     el.querySelector('.gh-booth-emoji').textContent = it ? it.emoji : '';
     el.querySelector('.gh-booth-name').textContent = it ? it.name : '';
   }
@@ -712,6 +764,22 @@ export class Game {
   _frame(now) {
     const dt = Math.min(0.1, (now - this._lastFrame) / 1000);
     this._lastFrame = now;
+    if (this.cards) {
+      // النماذج في الأيدي تتبعها، وخلفها ذيل لهب يشتد مع السرعة
+      const held = [];
+      for (const c of this.input?.cursors.values() || []) {
+        const it = c.holding && this.item[c.holding];
+        const key = it && cardKey(it);
+        if (key && Number.isFinite(c.x)) held.push({ cid: c.id ?? c, key, x: c.x, y: c.y });
+      }
+      this.cards.setHeld(held);
+      const rich = this.view.tier === 'A';
+      if (!this.reduced) {
+        for (const h of this.cards.carried) this.particles.trail(h.x, h.y, dt, Math.min(1, h.v / 900), rich);
+        for (const f of this.cards.flying) this.particles.trail(f.x, f.y, dt, 1, rich);
+      }
+      this.cards.frame(now, dt, this.stage.getBoundingClientRect());
+    }
     this.particles.frame(dt, this.view.draw ? (c, d) => this.view.draw(c, d) : null);
   }
 
@@ -767,7 +835,21 @@ export class Game {
     sfx.correct();
     const R = binEl.getBoundingClientRect();
     const sr = this.stage.getBoundingClientRect();
-    this.particles.ring((R.left + R.width / 2 - sr.left) / this.scale, (R.top + R.height / 2 - sr.top) / this.scale, Math.min(R.width, R.height) / this.scale / 2, TEAMS[id].color);
+    const bx = (R.left - sr.left) / this.scale;
+    const by = (R.top - sr.top) / this.scale;
+    const bw = R.width / this.scale;
+    const bh = R.height / this.scale;
+    this.particles.ring(bx + bw / 2, by + bh / 2, Math.min(bw, bh) / 2, TEAMS[id].color);
+    // اللحظة السينمائية: لهب يشتعل من السلة التي وُضعت فيها البطاقة، ووهج دافئ عليها
+    this.particles.flame(bx + bw * 0.12, by + bh * 0.1, bw * 0.76, bh, { rich: this.view.tier === 'A' });
+    this._snd(id, 'flame');
+    binEl.classList.remove('fire');
+    void binEl.offsetWidth;
+    binEl.classList.add('fire');
+    this.later(() => binEl.classList.remove('fire'), 1400);
+    // كرة النار: النموذج ينطلق من السلة في قوس إلى العدسة (حيث يظهر تحت الضوء البنفسجي)
+    const lens = this.view.lensCenter?.(id);
+    if (this.cards && lens) this.cards.fly(cardKey(it), { x: bx + bw / 2, y: by + bh * 0.3 }, lens, 850);
     this._fillTeam(id);
     this._paintPhase(id);
     this._collectTargets();
@@ -1041,18 +1123,32 @@ export class Game {
     const teamed = team && team !== 'all';
     const g = svg('g', { class: 'held-item gh-held', 'data-team': teamed ? team : null });
     if (teamed) g.style.setProperty('--team', TEAMS[team].color);
-    g.appendChild(svg('circle', { r: 60, class: 'held-halo' }));
+    // في A وB: النموذج الحيّ نفسه يتبع اليد (cards3d.js)؛ هنا الاسم فقط تحته
+    if (this.cards) {
+      const lb = svg('text', { y: 112, 'text-anchor': 'middle', class: 'gh-held-label' });
+      lb.textContent = it?.name || '';
+      g.appendChild(lb);
+      return g;
+    }
+    // بطاقة صغيرة مائلة كأنها مرفوعة من الطاولة: ظلّ، وسُمك، ووجه، وشريط علوي محايد
+    const card = svg('g', { class: 'gh-held-card', transform: 'rotate(-7)' });
+    card.appendChild(svg('rect', { x: -66, y: -58, width: 132, height: 150, rx: 22, class: 'gh-held-shadow', transform: 'translate(10 16)' }));
+    card.appendChild(svg('rect', { x: -66, y: -66, width: 132, height: 158, rx: 22, class: 'gh-held-edge' }));
+    card.appendChild(svg('rect', { x: -66, y: -70, width: 132, height: 154, rx: 22, class: 'gh-held-face' }));
+    card.appendChild(svg('rect', { x: -66, y: -70, width: 132, height: 16, rx: 8, class: 'gh-held-band' }));
     const thumb = this.view.thumbs?.[it?.model];
     if (thumb) {
-      g.appendChild(svg('image', { href: thumb, x: -56, y: -56, width: 112, height: 112, class: 'gh-held-thumb' }));
+      card.appendChild(svg('image', { href: thumb, x: -52, y: -60, width: 104, height: 104, class: 'gh-held-thumb' }));
     } else {
-      const em = svg('text', { y: 4, 'text-anchor': 'middle', 'dominant-baseline': 'middle', class: 'gh-held-emoji' });
+      const em = svg('text', { y: -6, 'text-anchor': 'middle', 'dominant-baseline': 'middle', class: 'gh-held-emoji' });
       em.textContent = it?.emoji || '🃏';
-      g.appendChild(em);
+      card.appendChild(em);
     }
-    const lb = svg('text', { y: 96, 'text-anchor': 'middle', class: 'gh-held-label' });
+    const lb = svg('text', { y: 120, 'text-anchor': 'middle', class: 'gh-held-label' }); // الاسم تحت البطاقة (الأسماء الطويلة لا تتسع داخلها)
     lb.textContent = it?.name || '';
-    g.appendChild(lb);
+    card.appendChild(lb);
+    g.appendChild(card);
     return g;
   }
+
 }
