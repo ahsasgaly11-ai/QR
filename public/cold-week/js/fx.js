@@ -191,6 +191,14 @@ export const fxs = {
     tone(523, 0, 0.5, { type: 'sine', gain: 0.08, slideTo: 1046, pan });
     [659, 784, 988].forEach((f, i) => tone(f, 0.25 + i * 0.09, 0.4, { type: 'triangle', gain: 0.06, pan }));
   },
+  /** لهب يشتعل: نفَس هواء صاعد، وزئير منخفض، وطقطقة جمرات */
+  flame(pan = 0) {
+    noise(0, 0.5, { f0: 200, f1: 1800, q: 0.7, gain: 0.32, attack: 0.08, pan, type: 'lowpass' });
+    noise(0.05, 1.1, { f0: 160, f1: 90, q: 0.6, gain: 0.22, attack: 0.15, pan, type: 'lowpass' });
+    tone(110, 0, 0.6, { type: 'sine', gain: 0.22, slideTo: 60, pan });
+    for (let i = 0; i < 10; i++) noise(0.15 + Math.random() * 0.9, 0.025, { f0: 2500 + Math.random() * 2500, f1: 1800, q: 5, gain: 0.08 + Math.random() * 0.06, attack: 0.1, pan, type: 'bandpass' });
+    [784, 1175, 1568].forEach((f, i) => tone(f, 0.12 + i * 0.07, 0.5, { type: 'sine', gain: 0.05, pan }));
+  },
   /** ضربة منخفضة للافتتاح */
   boom() {
     tone(90, 0, 1.4, { type: 'sine', gain: 0.45, slideTo: 38 });

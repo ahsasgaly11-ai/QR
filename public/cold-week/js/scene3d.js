@@ -13,7 +13,7 @@
 // الرسم ٣٠ إطارًا/ث على الأكثر، ويتوقف عند إخفاء الصفحة.
 // ---------------------------------------------------------------------------
 import * as THREE from 'three/webgpu';
-import { float, mix, pass, renderOutput, screenUV, smoothstep, uniform, vec4 } from 'three/tsl';
+import { float, mix, pass, renderOutput, screenUV, smoothstep, uniform, vec3, vec4 } from 'three/tsl';
 import { bloom } from 'three/addons/tsl/display/BloomNode.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
@@ -22,11 +22,15 @@ import { POSES } from './dolls.js';
 import { Spray, KIND, motes } from './particles.js';
 import { badge } from './textures.js';
 import { OUTBREAK } from './content.js';
+import { UILayer } from './ui.js';
 import { enamel, tissuePaper, bottlePlastic, bubbleMat, glass, gold, chrome, beam } from './materials.js';
 
 const FPS_MS = 1000 / 30;
 // للتجربة الآلية على جهاز بطيء جدًا (?test): لا نقيّد خطوة الزمن حتى تتزامن الجسيمات مع المهام
 const DT_CAP = new URLSearchParams(location.search).has('test') ? 3 : 0.1;
+// للتجربة فقط (?slow=8): كل الزمن أبطأ ٨ مرات، لتصوير اللهب والكاميرا على جهاز بطيء جدًا
+export const SLOW = Math.max(1, Number(new URLSearchParams(location.search).get('slow')) || 1);
+const clock = () => performance.now() / 1000 / SLOW;
 const easeIO = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const easeOut = (t) => 1 - Math.pow(1 - t, 3);
 const easeBack = (t) => 1 + 2.4 * Math.pow(t - 1, 3) + 1.4 * Math.pow(t - 1, 2);
@@ -92,15 +96,12 @@ class Scene3D {
     this.onTier = null;
     this.onSound = () => {};
     this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(32, 1.6, 0.1, 200);
     this.uSim = uniform(0); // زمن المحاكاة (يتباطأ في اللقطة البطيئة)
     this.simT = 0;
-    this.timeScale = 1;
     this.tasks = [];
     this.rooms = {};
     this.teamIds = [];
     this.pr = 1;
-    this.view = { mode: 'play', shot: null };
     this._last = 0;
     this._lastT = performance.now();
     this._frames = [];
@@ -129,7 +130,12 @@ class Scene3D {
 
     this._theme = { ...THEMES.morning };
     this._themeTo = null;
-    this._buildPipeline();
+    this.pipeline = null; // يُبنى مع الصفوف (setTeams): كاميرا لكل صف
+    renderer.setClearColor(0x000000, 0);
+    this.cardsMode = new URLSearchParams(location.search).get('render') === 'cards';
+    // طبقة البطاقات ثلاثية الأبعاد (ui.js): تُرسم فوق الصف في المسار نفسه فيتوهّج لهبها
+    this.ui = new UILayer({ tier, environment: this.scene.environment });
+    this.ui.onIgnite = (team) => this.onSound('flame', team);
 
     const fail = (why) => {
       if (this._failed) return;
@@ -151,12 +157,37 @@ class Scene3D {
     this.uLift = uniform(0.07); // رفع الأسود لجهاز العرض (الملف 10، القسم ٥)
     this.uVig = uniform(0.22);
     this.uWarm = uniform(new THREE.Vector3(1.02, 1.0, 0.97));
-    const scenePass = pass(this.scene, this.camera);
-    const col = scenePass.getTextureNode('output');
-    let hdr = col.rgb;
+    const rooms = Object.values(this.rooms);
+    // كل صف بكاميرته: في السباق يُرسم كل نصف بكاميرته (قصّ scissor)، فتقترب كاميرا صف دون أن تهتز صورة الآخر
+    this.passes = rooms.map((R) => {
+      const p = pass(this.scene, R.cam);
+      R.pass = p;
+      return p;
+    });
+    let world;
+    if (rooms.length === 2) {
+      const A = this.rooms.a.pass.getTextureNode('output');
+      const B = this.rooms.b.pass.getTextureNode('output');
+      world = screenUV.x.greaterThan(0.5).select(A.rgb, B.rgb); // الفريق الأول يمين الشاشة
+      r.setScissorTest(true); // يفعّل قصّ مرور كل صف (قصّ اللوحة نفسها يبقى كاملًا)
+    } else {
+      world = this.passes[0].getTextureNode('output').rgb;
+      r.setScissorTest(false);
+    }
+    // طبقة البطاقات (مضروبة مسبقًا بالشفافية) فوق الصف
+    const uiTex = pass(this.ui.scene, this.ui.camera).getTextureNode('output');
+    if (this.cardsMode) {
+      const m = renderOutput(vec4(uiTex.rgb, 1)).rgb;
+      this.pipeline = new THREE.RenderPipeline(r, vec4(mix(vec3(1, 1, 1), m, uiTex.a), 1));
+      this.pipeline.outputColorTransform = false;
+      return;
+    }
+    let hdr = world.mul(float(1).sub(uiTex.a)).add(uiTex.rgb);
     this.bloomNode = null;
     if (this.tier === 'A') {
-      this.bloomNode = bloom(col, 0.38, 0.4, 1.12);
+      // التوهّج من الصف ومن اللهب فقط: لوحات البطاقات البيضاء تبقى تحت العتبة فلا تغشى المجسّمات
+      const glowIn = world.mul(float(1).sub(uiTex.a)).add(uiTex.rgb.mul(0.42));
+      this.bloomNode = bloom(vec4(glowIn, 1), this._theme?.bloom ?? 0.38, 0.4, 1.12);
       hdr = hdr.add(this.bloomNode.rgb);
     }
     // تدرّج سينمائي: تظليل أطراف ناعم + دفء خفيف (قبل التدرّج اللوني)
@@ -167,6 +198,20 @@ class Scene3D {
     const lifted = mapped.rgb.mul(float(1).sub(this.uLift)).add(this.uLift);
     this.pipeline = new THREE.RenderPipeline(r, vec4(lifted, 1));
     this.pipeline.outputColorTransform = false;
+  }
+
+  /** قصّ مرور كل صف على نصفه (بكسلات الرسم الفعلية) */
+  _scissors() {
+    const rooms = Object.values(this.rooms);
+    if (rooms.length !== 2 || !this.wPx) {
+      rooms.forEach((R) => R.pass?.setScissor(null));
+      return;
+    }
+    const W = Math.floor(this.wPx * this.pr);
+    const H = Math.floor(this.hPx * this.pr);
+    const mid = Math.floor(W / 2);
+    this.rooms.a.pass?.setScissor(mid, 0, W - mid, H);
+    this.rooms.b.pass?.setScissor(0, 0, mid, H);
   }
 
   dispose() {
@@ -199,7 +244,12 @@ class Scene3D {
     this.rooms = this.W.rooms;
     const per = this.tier === 'A' ? (teamIds.length === 1 ? 16000 : 12000) : 1200;
     for (const R of Object.values(this.rooms)) {
-      R.spray = new Spray({ count: per, gpu: this.gpu && this.tier === 'A', time: this.uSim });
+      R.cam = new THREE.PerspectiveCamera(32, 1.6, 0.1, 200);
+      R.uSim = uniform(0); // زمن الرذاذ في هذا الصف (يتباطأ وحده في لقطة العطسة)
+      R.simT = 0;
+      R.timeScale = 1;
+      R.anim = false;
+      R.spray = new Spray({ count: per, gpu: this.gpu && this.tier === 'A', time: R.uSim });
       this.scene.add(R.spray.object);
       R.motes = motes({ count: this.tier === 'A' ? 420 : 140, box: { x0: R.cx - R.w * 0.42, x1: R.cx + R.w * 0.42, y0: 0.2, y1: 2.6, z0: -DIM.D / 2 + 0.2, z1: 0.6 }, time: this.uSim });
       this.scene.add(R.motes);
@@ -238,7 +288,14 @@ class Scene3D {
     this.fill.position.set(cx + 2, 4, 9);
     this.fill.target.position.set(cx, 0.8, 0);
     this.setTheme('morning', 0);
+    this._buildPipeline();
+    if (this.wPx) this.layout(this.wPx, this.hPx, this.VW, this.VH, this.frame);
+    if (this.cardsMode && !this.ui.galleryIds) this.ui.gallery();
     this.reset();
+  }
+
+  get camera() {
+    return Object.values(this.rooms)[0]?.cam || this._cam0 || (this._cam0 = new THREE.PerspectiveCamera(32, 1.6, 0.1, 200));
   }
 
   // ------------------------------------------------------------------ التخطيط والكاميرا
@@ -259,18 +316,30 @@ class Scene3D {
     this.pr = pr;
     this.renderer.setPixelRatio(pr);
     this.renderer.setSize(wPx, hPx, false);
-    this.camera.aspect = wPx / hPx;
-    this.playShot = this._fitShot(frame);
-    if (!this.view.anim) this._applyShot(this.view.mode === 'play' ? this.playShot : this.view.shot || this.playShot);
+    // قصّ اللوحة النهائية = الشاشة كاملة (القيمة الأولى 300×150 من حجم اللوحة الافتراضي)
+    this.renderer.setScissor(0, 0, wPx, hPx);
+    this.ui.layout(VW, VH);
+    const rooms = Object.values(this.rooms);
+    const mid = VW / 2;
+    for (const R of rooms) {
+      R.cam.aspect = wPx / hPx;
+      R.frame = rooms.length === 2 ? (R.id === 'a' ? { ...frame, x0: mid + 10 } : { ...frame, x1: mid - 10 }) : frame;
+      R.playShot = this._fitShot(R, R.frame);
+      if (!R.anim) this._applyShot(R, R.mode === 'close' && R.shotNow ? R.shotNow : R.playShot);
+    }
+    this._scissors();
   }
 
-  /** لقطة اللعب: الصف كاملًا داخل المستطيل frame (أعلى الجدار الخلفي إلى حافة الأرض الأمامية) */
-  _fitShot(frame) {
-    const b = this.W.bounds;
-    const cam = this.camera;
-    const target = V((b.x0 + b.x1) / 2, 1.0, 0.0);
+  /** لقطة اللعب: الصف كاملًا داخل المستطيل frame (أعلى الجدار الخلفي إلى ما أمام الطاولات الأمامية) */
+  _fitShot(R, frame) {
+    const T = DIM.T;
+    const x0 = R.cx - R.w / 2 - T;
+    const x1 = R.cx + R.w / 2 + T;
+    const z0 = -DIM.D / 2 - T;
+    const cam = R.cam;
+    const target = V(R.cx, 1.0, 0.0);
     const dir = V(0, 0.44, 1).normalize();
-    const pts = [V(b.x0 + 0.35, 2.6, b.z0 + 0.25), V(b.x1 - 0.35, 2.6, b.z0 + 0.25), V(b.x0 + 0.35, 0, 1.25), V(b.x1 - 0.35, 0, 1.25)];
+    const pts = [V(x0 + 0.35, 2.6, z0 + 0.25), V(x1 - 0.35, 2.6, z0 + 0.25), V(x0 + 0.35, 0, 1.25), V(x1 - 0.35, 0, 1.25)];
     const fw = Math.max(200, frame.x1 - frame.x0);
     const fh = Math.max(150, frame.bottom - frame.top);
     let dist = 16;
@@ -281,22 +350,22 @@ class Scene3D {
       cam.lookAt(target);
       cam.updateProjectionMatrix();
       cam.updateMatrixWorld();
-      box = this._projBox(pts);
+      box = this._projBox(pts, cam);
       const k = Math.max((box.x1 - box.x0) / fw, (box.y1 - box.y0) / fh);
       dist *= k;
     }
     cam.position.copy(target).addScaledVector(dir, dist);
     cam.lookAt(target);
     cam.updateMatrixWorld();
-    box = this._projBox(pts);
+    box = this._projBox(pts, cam);
     const offU = { x: (box.x0 + box.x1) / 2 - (frame.x0 + frame.x1) / 2, y: (box.y0 + box.y1) / 2 - (frame.top + frame.bottom) / 2 };
     return { pos: cam.position.clone(), target, off: offU };
   }
 
-  _projBox(pts) {
+  _projBox(pts, cam) {
     const out = { x0: 1e9, x1: -1e9, y0: 1e9, y1: -1e9 };
     for (const p of pts) {
-      const q = p.clone().project(this.camera);
+      const q = p.clone().project(cam);
       const x = ((q.x + 1) / 2) * this.VW;
       const y = ((1 - q.y) / 2) * this.VH;
       out.x0 = Math.min(out.x0, x);
@@ -307,8 +376,8 @@ class Scene3D {
     return out;
   }
 
-  _applyShot(s) {
-    const cam = this.camera;
+  _applyShot(R, s) {
+    const cam = R.cam;
     cam.position.copy(s.pos);
     cam.lookAt(s.target);
     const k = this.wPx / this.VW;
@@ -316,38 +385,63 @@ class Scene3D {
     cam.setViewOffset(this.wPx, this.hPx, off.x * k, off.y * k, this.wPx, this.hPx);
     cam.updateProjectionMatrix();
     cam.updateMatrixWorld();
+    R.shotNow = s;
   }
 
-  /** حركة كاميرا ناعمة بين لقطتين (فقط حين لا أهداف لليد على المشهد: الافتتاح والختام) */
-  _shotTo(shot, dur) {
-    const from = { pos: this.camera.position.clone(), target: (this._shotNow?.target || this.playShot.target).clone(), off: { ...(this._shotNow?.off || this.playShot.off) } };
-    this.view.anim = true;
+  /** حركة كاميرا ناعمة بين لقطتين (الأهداف HTML ثابتة، فالحركة لا تحرّك شيئًا يلمسه الطلاب) */
+  _shotTo(R, shot, dur, { delay = 0 } = {}) {
     if (this.reduced || dur <= 0) {
-      this._shotNow = shot;
-      this._applyShot(shot);
-      this.view.anim = false;
+      this.at(delay, () => this._applyShot(R, shot), R.id);
       return;
     }
+    let from = null;
     this.task(dur, (p) => {
+      if (!from) {
+        const n = R.shotNow || R.playShot;
+        from = { pos: n.pos.clone(), target: n.target.clone(), off: { ...(n.off || { x: 0, y: 0 }) } };
+        R.anim = true;
+      }
       const e = easeIO(p);
-      const s = {
-        pos: from.pos.clone().lerp(shot.pos, e),
+      // قوس صاعد في منتصف الحركة: لا تمرّ الكاميرا عبر رؤوس الصف الأمامي
+      const lift = Math.sin(Math.PI * e) * Math.min(1.1, from.pos.distanceTo(shot.pos) * 0.22);
+      this._applyShot(R, {
+        pos: from.pos.clone().lerp(shot.pos, e).add(V(0, lift, 0)),
         target: from.target.clone().lerp(shot.target, e),
         off: { x: from.off.x + (shot.off.x - from.off.x) * e, y: from.off.y + (shot.off.y - from.off.y) * e },
-      };
-      this._shotNow = s;
-      this._applyShot(s);
-    }, { onDone: () => (this.view.anim = false) });
+      });
+    }, { delay, room: R.id, onDone: () => {
+      R.anim = false;
+      R.shotNow = shot;
+    } });
   }
 
-  /** لقطة قريبة على دمية (للحظة العطسة في الافتتاح) */
-  _closeShot(D, side = 1) {
-    const h = D.headWorld();
-    return { pos: h.clone().add(V(side * 1.6, 0.35, 2.3)), target: h.clone().add(V(-side * 0.55, -0.15, 0.6)), off: { x: 0, y: 0 } };
+  /** إزاحة تجعل نقطة الهدف في منتصف مستطيل الصف (لا منتصف الشاشة) */
+  _centerOff(R) {
+    const f = R.frame || this.frame;
+    return { x: this.VW / 2 - (f.x0 + f.x1) / 2, y: this.VH / 2 - (f.top + f.bottom) / 2 };
   }
-  _wideShot() {
-    const p = this.playShot;
+
+  /**
+   * لقطة قريبة سينمائية على نقطة (رأس دمية، طاولة، حوض…) من زاوية ثلاثة أرباع، من الجهة الداخلية للصف،
+   * وأعلى من رؤوس الصف الأمامي فلا تحجبها دمية أخرى.
+   */
+  _focusShot(R, P, { dist = 1.5, side = null, up = 0.42 } = {}) {
+    const s = side ?? (P.x > R.cx + 0.2 ? -1 : 1);
+    const dir = V(s * 0.5, up, 0.86).normalize();
+    return { pos: P.clone().addScaledVector(dir, dist), target: P.clone().add(V(-s * 0.08, -0.06, 0.1)), off: this._centerOff(R) };
+  }
+  _closeShot(R, D, o = {}) {
+    return this._focusShot(R, D.headWorld().add(V(0, -0.1, 0.1)), { dist: 1.9, ...o });
+  }
+  _wideShot(R) {
+    const p = R.playShot;
     return { pos: p.pos.clone().add(V(0, 3.2, 4)), target: p.target.clone().add(V(0, 0.4, -0.5)), off: { ...p.off } };
+  }
+  /** تصوير بطيء في صف واحد */
+  _slowmo(R, { k = 0.28, hold = 0.9, delay = 0 } = {}) {
+    if (this.reduced) return;
+    this.at(delay, () => (R.timeScale = k), R.id);
+    this.task(0.5, (p) => (R.timeScale = k + (1 - k) * easeIO(p)), { delay: delay + hold, room: R.id });
   }
 
   setReduced(on) {
@@ -419,7 +513,7 @@ class Scene3D {
   // ------------------------------------------------------------------ أدوات الحركة
   /** مهمة تُنفَّذ كل إطار حتى تكتمل (p من 0 إلى 1) */
   task(dur, fn, { delay = 0, room = null, onDone = null } = {}) {
-    const t = { t0: performance.now() / 1000 + delay, dur: Math.max(0.001, dur), fn, room, onDone, cancelled: false };
+    const t = { t0: clock() + delay + (this._base || 0), dur: Math.max(0.001, dur), fn, room, onDone, cancelled: false };
     this.tasks.push(t);
     return t;
   }
@@ -592,25 +686,28 @@ class Scene3D {
     const dir = toward ? toward.clone().sub(m).normalize().add(V(0, 0.12, 0)).normalize() : V(0, 0.08, 1).normalize();
     this.onSound('achoo', R.id, cough);
     return R.spray.sneeze({
-      origin: arr(m), dir: arr(dir), count: this._scale(count), t0: this.simT, power: cough ? power * 0.7 : power,
+      origin: arr(m), dir: arr(dir), count: this._scale(count), t0: R.simT, power: cough ? power * 0.7 : power,
       shield, desks: R.deskTops, heads: this._heads(R, D.idx), spread: cough ? 0.35 : 0.42,
     });
   }
   _spark(R, p, n = 70) {
-    R.spray.burst(arr(p), { t0: this.simT, count: this._scale(n * 4) || 12, kind: KIND.SPARK, speed: 1.6, up: 0.9 });
+    R.spray.burst(arr(p), { t0: R.simT, count: this._scale(n * 4) || 12, kind: KIND.SPARK, speed: 1.6, up: 0.9 });
   }
 
   // ------------------------------------------------------------------ الحالة
   reset() {
     this._clearTasks();
-    this.timeScale = 1;
     for (const R of Object.values(this.rooms)) this.resetRoom(R.id);
   }
   resetRoom(id) {
     const R = this.rooms[id];
     if (!R) return;
     this._clearTasks(id);
-    R.spray.clear({ tAt: this.simT - 1 });
+    R.timeScale = 1;
+    R.anim = false;
+    R.mode = 'play';
+    if (R.playShot) this._applyShot(R, R.playShot);
+    R.spray.clear({ tAt: R.simT - 1 });
     this._hideProps(R);
     R.door.pivot.rotation.y = 0;
     R.sink.water.visible = false;
@@ -652,12 +749,13 @@ class Scene3D {
     }
     this.setTheme('dawn', 0);
     rooms.forEach((R) => this._roomTime(R, WINDOW.am, 7, 0));
-    // ١) لقطة واسعة تقترب (هنا يقيس المنظّم الأداء)
-    const first = rooms[0].dolls[OUTBREAK.first];
-    this._shotNow = this._wideShot();
-    this._applyShot(this._shotNow);
-    this.view.mode = 'intro';
-    this._shotTo(this._closeShot(first, rooms.length === 1 ? 1 : 1), 2.4);
+    // ١) لقطة واسعة تقترب من المريض الأول في كل صف (هنا يقيس المنظّم الأداء)
+    rooms.forEach((R) => {
+      const first = R.dolls[OUTBREAK.first];
+      this._applyShot(R, this._wideShot(R));
+      R.mode = 'close';
+      this._shotTo(R, this._closeShot(R, first, { side: 1, dist: 1.75 }), 2.4);
+    });
     // ٢) ها… ها… عطسة بلا تغطية، بالتصوير البطيء
     rooms.forEach((R) => {
       const D = R.dolls[OUTBREAK.first];
@@ -667,14 +765,17 @@ class Scene3D {
       this.at(3.35, () => {
         this.pose(D, 'rest');
         D.cur.H[0] = 0.32;
-        this.timeScale = 0.22;
+        R.timeScale = 0.22;
         this._sneeze(R, D, { power: 1.15, count: 14000, toward: R.dolls[4].headWorld().add(V(0, 0.1, 1.2)) });
       });
     });
     // ٣) الأيام: الكاميرا تعود، والساعة تدور، والزملاء القريبون يمرضون
     this.at(5.4, () => {
-      this.task(0.8, (p) => (this.timeScale = 0.22 + 0.78 * easeIO(p)));
-      this._shotTo(this.playShot, 1.6);
+      rooms.forEach((R) => {
+        this.task(0.8, (p) => (R.timeScale = 0.22 + 0.78 * easeIO(p)), { room: R.id });
+        R.mode = 'play';
+        this._shotTo(R, R.playShot, 1.6);
+      });
       this.setTheme('morning', 1.6);
     });
     rooms.forEach((R) => {
@@ -687,12 +788,11 @@ class Scene3D {
       });
       // ٤) نُعيد الأسبوع: الرذاذ يختفي والجميع يُشفى
       this.at(9.0, () => {
-        R.spray.clear({ tAt: this.simT });
+        R.spray.clear({ tAt: R.simT });
         R.dolls.forEach((D, j) => this.at(j * 0.08, () => this._heal(R, D)));
         this._roomTime(R, WINDOW.am, 8, 0.6, true);
       });
     });
-    this.at(10.4, () => (this.view.mode = 'play'));
     return { dur: 10.6, marks: [0, 3.35, 6.0, 9.0] };
   }
 
@@ -752,7 +852,7 @@ class Scene3D {
             const h = D.handWorld(side);
             for (let i = 0; i < 9; i++) pts.push([h.x + (Math.random() - 0.5) * 0.12, h.y + (Math.random() - 0.5) * 0.12, h.z + (Math.random() - 0.5) * 0.12]);
           }
-          R.handGerms = R.spray.dots(pts, { t0: this.simT });
+          R.handGerms = R.spray.dots(pts, { t0: R.simT });
         }, id);
         break;
       }
@@ -760,10 +860,10 @@ class Scene3D {
         const d = R.desks[D.idx];
         const pts = [];
         for (let i = 0; i < 40; i++) pts.push([d.x + (Math.random() - 0.5) * 0.9, R.deskH + 0.01, d.z + (Math.random() - 0.5) * 0.5]);
-        R.deskGerms = R.spray.dots(pts, { t0: this.simT, kind: KIND.GERM });
+        R.deskGerms = R.spray.dots(pts, { t0: R.simT, kind: KIND.GERM });
         const pts2 = [];
         for (let i = 0; i < 120; i++) pts2.push([d.x + (Math.random() - 0.5) * 0.95, R.deskH + 0.008, d.z + (Math.random() - 0.5) * 0.55]);
-        R.deskDrops = R.spray.dots(pts2, { t0: this.simT, kind: KIND.DROP });
+        R.deskDrops = R.spray.dots(pts2, { t0: R.simT, kind: KIND.DROP });
         break;
       }
       case 'bottle': {
@@ -781,7 +881,7 @@ class Scene3D {
         this.task(0.9, (p) => fr.position.lerpVectors(from, to, easeIO(p)), { delay: 0.4, room: id });
         this.at(1.3, () => {
           const c = fr.position.clone().add(V(0, 0.25, 0));
-          R.bottleGerms = R.spray.dots(Array.from({ length: 10 }, () => [c.x + (Math.random() - 0.5) * 0.05, c.y + Math.random() * 0.03, c.z + (Math.random() - 0.5) * 0.05]), { t0: this.simT });
+          R.bottleGerms = R.spray.dots(Array.from({ length: 10 }, () => [c.x + (Math.random() - 0.5) * 0.05, c.y + Math.random() * 0.03, c.z + (Math.random() - 0.5) * 0.05]), { t0: R.simT });
         }, id);
         R.friendBottleFrom = from;
         break;
@@ -800,9 +900,57 @@ class Scene3D {
   }
 
   /** مشهد الحل الصحيح. يعيد مدته بالثواني. */
+  /**
+   * مشهد الحل الصحيح بلغة سينمائية: الكاميرا تقترب من صاحب الدور (أو من مكان الحدث)، ثم يحدث الحل
+   * — والعطسة بالتصوير البطيء — ثم تعود الكاميرا إلى الصف كله. يعيد المدة الكلية بالثواني.
+   */
   solve(id, s) {
     const R = this.rooms[id];
     if (!R) return 0;
+    const lead = this.reduced ? 0 : 0.85;
+    const back = this.reduced ? 0 : 0.9;
+    for (const X of R.dolls) {
+      X.hi = 0;
+      if (X.iconKind === 'alert') this._icon(X, null);
+    }
+    R.mode = 'close';
+    this._shotTo(R, this._solveShot(R, s), lead);
+    this._base = lead; // كل مهام المشهد تبدأ بعد اقتراب الكاميرا
+    let d = 0;
+    try {
+      d = this._solveScene(id, s);
+    } finally {
+      this._base = 0;
+    }
+    this.at(lead + d, () => (R.mode = 'play'), id);
+    this._shotTo(R, R.playShot, back, { delay: lead + d });
+    return lead + d + back;
+  }
+
+  /** أين تنظر الكاميرا في كل مشهد حل */
+  _solveShot(R, s) {
+    const D = R.dolls[s.doll];
+    const N = R.dolls[s.near];
+    switch (s.anim) {
+      case 'bin':
+        return this._focusShot(R, D.headWorld().lerp(R.bin.mouth.clone(), 0.5).add(V(0, 0.05, 0)), { dist: 2.9, up: 0.5 });
+      case 'wash':
+        return this._focusShot(R, R.sink.hands.clone().add(V(-R.side * 0.35, 0.25, 0)), { dist: 2.1, up: 0.35 });
+      case 'wipe': {
+        const d = R.desks[D.idx];
+        return this._focusShot(R, V(d.x, R.deskH + 0.1, d.z), { dist: 1.7, up: 0.85 });
+      }
+      case 'rest':
+        return this._focusShot(R, R.door.pos.clone().add(V(0, 1.0, 0.4)), { dist: 3.0, up: 0.4 });
+      case 'distance':
+        return this._focusShot(R, D.headWorld().lerp(N.headWorld(), 0.5), { dist: 2.4, up: 0.45 });
+      default:
+        return this._closeShot(R, D, { dist: 1.9 });
+    }
+  }
+
+  _solveScene(id, s) {
+    const R = this.rooms[id];
     const D = R.dolls[s.doll];
     const N = R.dolls[s.near];
     D.breath = false;
@@ -811,6 +959,7 @@ class Scene3D {
     switch (s.anim) {
       case 'elbow': {
         this.pose(D, 'elbow');
+        this._slowmo(R, { delay: 0.45, hold: 0.95 });
         this.at(0.5, () => {
           const e = D.elbowWorld();
           this._sneeze(R, D, { toward: N.headWorld(), shield: { c: arr(e.clone().add(V(0, 0.02, 0.03))), r: 0.2 }, power: 0.85, count: 4500, cough: s.id === 's9' });
@@ -818,13 +967,14 @@ class Scene3D {
         }, id);
         sparkAt(() => D.elbowWorld(), 0.75);
         this.at(1.7, () => this.pose(D, 'rest'), id);
-        this.at(2.1, () => R.spray.clear({ tAt: this.simT }), id);
+        this.at(2.1, () => R.spray.clear({ tAt: R.simT }), id);
         return 2.3;
       }
       case 'tissue': {
         const T = this._tissue(R);
         T.visible = false;
         this.pose(D, 'tissue');
+        this._slowmo(R, { delay: 0.55, hold: 0.95 });
         this.at(0.3, () => {
           T.visible = true;
           T.position.copy(D.mouthWorld()).add(V(0, 0.02, 0.09));
@@ -843,7 +993,7 @@ class Scene3D {
           const b = this._tissueBall(R);
           b.position.copy(D.handWorld(1));
           this.pose(D, 'rest');
-          R.spray.clear({ tAt: this.simT });
+          R.spray.clear({ tAt: R.simT });
         }, id);
         return 2.3;
       }
@@ -891,7 +1041,7 @@ class Scene3D {
             });
           }, { room: id });
           this.onSound('bubbles', id);
-          if (R.handGerms) R.spray.clear({ batch: R.handGerms, tAt: this.simT + 0.3 });
+          if (R.handGerms) R.spray.clear({ batch: R.handGerms, tAt: R.simT + 0.3 });
         }, id);
         sparkAt(() => D.handWorld(1), 2.0);
         this.at(2.4, () => {
@@ -916,8 +1066,8 @@ class Scene3D {
         this.at(0.3, () => {
           this.onSound('wipe', id);
           const sweep = { xFrom: d.x - 0.45, xTo: d.x + 0.45, dur: 1.2 };
-          if (R.deskGerms) R.spray.clear({ batch: R.deskGerms, tAt: this.simT, sweep });
-          if (R.deskDrops) R.spray.clear({ batch: R.deskDrops, tAt: this.simT, sweep });
+          if (R.deskGerms) R.spray.clear({ batch: R.deskGerms, tAt: R.simT, sweep });
+          if (R.deskDrops) R.spray.clear({ batch: R.deskDrops, tAt: R.simT, sweep });
         }, id);
         sparkAt(V(d.x, y + 0.05, d.z), 1.4);
         this.task(0.3, (p) => (sp.position.y = y + 0.3 * easeIO(p)), { delay: 1.55, room: id, onDone: () => (sp.visible = false) });
@@ -929,7 +1079,7 @@ class Scene3D {
         const from = fr.position.clone();
         // قنينة الزميل تعود إليه، وقنينة يوسف ترتفع إلى فمه
         this.task(0.8, (p) => fr.position.lerpVectors(from, R.friendBottleFrom, easeIO(p)), { room: id });
-        if (R.bottleGerms) R.spray.clear({ batch: R.bottleGerms, tAt: this.simT + 0.2 });
+        if (R.bottleGerms) R.spray.clear({ batch: R.bottleGerms, tAt: R.simT + 0.2 });
         const o0 = own.position.clone();
         this.pose(D, 'drink');
         this.task(0.7, (p) => {
@@ -967,9 +1117,10 @@ class Scene3D {
         const away = D.home.clone().add(V((R.desks[D.idx].x - R.desks[N.idx].x > 0 ? 1 : -1) * 0.62, 0, 0.1));
         this.glide(R, D, away, { dur: 0.8, hop: 0.06 });
         N.breath = false;
+        this._slowmo(R, { delay: 0.95, hold: 0.8, k: 0.35 });
         this.at(1.0, () => this._sneeze(R, N, { toward: D.home.clone().add(V(0, 1.0, 0.1)), power: 0.55, count: 3000 }), id);
         sparkAt(() => D.headWorld(), 1.6);
-        this.at(2.2, () => R.spray.clear({ tAt: this.simT }), id);
+        this.at(2.2, () => R.spray.clear({ tAt: R.simT }), id);
         D.displaced = true;
         return 2.4;
       }
@@ -987,13 +1138,13 @@ class Scene3D {
     const src = D.away ? R.dolls[s.near] : D;
     const tgt = D.away ? R.dolls[(s.near + 1) % 6] : N;
     this.task(0.4, (p) => (src.doll.rotation.z = Math.sin(p * Math.PI * 4) * 0.08 * (1 - p)), { room: id });
-    R.spray.sneeze({ origin: arr(src.mouthWorld()), dir: arr(tgt.headWorld().sub(src.mouthWorld()).normalize()), count: this._scale(900) || 60, t0: this.simT, power: 0.5, mistFrac: 0.3, germFrac: 0.3, heads: this._heads(R, src.idx), desks: R.deskTops, life: 2.5 });
+    R.spray.sneeze({ origin: arr(src.mouthWorld()), dir: arr(tgt.headWorld().sub(src.mouthWorld()).normalize()), count: this._scale(900) || 60, t0: R.simT, power: 0.5, mistFrac: 0.3, germFrac: 0.3, heads: this._heads(R, src.idx), desks: R.deskTops, life: 2.5 });
     const was = tgt.sick;
     this.at(0.45, () => {
       tgt.sick = Math.max(was, 0.5);
     }, id);
     this.at(1.6, () => (tgt.sick = was), id);
-    this.at(2.0, () => R.spray.clear({ tAt: this.simT }), id);
+    this.at(2.0, () => R.spray.clear({ tAt: R.simT }), id);
   }
 
   /** الانتقال إلى الموقف التالي: الساعة تدور والنافذة تتحوّل (عبر الليل إن تغيّر اليوم). يعيد المدة. */
@@ -1048,11 +1199,11 @@ class Scene3D {
     // رذاذ ناعم يُتنفَّس: ينطلق من الزميل ويصل إلى الأنف والفم
     this.at(0.5, () => R.spray.sneeze({
       origin: arr(S.mouthWorld()), dir: arr(D.mouthWorld().sub(S.mouthWorld()).normalize()), count: this._scale(2500) || 180,
-      t0: this.simT, power: 0.45, spread: 0.18, mistFrac: 0.4, germFrac: 0.35, heads: [{ c: arr(D.headWorld()), r: 0.17 }], life: 3,
+      t0: R.simT, power: 0.45, spread: 0.18, mistFrac: 0.4, germFrac: 0.35, heads: [{ c: arr(D.headWorld()), r: 0.17 }], life: 3,
     }), id);
     this.at(1.9, () => this.pose(D, 'rest'), id);
     this.task(0.45, (p) => lens.scale.setScalar(Math.max(0.001, 0.9 * (1 - easeIO(p)))), { delay: 2.5, room: id, onDone: () => (lens.visible = false) });
-    this.at(2.9, () => R.spray.clear({ tAt: this.simT }), id);
+    this.at(2.9, () => R.spray.clear({ tAt: R.simT }), id);
     this.onSound('mid', id);
     return 3.0;
   }
@@ -1074,7 +1225,7 @@ class Scene3D {
       D.cheer = true;
       this.pose(D, 'cheer');
     }
-    R.spray.rain({ x0: R.cx - R.w * 0.45, x1: R.cx + R.w * 0.45, z0: -DIM.D / 2 + 0.3, z1: DIM.D / 2 - 0.3, y: 2.6 }, { t0: this.simT, count: this._scale(1200) || 120, life: 4.5 });
+    R.spray.rain({ x0: R.cx - R.w * 0.45, x1: R.cx + R.w * 0.45, z0: -DIM.D / 2 + 0.3, z1: DIM.D / 2 - 0.3, y: 2.6 }, { t0: R.simT, count: this._scale(1200) || 120, life: 4.5 });
     this._roomTime(R, WINDOW.pm, 13, 1.0);
   }
 
@@ -1085,26 +1236,27 @@ class Scene3D {
       rooms.forEach((R) => this.celebrate(R.id));
       return 1.2;
     }
-    this.view.mode = 'outro';
     this.setTheme('sunset', 1.2);
     rooms.forEach((R) => {
       if (!R.celebrate) this.celebrate(R.id);
       for (let d = 0; d < 3; d++) this.at(d * 0.7, () => this._roomTime(R, WINDOW.pm, 14, 0.65, true));
-      this.at(1.2, () => R.spray.rain({ x0: R.cx - R.w * 0.45, x1: R.cx + R.w * 0.45, z0: -1.8, z1: 1.8, y: 2.8 }, { t0: this.simT, count: this._scale(1600) || 160, life: 4 }));
+      this.at(1.2, () => R.spray.rain({ x0: R.cx - R.w * 0.45, x1: R.cx + R.w * 0.45, z0: -1.8, z1: 1.8, y: 2.8 }, { t0: R.simT, count: this._scale(1600) || 160, life: 4 }));
     });
     this.at(2.6, () => this.setTheme('morning', 1.0));
-    this.at(3.0, () => (this.view.mode = 'play'));
     return 3.0;
   }
 
   /** للأداة tools/prerender.py: صندوق الصف المسقط ومواضع رؤوس الدمى بوحدة المسرح (u) */
   exportMeta() {
     const b = this.W.bounds;
-    const box = this._projBox([V(b.x0 + 0.35, 2.6, b.z0 + 0.25), V(b.x1 - 0.35, 2.6, b.z0 + 0.25), V(b.x0 + 0.35, 0, 1.25), V(b.x1 - 0.35, 0, 1.25)]);
+    const rs = Object.values(this.rooms);
+    const pts = [V(b.x0 + 0.35, 2.6, b.z0 + 0.25), V(b.x1 - 0.35, 2.6, b.z0 + 0.25), V(b.x0 + 0.35, 0, 1.25), V(b.x1 - 0.35, 0, 1.25)];
+    const bx = rs.map((R) => this._projBox(pts.filter((p) => (rs.length === 1 ? true : R.id === 'a' ? p.x > 0 : p.x < 0)).concat(rs.length === 2 ? [V(0, 2.6, b.z0 + 0.25), V(0, 0, 1.25)] : []), R.cam));
+    const box = { x0: Math.min(...bx.map((q) => q.x0)), x1: Math.max(...bx.map((q) => q.x1)), y0: Math.min(...bx.map((q) => q.y0)), y1: Math.max(...bx.map((q) => q.y1)) };
     const rooms = {};
     for (const R of Object.values(this.rooms)) {
       rooms[R.id] = R.dolls.map((D) => {
-        const q = D.headWorld().project(this.camera);
+        const q = D.headWorld().project(R.cam);
         return [Math.round(((q.x + 1) / 2) * this.VW), Math.round(((1 - q.y) / 2) * this.VH)];
       });
     }
@@ -1114,13 +1266,18 @@ class Scene3D {
   // ------------------------------------------------------------------ الحلقة
   _loop(now) {
     if (now - this._last < FPS_MS - 1) return;
-    const dt = Math.min(DT_CAP, (now - this._lastT) / 1000);
+    const dt = Math.min(DT_CAP, (now - this._lastT) / 1000) / SLOW;
     this._lastT = now;
     this._last = now;
     this._regulate(now);
-    this.simT += dt * this.timeScale;
+    this.simT += dt;
     this.uSim.value = this.simT;
-    const t = now / 1000;
+    for (const R of Object.values(this.rooms)) {
+      R.simT += dt * R.timeScale;
+      R.uSim.value = R.simT;
+    }
+    this.ui.update(dt);
+    const t = clock();
     // المهام (ما يُضاف أثناء التنفيذ يدخل القائمة الجديدة مباشرة)
     if (this.tasks.length) {
       const list = this.tasks;
@@ -1161,6 +1318,13 @@ class Scene3D {
         D.icon.scale.setScalar(sc);
         D.icon.position.y = 1.5 + Math.sin(t * 2.4 + D.idx) * 0.03;
       }
+      // من يقترب من الكاميرا (أقل من ٠٫٩ م) يختفي مؤقتًا فلا يحجب اللقطة
+      const cp = R.cam.position;
+      for (const X of R.dolls) {
+        if (X.away) continue;
+        const near = R.mode === 'close' || R.anim ? X.headWorld().distanceTo(cp) < 0.95 : false;
+        X.root.visible = !near;
+      }
       const H = R.dolls.find((X) => X.hi > 0.5);
       if (H) R.pillar.position.set(H.root.position.x, 0, H.root.position.z);
       R.uPillar.value += ((H ? 1 : 0) - R.uPillar.value) * (1 - Math.exp(-dt * 5));
@@ -1171,8 +1335,9 @@ class Scene3D {
       R.clock.minute.rotation.z = -(h % 1) * Math.PI * 2 - (t % 60) * 0.001;
       R.uBeam.value = (R.beamBase ?? 0.16) * (this.beamBoost ?? 1);
       R.uPatch.value = Math.min(1.2, (R.patchBase ?? 0.55) * Math.sqrt(this.beamBoost ?? 1));
-      R.spray.step(this.renderer, dt * this.timeScale);
+      R.spray.step(this.renderer, dt * R.timeScale);
     }
+    if (!this.pipeline) return;
     try {
       this.pipeline.render();
     } catch (e) {
