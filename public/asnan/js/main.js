@@ -6,6 +6,7 @@ import { Interaction } from './input.js';
 import { HandTracker } from './tracker.js';
 import { autoCalibrate, manualCalibrate } from './calibrate.js';
 import { loadSettings, saveSettings } from './store.js';
+import { QUALITY } from './tracking.js';
 import { unlock, setSound, setSpeech } from './audio.js';
 
 const $ = (s) => document.querySelector(s);
@@ -34,7 +35,10 @@ const tracker = new HandTracker({
     $('#camText').textContent = text;
     updateCamChip();
   },
+  // خفّض المتتبّع الدقة تلقائيًا لبطء الجهاز: نعرض ذلك في اللوحة دون تغيير اختيار المعلم
+  onQuality: () => syncPanel(),
 });
+tracker.setQuality(settings.trackQuality);
 if (settings.calibration?.H) tracker.setCalibration(settings.calibration.H);
 setSound(settings.sound);
 setSpeech(settings.speech);
@@ -120,6 +124,13 @@ function closePanel() {
 function syncPanel() {
   $('#dwell').value = settings.dwellMs;
   $('#dwellVal').textContent = `${(settings.dwellMs / 1000).toLocaleString('ar-EG')} ث`;
+  $('#quality').value = settings.trackQuality;
+  $('#qualityNote').textContent =
+    tracker.active && tracker.effQuality !== settings.trackQuality
+      ? `خُفّضت تلقائيًا إلى «${QUALITY[tracker.effQuality].label}» لأن الجهاز بطيء عليها.`
+      : '';
+  $('#side').value = Math.round((settings.sideInset || 0) * 100);
+  $('#sideVal').textContent = settings.sideInset > 0 ? `${Math.round(settings.sideInset * 100).toLocaleString('ar-EG')}٪ من كل جانب` : 'بلا هامش';
   $('#reach').value = Math.round(settings.reachTop * 100);
   $('#reachVal').textContent = settings.reachTop > 0 ? `${Math.round(settings.reachTop * 100).toLocaleString('ar-EG')}٪ من الأعلى` : 'الشاشة كلها';
   for (const r of document.querySelectorAll('input[name=handPoint]')) r.checked = r.value === settings.handPoint;
@@ -142,6 +153,12 @@ function syncPanel() {
       res.dataset.q = cal.error < 1.5 ? 'good' : cal.error < 3 ? 'ok' : 'bad';
     } else res.dataset.q = 'ok';
     res.textContent = `معايَرة ${cal.method === 'manual' ? 'يدويًا' : 'تلقائيًا'} • ${when}${q}`;
+    // السبورة صغيرة في عين الكاميرا = أيدي الأطفال صغيرة جدًا على الكاشف
+    const share = tracker.boardShare();
+    if (share !== null && share < 0.2) {
+      res.textContent += ` • السبورة تشغل ${Math.round(share * 100).toLocaleString('ar-EG')}٪ فقط من صورة الكاميرا: قرّب الجهاز من السبورة.`;
+      res.dataset.q = 'bad';
+    }
   }
   updateCamChip();
 }
@@ -188,6 +205,9 @@ function msg(text, bad = false) {
 $('#btnSettings').addEventListener('click', () => (panel.hidden ? openPanel() : closePanel()));
 $('#btnClose').addEventListener('click', closePanel);
 $('#btnHome').addEventListener('click', () => game.toMenu());
+// ملء الشاشة غير مدعوم في Safari على iPhone: نخفي الزر هناك (الحل: «إضافة إلى الشاشة الرئيسية»)
+const canFull = !!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen);
+$('#btnFull').hidden = !canFull;
 $('#btnFull').addEventListener('click', () => {
   const d = document;
   if (d.fullscreenElement || d.webkitFullscreenElement) (d.exitFullscreen || d.webkitExitFullscreen)?.call(d);
@@ -259,6 +279,19 @@ $('#dwell').addEventListener('input', (e) => {
   settings.dwellMs = Number(e.target.value);
   persist();
   syncPanel();
+});
+$('#quality').addEventListener('change', (e) => {
+  settings.trackQuality = e.target.value;
+  tracker.setQuality(settings.trackQuality);
+  persist();
+  syncPanel();
+});
+$('#side').addEventListener('input', (e) => {
+  settings.sideInset = Number(e.target.value) / 100;
+  persist();
+  syncPanel();
+  clearTimeout(resizeT);
+  resizeT = setTimeout(() => game.render(), 150);
 });
 $('#reach').addEventListener('input', (e) => {
   settings.reachTop = Number(e.target.value) / 100;

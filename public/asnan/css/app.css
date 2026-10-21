@@ -76,7 +76,11 @@ html, body {
 
 #stage {
   position: fixed;
-  inset: 0;
+  /* حواف الشاشة الآمنة (نتوء الكاميرا وشريط الإيماءة في الهواتف بالوضع الأفقي) */
+  top: env(safe-area-inset-top, 0px);
+  right: env(safe-area-inset-right, 0px);
+  bottom: env(safe-area-inset-bottom, 0px);
+  left: env(safe-area-inset-left, 0px);
   overflow: hidden;
   touch-action: none;
   background:
@@ -152,6 +156,20 @@ html, body {
 .ring { fill: none; stroke-width: 10; stroke-linecap: round; }
 .dot { stroke: #fff; stroke-width: 3.5; }
 .held-halo { fill: color-mix(in srgb, var(--c) 22%, transparent); stroke: var(--c); stroke-width: 4; }
+/* سن مركون (اختفت اليد الحاملة): دائرة متقطعة نابضة تدعو الطفل لوضع يده عليه */
+.cursor.parked .ring-bg {
+  stroke: var(--gold);
+  stroke-dasharray: 10 8;
+  stroke-width: 7;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: parkPulse 0.9s ease-in-out infinite;
+}
+.cursor.parked .dot { display: none; }
+@keyframes parkPulse {
+  0%, 100% { transform: scale(1.6); opacity: 0.9; }
+  50% { transform: scale(2.1); opacity: 0.5; }
+}
 
 /* ---------------------------------------------------------------- الترويسة */
 .hud-header {
@@ -164,6 +182,7 @@ html, body {
   align-items: center;
   gap: calc(var(--u) * 24);
   padding: 0 calc(var(--u) * 40);
+  padding-left: max(calc(var(--u) * 40), 250px); /* أدوات المعلم في الزاوية اليسرى */
 }
 .title {
   margin: 0;
@@ -188,17 +207,6 @@ html, body {
 }
 .chip.warn { color: var(--bad); }
 .chip.time { direction: ltr; unicode-bidi: isolate; font-variant-numeric: tabular-nums; }
-.race { display: flex; gap: calc(var(--u) * 18); margin-inline-end: calc(var(--u) * 200); }
-.race-team { font-family: var(--fh); font-weight: 700; font-size: calc(var(--u) * 22); color: var(--maroon); }
-.race-team .bar {
-  width: calc(var(--u) * 170);
-  height: calc(var(--u) * 16);
-  border-radius: 999px;
-  background: #fff;
-  border: calc(var(--u) * 2) solid var(--line);
-  overflow: hidden;
-}
-.race-team .bar i { display: block; height: 100%; width: 0; background: var(--gold); transition: width 0.4s; }
 
 .menu-head {
   flex-direction: column;
@@ -268,15 +276,44 @@ html, body {
   box-shadow: 0 0 0 calc(var(--u) * 8) rgba(201, 150, 26, 0.45), 0 calc(var(--u) * 10) calc(var(--u) * 20) rgba(0, 0, 0, 0.12);
 }
 
-.tray {
+.tray-wrap {
   position: absolute;
-  left: calc(var(--u) * 40);
-  right: calc(var(--u) * 40);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 6);
+}
+.tray {
+  flex: 1;
+  min-height: 0;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   grid-template-rows: 100%;
   gap: calc(var(--u) * 20);
 }
+
+/* الفرق: لون لكل فريق على شريطه وإطار بطاقاته وسنّه المحمول */
+.team-upper { --team: #8a1538; }
+.team-lower { --team: #0e7490; }
+.team-bar {
+  height: calc(var(--u) * 40);
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 14);
+  padding: 0 calc(var(--u) * 16);
+  border-radius: 999px;
+  background: var(--team);
+  color: #fff;
+  font-family: var(--fh);
+  font-size: calc(var(--u) * 24);
+}
+.team-bar b { font-weight: 800; white-space: nowrap; }
+.tb-bar { flex: 1; height: calc(var(--u) * 14); border-radius: 999px; background: rgba(255, 255, 255, 0.3); overflow: hidden; }
+.tb-bar i { display: block; height: 100%; width: 0; background: #ffd667; transition: width 0.4s; }
+.tb-mist { white-space: nowrap; font-weight: 700; }
+.tray-wrap.team-upper .card, .tray-wrap.team-lower .card { border-color: var(--team); border-top-color: var(--c); }
+.held-tooth[class*='team-'] .held-halo { stroke: var(--team); stroke-width: 7; }
+.res-team { color: var(--team); }
+.res-team b { color: var(--team) !important; }
 .card {
   position: relative;
   display: flex;
@@ -298,6 +335,21 @@ html, body {
 .card-body small { font-size: calc(var(--u) * 22); color: var(--muted); }
 .card .count { font-family: var(--fh); font-weight: 700; font-size: calc(var(--u) * 24); color: var(--ink); }
 .card.done, .card.empty { opacity: 0.38; }
+
+/* بطاقة ضيقة: الأيقونة فوق الاسم */
+.tray.compact { gap: calc(var(--u) * 12); }
+.tray.compact .card {
+  flex-direction: column;
+  justify-content: center;
+  gap: calc(var(--u) * 4);
+  padding: calc(var(--u) * 8) calc(var(--u) * 6);
+  text-align: center;
+}
+.tray.compact .card .tooth-icon { height: 46%; max-width: 70%; }
+.tray.compact .card-body { align-items: center; }
+.tray.compact .card-body b { font-size: calc(var(--u) * 32); }
+.tray.compact .card-body small { display: none; }
+.tray.compact .card .count { font-size: calc(var(--u) * 22); }
 .card.done::after {
   content: '✓';
   position: absolute;
@@ -476,6 +528,7 @@ select { font: inherit; padding: 7px 10px; border-radius: 10px; border: 1px soli
 .field input[type='range'] { width: 100%; }
 .field legend { font-weight: 600; padding: 0; }
 .field label, .check { display: flex; gap: 8px; align-items: center; margin: 4px 0; }
+.placement { display: block; width: 100%; max-width: 360px; margin: 2px auto 6px; background: #faf6ee; border-radius: 10px; }
 .tips ul { margin: 4px 0; padding-inline-start: 20px; color: #57534e; font-size: 14px; }
 
 /* ---------------------------------------------------------------- المعايرة */
@@ -526,7 +579,16 @@ select { font: inherit; padding: 7px 10px; border-radius: 10px; border: 1px soli
   box-shadow: 0 0 0 2px #fff;
 }
 
-/* الصورة على السبورة أفقية: في الوضع العمودي نطلب تدوير الآيباد */
+/* الهواتف بالوضع الأفقي: شاشة قصيرة، فأدوات المعلم أصغر */
+@media (max-height: 500px) {
+  .tbtn { width: 30px; height: 30px; font-size: 15px; }
+  .cam-chip { font-size: 11px; padding: 4px 9px; }
+  #teacher { gap: 4px; }
+  .hud-header { padding-left: max(calc(var(--u) * 40), 200px); }
+  #panel { font-size: 14px; width: min(420px, 70vw); }
+}
+
+/* الصورة على السبورة أفقية: في الوضع العمودي نطلب تدوير الجهاز */
 #rotate { display: none; }
 @media (orientation: portrait) and (max-aspect-ratio: 4/5) {
   #rotate {
