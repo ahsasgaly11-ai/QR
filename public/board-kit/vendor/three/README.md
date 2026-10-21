@@ -32,3 +32,15 @@ sed -i 's#"./three.core.js"#"./three.core.min.js"#g' public/board-kit/vendor/thr
 cp package/LICENSE public/board-kit/vendor/three/LICENSE
 ```
 ثم جرّب كل الألعاب ثلاثية الأبعاد (`?sim`، و`?tier=A|B|C` في ألعاب النخبة) قبل الدمج.
+
+## الإضافات (`addons/`)
+ملفات من `examples/jsm/` في `three@0.186.1` نفسها، بمجلداتها، عبر خريطة الاستيراد `"three/addons/": "/board-kit/vendor/three/addons/"`:
+
+| الملف | الغرض | المسار |
+|---|---|---|
+| `postprocessing/{EffectComposer,RenderPass,ShaderPass,MaskPass,Pass,UnrealBloomPass,OutputPass}.js` و`shaders/{CopyShader,LuminosityHighPassShader,OutputShader}.js` | المعالجة اللاحقة للمسار السينمائي `WebGLRenderer` (الملف 10) | WebGL |
+| `tsl/display/BloomNode.js` | التوهّج بعقد TSL مع `RenderPipeline` | WebGPU |
+| `environments/RoomEnvironment.js` | الإضاءة البيئية المنعكسة (PMREM) | الاثنان |
+| `geometries/RoundedBoxGeometry.js`، `utils/BufferGeometryUtils.js` | صناديق بحواف مستديرة، وأدوات الهندسة | الاثنان |
+
+للتحديث: `cp node_modules/three/examples/jsm/<المسار> public/board-kit/vendor/three/addons/<المسار>` بالنسخة نفسها.
