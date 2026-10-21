@@ -63,6 +63,9 @@ const nextConfig: NextConfig = {
     return [
       { source: '/qurs', destination: '/qurs/index.html', permanent: false },
       { source: '/qurs/', destination: '/qurs/index.html', permanent: false },
+      // «أسبوع الزكام» (لعبة سبورة ذكية على board-kit)
+      { source: '/cold-week', destination: '/cold-week/index.html', permanent: false },
+      { source: '/cold-week/', destination: '/cold-week/index.html', permanent: false },
       // «مختبر العطسة» (ملف واحد ثابت داخل public/sneeze-lab)
       { source: '/sneeze-lab', destination: '/sneeze-lab/index.html', permanent: false },
       { source: '/sneeze-lab/', destination: '/sneeze-lab/index.html', permanent: false },
