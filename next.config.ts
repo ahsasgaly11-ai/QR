@@ -69,6 +69,9 @@ const nextConfig: NextConfig = {
       // عرض «نسيج المجتمع القطري» (ملف واحد ثابت داخل public/naseej، يُضمَّن في الرئيسية)
       { source: '/naseej', destination: '/naseej/index.html', permanent: false },
       { source: '/naseej/', destination: '/naseej/index.html', permanent: false },
+      // «ركّب الأسنان» (تطبيق ويب ثابت داخل public/asnan: لمس السبورة باليد بكاميرا الآيباد)
+      { source: '/asnan', destination: '/asnan/index.html', permanent: false },
+      { source: '/asnan/', destination: '/asnan/index.html', permanent: false },
     ];
   },
   images: {

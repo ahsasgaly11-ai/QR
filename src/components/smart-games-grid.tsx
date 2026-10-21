@@ -7,6 +7,7 @@ import { ActivityCard } from '@/components/activity-card';
 import { Reveal } from '@/components/reveal';
 import { SchoolGate } from '@/components/school-gate';
 import { QursFeaturedCard } from '@/components/qurs-featured-card';
+import { AsnanFeaturedCard } from '@/components/asnan-featured-card';
 import { SectionHead } from '@/components/home/section-head';
 import { HeritageIcon } from '@/components/heritage-icons';
 import {
@@ -50,6 +51,7 @@ export function SmartGamesGrid({ initialGames }: { initialGames: Activity[] }) {
   return (
     <SchoolGate>
       <QursFeaturedCard />
+      <AsnanFeaturedCard />
 
       <SectionHead
         kicker="مكتبة الألعاب"
