@@ -263,6 +263,51 @@ export class Game {
   _clearTimers() {
     for (const t of this._timers) clearTimeout(t);
     this._timers.clear();
+    for (const T of Object.values(this.state?.teams || {})) this._stopShow(T);
+  }
+
+  // ------------------------------------------------------------------ عرض العدسة (لا يوقف اللعب)
+  /** مؤقت خاص بعرض العدسة الجاري للفريق */
+  _showLater(T, fn, ms) {
+    const S = T.show;
+    if (!S) return;
+    const t = setTimeout(() => {
+      S.timers.delete(t);
+      // العرض ما زال هو نفسه، والفريق من الجولة الحالية (لا من لعبة سابقة)
+      if (T.show === S && this.state?.teams[T.id] === T) fn();
+    }, ms);
+    S.timers.add(t);
+  }
+  _stopShow(T) {
+    if (!T?.show) return;
+    for (const t of T.show.timers) clearTimeout(t);
+    T.show = null;
+  }
+  /** يبدأ عرضًا جديدًا في العدسة؛ إن كان عرض سابق جاريًا يُقطع فورًا لصالح البطاقة الأحدث */
+  _startShow(T, it) {
+    if (T.show) {
+      this._stopShow(T);
+      (this.view.abortTest || this.view.endTest).call(this.view, T.id);
+    }
+    T.show = { iid: it.id, timers: new Set() };
+  }
+  /** انتهى العرض: العدسة تعود لما في أيدي الفريق، أو ينتقل الفريق إن لم تبقَ بطاقات */
+  _endShow(T) {
+    const id = T.id;
+    this._stopShow(T);
+    this.view.endTest(id);
+    this._setBooth(id, { item: null, uv: false, scene: false });
+    if (!this.state || this.screen !== 'play') return;
+    if (T.msg?.kind === 'reveal') {
+      T.msg = null;
+      this._say(id, null);
+    }
+    if (T.left.length) {
+      // التقطوا بطاقة أثناء العرض؟ تظهر الآن في العدسة
+      this.later(() => this._syncPreview(id), 380);
+      return;
+    }
+    this._next(T);
   }
   _d(ms) {
     return this.reduced ? Math.round(ms * 0.4) : ms;
@@ -737,7 +782,7 @@ export class Game {
   /** الشيء الذي يحمله الفريق الآن يظهر في الحجرة (آخر بطاقة التُقطت) */
   _syncPreview(id) {
     const T = this.state?.teams[id];
-    if (!T || T.phase !== 'play') return;
+    if (!T || T.phase !== 'play' || T.show) return; // العدسة مشغولة بعرض: لا نقطعه بمجرد التقاط بطاقة
     const held = this._heldBy(id);
     let iid = held.has(T.lastPick) ? T.lastPick : [...held][0] || null;
     T.lastPick = iid;
@@ -827,7 +872,7 @@ export class Game {
     T.left = T.left.filter((x) => x !== it.id);
     T.placed++;
     T.lastPick = null;
-    T.phase = 'busy';
+    // لا تجميد: بطاقات الفريق تبقى قابلة للسحب أثناء عرض العدسة (انظر _startShow)
     T.msg = null;
     binEl.classList.remove('hint');
     binEl.classList.add('good');
@@ -841,7 +886,8 @@ export class Game {
     const bh = R.height / this.scale;
     this.particles.ring(bx + bw / 2, by + bh / 2, Math.min(bw, bh) / 2, TEAMS[id].color);
     // اللحظة السينمائية: لهب يشتعل من السلة التي وُضعت فيها البطاقة، ووهج دافئ عليها
-    this.particles.flame(bx + bw * 0.12, by + bh * 0.1, bw * 0.76, bh, { rich: this.view.tier === 'A' });
+    // يشتعل من الحافة العليا ويصعد فوقها: السلة تبقى مقروءة وقابلة للإفلات (اللعب لا يتوقف)
+    this.particles.flame(bx + bw * 0.15, by - 4, bw * 0.7, bh * 0.55, { rich: this.view.tier === 'A' });
     this._snd(id, 'flame');
     binEl.classList.remove('fire');
     void binEl.offsetWidth;
@@ -849,10 +895,11 @@ export class Game {
     this.later(() => binEl.classList.remove('fire'), 1400);
     // كرة النار: النموذج ينطلق من السلة في قوس إلى العدسة (حيث يظهر تحت الضوء البنفسجي)
     const lens = this.view.lensCenter?.(id);
-    if (this.cards && lens) this.cards.fly(cardKey(it), { x: bx + bw / 2, y: by + bh * 0.3 }, lens, 850);
+    if (this.cards && lens) this.cards.fly(cardKey(it), { x: bx + bw / 2, y: by - 10 }, lens, 850);
     this._fillTeam(id);
     this._paintPhase(id);
     this._collectTargets();
+    this._startShow(T, it);
     if (it.round === 'surface') this._uvTest(T, it);
     else this._spreadScene(T, it);
   }
@@ -888,35 +935,31 @@ export class Game {
     this.view.lampOn(id);
     this._snd(id, 'lamp');
     this._flash(id, '🔦 نضيء الضوء البنفسجي… هل عليه جراثيم؟', 'reveal', 60000);
-    this.later(() => this.view.cling(id), this._d(250));
-    this.later(() => {
+    this._showLater(T, () => this.view.cling(id), this._d(250));
+    this._showLater(T, () => {
       say(it.name);
       this._flash(id, `✨ ظهرت جراثيم كانت مختفية على <b>${esc(it.name)}</b>!`, 'reveal', 60000);
     }, this._d(1000));
     // اللحظة المدهشة (الطبقتان A وB): العدسة تغوص في السطح بتكبير هائل
     const micro = this.view.tier !== 'C' && !!this.view.dive;
     if (micro) {
-      this.later(() => {
+      this._showLater(T, () => {
         this.view.dive(id, it);
         this._flash(id, `🔬 نقترب بالعدسة… تكبير كبير جدًا!`, 'reveal', 60000);
       }, this._d(1900));
     }
     const tBlow = micro ? 3300 : 1900;
-    this.later(() => {
+    this._showLater(T, () => {
       this._snd(id, 'fan');
       this.view.blow(id, rough ? 0.86 : 0.14);
       this._flash(id, rough ? '💨 ننفخ الهواء… هل تختبئ الجراثيم في الوديان؟' : '💨 ننفخ الهواء على السطح الأملس…', 'reveal', 60000);
     }, this._d(tBlow));
-    this.later(() => {
+    this._showLater(T, () => {
       this._snd(id, 'shimmer');
       const lead = rough ? '🦠 <b>سطح خشن:</b> بقيت الجراثيم عالقة بين النتوءات!' : '💨 <b>سطح ناعم:</b> انزلقت معظم الجراثيم وطارت.';
       this._flash(id, `${lead} ${esc(it.fact)}`, 'reveal', 60000);
     }, this._d(tBlow + 1400));
-    this.later(() => {
-      this.view.endTest(id);
-      this._setBooth(id, { item: null, uv: false });
-      this._next(T);
-    }, this._d(tBlow + (micro ? 4000 : 3700)));
+    this._showLater(T, () => this._endShow(T), this._d(tBlow + (micro ? 4000 : 3700)));
   }
 
   /** الجولة ٢ بعد الصواب: مشهد قصير يكشف ما يحدث للجراثيم (≈ ٤ ث) */
@@ -927,17 +970,13 @@ export class Game {
     this._snd(id, 'lamp');
     this.view.vignette(id, it);
     this._flash(id, `🔦 <b>${esc(it.name)}</b>… ماذا يحدث للجراثيم؟`, 'reveal', 60000);
-    this.later(() => say(it.name), this._d(600));
-    this.later(() => {
+    this._showLater(T, () => say(it.name), this._d(600));
+    this._showLater(T, () => {
       this._snd(id, 'shimmer');
       const lead = it.cat === 'spread' ? '🦠 <b>ينشر الجراثيم:</b>' : '🛡️ <b>يمنع انتشارها:</b>';
       this._flash(id, `${lead} ${esc(it.fact)}`, 'reveal', 60000);
     }, this._d(2500));
-    this.later(() => {
-      this.view.endTest(id);
-      this._setBooth(id, { item: null, uv: false, scene: false });
-      this._next(T);
-    }, this._d(5200));
+    this._showLater(T, () => this._endShow(T), this._d(5200));
   }
 
   /** البطاقة التالية، أو «أطفئوا الأنوار» بين الجولتين، أو نهاية الفريق */
@@ -946,6 +985,7 @@ export class Game {
     const id = T.id;
     T.msg = null;
     if (T.left.length) {
+      // (احتياط) ما زالت بطاقات: يستمر اللعب
       T.phase = 'play';
       this._fillTeam(id);
       this._paintPhase(id);

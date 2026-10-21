@@ -1513,6 +1513,23 @@ class Scene3D {
     this.later(() => T.germs.clear(), 450, T);
   }
 
+  /**
+   * يقطع عرض العدسة الجاري فورًا (وضعوا بطاقة صحيحة جديدة قبل انتهائه): بلا انتظار ولا مؤقتات
+   * متأخرة قد تمحو العرض الجديد. المصباح يبقى كما هو.
+   */
+  abortTest(id) {
+    const T = this.teams[id];
+    if (!T) return;
+    this._clearTimers(T);
+    this._dropMicro(T);
+    T.dive = null;
+    T.zoom = 0;
+    this.preview(id, null);
+    this._clearProps(T);
+    T.germs.clear();
+    T.lensDirty = true;
+  }
+
   /** اهتزاز الطبقة المرئية فقط (الأهداف لا تتحرك) */
   shake(id) {
     const T = this.teams[id];
