@@ -85,6 +85,13 @@ function noise(t, dur, { f0 = 400, f1 = 2400, q = 1.2, gain = 0.3, attack = 0.35
 }
 
 export const fxs = {
+  /** اشتعال لهب: هبّة نار منخفضة ترتفع، وطقطقة، وضربة دافئة */
+  flame(pan = 0) {
+    noise(0, 0.9, { f0: 180, f1: 1400, q: 0.7, gain: 0.32, attack: 0.12, pan, type: 'lowpass' });
+    noise(0.05, 0.6, { f0: 2400, f1: 900, q: 1.5, gain: 0.08, attack: 0.2, pan });
+    tone(110, 0, 0.35, { type: 'sine', gain: 0.3, slideTo: 55, pan });
+    for (let i = 0; i < 7; i++) noise(0.12 + Math.random() * 0.7, 0.03, { f0: 3000, f1: 2500, q: 4, gain: 0.07, attack: 0.1, pan });
+  },
   /** هبوب: شيء يطير */
   whoosh(dur = 0.5, pan = 0) {
     noise(0, dur, { f0: 300, f1: 2600, q: 0.9, gain: 0.26, pan });
@@ -214,8 +221,34 @@ export class Particles {
     this.ctx = canvas.getContext('2d');
     this.ps = [];
     this.rings = [];
+    this.fires = [];
+    // ذيل اللهب خلف النموذج المحمول أو الطائر (يتغذّى كل إطار من trail)
+    this.tail = { ps: [], embers: [], acc: 0 };
     this.scale = 1;
     this.reduced = false;
+  }
+
+  /**
+   * ذيل لهب عند نقطة متحركة (النموذج تحت اليد، أو كرة النار الطائرة إلى العدسة): ألسنة صغيرة
+   * تتخلّف عن الحركة وتصعد، وجمرات. power من 0 إلى 1 (أقوى مع السرعة). بوحدة u.
+   */
+  trail(x, y, dt, power = 0.5, rich = true) {
+    if (!Particles.sprites) Particles.sprites = makeFlameSprites();
+    const T = this.tail;
+    const rate = (rich ? 90 : 45) * (0.35 + power) * (this.reduced ? 0.3 : 1);
+    T.acc += rate * dt;
+    while (T.acc >= 1) {
+      T.acc -= 1;
+      const life = 0.3 + Math.random() * 0.35;
+      T.ps.push({
+        x: x + (Math.random() - 0.5) * 34, y: y + 30 + (Math.random() - 0.5) * 20,
+        vx: (Math.random() - 0.5) * 50, vy: -(90 + Math.random() * 140) * (0.6 + power), t: 0, life,
+        s: (18 + Math.random() * 20) * (0.7 + power * 0.6), seed: Math.random() * 10,
+      });
+      if (Math.random() < 0.12 * (0.5 + power)) {
+        T.embers.push({ x, y: y + 20, vx: (Math.random() - 0.5) * 140, vy: -(120 + Math.random() * 220), t: 0, life: 0.6 + Math.random() * 0.6, s: 4 + Math.random() * 5, seed: Math.random() * 10 });
+      }
+    }
   }
   resize(wPx, hPx, scale) {
     const dpr = Math.min(1.5, devicePixelRatio || 1);
@@ -224,7 +257,23 @@ export class Particles {
     this.scale = scale * dpr;
   }
   get busy() {
-    return this.ps.length > 0 || this.rings.length > 0;
+    return this.ps.length > 0 || this.rings.length > 0 || this.fires.length > 0 || this.tail.ps.length > 0;
+  }
+
+  /**
+   * لهب سينمائي يشتعل من الحافة العليا لمستطيل (السلة) ثم يخبو: ألسنة نار متصاعدة بألوان
+   * أبيض ← أصفر ← برتقالي ← أحمر، وجمرات تتطاير، ووهج دافئ. يُرسم بمزج إضافي (lighter).
+   * لا وميض متكرر، ومدته ≈ ١٫٣ ث (٠٫٥ ث مع تقليل الحركة). الإحداثيات بوحدة u.
+   * @param {number} x @param {number} y الحافة العليا (يسار، أعلى) @param {number} w العرض @param {number} h الارتفاع
+   * @param {{rich?:boolean}} o rich = جسيمات أكثر (الطبقة A)
+   */
+  flame(x, y, w, h, { rich = true } = {}) {
+    if (!Particles.sprites) Particles.sprites = makeFlameSprites();
+    const dur = this.reduced ? 0.45 : 0.95;
+    this.fires.push({
+      x, y, w, h, t: 0, dur, rate: (rich ? 260 : 120) * (this.reduced ? 0.4 : 1), acc: 0,
+      ps: [], embers: [], tall: Math.max(140, Math.min(300, h * 1.25)),
+    });
   }
   burst(x, y, color, n = 36) {
     const count = this.reduced ? Math.round(n / 4) : n;
@@ -253,6 +302,8 @@ export class Particles {
   clear() {
     this.ps = [];
     this.rings = [];
+    this.fires = [];
+    this.tail = { ps: [], embers: [], acc: 0 };
     this.ctx.clearRect(0, 0, this.cv.width, this.cv.height);
   }
   frame(dt, extra) {
@@ -272,6 +323,7 @@ export class Particles {
       c.stroke();
     }
     this.rings = this.rings.filter((r) => r.t < r.life);
+    if (this.fires.length || this.tail.ps.length || this.tail.embers.length) this._fires(c, dt);
     for (const p of this.ps) {
       p.t += dt;
       p.vy += p.g * dt;
@@ -379,4 +431,102 @@ export class GermDots {
     }
     c.globalAlpha = 1;
   }
+}
+
+// ---------------------------------------------------------------- اللهب
+/** صور جسيمات اللهب (تُرسم مرة واحدة): بقع متدرّجة بأربعة ألوان، وجمرة صغيرة */
+function makeFlameSprites() {
+  const mk = (stops, size = 64) => {
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = size;
+    const g = cv.getContext('2d');
+    const gr = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+    for (const [o, col] of stops) gr.addColorStop(o, col);
+    g.fillStyle = gr;
+    g.fillRect(0, 0, size, size);
+    return cv;
+  };
+  return {
+    core: mk([[0, 'rgba(255,255,240,1)'], [0.35, 'rgba(255,240,170,0.85)'], [1, 'rgba(255,200,80,0)']]),
+    yellow: mk([[0, 'rgba(255,214,90,0.95)'], [0.45, 'rgba(255,170,40,0.55)'], [1, 'rgba(255,120,20,0)']]),
+    orange: mk([[0, 'rgba(255,128,30,0.85)'], [0.5, 'rgba(240,80,20,0.45)'], [1, 'rgba(200,40,10,0)']]),
+    red: mk([[0, 'rgba(210,40,30,0.6)'], [0.55, 'rgba(150,20,30,0.3)'], [1, 'rgba(90,10,30,0)']]),
+    glow: mk([[0, 'rgba(255,170,60,0.55)'], [0.5, 'rgba(255,110,30,0.18)'], [1, 'rgba(255,80,20,0)']], 128),
+    ember: mk([[0, 'rgba(255,250,210,1)'], [0.4, 'rgba(255,190,80,0.8)'], [1, 'rgba(255,120,30,0)']], 24),
+  };
+}
+
+Particles.prototype._fires = function (c, dt) {
+  const S = Particles.sprites;
+  c.save();
+  c.globalCompositeOperation = 'lighter';
+  for (const F of this.fires) {
+    F.t += dt;
+    const k = F.t / F.dur;
+    // انبعاث: يشتد في البداية ثم يخبو (منحنى ناعم، بلا وميض)
+    if (F.t < F.dur) {
+      const strength = Math.sin(Math.min(1, k) * Math.PI) * 0.6 + (k < 0.25 ? 0.6 : 0.2);
+      F.acc += F.rate * strength * dt;
+      while (F.acc >= 1) {
+        F.acc -= 1;
+        // تتجمّع الألسنة نحو الوسط (توزيع مثلثي) فيبدو اللهب كتلة واحدة
+        const u = (Math.random() + Math.random()) / 2;
+        const life = 0.45 + Math.random() * 0.45;
+        F.ps.push({
+          x: F.x + u * F.w, y: F.y + 6, vx: (u - 0.5) * -40 + (Math.random() - 0.5) * 30,
+          vy: -(F.tall / life) * (0.75 + Math.random() * 0.5), t: 0, life,
+          s: 26 + Math.random() * 30 + (1 - Math.abs(u - 0.5) * 2) * 26, seed: Math.random() * 10,
+        });
+        if (Math.random() < 0.16) {
+          F.embers.push({
+            x: F.x + u * F.w, y: F.y, vx: (Math.random() - 0.5) * 160, vy: -(260 + Math.random() * 380),
+            t: 0, life: 0.9 + Math.random() * 0.9, s: 6 + Math.random() * 7, seed: Math.random() * 10,
+          });
+        }
+      }
+    }
+    // وهج دافئ تحت اللهب
+    const ga = Math.max(0, Math.sin(Math.min(1, k * 1.1) * Math.PI)) * 0.9;
+    if (ga > 0.01) {
+      c.globalAlpha = ga;
+      const gw = F.w * 1.5;
+      c.drawImage(S.glow, F.x + F.w / 2 - gw / 2, F.y - gw * 0.45, gw, gw * 0.9);
+    }
+    drawTongues(c, F, dt, S);
+  }
+  // ذيل اللهب (بلا انبعاث هنا: يتغذّى من trail)
+  drawTongues(c, this.tail, dt, S);
+  this.fires = this.fires.filter((F) => F.t < F.dur || F.ps.length || F.embers.length);
+  c.restore();
+};
+
+/** يرسم ألسنة اللهب والجمرات لمجموعة واحدة ويقدّم أعمارها */
+function drawTongues(c, F, dt, S) {
+    // الألسنة: تكبر ثم تصغر، وتتمايل، ويتحوّل لونها مع العمر
+    for (const p of F.ps) {
+      p.t += dt;
+      const a = p.t / p.life;
+      p.x += (p.vx + Math.sin(p.t * 9 + p.seed) * 60) * dt;
+      p.y += p.vy * dt;
+      p.vy *= 1 - dt * 0.6;
+      const size = p.s * (a < 0.3 ? 0.6 + a * 1.6 : 1.08 - (a - 0.3) * 1.1);
+      if (size <= 1) continue;
+      const fade = a < 0.15 ? a / 0.15 : 1 - Math.pow((a - 0.15) / 0.85, 1.4);
+      const img = a < 0.18 ? S.core : a < 0.42 ? S.yellow : a < 0.7 ? S.orange : S.red;
+      c.globalAlpha = Math.max(0, Math.min(1, fade));
+      // اللسان مستطيل عموديًا قليلًا (أطول من عرضه) فيبدو كاللهب لا كالدخان
+      c.drawImage(img, p.x - size / 2, p.y - size * 0.7, size, size * 1.4);
+    }
+    F.ps = F.ps.filter((p) => p.t < p.life);
+    // الجمرات: نقاط مضيئة تصعد وتتمايل وتخبو
+    for (const e of F.embers) {
+      e.t += dt;
+      e.vy += 120 * dt;
+      e.x += (e.vx + Math.sin(e.t * 6 + e.seed) * 50) * dt;
+      e.y += e.vy * dt;
+      const a = e.t / e.life;
+      c.globalAlpha = Math.max(0, 1 - a) * (0.7 + 0.3 * Math.sin(e.t * 25 + e.seed));
+      c.drawImage(S.ember, e.x - e.s, e.y - e.s, e.s * 2, e.s * 2);
+    }
+    F.embers = F.embers.filter((e) => e.t < e.life);
 }
