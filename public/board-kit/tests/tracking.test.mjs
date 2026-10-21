@@ -111,3 +111,24 @@ test('focus crop keeps a small hand at about a third of the window, inside the f
   const edge = focusCrop({ cx: 0.99, cy: 0.02, size: 0.03 }, aspect);
   assert.ok(edge.x >= 0 && edge.x + edge.w <= 1 + 1e-9 && edge.y >= 0 && edge.y + edge.h <= 1 + 1e-9, 'clamped inside the frame');
 });
+
+test('a single fast-moving hand that drops out mid-swing keeps its identity', () => {
+  const m = new HandMatcher({ aspect: 1.6 });
+  let t = 0;
+  let id;
+  for (let i = 0; i < 5; i++, t += 200) [{ id }] = m.update([{ x: 0.35, y: 0.42 }], t);
+  m.update([], t); // لا كشف أثناء الحركة السريعة
+  t += 400;
+  const [o] = m.update([{ x: 0.66, y: 0.5 }], t); // ظهرت بعيدًا (أبعد من النطاق العادي)
+  assert.equal(o.id, id);
+});
+
+test('with two hands around, a far jump is not guessed', () => {
+  const m = new HandMatcher({ aspect: 1.6 });
+  let t = 0;
+  for (let i = 0; i < 5; i++, t += 100) m.update([{ x: 0.2, y: 0.5 }, { x: 0.8, y: 0.5 }], t);
+  t += 400;
+  // ظهرت يدان في مكانين جديدين بعيدين: لا ننسب أيًّا منهما لليدين السابقتين تخمينًا
+  const out = m.update([{ x: 0.5, y: 0.1 }, { x: 0.5, y: 0.95 }], t);
+  assert.ok(out.every((o) => o.id > 2), JSON.stringify(out));
+});

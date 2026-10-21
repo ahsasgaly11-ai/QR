@@ -13,6 +13,6 @@
 للتحديث:
 ```bash
 npm pack @mediapipe/tasks-vision@<الإصدار> && tar xzf mediapipe-tasks-vision-*.tgz
-cp package/vision_bundle.mjs public/asnan/vendor/mediapipe/
-cp package/wasm/vision_wasm_internal.{js,wasm} public/asnan/vendor/mediapipe/wasm/
+cp package/vision_bundle.mjs public/board-kit/vendor/mediapipe/
+cp package/wasm/vision_wasm_internal.{js,wasm} public/board-kit/vendor/mediapipe/wasm/
 ```

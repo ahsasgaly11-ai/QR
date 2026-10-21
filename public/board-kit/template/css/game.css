@@ -1,0 +1,40 @@
+/* ----------------------------------------------------------------------------
+   قالب «صنّف» — ما يخص هذه اللعبة فقط. التصميم المشترك في /board-kit/css/kit.css.
+---------------------------------------------------------------------------- */
+.tpl-legend { position: absolute; left: 0; right: 0; top: calc(var(--u) * 260); font-size: calc(var(--u) * 34); }
+
+/* السلال (خانات الإفلات) */
+.tpl-bin {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--u) * 6);
+  border-radius: calc(var(--u) * 34);
+  background: color-mix(in srgb, var(--c) 10%, #fff);
+  border: calc(var(--u) * 6) dashed var(--c);
+  color: var(--c);
+  transition: transform 0.15s, background 0.15s;
+}
+.tpl-bin[data-team] { box-shadow: 0 0 0 calc(var(--u) * 5) var(--team); }
+.tpl-bin b { font-family: var(--fh); font-weight: 800; font-size: calc(var(--u) * 56); line-height: 1; }
+.tpl-bin-emoji { font-size: calc(var(--u) * 84); line-height: 1; }
+.tpl-bin-count { font-family: var(--fh); font-weight: 700; font-size: calc(var(--u) * 30); color: var(--ink); min-height: 1.2em; }
+.tpl-bin.hover { background: var(--gold-l); border-style: solid; transform: scale(1.03); }
+.tpl-bin.good { animation: pop 0.45s cubic-bezier(0.3, 1.6, 0.5, 1); }
+.tpl-bin.shake { animation: shake 0.45s; background: #ffd4d4; }
+.tpl-bin.hint { animation: glow 0.8s ease-in-out infinite; border-style: solid; }
+
+/* بطاقات العناصر */
+.tpl-card { --c: #5f4b32; }
+.tpl-emoji { font-size: calc(var(--u) * 72); line-height: 1; flex: none; }
+.tray.compact .tpl-emoji { font-size: calc(var(--u) * 58); }
+.tpl-card .card-body b { color: var(--ink); font-size: calc(var(--u) * 36); }
+.tray.compact .tpl-card .card-body b { font-size: calc(var(--u) * 28); }
+.tpl-card.taken { opacity: 0.35; }
+
+/* العنصر المحمول */
+.tpl-held .held-halo { fill: rgba(255, 255, 255, 0.9); stroke: #7a6a55; stroke-width: 5; }
+.tpl-held-emoji { font-size: 64px; }
+.tpl-held-label { font: 800 30px var(--fh); fill: var(--ink); paint-order: stroke; stroke: #fff; stroke-width: 8px; }

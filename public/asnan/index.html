@@ -14,113 +14,13 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="stylesheet" href="/board-kit/css/kit.css">
 <link rel="stylesheet" href="css/app.css">
 <link rel="modulepreload" href="js/main.js">
+<link rel="modulepreload" href="/board-kit/js/app.js">
 </head>
 <body>
-<!-- الكاميرا: عنصر فيديو مخفي تمامًا — صورته لا تُعرض على الصفحة فلا تنتقل إلى السبورة -->
-<video id="cam" playsinline muted autoplay aria-hidden="true"></video>
-
-<main id="stage" data-screen="menu">
-  <svg id="board" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" aria-label="الفكّان"></svg>
-  <div id="hud"></div>
-  <svg id="fx" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" aria-hidden="true"></svg>
-</main>
-
-<!-- أدوات المعلم (تُلمس على شاشة الآيباد فقط، ولا تتفاعل مع يد الطالب) -->
-<nav id="teacher" aria-label="أدوات المعلم">
-  <span id="camChip" class="cam-chip" data-state="off">بلا كاميرا</span>
-  <button id="btnHome" class="tbtn" title="القائمة" aria-label="القائمة">⌂</button>
-  <button id="btnFull" class="tbtn" title="ملء الشاشة" aria-label="ملء الشاشة">⛶</button>
-  <button id="btnSettings" class="tbtn" title="الكاميرا والإعدادات" aria-label="الكاميرا والإعدادات">⚙</button>
-</nav>
-
-<aside id="panel" hidden>
-  <div class="panel-head">
-    <h2>الكاميرا والإعدادات</h2>
-    <button id="btnClose" class="tbtn" aria-label="إغلاق">✕</button>
-  </div>
-  <p id="panelMsg" class="panel-msg" aria-live="polite"></p>
-
-  <section>
-    <h3>١. الكاميرا <span id="camStatus" data-state="off"><span id="camText">الكاميرا متوقفة</span></span></h3>
-    <p class="help">ثبّت الجهاز (آيباد أو هاتف بالوضع الأفقي) على حامل في <b>زاوية جانبية قريبة من السبورة</b>، ووجّه الكاميرا الخلفية لترى الصورة المعروضة كاملة. <b>لا تضعه على طاولة خلف الطلاب</b>: أجسامهم تحجب أيديهم، والبُعد يُصغّر أيديهم على الكاميرا.</p>
-    <svg class="placement" viewBox="0 0 320 150" role="img" aria-label="مكان الجهاز: في زاوية جانبية قريبة من السبورة، لا خلف الطلاب">
-      <rect x="40" y="10" width="240" height="14" rx="3" fill="#e2d5bd"/>
-      <text x="160" y="21" text-anchor="middle" font-size="10" fill="#5f0d26">السبورة</text>
-      <circle cx="120" cy="45" r="11" fill="#cbd5e1"/><circle cx="185" cy="48" r="11" fill="#cbd5e1"/>
-      <text x="152" y="72" text-anchor="middle" font-size="9" fill="#57534e">الطلاب</text>
-      <rect x="282" y="34" width="22" height="15" rx="3" fill="#15803d" transform="rotate(-35 293 41)"/>
-      <path d="M284 34 L250 18 M284 34 L262 54" stroke="#15803d" stroke-width="1.5" stroke-dasharray="3 3" fill="none"/>
-      <text x="292" y="72" text-anchor="middle" font-size="10" fill="#15803d" font-weight="700">✓ هنا</text>
-      <rect x="143" y="118" width="24" height="16" rx="3" fill="#b91c1c"/>
-      <text x="155" y="146" text-anchor="middle" font-size="10" fill="#b91c1c" font-weight="700">✗ لا: خلف الطلاب</text>
-      <path d="M155 116 L155 62" stroke="#b91c1c" stroke-width="1.5" stroke-dasharray="3 3"/>
-    </svg>
-    <div class="row">
-      <select id="camSelect" aria-label="اختيار الكاميرا"></select>
-      <button id="btnCam" class="btn">تشغيل الكاميرا</button>
-    </div>
-    <div class="row">
-      <button id="btnPreview" class="btn ghost">إظهار معاينة الكاميرا</button>
-      <span id="fps" class="muted" dir="rtl"></span>
-    </div>
-    <p class="help warn">المعاينة تظهر على السبورة أيضًا (لأن الشاشة منعكسة)؛ استعملها لضبط الحامل فقط ثم أخفِها.</p>
-    <canvas id="preview" hidden data-on="0"></canvas>
-  </section>
-
-  <section>
-    <h3>٢. المعايرة</h3>
-    <p class="help">تربط ما تراه الكاميرا بمكانه على السبورة. أعدها كلما تحرّك الحامل. ابتعدوا عن السبورة أثناءها (٨ ثوانٍ تقريبًا).</p>
-    <div class="row">
-      <button id="btnAuto" class="btn primary">معايرة تلقائية</button>
-      <button id="btnManual" class="btn ghost">معايرة يدوية</button>
-    </div>
-    <p id="calResult" class="cal-result"></p>
-  </section>
-
-  <section>
-    <h3>٣. اللعب</h3>
-    <label class="field">مدة إبقاء اليد <output id="dwellVal"></output>
-      <input id="dwell" type="range" min="400" max="1500" step="50">
-    </label>
-    <label class="field">لا يصل الطلاب إلى أعلى السبورة؟ أنزِل الأسنان <output id="reachVal"></output>
-      <input id="reach" type="range" min="0" max="45" step="1">
-    </label>
-    <label class="field">دقة تتبّع اليد
-      <select id="quality">
-        <option value="normal">عادية — أسرع، للأجهزة القديمة</option>
-        <option value="high">عالية — تكبير منطقة السبورة</option>
-        <option value="max">قصوى — مسح وتركيز على كل يد (مستحسنة لأيدي الصغار)</option>
-      </select>
-    </label>
-    <p id="qualityNote" class="help warn"></p>
-    <label class="field">إبعاد البطاقات عن طرفي الصورة <output id="sideVal"></output>
-      <input id="side" type="range" min="0" max="20" step="1">
-    </label>
-    <fieldset class="field">
-      <legend>نقطة اللمس</legend>
-      <label><input type="radio" name="handPoint" value="palm"> منتصف الكف (أثبت)</label>
-      <label><input type="radio" name="handPoint" value="finger"> طرف السبابة (أدق للأيدي الصغيرة)</label>
-    </fieldset>
-    <label class="check"><input id="optHands" type="checkbox"> إظهار دائرة اليد على السبورة</label>
-    <label class="check"><input id="optSound" type="checkbox"> المؤثرات الصوتية</label>
-    <label class="check"><input id="optSpeech" type="checkbox"> نطق اسم السن عند وضعه</label>
-    <label class="check"><input id="optSim" type="checkbox"> تجربة بلا كاميرا: الماوس يتصرف كيد</label>
-  </section>
-
-  <section class="tips">
-    <h3>نصائح للحصة</h3>
-    <ul>
-      <li>من مركز التحكم في الآيباد أو الآيفون اختر <b>انعكاس الشاشة</b> ← Apple TV (وفي أندرويد: «بث الشاشة»).</li>
-      <li>أضف الصفحة إلى الشاشة الرئيسية (مشاركة ← إضافة إلى الشاشة الرئيسية) لتعمل بملء الشاشة.</li>
-      <li>اترك الآيباد على الشاحن، وفعّل «الوصول الموجّه» حتى لا يخرج أحد من اللعبة.</li>
-      <li>يمكنك أيضًا اللعب بلمس شاشة الآيباد مباشرة (بلا كاميرا).</li>
-    </ul>
-  </section>
-</aside>
-
-<div id="rotate" aria-hidden="true">أدِر الجهاز أفقيًا 🔄</div>
+<!-- المسرح والكاميرا المخفية وأدوات المعلم يبنيها board-kit (js/app.js) -->
 <noscript>هذه اللعبة تحتاج JavaScript.</noscript>
 <script type="module" src="js/main.js"></script>
 </body>

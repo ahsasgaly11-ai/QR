@@ -91,6 +91,9 @@ export function mergeDetections(dets, aspect) {
 
 /** أقصى مدة تُحفظ فيها هوية يد مختفية (حجبها جسم الطفل أو خرجت من الصورة لحظة). */
 export const TRACK_MEMORY_MS = 3000;
+/** يد وحيدة اختفت ثم ظهرت يد وحيدة: نطاق أوسع للمطابقة خلال هذه المدة. */
+const SOLO_MEMORY_MS = 1500;
+const SOLO_GATE = 0.5;
 
 /**
  * مطابقة الأيدي عبر الإطارات بإحداثيات الشاشة المطبّعة.
@@ -150,6 +153,15 @@ export class HandMatcher {
       usedD.add(di);
       usedT.add(id);
       out.push(this._update(this.tracks.get(id), dets[di], t));
+    }
+    // حركة سريعة غاب فيها الكشف إطارات: يد واحدة اختفت حديثًا ويد واحدة جديدة ظهرت ⇒ هي نفسها
+    // (طفل يسحب بسرعة)، ولو قفزت أبعد من نطاق المطابقة العادي. مع أكثر من يد لا نخمّن.
+    const freeD = dets.map((_, i) => i).filter((i) => !usedD.has(i));
+    const freeT = [...this.tracks.values()].filter((tr) => !usedT.has(tr.id) && t - tr.seen > 0 && t - tr.seen < SOLO_MEMORY_MS);
+    if (freeD.length === 1 && freeT.length === 1 && this._dist(dets[freeD[0]], freeT[0]) < SOLO_GATE) {
+      usedD.add(freeD[0]);
+      usedT.add(freeT[0].id);
+      out.push(this._update(freeT[0], dets[freeD[0]], t));
     }
     dets.forEach((d, di) => {
       if (usedD.has(di)) return;

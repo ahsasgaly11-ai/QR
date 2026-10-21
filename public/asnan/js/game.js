@@ -12,8 +12,8 @@
 //     تحت فكّه، وأسنان بطاقاته لا توضع إلا في فكّه (فلا تتشابك أيدي الفريقين).
 // ---------------------------------------------------------------------------
 import { TYPES, TYPE_ORDER, jawTeeth, crownPath, rootPath, SLOT_PATH, CROWN_LEN } from './teeth.js';
-import { archCurve, placeOnArch, inwardNormal } from './geometry.js';
-import { sfx, say } from './audio.js';
+import { archCurve, placeOnArch, inwardNormal } from '../../board-kit/js/geometry.js';
+import { sfx, say } from '../../board-kit/js/audio.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 /** عمق القوس ÷ عرضه (الفك البشري أعرض من عمقه). */
@@ -425,6 +425,7 @@ export class Game {
   _renderTray(team, { x0, x1, top, h, teamBarH }) {
     const st = this.state;
     const wrap = html('div', `tray-wrap team-${team}`);
+    if (st.race) wrap.dataset.team = team;
     Object.assign(wrap.style, {
       left: `calc(var(--u) * ${x0})`,
       width: `calc(var(--u) * ${x1 - x0})`,
@@ -491,7 +492,9 @@ export class Game {
       });
     }
     if (this.screen === 'play') {
-      for (const s of this.slots) targets.push({ id: s.id, kind: 'slot', x: s.x, y: s.y, r: s.r, slot: s, enabled: !s.filled });
+      for (const s of this.slots) {
+        targets.push({ id: s.id, kind: 'slot', x: s.x, y: s.y, r: s.r, slot: s, team: this._teamOfJaw(s.jaw), enabled: !s.filled });
+      }
     }
     this._targets = targets;
     this._refreshEnabled();
@@ -816,7 +819,8 @@ export class Game {
 
   /** أيقونة السن المحمول تحت اليد (بإطار لون الفريق في السباق). */
   heldIcon(type, team) {
-    const g = svg('g', { class: `held-tooth t-${type}${team && team !== 'all' ? ` team-${team}` : ''}` });
+    const teamed = team && team !== 'all';
+    const g = svg('g', { class: `held-item held-tooth t-${type}${teamed ? ` team-${team}` : ''}`, 'data-team': teamed ? team : null });
     const icon = toothIconSvg(type);
     const size = 92;
     const crown = CROWN_LEN[type];

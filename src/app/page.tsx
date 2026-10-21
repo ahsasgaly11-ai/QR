@@ -19,6 +19,7 @@ import { HeritageIcon } from '@/components/heritage-icons';
 import type { HeritageIconKind } from '@/components/heritage-icons';
 import { PRESENTATIONS_PATH, presentationsCount } from '@/lib/types';
 import { doorStyle, fetchSiteTextsServer, homeOrder, isSectionHidden, SPECIAL_DOORS, txt } from '@/lib/site-texts';
+import { BOARD_GAMES } from '@/data/board-games';
 import { T } from '@/components/editable-text';
 
 // المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
@@ -61,6 +62,7 @@ export default async function HomePage() {
     .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
   const smartGames = activities.filter((a) => a.smartReinforcement).length;
   const presentations = activities.filter((a) => a.presentation).length;
+  const boardGameCount = BOARD_GAMES.length;
 
   // أقسام الرئيسية بمعرّفاتها؛ يُعرض منها الظاهر بالترتيب الذي يحدّده المشرف
   const sections: Record<string, React.ReactNode> = {
@@ -132,6 +134,13 @@ export default async function HomePage() {
               textKey="home.doors.games"
               meta={smartGames > 0 ? `${smartGames} لعبة` : 'تعلّم • العب • عزّز'}
               {...doorStyle(texts, '__games', SPECIAL_DOORS.__games)}
+            />
+            <HeritageDoor
+              href="/board-games"
+              title={t('home.doors.board')}
+              textKey="home.doors.board"
+              meta={`جديد • ${boardGameCount.toLocaleString('ar-EG')} ${boardGameCount === 1 ? 'لعبة' : 'ألعاب'} • المس بيدك`}
+              {...doorStyle(texts, '__board', SPECIAL_DOORS.__board)}
             />
             <HeritageDoor
               href={PRESENTATIONS_PATH}
