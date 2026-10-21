@@ -46,3 +46,8 @@ test('الافتتاح: المريض الأول ثم الأقرب فالأقرب
   assert.equal(all[0], OUTBREAK.first);
   assert.equal(CONTENT.intro.length, 4);
 });
+
+test('لكل بطاقة مجسّم ثلاثي الأبعاد مبني في models.js', async () => {
+  const src = await import('node:fs').then((fs) => fs.readFileSync(new URL('../js/models.js', import.meta.url), 'utf8'));
+  for (const id of Object.keys(CARDS)) assert.match(src, new RegExp(`\\n  ${id}\\(\\) \\{`), `لا مجسّم للبطاقة ${id}`);
+});

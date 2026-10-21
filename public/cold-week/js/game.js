@@ -18,6 +18,9 @@ import { CARDS, WRONG, TOPICS, DAYS, PERIODS, DOLLS, SITUATIONS } from './conten
 import { fxs, music, setMuted, isMuted, onAudioState, setAllow } from './fx.js';
 import { FlatView } from './flat.js';
 
+// للتجربة فقط (?slow=8): نفس إبطاء المشهد (scene3d.js)
+const SLOW = Math.max(1, Number(new URLSearchParams(location.search).get('slow')) || 1);
+
 const NS = 'http://www.w3.org/2000/svg';
 const TEAMS = {
   a: { name: 'اللاعب الأول', color: '#8a1538', pan: 0.6 },
@@ -51,6 +54,9 @@ function svg(tag, attrs = {}) {
   for (const k in attrs) if (attrs[k] !== null && attrs[k] !== undefined) e.setAttribute(k, attrs[k]);
   return e;
 }
+
+/** صورة مجسّم البطاقة ثلاثي الأبعاد مُصيَّرة مسبقًا (tools/prerender.py) */
+const thumb = (cid) => new URL(`../assets/cards/${cid}.webp`, import.meta.url).href;
 
 /** الطبقة: ?tier=A|B|C للتجربة، وتقليل الحركة ← C */
 function pickTier() {
@@ -119,6 +125,7 @@ export class Game {
         this.stage.dataset.tier = t;
       };
       sc.onSound = (k, team, x) => fxs[k]?.(TEAMS[team]?.pan || 0, x);
+      sc.ui.source = () => this._uiSource();
       sc.setTeams(this._teamIds());
       this._bar(0.7);
       this.stage.dataset.tier = sc.tier;
@@ -227,7 +234,7 @@ export class Game {
     const t = setTimeout(() => {
       this._timers.delete(t);
       fn();
-    }, ms);
+    }, ms * SLOW);
     this._timers.add(t);
   }
   _clearTimers() {
@@ -396,6 +403,8 @@ export class Game {
       return;
     }
     T.cards = shuffle([s.answer, ...s.others]);
+    this.scene?.ui.clearWell(id);
+    this.$panels?.[id]?.querySelector('.cw-drop')?.classList.remove('lit');
     T.wrongHere = 0;
     T.hint = null;
     T.busy = false;
@@ -458,9 +467,11 @@ export class Game {
       panel.style.setProperty('--team', team.color);
     }
     panel.innerHTML = `
-      <div class="cw-days">${DAYS.map((d, i) => `<span class="cw-day" data-i="${i}">${esc(d)}</span>`).join('')}<span class="cw-period"></span></div>
-      <div class="cw-sit"><span class="cw-who"><i></i><b></b></span><p class="cw-text"></p></div>
-      <div class="cw-drop"><span class="cw-drop-ring"></span><b>ضع الحل هنا</b></div>`;
+      <div class="cw-info">
+        <div class="cw-days">${DAYS.map((d, i) => `<span class="cw-day" data-i="${i}">${esc(d)}</span>`).join('')}<span class="cw-period"></span></div>
+        <div class="cw-sit"><span class="cw-who"><i></i><b></b></span><p class="cw-text"></p></div>
+      </div>
+      <div class="cw-drop"><span class="cw-drop-ring"></span><img class="cw-placed" alt=""><b>ضع الحل هنا</b></div>`;
     this.hud.appendChild(panel);
     this.$panels[id] = panel;
     if (this.screen === 'done') {
@@ -529,13 +540,16 @@ export class Game {
         el.innerHTML = '';
         el.classList.add('done');
         delete el.dataset.target;
+        delete el.dataset.model;
         return;
       }
       const c = CARDS[cid];
       el.classList.remove('done');
       el.classList.toggle('taken', held.has(cid));
       el.classList.toggle('cw-wait', !!T.busy);
-      el.innerHTML = `<span class="cw-emoji" aria-hidden="true">${esc(c.emoji)}</span><div class="card-body"><b>${esc(c.label)}</b></div>`;
+      // موضع المجسّم ثلاثي الأبعاد (ui.js يرسمه تحت هذا الموضع)، وصورته للطبقة C
+      el.innerHTML = `<span class="cw-model" aria-hidden="true"><img class="cw-thumb" src="${thumb(cid)}" alt="" decoding="async"></span><div class="card-body"><b>${esc(c.label)}</b></div>`;
+      el.dataset.model = cid;
       if (T.busy) delete el.dataset.target;
       else el.dataset.target = `card:${id}:${cid}`;
       if (T.hint === cid) el.classList.add('hint');
@@ -544,6 +558,55 @@ export class Game {
       this._collectTargets();
       this._updateHud();
     }
+  }
+
+  _center(el) {
+    if (!el) return { x: this.VW / 2, y: this.VH / 2 };
+    const sr = this.stage.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    return { x: (r.left + r.width / 2 - sr.left) / this.scale, y: (r.top + r.height / 2 - sr.top) / this.scale };
+  }
+
+  /** مواضع البطاقات وحلقات الإفلات بوحدة u، تقرؤها طبقة البطاقات ثلاثية الأبعاد كل إطار */
+  _uiSource() {
+    const out = { cards: [], wells: [] };
+    if (!this.state || this.screen !== 'play') return out;
+    const sr = this.stage.getBoundingClientRect();
+    const k = 1 / this.scale;
+    const rectOf = (el, untransformed = false) => {
+      const r = el.getBoundingClientRect();
+      const w = untransformed ? el.offsetWidth * k : r.width * k;
+      const h = untransformed ? el.offsetHeight * k : r.height * k;
+      const cx = (r.left + r.width / 2 - sr.left) * k;
+      const cy = (r.top + r.height / 2 - sr.top) * k;
+      return { x: cx - w / 2, y: cy - h / 2, w, h };
+    };
+    for (const [id, cards] of Object.entries(this.$cards || {})) {
+      const T = this.state.teams[id];
+      if (!T || T.end) continue;
+      cards.forEach((el, i) => {
+        const cid = el.dataset.model;
+        if (!cid || el.classList.contains('done') || !el.isConnected) return;
+        const icon = el.querySelector('.cw-model');
+        out.cards.push({
+          key: `${id}:${i}`,
+          model: cid,
+          rect: rectOf(el, true),
+          icon: icon ? rectOf(icon) : rectOf(el),
+          taken: el.classList.contains('taken'),
+          wait: el.classList.contains('cw-wait'),
+          hint: el.classList.contains('hint'),
+          hover: el.classList.contains('hover'),
+          teamColor: this.state.race ? TEAMS[id].color : null,
+        });
+      });
+    }
+    for (const [id, panel] of Object.entries(this.$panels || {})) {
+      const drop = panel.querySelector('.cw-drop');
+      if (!drop || panel.classList.contains('cw-off')) continue;
+      out.wells.push({ team: id, rect: rectOf(drop), hot: panel.classList.contains('hover') });
+    }
+    return out;
   }
 
   _collectTargets() {
@@ -627,9 +690,10 @@ export class Game {
     const cid = c.holding;
     const panel = this.$panels[team];
     if (cid === s.answer) {
+      const from = { x: c.x, y: c.y };
       c.holding = null;
       c.team = null;
-      this._correct(team, s);
+      this._correct(team, s, from);
       return;
     }
     // خطأ: البطاقة تبقى في اليد، ورسالة لطيفة تكشف الفهم الخاطئ، وبعد خطأين تضيء البطاقة الصحيحة
@@ -642,6 +706,7 @@ export class Game {
     void panel.offsetWidth;
     panel.classList.add('shake');
     this._view()?.wrong(team, s, cid);
+    this.scene?.ui.nudge(team);
     if (T.wrongHere >= 2) {
       T.hint = s.answer;
       this._paintTeam(team);
@@ -652,10 +717,21 @@ export class Game {
     this._updateHud();
   }
 
-  _correct(team, s) {
+  _correct(team, s, from) {
     const T = this.state.teams[team];
     T.busy = true;
     T.hint = null;
+    // المجسّم يطير من اليد إلى موضعه ويشتعل اللهب (3D)، أو صورته بلهب CSS (الطبقة C)
+    const drop = this.$panels[team]?.querySelector('.cw-drop');
+    if (this.scene) this.scene.ui.place(team, s.answer, from || this._center(drop));
+    else if (drop) {
+      const img = drop.querySelector('.cw-placed');
+      img.src = thumb(s.answer);
+      drop.classList.remove('lit');
+      void drop.offsetWidth;
+      drop.classList.add('lit');
+      fxs.flame(TEAMS[team].pan);
+    }
     sfx.correct();
     fxs.sparkle(TEAMS[team].pan);
     say(CARDS[s.answer].label);
@@ -774,8 +850,8 @@ export class Game {
     const g = svg('g', { class: 'held-item cw-held', 'data-team': teamed ? team : null });
     if (teamed) g.style.setProperty('--team', TEAMS[team].color);
     g.appendChild(svg('circle', { r: 64, class: 'held-halo' }));
-    const em = svg('text', { y: 4, 'text-anchor': 'middle', 'dominant-baseline': 'middle', class: 'cw-held-emoji' });
-    em.textContent = c.emoji;
+    // صورة المجسّم ثلاثي الأبعاد نفسه (مُصيَّرة مسبقًا) فوق هالة محايدة
+    const em = svg('image', { href: thumb(cid), x: -58, y: -58, width: 116, height: 116, class: 'cw-held-img' });
     const lb = svg('text', { y: 96, 'text-anchor': 'middle', class: 'cw-held-label' });
     lb.textContent = c.label;
     g.append(em, lb);
