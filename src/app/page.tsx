@@ -1,6 +1,6 @@
 import { Fragment } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Gamepad2 } from 'lucide-react';
+import { ArrowLeft, Camera, Gamepad2, Hand, Users } from 'lucide-react';
 import { getSubjects, getAllActivities } from '@/lib/content';
 import { Reveal } from '@/components/reveal';
 import { SiteStatsStrip } from '@/components/site-stats-strip';
@@ -19,7 +19,8 @@ import { HeritageIcon } from '@/components/heritage-icons';
 import type { HeritageIconKind } from '@/components/heritage-icons';
 import { PRESENTATIONS_PATH, presentationsCount } from '@/lib/types';
 import { doorStyle, fetchSiteTextsServer, homeOrder, isSectionHidden, SPECIAL_DOORS, txt } from '@/lib/site-texts';
-import { BOARD_GAMES } from '@/data/board-games';
+import { BOARD_GAMES, boardGames } from '@/data/board-games';
+import { BoardGameCard, ClassroomSetupDiagram } from '@/components/board-games';
 import { T } from '@/components/editable-text';
 
 // المحتوى يُقرأ من Firestore عند إعادة التوليد، لا مرّة واحدة عند النشر،
@@ -153,6 +154,53 @@ export default async function HomePage() {
         </div>
       </section>
     ),
+    // قسم ألعاب السبورة الذكية (مستقل عن ألعاب التعزيز): أحدث الألعاب وطريقة اللعب
+    'home.boardGames': boardGameCount > 0 ? (
+      <section id="board-games" className="bg-home scroll-mt-24">
+        <div className="mx-auto max-w-7xl px-5 py-12 sm:px-6 lg:py-16">
+          <SectionHead
+            kicker={e('home.boardGames.kicker')}
+            title={e('home.boardGames.title')}
+            lead={e('home.boardGames.lead')}
+            action={{ href: '/board-games', label: e('home.boardGames.action') }}
+          />
+          <ul className="bg-home-points">
+            <li>
+              <Hand className="h-5 w-5" aria-hidden /> لمس السبورة باليد فقط
+            </li>
+            <li>
+              <Camera className="h-5 w-5" aria-hidden /> آيباد أو هاتف + Apple TV
+            </li>
+            <li>
+              <Users className="h-5 w-5" aria-hidden /> الصف كله أو سباق فريقين
+            </li>
+          </ul>
+          {/* أقل من ثلاث ألعاب: بجانبها مخطط تجهيز الصف، وإلا فالبطاقات بعرض القسم */}
+          <div className={boardGameCount < 3 ? 'bg-home-split' : undefined}>
+            <div className="bg-grid">
+              {boardGames()
+                .slice(0, 3)
+                .map((g, i) => (
+                  <Reveal key={g.slug} delay={i * 80}>
+                    <BoardGameCard game={g} />
+                  </Reveal>
+                ))}
+            </div>
+            {boardGameCount < 3 && (
+              <figure className="bg-diagram bg-home-setup">
+                <ClassroomSetupDiagram />
+                <figcaption>
+                  ثبّت الجهاز في زاوية جانبية قريبة من السبورة، واعكس شاشته على جهاز العرض، ثم عايِر مرة واحدة من داخل اللعبة.{' '}
+                  <Link href="/board-games#setup" className="font-semibold text-[color:var(--maroon)] underline underline-offset-4">
+                    دليل تجهيز الصف
+                  </Link>
+                </figcaption>
+              </figure>
+            )}
+          </div>
+        </div>
+      </section>
+    ) : null,
     // كيف تعمل المنصّة
     'home.steps': (
       <section className="mx-auto max-w-7xl px-5 py-12 sm:px-6 lg:py-16">

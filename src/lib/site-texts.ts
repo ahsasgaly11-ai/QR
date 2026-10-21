@@ -61,6 +61,7 @@ export const SITE_TEXT_GROUPS: SiteTextGroup[] = [
       { key: 'header.tagline', label: 'السطر تحت اسم المنصّة', default: 'تجارب • محاكاة • أسئلة • ألعاب' },
       { key: 'nav.home', label: 'الرئيسية', default: 'الرئيسية' },
       { key: 'nav.browse', label: 'المناهج', default: 'المناهج' },
+      { key: 'nav.boardGames', label: 'ألعاب السبورة الذكية', default: 'ألعاب السبورة' },
       { key: 'nav.search', label: 'بحث', default: 'بحث' },
       { key: 'nav.dashboard', label: 'الإحصاءات', default: 'الإحصاءات' },
       { key: 'nav.heatmap', label: 'الخريطة الحرارية', default: 'الخريطة الحرارية' },
@@ -119,6 +120,23 @@ export const SITE_TEXT_GROUPS: SiteTextGroup[] = [
       { key: 'home.doors.games', label: 'باب ألعاب التعزيز', default: 'ألعاب التعزيز الذكية' },
       { key: 'home.doors.presentations', label: 'باب العروض التقديمية', default: 'العروض التقديمية الذكية' },
       { key: 'home.doors.board', label: 'باب ألعاب السبورة الذكية', default: 'ألعاب السبورة الذكية' },
+    ],
+  },
+  {
+    id: 'home.boardGames',
+    label: 'الرئيسية • ألعاب السبورة الذكية',
+    href: '/#board-games',
+    hideable: true,
+    fields: [
+      { key: 'home.boardGames.kicker', label: 'السطر التمهيدي', default: 'قسم جديد • المس السبورة بيدك' },
+      { key: 'home.boardGames.title', label: 'عنوان القسم', default: 'ألعاب السبورة الذكية' },
+      {
+        key: 'home.boardGames.lead',
+        label: 'وصف القسم',
+        default: 'ألعاب يلعبها الصف كله بلمس السبورة بالأيدي، بلا أقلام إلكترونية ولا أجهزة للطلاب: جهاز المعلّم يعرض اللعبة على جهاز العرض ويرى أيدي الطلاب بكاميرته.',
+        long: true,
+      },
+      { key: 'home.boardGames.action', label: 'الرابط الجانبي', default: 'كل ألعاب السبورة' },
     ],
   },
   {
@@ -375,6 +393,7 @@ export interface FooterLink {
 export const DEFAULT_FOOTER_LINKS: FooterLink[] = [
   { href: '/', label: 'الرئيسية' },
   { href: '/browse', label: 'تصفّح المناهج' },
+  { href: '/board-games', label: 'ألعاب السبورة الذكية' },
   { href: '/about', label: 'عن المنصّة' },
   { href: '/dashboard', label: 'لوحة الإحصاءات' },
   { href: '/admin', label: 'رفع نشاط جديد' },

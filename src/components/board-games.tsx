@@ -82,7 +82,7 @@ export function ClassroomSetupDiagram() {
         <rect x="402" y="118" width="36" height="22" rx="4" className="d-ok" />
       </g>
       <text x="420" y="168" textAnchor="middle" className="d-ok-t">✓ هنا</text>
-      <text x="420" y="186" textAnchor="middle" className="d-label-xs">حامل في الزاوية، ١–١٫٥ م</text>
+      <text x="456" y="186" textAnchor="end" className="d-label-xs">حامل في الزاوية، ١–١٫٥ م</text>
       {/* موجة لاسلكية إلى Apple TV */}
       <path d="M432 108 q14 -40 0 -66" className="d-wave" />
       {/* الخطأ: طاولة خلف الطلاب */}
