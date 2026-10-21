@@ -72,6 +72,9 @@ const nextConfig: NextConfig = {
       // «ركّب الأسنان» (تطبيق ويب ثابت داخل public/asnan: لمس السبورة باليد بكاميرا الآيباد)
       { source: '/asnan', destination: '/asnan/index.html', permanent: false },
       { source: '/asnan/', destination: '/asnan/index.html', permanent: false },
+      // «عالَمٌ تحت العدسة» (لعبة سبورة على board-kit: العدسة المكبّرة والمجهر)
+      { source: '/under-the-lens', destination: '/under-the-lens/index.html', permanent: false },
+      { source: '/under-the-lens/', destination: '/under-the-lens/index.html', permanent: false },
     ];
   },
   images: {
