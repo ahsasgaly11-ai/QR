@@ -244,15 +244,18 @@ export class Scene3D {
     // تدرّج لوني سينمائي: يمنع احتراق اللمعات ويعطي المعدن عمقًا
     r.toneMapping = THREE.ACESFilmicToneMapping;
     r.toneMappingExposure = 1.15;
-    r.shadowMap.type = THREE.PCFSoftShadowMap;
+    // three r186 أزال PCFSoftShadowMap؛ PCFShadowMap صار ناعمًا بنفسه (عيّنات قرص Vogel بنصف قطر shadow.radius).
+    // جُرّب VSM أيضًا: أنعم لكنه باهت جدًا فيختفي على جهاز العرض في صف مضاء.
+    r.shadowMap.type = THREE.PCFShadowMap;
     this.scene = new THREE.Scene();
     this.scene.environment = buildEnvironment(r);
     this.scene.environmentIntensity = 0.95;
     this.camera = new THREE.PerspectiveCamera(30, 1.6, 10, 8000);
     this.scene.add(new THREE.HemisphereLight(0xffffff, 0xe9dcc6, 0.7));
     const sun = new THREE.DirectionalLight(0xfff6e8, 2.4);
-    sun.shadow.mapSize.set(1024, 1024);
-    sun.shadow.radius = 6; // حواف ظل ناعمة
+    // خريطة 2048 مع نصف قطر 3: حافة ناعمة بلا حبيبات (نصف قطر 6 على 1024 يظهر منقّطًا في r186)
+    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.radius = 3;
     sun.shadow.bias = -0.0006;
     sun.shadow.normalBias = 0.6;
     this.sun = sun;
