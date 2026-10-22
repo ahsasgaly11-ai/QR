@@ -220,6 +220,7 @@ export class Game {
   }
   toMenu() {
     this._clearTimers();
+    this.splitEnd = false;
     music.stop();
     this.screen = 'menu';
     this.state = null;
@@ -270,7 +271,8 @@ export class Game {
     }
     const v = this._view();
     if (!v) return;
-    v.setTeams?.(this._teamIds());
+    // في ختام «الأسبوعين» يبقى الصفّان معروضين حتى يبدأ أسبوع جديد
+    if (!(this.splitEnd && (this.screen === 'outro' || this.screen === 'done'))) v.setTeams?.(this._teamIds());
     v.layout(Math.max(1, r.width), Math.max(1, r.height), this.VW, this.VH, g.frame);
   }
 
@@ -330,6 +332,7 @@ export class Game {
 
   // ------------------------------------------------------------------ اللعب
   newGame() {
+    this.splitEnd = false;
     const ids = this._teamIds();
     const teams = {};
     for (const id of ids) teams[id] = { i: 0, mistakes: 0, wrongHere: 0, topicMiss: {}, busy: true, end: 0, cards: [], midDone: false, hint: null, msg: null };
@@ -451,6 +454,7 @@ export class Game {
       this._renderTeam(id, { x0, x1, g });
     }
     if (this.screen === 'done') this._renderResult(g);
+    if (this.splitEnd) this._splitLabels();
     this._updateHud();
   }
 
@@ -798,7 +802,11 @@ export class Game {
     this.screen = 'outro';
     this.input?.reset();
     this.render();
-    const d = this._view()?.outro() || 1;
+    const r = this._view()?.outro() || 1;
+    const d = typeof r === 'number' ? r : r.dur;
+    // الأسبوعان جنبًا إلى جنب (3D، طالب واحد): لافتتان فوق نصفي الشاشة
+    this.splitEnd = typeof r === 'object' && r.split;
+    if (this.splitEnd) this.later(() => this._splitLabels(), 450);
     this.$bars.classList.add('on');
     sfx.win();
     if (this.$caption) {
@@ -810,6 +818,22 @@ export class Game {
       this.screen = 'done';
       this.render();
     }, d * 1000 + 600);
+  }
+
+  _splitLabels() {
+    if (!this.splitEnd || !this.hud) return;
+    this.hud.querySelectorAll('.cw-split').forEach((e) => e.remove());
+    const g = this._geom();
+    const mid = this.VW / 2;
+    const mk = (cls, x0, x1, icon, title, sub) => {
+      const w = Math.min(560, x1 - x0 - 60);
+      const el = this._place(html('div', `cw-split ${cls}`), (x0 + x1) / 2 - w / 2, g.frame.top + 16, w, 0);
+      el.style.height = 'auto';
+      el.innerHTML = `<span class="cw-split-ic" aria-hidden="true">${icon}</span><b>${esc(title)}</b><small>${esc(sub)}</small>`;
+      this.hud.appendChild(el);
+    };
+    mk('bad', g.left, mid, '🤒', 'أسبوع بلا حماية', `مرض ${ar(6)} زملاء`);
+    mk('good', mid, g.right, '🛡️', 'أسبوع بحمايتكم', 'الصف كله سليم');
   }
 
   _renderResult(g) {

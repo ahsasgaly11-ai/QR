@@ -471,3 +471,27 @@
 
 /* وضع التصيير المسبق (أداة tools/prerender.py فقط) */
 .cw-render #hud, .cw-render .cw-loader, .cw-render ~ #teacher, .cw-render #fx { display: none !important; }
+
+/* ---------------------------------------------------------------- الختام: الأسبوعان جنبًا إلى جنب */
+.cw-split {
+  position: absolute;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas: 'ic t' 'ic s';
+  align-items: center;
+  column-gap: calc(var(--u) * 14);
+  padding: calc(var(--u) * 12) calc(var(--u) * 26);
+  border-radius: calc(var(--u) * 26);
+  background: rgba(255, 251, 242, 0.93);
+  border: calc(var(--u) * 4) solid var(--c);
+  box-shadow: 0 calc(var(--u) * 12) calc(var(--u) * 30) rgba(0, 0, 0, 0.22);
+  animation: cwSplitIn 0.6s cubic-bezier(0.3, 1.4, 0.5, 1) both;
+  z-index: 4;
+  pointer-events: none;
+}
+.cw-split.bad { --c: #c0262d; }
+.cw-split.good { --c: #15803d; }
+.cw-split-ic { grid-area: ic; font-size: calc(var(--u) * 56); line-height: 1; }
+.cw-split b { grid-area: t; font-family: var(--fd); font-size: calc(var(--u) * 40); color: var(--c); line-height: 1.1; }
+.cw-split small { grid-area: s; font-size: calc(var(--u) * 26); font-weight: 700; color: #2a1f1a; }
+@keyframes cwSplitIn { from { opacity: 0; transform: translateY(calc(var(--u) * -20)) scale(0.9); } }

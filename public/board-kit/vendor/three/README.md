@@ -50,6 +50,8 @@ cp package/LICENSE public/board-kit/vendor/three/LICENSE
 |---|---|---|
 | `postprocessing/{EffectComposer,RenderPass,ShaderPass,MaskPass,Pass,UnrealBloomPass,OutputPass}.js` و`shaders/{CopyShader,LuminosityHighPassShader,OutputShader}.js` | المعالجة اللاحقة للمسار السينمائي `WebGLRenderer` (الملف 10) | WebGL |
 | `tsl/display/BloomNode.js` | التوهّج بعقد TSL مع `RenderPipeline` | WebGPU |
+| `tsl/display/DepthOfFieldNode.js`، `tsl/display/GaussianBlurNode.js` | عمق الميدان (الخلفية ضبابية في اللقطات القريبة) | WebGPU |
+| `loaders/HDRLoader.js` | تحميل صور الإضاءة البيئية HDR (RGBE) | الاثنان |
 | `environments/RoomEnvironment.js` | الإضاءة البيئية المنعكسة (PMREM) | الاثنان |
 | `geometries/RoundedBoxGeometry.js`، `utils/BufferGeometryUtils.js` | صناديق بحواف مستديرة، وأدوات الهندسة | الاثنان |
 
