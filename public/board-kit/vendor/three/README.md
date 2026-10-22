@@ -8,7 +8,7 @@
 | `three.webgpu.min.js` | محرّك WebGPU مع الرجوع التلقائي إلى WebGL2 (`WebGPURenderer`) + المواد العقدية |
 | `three.tsl.min.js` | دوال TSL (تستورد `three/webgpu` عبر خريطة الاستيراد) |
 | `three.module.min.js` | **المسار السينمائي الأساسي** `WebGLRenderer` (الملف 10؛ «صيّادو الجراثيم» و«عالَمٌ تحت العدسة») |
-| `addons/` | إضافات من `examples/jsm` للنسخة نفسها كما هي (بلا تصغير): المعالجة اللاحقة (`EffectComposer` و`RenderPass` و`UnrealBloomPass` و`ShaderPass` و`OutputPass` ومظلِّلاتها)، و`environments/RoomEnvironment.js`، و`loaders/GLTFLoader.js` مع `utils/`، و`libs/meshopt_decoder.module.js` |
+| `addons/` | إضافات من `examples/jsm` للنسخة نفسها كما هي (بلا تصغير): المعالجة اللاحقة (`EffectComposer` و`RenderPass` و`UnrealBloomPass` و`ShaderPass` و`OutputPass` ومظلِّلاتها)، و`environments/RoomEnvironment.js`، و`loaders/GLTFLoader.js` مع `utils/`، و`libs/meshopt_decoder.module.js`؛ والطبقة السينمائية: `postprocessing/GTAOPass.js` و`SMAAPass.js` مع `shaders/GTAOShader.js` و`PoissonDenoiseShader.js` و`SMAAShader.js` و`math/SimplexNoise.js`، و`loaders/EXRLoader.js` مع `libs/fflate.module.js` (لبانوراما HDRI) |
 
 **المسار السينمائي (الأساسي، الملف 10):**
 ```html

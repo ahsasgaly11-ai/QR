@@ -97,6 +97,43 @@ function sculpt(geo, o = {}) {
   return geo;
 }
 
+// ------------------------------------------------------------------ أنسجة تفاصيل السطوح الحقيقية
+/**
+ * خرائط اتجاه السطوح (normal maps) حقيقية برخصة CC0 من حزمة @pmndrs/assets (أصلها emmelleppi/normal-maps)،
+ * في public/germ-hunters/assets/normals/ (انظر ASSETS.md). تضيف مسام الجلد وثقوب الإسفنج وشقوق اللحاء…
+ * بلا مضلّعات إضافية. النسيج نفسه يُشارَك بين كل المواد (والطبقتين: المشهد والبطاقات).
+ */
+const NORMALS = new Map();
+const NORMAL_URL = '/germ-hunters/assets/normals/';
+export function nmap(name, repeat = 4) {
+  const key = `${name}|${repeat}`;
+  if (NORMALS.has(key)) return NORMALS.get(key);
+  let base = NORMALS.get(name);
+  if (!base) {
+    base = new THREE.TextureLoader().load(`${NORMAL_URL}${name}.webp`, () => {
+      // الصورة وصلت: كل النسخ (بتكرارات مختلفة) تُرفع الآن إلى معالج الرسوم
+      for (const t of base.userData.copies) t.needsUpdate = true;
+    });
+    base.userData.copies = [];
+    NORMALS.set(name, base);
+  }
+  // نسخة تشارك الصورة نفسها (source) بتكرار مختلف، ولا تُرفع قبل وصول الصورة
+  const t = new THREE.Texture();
+  t.source = base.source;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.colorSpace = THREE.NoColorSpace;
+  t.anisotropy = 4;
+  t.repeat.set(repeat, repeat);
+  if (base.image) t.needsUpdate = true;
+  else base.userData.copies.push(t);
+  NORMALS.set(key, t);
+  return t;
+}
+/** يضيف تفاصيل سطح حقيقية لمادة: n = اسم النسيج، r = عدد التكرار، k = قوة البروز */
+const detail = (n, r = 4, k = 0.7) => ({ normalMap: nmap(n, r), normalScale: new THREE.Vector2(k, k) });
+/** لا تُحرَّر الأنسجة المشتركة مع المجسّم */
+export const isSharedTexture = (t) => [...NORMALS.values()].includes(t);
+
 // ------------------------------------------------------------------ المواد
 const VIOLET = new THREE.Color('#a77bff');
 const UV_BODY = new THREE.Color('#2a1052');
@@ -118,7 +155,7 @@ export function pmat(color, o = {}) {
   };
   return m;
 }
-const skin = () => pmat('#e3a383', { roughness: 0.62, sheen: 0.45, sheenColor: '#ffd6c2', sheenRoughness: 0.5, clearcoat: 0.08, clearcoatRoughness: 0.6 });
+const skin = () => pmat('#e3a383', { roughness: 0.62, sheen: 0.45, sheenColor: '#ffd6c2', sheenRoughness: 0.5, clearcoat: 0.08, clearcoatRoughness: 0.6, ...detail('skin', 5, 0.45) });
 const gloss = (c, o = {}) => pmat(c, { roughness: 0.22, clearcoat: 1, clearcoatRoughness: 0.05, ...o });
 const metal = (c, r = 0.18, o = {}) => pmat(c, { metalness: 1, roughness: r, vertexColors: false, envMapIntensity: 1.3, ...o });
 const matte = (c, o = {}) => pmat(c, { roughness: 0.92, ...o });
@@ -198,7 +235,7 @@ function hand(mirror = false) {
 
 function sponge() {
   const g = new THREE.Group();
-  const body = mesh(sculpt(new THREE.BoxGeometry(1.5, 0.78, 0.7, 48, 26, 24), { rough: 0.14, freq: 5.5, worley: true }), pmat('#f4c443', { roughness: 0.95 }), { lift: 0.03 });
+  const body = mesh(sculpt(new THREE.BoxGeometry(1.5, 0.78, 0.7, 48, 26, 24), { rough: 0.14, freq: 5.5, worley: true }), pmat('#f4c443', { roughness: 0.95, ...detail('sponge', 3, 1.1) }), { lift: 0.03 });
   const scrub = mesh(sculpt(new THREE.BoxGeometry(1.5, 0.22, 0.7, 40, 8, 18), { rough: 0.05, freq: 14 }), fabric('#2f9e55', { sheenColor: '#9fe8b8' }), { lift: 0.03 });
   at(scrub, 0, 0.5, 0);
   g.add(body, scrub);
@@ -213,7 +250,7 @@ function wool() {
     const s2 = Math.sin((p.y * 0.9 - p.z * 0.5) * 30) * 0.5 + 0.5;
     return lerp(0.72, 1.1, Math.max(s1, s2 * 0.85));
   };
-  const body = mesh(sculpt(new THREE.SphereGeometry(0.85, 96, 72), { rough: 0.05, freq: 11, tint }), fabric('#e0536b', { sheenColor: '#ffc2cf' }), { lift: 0.03 });
+  const body = mesh(sculpt(new THREE.SphereGeometry(0.85, 96, 72), { rough: 0.05, freq: 11, tint }), fabric('#e0536b', { sheenColor: '#ffc2cf', ...detail('fabric', 6, 0.9) }), { lift: 0.03 });
   const g = new THREE.Group();
   g.add(body);
   const tail = mesh(sculpt(new THREE.CapsuleGeometry(0.06, 0.7, 4, 12, 8), { rough: 0.02, freq: 20 }), fabric('#e0536b', { sheenColor: '#ffc2cf' }));
@@ -233,7 +270,7 @@ function rock() {
     const speck = vnoise(p.x * 40, p.y * 40, p.z * 40) > 0.82 ? 1.25 : 1;
     c.setXYZ(i, c.getX(i) * speck, c.getY(i) * speck, c.getZ(i) * speck);
   }
-  const m = mesh(geo, matte('#958b7e', { roughness: 0.96 }), { lift: 0.03 });
+  const m = mesh(geo, matte('#958b7e', { roughness: 0.96, ...detail('rock', 2, 1.2) }), { lift: 0.03 });
   g.add(m);
   g.scale.set(1.2, 0.82, 0.95);
   g.rotation.set(0.3, 0.6, 0.15);
@@ -243,7 +280,7 @@ function rock() {
 let RINGS = null;
 function log() {
   const g = new THREE.Group();
-  const bark = mesh(sculpt(new THREE.CylinderGeometry(0.46, 0.5, 1.75, 72, 36, true), { rough: 0.09, freq: [11, 1.4, 11] }), matte('#7a4e33'), { lift: 0.03 });
+  const bark = mesh(sculpt(new THREE.CylinderGeometry(0.46, 0.5, 1.75, 72, 36, true), { rough: 0.09, freq: [11, 1.4, 11] }), matte('#7a4e33', detail('bark', 2, 1.3)), { lift: 0.03 });
   RINGS ||= canvasTex(256, (x, s) => {
     for (let r = s / 2; r > 0; r -= 5) {
       x.fillStyle = (r / 5) % 2 ? '#d7a66a' : '#bd8a4e';
@@ -265,7 +302,7 @@ function log() {
 
 function ball() {
   const g = new THREE.Group();
-  const body = mesh(sculpt(new THREE.SphereGeometry(0.85, 96, 72), { rough: 0.016, freq: 34 }), pmat('#e8742a', { roughness: 0.7, sheen: 0.3, sheenColor: '#ffb27a' }), { lift: 0.02 });
+  const body = mesh(sculpt(new THREE.SphereGeometry(0.85, 96, 72), { rough: 0.016, freq: 34 }), pmat('#e8742a', { roughness: 0.7, sheen: 0.3, sheenColor: '#ffb27a', ...detail('pebble', 6, 0.9) }), { lift: 0.02 });
   g.add(body);
   // درزات حقيقية (حلقات داكنة على السطح)
   const seam = pmat('#2a1a14', { roughness: 0.6, vertexColors: false });
@@ -405,15 +442,16 @@ export function head() {
 
 export function tissueSheet() {
   const geo = sculpt(new THREE.PlaneGeometry(0.7, 0.8, 16, 16), { rough: 0.035, freq: 4 });
-  return mesh(geo, fabric('#ffffff', { side: THREE.DoubleSide, sheenColor: '#ffffff' }));
+  // ليس أبيض نقيًّا: تحت الضوء البنفسجي القوي كان المنديل الأبيض يتشبّع ويتوهّج بقعةً تحجب الجراثيم
+  return mesh(geo, fabric('#c9ced8', { side: THREE.DoubleSide, sheenColor: '#aab4c8', ...detail('fabric', 3, 0.5) }));
 }
 export function tissueBall() {
-  return mesh(sculpt(new THREE.IcosahedronGeometry(0.26, 4), { rough: 0.1, freq: 5 }), fabric('#f8f8f6'), { lift: 0.03 });
+  return mesh(sculpt(new THREE.IcosahedronGeometry(0.26, 4), { rough: 0.1, freq: 5 }), fabric('#cdd0d6', detail('fabric', 3, 0.5)), { lift: 0.03 });
 }
 /** ذراع مثنية على شكل «<»: المرفق عند الأصل، يوضع أمام الفم */
 export function elbowArm() {
   const g = new THREE.Group();
-  const sleeve = () => fabric('#2563eb', { sheenColor: '#9ec0ff' });
+  const sleeve = () => fabric('#2563eb', { sheenColor: '#9ec0ff', ...detail('fabric', 5, 0.8) });
   const o = { rough: 0.015, freq: 14 };
   const upper = mesh(sculpt(new THREE.CapsuleGeometry(0.15, 0.62, 8, 16, 6), o), sleeve());
   at(upper, -0.2, -0.36, 0, 0, 0, -0.52);
@@ -440,7 +478,7 @@ export function table() {
       x.stroke();
     }
   });
-  const top = mesh(new THREE.BoxGeometry(2.6, 0.12, 1.0, 20, 2, 8), gloss('#ffffff', { vertexColors: false, map: GRAIN, roughness: 0.35, clearcoat: 0.6 }));
+  const top = mesh(new THREE.BoxGeometry(2.6, 0.12, 1.0, 20, 2, 8), gloss('#ffffff', { vertexColors: false, map: GRAIN, roughness: 0.35, clearcoat: 0.6, ...detail('wood', 1, 0.5) }));
   const legMat = matte('#a86f3c', { vertexColors: false });
   const legA = mesh(new THREE.BoxGeometry(0.12, 0.7, 0.12), legMat, { sample: false });
   const legB = mesh(new THREE.BoxGeometry(0.12, 0.7, 0.12), legMat, { sample: false });
@@ -453,7 +491,7 @@ export function table() {
 }
 export function sandwich() {
   const g = new THREE.Group();
-  const bread = () => mesh(sculpt(new THREE.BoxGeometry(0.9, 0.16, 0.7, 16, 4, 12), { rough: 0.025, freq: 9 }), pmat('#e3b765', { roughness: 0.85 }));
+  const bread = () => mesh(sculpt(new THREE.BoxGeometry(0.9, 0.16, 0.7, 16, 4, 12), { rough: 0.025, freq: 9 }), pmat('#e3b765', { roughness: 0.85, ...detail('sponge', 2, 0.6) }));
   const b1 = bread();
   const b2 = bread();
   const leaf = mesh(sculpt(new THREE.BoxGeometry(0.98, 0.05, 0.78, 14, 1, 10), { rough: 0.02, freq: 6 }), gloss('#4caf50', { roughness: 0.4 }), { sample: false });

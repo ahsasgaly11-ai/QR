@@ -494,7 +494,7 @@ export class Game {
     const st = this.state;
     this._cine(`
       <div class="cine-bar top"></div><div class="cine-bar bottom"></div>
-      <div class="cine-pre">الجراثيم أصغر من أن نراها بأعيننا…</div>
+      <div class="cine-pre">مهمّتكم يا صيّادي الجراثيم: اكشفوا الجراثيم الخفية… وأوقفوا انتشارها!</div>
       <div class="cine-title">🔦 ${esc(this.content.title)}</div>
       <div class="cine-flash"></div>`, 'intro');
     this.view.startMeasure();
@@ -584,6 +584,9 @@ export class Game {
       <div class="gh-booth-item"><span class="gh-booth-emoji"></span><b class="gh-booth-name"></b></div>`;
     this.$scope.appendChild(booth);
     ui.booth = booth;
+    // درجة التكبير وشريط المقياس تحت العدسة (A وB، أثناء الغوص المجهري)
+    ui.scale = html('div', 'gh-scale', '<b class="gh-mag"></b><span class="gh-bar"><i></i><em></em></span>');
+    this.$scope.appendChild(ui.scale);
     // الإظلام في منتصف اللعبة (تحت الأبعاد الثلاثة) ونصّه (فوق البطاقات)
     ui.dark = this._place(html('div', 'gh-dark', '<span class="gh-dark-hands">👐</span>'), L.x0 - 8, L.zone.top - 4, L.w + 16, L.zone.bottom - L.zone.top + 14);
     this.$scope.appendChild(ui.dark);
@@ -825,7 +828,58 @@ export class Game {
       }
       this.cards.frame(now, dt, this.stage.getBoundingClientRect());
     }
+    this._paintScales();
+    this._multiplyTick(dt);
     this.particles.frame(dt, this.view.draw ? (c, d) => this.view.draw(c, d) : null);
+  }
+
+  /**
+   * «الجراثيم تتكاثر»: إن بقيت بطاقة في يد الفريق أكثر من ٥ ث بلا تصنيف، تتضاعف الجراثيم على الشيء في
+   * العدسة كل ١٫٥ ث (٨ ← ١٦ ← … ← ٥١٢)، مع تنبيه مرة واحدة. ضغط لعب لطيف يعلّم سرعة التكاثر.
+   */
+  _multiplyTick(dt) {
+    if (!this.state || this.screen !== 'play' || this.state.cine || !this.view.multiply) return;
+    for (const [id, T] of Object.entries(this.state.teams)) {
+      const held = T.phase === 'play' && !T.show && this._heldBy(id).size > 0;
+      if (!held) {
+        T.holdT = 0;
+        T.multN = 0;
+        continue;
+      }
+      T.holdT = (T.holdT || 0) + dt;
+      if (T.holdT < 5) continue;
+      const step = Math.floor((T.holdT - 5) / 1.5);
+      const n = Math.min(512, 8 * Math.pow(2, step));
+      if (n !== T.multN) {
+        T.multN = n;
+        this.view.multiply(id, n);
+        if (step === 0) this._flash(id, '⏳ الجراثيم تتكاثر بسرعة! كل جرثومة تصير اثنتين… صنّفوا الآن!', 'hint', 3200);
+      }
+    }
+  }
+
+  /** يحدّث درجة التكبير وشريط المقياس تحت كل عدسة */
+  _paintScales() {
+    if (!this.$teams || !this.state || !this.view.scaleInfo) return;
+    for (const [id, ui] of Object.entries(this.$teams)) {
+      const el = ui.scale;
+      if (!el) continue;
+      const info = this.state.teams[id]?.show ? this.view.scaleInfo(id) : null;
+      el.classList.toggle('show', !!info);
+      if (!info) continue;
+      const key = `${info.mag}|${info.label || ''}|${Math.round(info.u || 0)}|${Math.round(info.cx)}`;
+      if (el.dataset.k === key) continue;
+      el.dataset.k = key;
+      el.style.left = `calc(var(--u) * ${info.cx})`;
+      el.style.top = `calc(var(--u) * ${info.y})`;
+      el.querySelector('.gh-mag').textContent = info.mag;
+      const bar = el.querySelector('.gh-bar');
+      bar.style.display = info.u ? '' : 'none';
+      if (info.u) {
+        bar.querySelector('i').style.width = `calc(var(--u) * ${info.u.toFixed(1)})`;
+        bar.querySelector('em').textContent = info.label;
+      }
+    }
   }
 
   // ------------------------------------------------------------------ الأفعال
@@ -943,12 +997,22 @@ export class Game {
     // اللحظة المدهشة (الطبقتان A وB): العدسة تغوص في السطح بتكبير هائل
     const micro = this.view.tier !== 'C' && !!this.view.dive;
     if (micro) {
+      // ثلاث محطات تكبير، وتحت العدسة درجة التكبير وشريط مقياس بالميكرومتر
       this._showLater(T, () => {
         this.view.dive(id, it);
-        this._flash(id, `🔬 نقترب بالعدسة… تكبير كبير جدًا!`, 'reveal', 60000);
-      }, this._d(1900));
+        this._flash(id, `🔬 تكبير ×١٠: نقترب من سطح <b>${esc(it.name)}</b>…`, 'reveal', 60000);
+      }, this._d(1700));
+      this._showLater(T, () => {
+        this.view.zoomTo(id, 2);
+        this._flash(id, rough ? '🔬 تكبير ×١٠٠: السطح جبال ووديان!' : '🔬 تكبير ×١٠٠: السطح سهل أملس.', 'reveal', 60000);
+      }, this._d(2900));
+      this._showLater(T, () => {
+        this.view.zoomTo(id, 3);
+        this._flash(id, '🦠 تكبير ×١٠٠٠: هذه جراثيم! طول الواحدة نحو ميكرومترين فقط.', 'reveal', 60000);
+      }, this._d(4500));
+      this._showLater(T, () => this.view.zoomTo(id, 2), this._d(6600));
     }
-    const tBlow = micro ? 3300 : 1900;
+    const tBlow = micro ? 7500 : 1900;
     this._showLater(T, () => {
       this._snd(id, 'fan');
       this.view.blow(id, rough ? 0.86 : 0.14);
@@ -971,12 +1035,28 @@ export class Game {
     this.view.vignette(id, it);
     this._flash(id, `🔦 <b>${esc(it.name)}</b>… ماذا يحدث للجراثيم؟`, 'reveal', 60000);
     this._showLater(T, () => say(it.name), this._d(600));
+    // غسل اليدين (A وB): نغوص إلى جرثومة واحدة فنرى جزيئات الصابون تفكّك غلافها
+    const soap = it.scene === 'wash' && this.view.tier !== 'C' && !!this.view.soap;
+    if (soap) {
+      this._showLater(T, () => {
+        this.view.soap(id);
+        this._flash(id, '🔬 نقترب أكثر: جزيئات الصابون تقترب من الجرثومة…', 'reveal', 60000);
+      }, this._d(2100));
+      this._showLater(T, () => {
+        this._snd(id, 'bubbles');
+        this._flash(id, '🧼 الصابون يفكّك غلاف الجرثومة… والماء يحملها بعيدًا!', 'reveal', 60000);
+      }, this._d(4400));
+    }
+    // العطاس: آلاف القطرات تتطاير بعيدًا
+    if (it.scene === 'spray' && this.view.tier !== 'C') {
+      this._showLater(T, () => this._flash(id, '💦 انظروا: آلاف القطرات الصغيرة تطير بعيدًا وتسقط على الأسطح!', 'reveal', 60000), this._d(1500));
+    }
     this._showLater(T, () => {
       this._snd(id, 'shimmer');
       const lead = it.cat === 'spread' ? '🦠 <b>ينشر الجراثيم:</b>' : '🛡️ <b>يمنع انتشارها:</b>';
       this._flash(id, `${lead} ${esc(it.fact)}`, 'reveal', 60000);
-    }, this._d(2500));
-    this._showLater(T, () => this._endShow(T), this._d(5200));
+    }, this._d(soap ? 6400 : 3000));
+    this._showLater(T, () => this._endShow(T), this._d(soap ? 9200 : 5600));
   }
 
   /** البطاقة التالية، أو «أطفئوا الأنوار» بين الجولتين، أو نهاية الفريق */
@@ -1062,16 +1142,24 @@ export class Game {
     sfx.win();
     this.particles.confetti(this.VW);
     const win = st.race && st.winner ? `<div class="cine-sub" style="--team:${TEAMS[st.winner].color}">🏆 ${esc(TEAMS[st.winner].name)}</div>` : '';
-    this._cine(`<div class="cine-bar top"></div><div class="cine-bar bottom"></div><div class="cine-title">أحسنتم يا صيّادي الجراثيم!</div>${win}`, 'finale');
+    // وسام لكل فريق: «صيّاد الجراثيم» بنجوم حسب أخطائه (المهمة اكتملت)
+    const medals = Object.entries(st.teams)
+      .map(([id, T]) => {
+        const stars = T.mistakes === 0 ? 3 : T.mistakes <= 2 ? 2 : 1;
+        return `<div class="gh-medal" style="--team:${TEAMS[id].color}"><i></i><b>وسام صيّاد الجراثيم</b><span>${esc(TEAMS[id].name)}</span><em>${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</em></div>`;
+      })
+      .join('');
+    this._cine(`<div class="cine-bar top"></div><div class="cine-bar bottom"></div><div class="cine-title">أحسنتم يا صيّادي الجراثيم!</div>${win}<div class="gh-medals">${medals}</div>`, 'finale');
     this.later(() => {
       this._cine(null);
       st.cine = false;
       this.screen = 'done';
+      st.medals = true;
       this.input?.reset();
       this.view.reset();
       this._applyPending();
       this.render();
-    }, this._d(2400));
+    }, this._d(3600)); // وقت أطول لقراءة الأوسمة
   }
 
   /** أي يد من الفريق تحمل بطاقة تُفرغ (تبدّلت الجولة ولم يعد لها مكان) */
