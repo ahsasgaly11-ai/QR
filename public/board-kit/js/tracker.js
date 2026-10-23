@@ -35,8 +35,14 @@ const PALM = [0, 5, 9, 13, 17];
 const INDEX_TIP = 8;
 
 const params = () => new URLSearchParams(location.search);
-/** آيباد/آيفون (بما فيها آيباد بواجهة Mac): مسار WebGL لمعالج الرسوم في Safari أبطأ من XNNPACK على المعالج المركزي داخل Worker. */
-const isApple = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+/**
+ * WebKit (Safari على آيباد/آيفون/ماك، وكل متصفّح على iOS فهو WebKit): مسار WebGL لمعالج الرسوم
+ * في MediaPipe أبطأ وأقل ثباتًا من XNNPACK على المعالج المركزي داخل Worker.
+ */
+const isWebKit = () =>
+  /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) ||
+  (/Safari\//.test(navigator.userAgent) && !/Chrome|Chromium|CriOS|Edg|OPR|Firefox|FxiOS/.test(navigator.userAgent));
 
 export class HandTracker {
   /**
@@ -69,7 +75,8 @@ export class HandTracker {
     this.lastCrops = [];
     this.delegate = null;
     // ?cpu يفرض المعالج المركزي، و?gpu يفرض معالج الرسوم (للمقارنة)؛ وإلا: Apple ← المعالج المركزي في Worker
-    this.forceCpu = params().has('cpu') || (isApple() && !params().has('gpu'));
+    this.forceCpu = params().has('cpu') || (isWebKit() && !params().has('gpu'));
+    this._bitmapCrop = null; // هل يدعم المتصفّح القصّ والتصغير في createImageBitmap؟ (يُفحص مرة)
     this.preferWorkerCpu = this.forceCpu;
     this._errors = 0;
     // الخلفية: worker أو main؛ تُحدَّد عند أول تشغيل
@@ -395,8 +402,12 @@ export class HandTracker {
     this._schedule();
   }
 
-  /** يقصّ نافذة من الفيديو ويصغّرها إلى حجم الكاشف في خطوة واحدة (ImageBitmap قابل للنقل). */
-  _cropBitmap(v, c) {
+  /**
+   * يقصّ نافذة من الفيديو ويصغّرها إلى حجم الكاشف في خطوة واحدة (ImageBitmap قابل للنقل).
+   * متصفّح لا يدعم القصّ/التصغير في createImageBitmap (أو يرفض الفيديو مصدرًا) يرسم على
+   * لوحة أولًا ثم يحوّلها؛ النتيجة نفسها بكلفة أعلى قليلًا.
+   */
+  async _cropBitmap(v, c) {
     const fw = v.videoWidth;
     const fh = v.videoHeight;
     const sx = Math.max(0, Math.floor(c.x * fw));
@@ -405,7 +416,29 @@ export class HandTracker {
     const sh = Math.max(16, Math.min(fh - sy, Math.round(c.h * fh)));
     const maxSide = CROP_PX[c.kind] || CROP_PX.scan;
     const k = Math.min(1, maxSide / Math.max(sw, sh));
-    return createImageBitmap(v, sx, sy, sw, sh, { resizeWidth: Math.max(16, Math.round(sw * k)), resizeHeight: Math.max(16, Math.round(sh * k)), resizeQuality: 'low' }).catch(() => null);
+    const cw = Math.max(16, Math.round(sw * k));
+    const ch = Math.max(16, Math.round(sh * k));
+    if (this._bitmapCrop !== false) {
+      try {
+        const b = await createImageBitmap(v, sx, sy, sw, sh, { resizeWidth: cw, resizeHeight: ch, resizeQuality: 'low' });
+        this._bitmapCrop = true;
+        return b;
+      } catch (err) {
+        if (this._bitmapCrop === null) console.info('[board-kit] createImageBitmap بلا قصّ هنا؛ نقصّ على لوحة', err?.message || err);
+        this._bitmapCrop = false;
+      }
+    }
+    try {
+      const cv = this._cropCanvas || (this._cropCanvas = document.createElement('canvas'));
+      if (cv.width !== cw || cv.height !== ch) {
+        cv.width = cw;
+        cv.height = ch;
+      }
+      cv.getContext('2d').drawImage(v, sx, sy, sw, sh, 0, 0, cw, ch);
+      return await createImageBitmap(cv);
+    } catch {
+      return null;
+    }
   }
 
   _onWorkerMessage(m) {

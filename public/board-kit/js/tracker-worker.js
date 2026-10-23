@@ -38,7 +38,7 @@ self.onmessage = async (e) => {
       const t0 = performance.now();
       let results = [];
       try {
-        results = core.run(m.images[0] || null, m.crops, m.ts, m.images);
+        results = core.run(null, m.crops, m.ts, m.images); // لا إطار كامل: كل نافذة صورتها الجاهزة
       } finally {
         for (const b of m.images) b?.close?.();
       }

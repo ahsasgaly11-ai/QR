@@ -166,6 +166,8 @@ export class DetectCore {
     // صورة النافذة: جاهزة (قُصّت وصُغّرت في الخيط الرئيسي بـ createImageBitmap) أو تُقصّ هنا من الإطار
     const img = (c, i, key, maxSide) => images?.[i] || this._crop(key, frame, c, maxSide);
     crops.forEach((c, i) => {
+      // صورة النافذة تعذّر إنشاؤها في هذا الإطار (ولا إطار كامل بديل): نتخطّاها
+      if (images && !images[i] && !frame) return;
       let res = null;
       if (c.kind === 'scan') {
         if (!this.scanLm) return;
