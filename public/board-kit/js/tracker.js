@@ -329,6 +329,14 @@ export class HandTracker {
   _plan() {
     if (!this.smart) return this.tiles.map((t, i) => ({ kind: 'tile', slot: i, x: t.x, y: t.y, w: t.w, h: t.h }));
     const { scanPerFrame } = QUALITY[this.effQuality];
+    // جهاز بطيء وأيدٍ متتبَّعة: المسح (كاشف الكف، الأغلى) كل إطارين أو ثلاثة بدل كل إطار،
+    // فتحتفظ نوافذ التركيز بكل الوقت وتلحق الدائرة باليد
+    this._frameNo = (this._frameNo || 0) + 1;
+    const skip = this.focus.length ? (this.inferMs > 90 ? 3 : this.inferMs > 55 ? 2 : 1) : 1;
+    if (skip > 1 && this._frameNo % skip) {
+      const { crops } = planFrame({ tiles: [], focus: this.focus, scanIdx: this.scanIdx, scanPerFrame });
+      return crops;
+    }
     const { crops, scanIdx } = planFrame({ tiles: this.tiles, focus: this.focus, scanIdx: this.scanIdx, scanPerFrame });
     this.scanIdx = scanIdx;
     return crops;
@@ -517,8 +525,8 @@ export class HandTracker {
       // جهاز بطيء على هذه الدقة ٤ ثوانٍ متتالية: نخفّضها درجة (بعد مهلة الإحماء:
       // الإطارات الأولى بطيئة دائمًا بينما يُجهَّز النموذج)
       const warm = t - this._layoutAt > 6000;
-      if (warm && this.fps > 0 && this.fps < 7 && this.effQuality !== 'normal') {
-        if (++this._slowSecs >= 4) {
+      if (warm && this.fps > 0 && this.fps < 12 && this.effQuality !== 'normal') {
+        if (++this._slowSecs >= 3) {
           this._slowSecs = 0;
           this._degrade('الجهاز بطيء على هذه الدقة');
         }

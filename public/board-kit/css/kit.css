@@ -411,6 +411,7 @@ html, body {
 .cam-chip[data-state='ok']::before { color: #16a34a; }
 .cam-chip[data-state='wait']::before { color: #d97706; }
 .cam-chip[data-state='bad']::before { color: #dc2626; }
+.cam-chip.slow::before { color: #d97706; } /* التتبّع أبطأ من ١٠ إطارات/ث */
 
 #panel {
   position: fixed;

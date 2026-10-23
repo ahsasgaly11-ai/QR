@@ -213,6 +213,7 @@ export function startBoardApp({
     if (now - lastClock > 250) {
       lastClock = now;
       game.tickClock?.();
+      if (tracker.active) updateCamChip();
       if (!panel.hidden && $('#preview').dataset.on === '1') tracker.drawPreview($('#preview'));
       if (!panel.hidden)
         $('#fps').textContent = tracker.active
@@ -294,8 +295,11 @@ export function startBoardApp({
       else (text = 'تحتاج معايرة'), (cls = 'wait');
     }
     if (input.sim) (text = 'محاكاة بالماوس'), (cls = 'ok');
+    // أثناء التتبّع تُعرض سرعته دائمًا (إطار/ث) ليعرف المعلّم حال الجهاز بلا فتح اللوحة
+    if (st === 'running' && tracker.active && tracker.fps > 0 && !input.sim) text += ` • ${tracker.fps.toLocaleString('ar-EG')} إطار/ث`;
     camChip.textContent = text;
     camChip.dataset.state = cls;
+    camChip.classList.toggle('slow', st === 'running' && tracker.active && tracker.fps > 0 && tracker.fps < 10);
   }
 
   function openPanel() {
