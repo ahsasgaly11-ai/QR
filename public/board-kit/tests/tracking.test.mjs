@@ -132,3 +132,45 @@ test('with two hands around, a far jump is not guessed', () => {
   const out = m.update([{ x: 0.5, y: 0.1 }, { x: 0.5, y: 0.95 }], t);
   assert.ok(out.every((o) => o.id > 2), JSON.stringify(out));
 });
+
+test('frame plan: one scan tile per frame while hands are tracked, three when none', async () => {
+  const { planFrame } = await import('../js/tracking.js');
+  const tiles = Array.from({ length: 13 }, (_, i) => ({ x: i / 13, y: 0, w: 0.2, h: 0.4 }));
+  const win = { x: 0.4, y: 0.4, w: 0.2, h: 0.3 };
+  const idle = planFrame({ tiles, focus: [], scanIdx: 0, scanPerFrame: 2 });
+  assert.equal(idle.crops.filter((c) => c.kind === 'scan').length, 3);
+  assert.equal(idle.scanIdx, 3);
+  const busy = planFrame({ tiles, focus: [{ win, slot: 2 }, { win, slot: 0 }], scanIdx: 12, scanPerFrame: 2 });
+  assert.deepEqual(busy.crops.map((c) => c.kind), ['focus', 'focus', 'scan']);
+  assert.deepEqual(busy.crops.slice(0, 2).map((c) => c.slot), [2, 0], 'each hand keeps its video-detector slot');
+  assert.equal(busy.scanIdx, 0, 'wraps around the grid');
+});
+
+test('sticky focus window stays put while the hand is inside it, recenters near the edge', async () => {
+  const { stickyFocus, focusCrop } = await import('../js/tracking.js');
+  const aspect = 16 / 9;
+  const h = { cx: 0.5, cy: 0.5, size: 0.03 };
+  const w0 = stickyFocus(null, h, aspect);
+  assert.deepEqual(w0, focusCrop(h, aspect));
+  const w1 = stickyFocus(w0, { ...h, cx: 0.5 + w0.w * 0.2, cy: 0.5 - w0.h * 0.15 }, aspect);
+  assert.equal(w1, w0, 'same window object while inside');
+  const w2 = stickyFocus(w0, { ...h, cx: w0.x + w0.w * 0.95, cy: 0.5 }, aspect);
+  assert.notEqual(w2, w0, 'recentered when the hand nears the edge');
+  const w3 = stickyFocus(w0, { ...h, size: 0.08 }, aspect);
+  assert.notEqual(w3, w0, 'rebuilt when the hand grows a lot');
+});
+
+test('lead compensation moves a fast hand ahead along its motion and leaves a still hand alone', async () => {
+  const { MAX_LEAD_MS } = await import('../js/tracking.js');
+  const m = new HandMatcher({ aspect: 1.6 });
+  let t = 0;
+  let last;
+  for (let i = 0; i < 12; i++, t += 33) [last] = m.update([{ x: 0.2 + i * 0.02, y: 0.5 }], t, { lead: 90 });
+  assert.ok(last.x > 0.2 + 11 * 0.02 + 0.02, `predicted ahead: ${last.x.toFixed(3)}`);
+  assert.ok(last.x < 0.2 + 11 * 0.02 + 0.09, 'but not absurdly far');
+  const s = new HandMatcher({ aspect: 1.6 });
+  t = 0;
+  let still;
+  for (let i = 0; i < 12; i++, t += 33) [still] = s.update([{ x: 0.4, y: 0.5 }], t, { lead: MAX_LEAD_MS + 500 });
+  assert.ok(Math.abs(still.x - 0.4) < 1e-6 && Math.abs(still.y - 0.5) < 1e-6, 'still hand is not pushed');
+});

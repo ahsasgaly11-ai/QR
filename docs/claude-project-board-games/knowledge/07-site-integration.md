@@ -105,7 +105,7 @@ export const BOARD_GAME_SEEDS: BoardGame[] = [
     slug: 'asnan',
     title: 'ركّب الأسنان',
     summary:
-      'يركّب الطلاب القواطع والأنياب والضواحك والطواحن في الفكّين بلمس السبورة بأيديهم، ويتعرّفون وظيفة كل نوع.',
+      'يركّب الطلاب القواطع والأنياب والضواحك والطواحن في فكّين مجسّمين ثلاثيَّي الأبعاد بلمس السبورة بأيديهم، ويتعرّفون وظيفة كل نوع.',
     subject: 'العلوم',
     context: 'الأسنان وأنواعها ووظائفها',
     objectives: [
@@ -345,9 +345,12 @@ export function locateBoardGame(subjects: Subject[], g: BoardGame) {
 /** سطر السياق فوق البطاقة: المادة • المستوى • الدرس (من الشجرة)، وإلا اسم المادة المكتوب. */
 export function boardGameContext(subjects: Subject[], g: BoardGame): { subjectId: string; subjectTitle: string; context: string } {
   const { subject, grade, lesson } = locateBoardGame(subjects, g);
+  // لعبة غير مرتبطة بدرس: تُنسب إلى المادة التي يطابق عنوانها اسمها المكتوب،
+  // فلا يتكرّر تبويب «العلوم» مرّتين ولا تُعدّ مادة ثانية.
+  const byTitle = subject ?? subjects.find((s) => s.title.trim() === (g.subject || '').trim());
   return {
-    subjectId: subject?.id ?? g.subjectId ?? `__${g.subject || 'other'}`,
-    subjectTitle: subject?.title ?? g.subject ?? '',
+    subjectId: byTitle?.id ?? `__${g.subject || 'other'}`,
+    subjectTitle: byTitle?.title ?? g.subject ?? '',
     context: [grade?.title, lesson?.title].filter(Boolean).join(' • '),
   };
 }

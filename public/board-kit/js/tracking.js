@@ -126,9 +126,13 @@ export class HandMatcher {
 
   /**
    * @param {{x:number,y:number,handed?:string,size?:number}[]} dets
+   * @param {number} t طابع التقاط الإطار (ms)
+   * @param {{lead?:number}} [o] lead: كم ms نستبق بها الموضع (تأخير الكاميرا + الاستدلال)،
+   *   فتصل الدائرة إلى حيث اليد الآن لا حيث كانت حين التُقط الإطار.
    * @returns {{id:number,x:number,y:number,handed?:string}[]}
    */
-  update(dets, t) {
+  update(dets, t, { lead = 0 } = {}) {
+    this.lead = Math.max(0, Math.min(MAX_LEAD_MS, lead));
     for (const [id, tr] of this.tracks) if (t - tr.seen > this.memoryMs) this.tracks.delete(id);
     const pairs = [];
     dets.forEach((d, di) => {
@@ -193,8 +197,64 @@ export class HandMatcher {
     if (d.size) tr.size = tr.size ? 0.7 * tr.size + 0.3 * d.size : d.size;
     tr.x = tr.fx.filter(d.x, t);
     tr.y = tr.fy.filter(d.y, t);
-    return { id: tr.id, x: tr.x, y: tr.y, handed: tr.handed };
+    // الاستباق: بالسرعة المنعَّمة، ويتلاشى مع بطء اليد (لا يتجاوز الهدف عند التوقف)
+    let x = tr.x;
+    let y = tr.y;
+    const lead = this.lead || 0;
+    if (lead > 0 && !tr.fresh) {
+      const speed = Math.hypot(tr.vx * this.aspect, tr.vy) / this.aspect; // بنسبة الشاشة/ث
+      const k = Math.min(1, speed / 0.35); // يد تقطع ثلث الشاشة في الثانية = استباق كامل
+      x += tr.vx * (lead / 1000) * k;
+      y += tr.vy * (lead / 1000) * k;
+    }
+    return { id: tr.id, x, y, handed: tr.handed, vx: tr.vx, vy: tr.vy };
   }
+}
+
+/** أقصى استباق (ms): أبعد منه يصير المؤشر «يتخيّل» الحركة. */
+export const MAX_LEAD_MS = 110;
+
+// ---------------------------------------------------------------------------
+// جدولة عمل الإطار (الدقة القصوى): ما يُشغَّل عليه الكاشف في هذا الإطار.
+//
+// كل نافذة تركيز تُفحص كل إطار (كاشف «فيديو» يتتبّع اليد داخلها بلا كاشف الكف،
+// فهي رخيصة)، أمّا المسح (كاشف الكف على بلاطة من الشبكة) فيُقلَّل حين توجد
+// أيدٍ متتبَّعة: بلاطة واحدة كل إطار بدل اثنتين، وثلاث حين لا توجد يد (لنجدها
+// بسرعة). هكذا ينزل عمل الإطار إلى النصف أثناء اللعب الفعلي.
+// ---------------------------------------------------------------------------
+
+/**
+ * @param {{tiles:object[], focus:object[], scanIdx:number, scanPerFrame:number}} s
+ * @returns {{crops:{kind:'focus'|'scan', slot?:number, x:number,y:number,w:number,h:number}[], scanIdx:number}}
+ */
+export function planFrame({ tiles, focus, scanIdx, scanPerFrame = 2 }) {
+  const crops = focus.map((f, i) => ({ kind: 'focus', slot: f.slot ?? i, x: f.win.x, y: f.win.y, w: f.win.w, h: f.win.h }));
+  const scans = focus.length ? 1 : scanPerFrame + 1;
+  let idx = scanIdx;
+  for (let i = 0; i < scans && tiles.length; i++) {
+    const t = tiles[idx % tiles.length];
+    crops.push({ kind: 'scan', x: t.x, y: t.y, w: t.w, h: t.h });
+    idx = (idx + 1) % tiles.length;
+  }
+  return { crops, scanIdx: idx };
+}
+
+/**
+ * نافذة تركيز «لاصقة»: تبقى مكانها ما دامت اليد في نطاقها الداخلي، فتبقى
+ * إحداثيات اليد داخل النافذة متّسقة بين الإطارات ويواصل كاشف «الفيديو» تتبّعها
+ * بلا كاشف الكف. تُعاد توسيطها فقط حين تقترب اليد من حافتها أو يتغيّر حجمها كثيرًا.
+ * @param {{x:number,y:number,w:number,h:number}|null} win النافذة الحالية (مطبّعة)
+ * @param {{cx:number,cy:number,size:number}} h اليد
+ * @param {number} aspect عرض الإطار ÷ ارتفاعه
+ */
+export function stickyFocus(win, h, aspect) {
+  const want = focusCrop(h, aspect);
+  if (!win) return want;
+  const mx = win.w * 0.22;
+  const my = win.h * 0.22;
+  const inside = h.cx > win.x + mx && h.cx < win.x + win.w - mx && h.cy > win.y + my && h.cy < win.y + win.h - my;
+  const sizeOk = want.w < win.w * 1.35 && want.w > win.w * 0.55;
+  return inside && sizeOk ? win : want;
 }
 
 /**

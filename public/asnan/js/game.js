@@ -14,6 +14,7 @@
 import { TYPES, TYPE_ORDER, jawTeeth, crownPath, rootPath, SLOT_PATH, CROWN_LEN } from './teeth.js';
 import { archCurve, placeOnArch, inwardNormal } from '../../board-kit/js/geometry.js';
 import { sfx, say } from '../../board-kit/js/audio.js';
+import { pickTier } from './scene3d.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 /** عمق القوس ÷ عرضه (الفك البشري أعرض من عمقه). */
@@ -79,6 +80,70 @@ export class Game {
     this._hoverOn = new Set();
     this._timers = new Set();
     this.state = null;
+    // المشهد ثلاثي الأبعاد (scene3d.js): الفكوك والأسنان مجسّمة فوق الخلفية، وSVG يبقى
+    // طبقة الأهداف (وفي الطبقة C هو الرسم نفسه كما كان)
+    this.scene = null;
+    this.thumbs = null;
+    this._jawData = [];
+    const { tier, forced } = pickTier();
+    this.tier = 'C';
+    this.stage.dataset.tier = 'C';
+    if (tier !== 'C') this._init3D(tier, forced);
+  }
+
+  async _init3D(tier, forced) {
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.id = 'gl';
+      canvas.setAttribute('aria-hidden', 'true');
+      const { createScene3D } = await import('./scene3d.js');
+      const sc = await createScene3D(canvas, { tier, forced });
+      if (!sc) return;
+      this.scene = sc;
+      this.tier = sc.tier;
+      this.stage.prepend(canvas);
+      this.stage.dataset.tier = sc.tier;
+      this.stage.classList.add('has3d');
+      if (Object.keys(sc.thumbs).length === TYPE_ORDER.length) this.thumbs = sc.thumbs;
+      sc.onTier = (t) => {
+        if (t === 'C') return this._dropTo2D();
+        this.tier = t;
+        this.stage.dataset.tier = t;
+      };
+      this.render();
+      const loop = (now) => {
+        if (!this.scene) return;
+        this.scene.frame(now);
+        requestAnimationFrame(loop);
+      };
+      requestAnimationFrame(loop);
+    } catch (e) {
+      console.warn('3D غير متاح ← الطبقة C', e);
+      this._dropTo2D();
+    }
+  }
+
+  /** الجهاز لا يحمل المشهد: نعود إلى رسوم SVG الأصلية بلا أي تغيير في الأهداف. */
+  _dropTo2D() {
+    this.scene?.dispose();
+    this.scene = null;
+    this.thumbs = null;
+    this.tier = 'C';
+    this.stage.dataset.tier = 'C';
+    this.stage.classList.remove('has3d');
+    this.stage.querySelector('#gl')?.remove();
+    this.render();
+  }
+
+  /** أيقونة السن للبطاقة: صورة مصيَّرة من المجسّم إن توفّرت، وإلا رسم SVG. */
+  _toothIcon(type) {
+    if (!this.thumbs?.[type]) return toothIconSvg(type);
+    const img = document.createElement('img');
+    img.src = this.thumbs[type];
+    img.alt = '';
+    img.className = `tooth-img t-${type}`;
+    img.draggable = false;
+    return img;
   }
 
   // ------------------------------------------------------------------ عام
@@ -90,6 +155,7 @@ export class Game {
     this.scale = h / 1000;
     this.stage.style.setProperty('--u', `${this.scale}px`);
     for (const s of [this.board, this.fx]) s.setAttribute('viewBox', `0 0 ${this.VW} ${this.VH}`);
+    this.scene?.resize(this.VW, this.VH, this.scale);
   }
 
   setSettings(s) {
@@ -104,6 +170,7 @@ export class Game {
     for (const id of this._hoverOn) if (!ids.has(id)) this._els.get(id)?.classList.remove('hover');
     for (const id of ids) if (!this._hoverOn.has(id)) this._els.get(id)?.classList.add('hover');
     this._hoverOn = new Set(ids);
+    this.scene?.setHover(ids);
   }
 
   later(fn, ms) {
@@ -129,12 +196,15 @@ export class Game {
     this.hud.replaceChildren();
     this.fx.replaceChildren();
     this.board.appendChild(this._defs());
+    this._jawData = [];
     if (this.screen === 'menu') this._renderMenu();
     else this._renderPlay();
     const cursors = svg('g', { class: 'cursors' });
     this.fx.appendChild(cursors);
     this.input?.attachLayer(cursors);
     this._collectTargets();
+    // المجسّمات في مواضع خانات SVG نفسها؛ في القائمة والنتيجة تُصبغ المينا بلون النوع
+    this.scene?.setJaws(this._jawData, { reveal: this.screen !== 'play' });
   }
 
   _defs() {
@@ -215,6 +285,7 @@ export class Game {
     const meanW = placed.slots.reduce((s, x) => s + x.width, 0) / placed.slots.length;
     // اللثة: شريط على امتداد القوس نحو الخارج (جهة الجذور)
     const off = [];
+    const outer = [];
     const pts = curve.pts;
     for (let i = 0; i < pts.length; i += 6) {
       const a = pts[Math.max(0, i - 1)];
@@ -225,7 +296,10 @@ export class Game {
       tx /= l;
       ty /= l;
       const { nx, ny } = inwardNormal(curve, pts[i].x, pts[i].y, tx, ty);
-      off.push(`${(pts[i].x - nx * meanW * 0.42).toFixed(1)},${(pts[i].y - ny * meanW * 0.42).toFixed(1)}`);
+      const ox = pts[i].x - nx * meanW * 0.42;
+      const oy = pts[i].y - ny * meanW * 0.42;
+      outer.push({ x: ox, y: oy });
+      off.push(`${ox.toFixed(1)},${oy.toFixed(1)}`);
     }
     const line = off.join(' ');
     gum.appendChild(svg('polyline', { points: line, class: 'gum-edge', 'stroke-width': (meanW * 1.12).toFixed(1) }));
@@ -254,18 +328,24 @@ export class Game {
         filled: filledAll,
         crownEl,
         slotEl,
+        // أصل الإطار المحلي للسن (العنق) وزاويته — للمجسّم
+        ox: p.x,
+        oy: p.y,
+        angle: p.angle,
       };
       this._showSlot(slot, false);
       if (interactive) this._els.set(slot.id, slotEl);
       return slot;
     });
     this.board.appendChild(layer);
+    this._jawData.push({ jaw, pts: curve.pts, outer, meanW, slots });
     return slots;
   }
 
   _showSlot(slot, animate) {
     slot.crownEl.style.display = slot.filled ? '' : 'none';
     slot.slotEl.style.display = slot.filled ? 'none' : '';
+    this.scene?.setFilled(slot.id, slot.filled, animate);
     if (animate) {
       const inner = slot.crownEl.firstChild;
       inner.classList.remove('popping');
@@ -448,7 +528,7 @@ export class Game {
       const T = TYPES[id];
       const card = html('div', `card t-${id}`);
       card.dataset.target = `card:${team}:${id}`;
-      card.appendChild(toothIconSvg(id));
+      card.appendChild(this._toothIcon(id));
       const body = html('div', 'card-body', `<b>${T.name}</b><small>${T.job}</small>`);
       const count = html('span', 'count');
       body.appendChild(count);
@@ -629,6 +709,7 @@ export class Game {
     slot.slotEl.classList.remove('wrong');
     void slot.slotEl.getBoundingClientRect();
     slot.slotEl.classList.add('wrong');
+    this.scene?.wrong(slot.id);
     this.later(() => slot.slotEl.classList.remove('wrong'), 700);
     if (T.wrongStreak[type] >= 2) {
       this.toast(`تلميح: الخانات المضيئة لـ${TYPES[type].name}`, 'hint');
@@ -648,7 +729,9 @@ export class Game {
   }
 
   _hint(pred) {
-    for (const s of this.slots.filter(pred)) {
+    const hs = this.slots.filter(pred);
+    this.scene?.hint(hs.map((s) => s.id), 2600);
+    for (const s of hs) {
       s.slotEl.classList.add('hint');
       this.later(() => s.slotEl.classList.remove('hint'), 2600);
     }
@@ -703,6 +786,7 @@ export class Game {
   _markQuiz() {
     const targets = new Set(Object.values(this.state.teams).map((t) => t.quizTarget));
     for (const s of this.slots) s.slotEl.classList.toggle('target', targets.has(s.id));
+    this.scene?.setTarget(targets);
   }
 
   _answer(team, type, cardEl) {
@@ -821,11 +905,12 @@ export class Game {
   heldIcon(type, team) {
     const teamed = team && team !== 'all';
     const g = svg('g', { class: `held-item held-tooth t-${type}${teamed ? ` team-${team}` : ''}`, 'data-team': teamed ? team : null });
-    const icon = toothIconSvg(type);
     const size = 92;
     const crown = CROWN_LEN[type];
     const rootLen = { incisor: 1.3, canine: 1.62, premolar: 1.18, molar: 0.95 }[type];
     const h = (size * (crown + rootLen + 0.16)) / 1.16;
+    // الصورة المصيَّرة من المجسّم إن توفّرت (بنسبة 256×340)، وإلا رسم SVG
+    const icon = this.thumbs?.[type] ? svg('image', { href: this.thumbs[type], preserveAspectRatio: 'xMidYMid meet' }) : toothIconSvg(type);
     icon.setAttribute('width', size);
     icon.setAttribute('height', h.toFixed(1));
     icon.setAttribute('x', -size / 2);

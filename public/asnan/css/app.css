@@ -66,3 +66,12 @@
 /* لون كل فريق (يستعمله kit.css لشريط الفريق وإطار بطاقاته وهالة سنّه المحمول) */
 .team-upper { --team: #8a1538; }
 .team-lower { --team: #0e7490; }
+
+/* ---------------------------------------------------------------- المشهد ثلاثي الأبعاد */
+#gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+/* المجسّمات تحلّ محلّ رسوم SVG (التي تبقى طبقة الأهداف والتسميات) */
+.has3d .gum-layer, .has3d .crowns-layer, .has3d .slots-layer .slot-shape { display: none; }
+.has3d .jaw-label { fill: #5f0d26; opacity: 0.9; paint-order: stroke; stroke: rgba(255, 255, 255, 0.75); stroke-width: 6px; }
+.has3d .menu-legend .lg i { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8); }
+.tooth-img { object-fit: contain; filter: drop-shadow(0 4px 4px rgba(60, 30, 10, 0.25)); }
+.held-tooth image { filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.35)); }

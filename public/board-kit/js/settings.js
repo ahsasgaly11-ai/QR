@@ -10,7 +10,7 @@ const KEY = 'board-kit.settings.v1';
 const LEGACY_KEYS = ['asnan.settings.v1'];
 
 export const DEFAULTS = {
-  dwellMs: 700, // مدة إبقاء اليد لالتقاط عنصر أو إسقاطه
+  dwellMs: 550, // مدة إبقاء اليد لالتقاط عنصر أو إسقاطه (٠٫٣–١٫٥ ث من اللوحة)
   handPoint: 'palm', // palm = منتصف الكف، finger = طرف السبابة
   reachTop: 0, // نسبة أعلى الشاشة المحجوزة للعناوين فقط (0..0.45) حين لا يصل الطلاب للأعلى
   sideInset: 0, // هامش جانبي (0..0.2 من العرض) يُبعد البطاقات عن طرفي الصورة

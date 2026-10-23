@@ -85,7 +85,7 @@ const PANEL_HTML = ({ speechLabel, reachLabel }) => `
   <section>
     <h3>٣. اللعب</h3>
     <label class="field">مدة إبقاء اليد <output id="dwellVal"></output>
-      <input id="dwell" type="range" min="400" max="1500" step="50">
+      <input id="dwell" type="range" min="300" max="1500" step="50">
     </label>
     <label class="field">${reachLabel} <output id="reachVal"></output>
       <input id="reach" type="range" min="0" max="45" step="1">
@@ -216,7 +216,10 @@ export function startBoardApp({
       lastClock = now;
       game.tickClock?.();
       if (!panel.hidden && $('#preview').dataset.on === '1') tracker.drawPreview($('#preview'));
-      if (!panel.hidden) $('#fps').textContent = tracker.active ? `${tracker.fps} إطار/ث • ${tracker.delegate || ''}` : '';
+      if (!panel.hidden)
+        $('#fps').textContent = tracker.active
+          ? `${tracker.fps} إطار/ث • ${Math.round(tracker.inferMs)} م.ث استدلال • ${tracker.backendLabel}`
+          : '';
     }
     requestAnimationFrame(loop);
   }
@@ -584,13 +587,32 @@ export class Interaction {
         this.cursors.set(key, c);
       }
       // يُحصر المؤشر داخل المسرح: كف عند الحافة الطرفية يبقى فوق البطاقة الطرفية
-      const x = ((h.x * innerWidth - r.left) / r.width) * VW;
-      const y = ((h.y * innerHeight - r.top) / r.height) * VH;
-      c.x = Math.max(0, Math.min(VW, x));
-      c.y = Math.max(0, Math.min(VH, y));
+      const x = Math.max(0, Math.min(VW, ((h.x * innerWidth - r.left) / r.width) * VW));
+      const y = Math.max(0, Math.min(VH, ((h.y * innerHeight - r.top) / r.height) * VH));
+      // أول ظهور (أو عودة بعد غياب): قفزة مباشرة؛ وإلا هدف ينزلق إليه المؤشر كل إطار شاشة
+      const gap = t - c.seen;
+      if (c.tx === undefined || gap > 400) {
+        c.x = x;
+        c.y = y;
+      }
+      c.tx = x;
+      c.ty = y;
       c.seen = t;
       if (c.parked) c.parked = false;
     }
+  }
+
+  /**
+   * انزلاق المؤشر نحو هدفه بمعدل الشاشة (٦٠ إطارًا/ث) بين إطارات الكاميرا (١٥–٣٠/ث):
+   * حركة ناعمة بلا قفزات، وثابت زمن قصير (٣٥ م.ث) فلا يُضاف تأخير يُذكر.
+   */
+  _glide(c, now) {
+    if (c.tx === undefined || c.parked) return;
+    const dt = Math.min(100, now - (c.glideAt || now));
+    c.glideAt = now;
+    const k = 1 - Math.exp(-dt / 35);
+    c.x += (c.tx - c.x) * k;
+    c.y += (c.ty - c.y) * k;
   }
 
   _newCursor(key, source) {
@@ -696,6 +718,7 @@ export class Interaction {
         this.cursors.delete(key);
         continue;
       }
+      this._glide(c, now);
       if (!c.holding) this._adopt(c, now);
       const t = this.targetFor(c);
       const id = t?.id ?? null;
@@ -743,6 +766,7 @@ export class Interaction {
     c.team = best.team;
     c.consumed = null;
     c.dwellId = null;
+    c.dwellStart = now;
     best.holding = null;
     best.g?.remove();
     this.cursors.delete(best.key);
@@ -989,7 +1013,7 @@ const KEY = 'board-kit.settings.v1';
 const LEGACY_KEYS = ['asnan.settings.v1'];
 
 export const DEFAULTS = {
-  dwellMs: 700, // مدة إبقاء اليد لالتقاط عنصر أو إسقاطه
+  dwellMs: 550, // مدة إبقاء اليد لالتقاط عنصر أو إسقاطه (٠٫٣–١٫٥ ث من اللوحة)
   handPoint: 'palm', // palm = منتصف الكف، finger = طرف السبابة
   reachTop: 0, // نسبة أعلى الشاشة المحجوزة للعناوين فقط (0..0.45) حين لا يصل الطلاب للأعلى
   sideInset: 0, // هامش جانبي (0..0.2 من العرض) يُبعد البطاقات عن طرفي الصورة
@@ -1040,27 +1064,36 @@ export function saveSettings(s) {
 // الكاميرا تعمل في عنصر فيديو مخفي؛ صورتها لا تُرسم على الصفحة أبدًا (إلا في
 // معاينة لوحة المعلم عند طلبها)، فلا تظهر في انعكاس الشاشة على السبورة.
 //
+// السرعة والاستجابة (ثلاث طبقات):
+//   ١) الاستدلال في Worker منفصل (tracker-worker.js): الإطار يُنقل ImageBitmap
+//      بلا نسخ، فلا يوقف الاستدلالُ رسمَ المشهد ثلاثي الأبعاد ولا العكس. إن لم
+//      يتوفّر معالج الرسوم داخل الـWorker (أجهزة أقدم) نرجع إلى الخيط الرئيسي.
+//   ٢) عمل أقل في كل إطار (tracking.js: planFrame): كل يد معروفة لها نافذة
+//      «لاصقة» يتتبّعها كاشف فيديو بلا كاشف الكف، والمسح عن أيدٍ جديدة بلاطة
+//      واحدة في الإطار حين توجد أيدٍ (ثلاث حين لا توجد).
+//   ٣) تعويض التأخير: تأخير الكاميرا والاستدلال يُقاس، ويُستبق موضع اليد بسرعتها
+//      (HandMatcher.lead) فتصل الدائرة إلى حيث اليد الآن.
+//
 // لأيدي الأطفال الصغيرة والبعيدة: بعد المعايرة نقصّ منطقة السبورة من الإطار
-// ونقسمها إلى بلاطات، لكل بلاطة كاشف مستقل (يحتفظ بتتبّعه بين الإطارات)، ثم
-// تُدمج الأيدي وتُطابق هويتها عبر الإطارات (راجع tracking.js).
+// ونقسمها إلى بلاطات (راجع tracking.js).
 // ---------------------------------------------------------------------------
 import { applyH, invert3 } from './geometry.js';
-import { boardRoi, makeTiles, mergeDetections, focusCrop, HandMatcher, QUALITY, QUALITY_ORDER } from './tracking.js';
+import { boardRoi, makeTiles, mergeDetections, stickyFocus, planFrame, HandMatcher, QUALITY, QUALITY_ORDER, MAX_LEAD_MS } from './tracking.js';
+import { DetectCore, MAX_FOCUS_SLOTS } from './detect-core.js';
 
 const VENDOR = new URL('../vendor/mediapipe/', import.meta.url).href;
 const MODEL = new URL('../models/hand_landmarker.task', import.meta.url).href;
+const WORKER_URL = new URL('./tracker-worker.js', import.meta.url);
 
 /** بعد هذه المدة بلا رؤية تختفي دائرة اليد الفارغة (اليد الحاملة لسنّ تبقى أطول، راجع input.js). */
 export const TRACK_TTL_MS = 900;
-const HANDS_PER_TILE = 4;
-const MAX_TILE_SIDE = 1280;
-const MAX_CROP_SIDE = 640; // نوافذ «المسح والتركيز» صغيرة أصلًا
-const MAX_FOCUS = 6;
 const FOCUS_KEEP_MS = 450; // تبقى نافذة التركيز مكان اليد المفقودة لحظة (حجب قصير)
 
 // معالم اليد في MediaPipe: 0 الرسغ، 5/9/13/17 قواعد الأصابع، 8 طرف السبابة.
 const PALM = [0, 5, 9, 13, 17];
 const INDEX_TIP = 8;
+
+const params = () => new URLSearchParams(location.search);
 
 export class HandTracker {
   /**
@@ -1074,13 +1107,6 @@ export class HandTracker {
     this.onStatus = onStatus || (() => {});
     this.onQuality = onQuality || (() => {});
     this.getHandPoint = getHandPoint;
-    this.api = null; // { fileset, HandLandmarker }
-    this.detectors = []; // [{ lm, canvas, ctx }] كاشف «فيديو» لكل بلاطة
-    this.imageLm = null; // كاشف «صور» واحد لوضع المسح والتركيز
-    this.focus = []; // الأيدي التي تتبعها نوافذ التركيز
-    this.scanIdx = 0;
-    this._cropCanvas = null;
-    this.lastCrops = [];
     this.stream = null;
     this.H = null;
     this.quality = 'max';
@@ -1097,10 +1123,22 @@ export class HandTracker {
     this._slowSecs = 0;
     this._layoutAt = 0;
     this.lastHands = []; // آخر معالم بإحداثيات الكاميرا (للمعاينة)
+    this.lastCrops = [];
     this.delegate = null;
-    this.forceCpu = false;
+    this.forceCpu = params().has('cpu');
     this._errors = 0;
-    this._busy = false;
+    // الخلفية: worker أو main؛ تُحدَّد عند أول تشغيل
+    this.backend = null;
+    this.worker = null;
+    this.core = null;
+    this._inflight = null; // {ts, crops, at} الإطار الذي ينتظر نتيجته
+    this.inferMs = 0; // زمن الاستدلال للإطار الأخير
+    this.latencyMs = 0; // من التقاط الإطار إلى وصول نتيجته
+    this.focus = []; // الأيدي المتتبَّعة بنوافذ لاصقة: {cx,cy,size,seen,vx,vy,win,slot}
+    this.focusSlots = 0; // كم خانة فيديو للتركيز أنشأتها النواة
+    this.scanIdx = 0;
+    this._configured = '';
+    this._pending = null; // رسالة تنتظر ردّها من الـWorker
   }
 
   setCalibration(H) {
@@ -1125,6 +1163,8 @@ export class HandTracker {
   _layout() {
     this._layoutAt = performance.now();
     this._slowSecs = 0;
+    this.focus = [];
+    this.scanIdx = 0;
     if (!this.H) {
       this.roi = { x: 0, y: 0, w: 1, h: 1 };
       this.tiles = [this.roi];
@@ -1136,17 +1176,10 @@ export class HandTracker {
     this.tiles = makeTiles(this.roi, cols, rows, smart ? 0.25 : 0.22);
     // في المسح: تمريرة على السبورة كلها ضمن الدور، لتُكتشف اليد الكبيرة (قريبة من الكاميرا) التي لا تسعها الأجزاء
     if (smart) this.tiles.unshift({ ...this.roi });
-    this.focus = [];
-    this.scanIdx = 0;
   }
 
   get smart() {
     return !!(this.H && QUALITY[this.effQuality].smart);
-  }
-
-  /** عدد كواشف «الفيديو» المطلوبة الآن (لا شيء في وضع المسح والتركيز). */
-  _neededDetectors() {
-    return this.smart ? 0 : this.tiles.length;
   }
 
   async listCameras() {
@@ -1155,85 +1188,101 @@ export class HandTracker {
     return all.filter((d) => d.kind === 'videoinput');
   }
 
-  async _loadApi() {
-    if (this.api) return this.api;
-    this.onStatus('loading', 'تحميل نموذج تتبّع اليد…');
-    const { FilesetResolver, HandLandmarker } = await import(`${VENDOR}vision_bundle.mjs`);
-    const fileset = await FilesetResolver.forVisionTasks(`${VENDOR}wasm`);
-    if (/_nosimd_/.test(fileset.wasmBinaryPath)) {
-      // نوفّر نسخة SIMD فقط (كل آيباد وهاتف بنظام iOS 16.4 فأحدث يدعمها، وكل أندرويد حديث)
-      throw new Error('nosimd');
-    }
-    this.api = { fileset, HandLandmarker };
-    return this.api;
+  // ---------------------------------------------------------------- الخلفية
+  _canWorker() {
+    if (params().get('mt') === 'main') return false;
+    return typeof Worker !== 'undefined' && typeof OffscreenCanvas !== 'undefined' && typeof createImageBitmap === 'function';
   }
 
-  async _makeLandmarker(runningMode = 'VIDEO') {
-    const { fileset, HandLandmarker } = await this._loadApi();
-    const make = (delegate) =>
-      HandLandmarker.createFromOptions(fileset, {
-        baseOptions: { modelAssetPath: MODEL, delegate },
-        runningMode,
-        numHands: HANDS_PER_TILE,
-        // عتبات أخفض من الافتراضي: أيدي الأطفال صغيرة وجزئية الظهور أحيانًا،
-        // والقصّ على السبورة يقلّل الاكتشافات الخاطئة من خارجها
-        minHandDetectionConfidence: 0.4,
-        minHandPresenceConfidence: 0.4,
-        minTrackingConfidence: 0.4,
-      });
-    // ‎?cpu في الرابط يفرض المعالج المركزي (للتشخيص)
-    const wantCpu = this.forceCpu || new URLSearchParams(location.search).has('cpu');
-    if (!wantCpu) {
+  /** يختار الخلفية مرة واحدة: Worker بمعالج الرسوم، وإلا الخيط الرئيسي. */
+  async _setupBackend() {
+    if (this.backend) return;
+    if (this._canWorker()) {
       try {
-        const lm = await make('GPU');
-        this.delegate = 'GPU';
-        return lm;
-      } catch {
-        /* نتراجع إلى المعالج المركزي */
+        const w = new Worker(WORKER_URL, { type: 'module', name: 'hand-tracker' });
+        w.onmessage = (e) => this._dispatch(e.data);
+        w.onerror = (e) => {
+          console.error('[board-kit] worker', e.message || e);
+          if (this._pending) this._pending.reject(e.error || new Error(e.message || 'worker error'));
+          else this._workerFailed();
+        };
+        const ready = await this._ask(w, { type: 'init', vendor: VENDOR, model: MODEL, forceCpu: this.forceCpu }, 'ready', 20000);
+        // معالج الرسوم غير متاح داخل الـWorker (iOS أقدم من 17): الخيط الرئيسي بمعالج الرسوم أسرع من Worker بالمعالج المركزي
+        if (ready.delegate === 'CPU' && !this.forceCpu) {
+          w.postMessage({ type: 'close' });
+        } else {
+          this.worker = w;
+          this.backend = 'worker';
+          this.delegate = ready.delegate;
+          return;
+        }
+      } catch (err) {
+        if (String(err?.message || err) === 'nosimd') throw err;
+        console.warn('[board-kit] worker غير متاح، نتابع في الخيط الرئيسي', err);
       }
     }
-    const lm = await make('CPU');
-    this.delegate = 'CPU';
-    return lm;
+    this.core = new DetectCore({ vendor: VENDOR, model: MODEL, forceCpu: this.forceCpu });
+    await this.core.init();
+    this.backend = 'main';
   }
 
-  /** كاشف لكل بلاطة؛ إن عجز الجهاز عن إنشائها كلها نخفّض الدقة. */
-  async _ensureDetectors() {
-    if (this.smart && !this.imageLm) {
-      try {
-        this.imageLm = await this._makeLandmarker('IMAGE');
-      } catch (err) {
-        if (!this.detectors.length && !this._degrade('تعذّر تشغيل الدقة القصوى')) throw err;
-        return this._ensureDetectors();
-      }
+  /** رسالة ذات ردّ واحد (للتهيئة والإعداد)؛ نتائج الإطارات التي تصل أثناءها تمرّ إلى معالجها. */
+  _ask(w, msg, expect, timeoutMs = 15000) {
+    return new Promise((resolve, reject) => {
+      const t = setTimeout(() => {
+        this._pending = null;
+        reject(new Error('worker timeout'));
+      }, timeoutMs);
+      this._pending = {
+        expect,
+        resolve: (m) => {
+          clearTimeout(t);
+          this._pending = null;
+          resolve(m);
+        },
+        reject: (err) => {
+          clearTimeout(t);
+          this._pending = null;
+          reject(err);
+        },
+      };
+      w.postMessage(msg);
+    });
+  }
+
+  _dispatch(m) {
+    const p = this._pending;
+    if (p && (m.type === p.expect || m.type === 'error')) {
+      if (m.type === 'error') p.reject(new Error(m.message || m.code));
+      else p.resolve(m);
+      return;
     }
-    if (!this.smart && this.imageLm) {
-      try {
-        this.imageLm.close();
-      } catch {
-        /* لا شيء */
-      }
-      this.imageLm = null;
+    this._onWorkerMessage(m);
+  }
+
+  /** يهيّئ الكواشف للوضع والدقة الحاليين (مرة لكل تغيّر). */
+  async _configure() {
+    const mode = this.smart ? 'smart' : 'tiled';
+    const key = `${mode}:${this.tiles.length}:${this.backend}`;
+    if (this._configured === key) return;
+    const want = { type: 'configure', mode, tiles: mode === 'tiled' ? this.tiles.length : 0, focus: mode === 'smart' ? MAX_FOCUS_SLOTS : 0 };
+    let got;
+    if (this.backend === 'worker') {
+      got = await this._ask(this.worker, want, 'configured', 30000);
+    } else {
+      got = await this.core.configure(want);
+      this.delegate = this.core.delegate;
     }
-    const need = this._neededDetectors();
-    while (this.detectors.length > need) {
-      const d = this.detectors.pop();
-      try {
-        d.lm.close();
-      } catch {
-        /* لا شيء */
+    if (got.delegate) this.delegate = got.delegate;
+    this._configured = key;
+    this.focusSlots = got.focus;
+    if (mode === 'tiled' && got.tiles < this.tiles.length) {
+      // الجهاز عجز عن كواشف كل البلاطات: نخفّض الدقة ونعيد الإعداد
+      if (this._degrade('تعذّر تشغيل كل أقسام الدقة على هذا الجهاز')) {
+        this._configured = '';
+        return this._configure();
       }
-    }
-    while (this.detectors.length < need) {
-      try {
-        const lm = await this._makeLandmarker();
-        const canvas = document.createElement('canvas');
-        this.detectors.push({ lm, canvas, ctx: canvas.getContext('2d') });
-      } catch (err) {
-        if (this.detectors.length === 0) throw err;
-        this._degrade('تعذّر تشغيل كل أقسام الدقة على هذا الجهاز');
-        return;
-      }
+      this.tiles = this.tiles.slice(0, Math.max(1, got.tiles));
     }
   }
 
@@ -1248,6 +1297,48 @@ export class HandTracker {
     return true;
   }
 
+  async _workerFailed() {
+    if (this.backend !== 'worker') return;
+    try {
+      this.worker?.terminate();
+    } catch {
+      /* لا شيء */
+    }
+    this.worker = null;
+    this.backend = null;
+    this._inflight = null;
+    this._configured = '';
+    this.delegate = null;
+    try {
+      this.core = new DetectCore({ vendor: VENDOR, model: MODEL, forceCpu: this.forceCpu });
+      await this.core.init();
+      this.backend = 'main';
+      this.onStatus('running', 'الكاميرا تعمل (الخيط الرئيسي)');
+    } catch (err) {
+      console.error(err);
+      this.onStatus('error', 'تعذّر تشغيل تتبّع اليد');
+      this.running = false;
+    }
+  }
+
+  async _fallbackToCpu() {
+    this.core?.close();
+    this.forceCpu = true;
+    this._configured = '';
+    this.delegate = null;
+    try {
+      this.core = new DetectCore({ vendor: VENDOR, model: MODEL, forceCpu: true });
+      await this.core.init();
+      await this._configure();
+      this.onStatus('running', 'الكاميرا تعمل (المعالج المركزي)');
+    } catch (err) {
+      this.onStatus('error', 'تعذّر تشغيل تتبّع اليد');
+      console.error(err);
+      this.running = false;
+    }
+  }
+
+  // ---------------------------------------------------------------- التشغيل
   async start(deviceId) {
     this.stop();
     if (!navigator.mediaDevices?.getUserMedia) throw new Error('nocamera');
@@ -1262,39 +1353,16 @@ export class HandTracker {
     await this.video.play();
     this.effQuality = this.quality;
     this._layout();
-    await this._ensureDetectors();
+    this.onStatus('loading', 'تحميل نموذج تتبّع اليد…');
+    await this._setupBackend();
+    await this._configure();
     this.running = true;
+    this._inflight = null;
     this.matcher.clear();
     this.onStatus('running', 'الكاميرا تعمل');
     this._schedule();
     const track = this.stream.getVideoTracks()[0];
     return track?.getSettings?.().deviceId || deviceId || '';
-  }
-
-  _closeDetectors() {
-    for (const lm of [...this.detectors.map((d) => d.lm), this.imageLm]) {
-      try {
-        lm?.close();
-      } catch {
-        /* لا شيء */
-      }
-    }
-    this.detectors = [];
-    this.imageLm = null;
-  }
-
-  async _fallbackToCpu() {
-    this._closeDetectors();
-    this.forceCpu = true;
-    try {
-      await this._ensureDetectors();
-      this.onStatus('running', 'الكاميرا تعمل (المعالج المركزي)');
-    } catch (err) {
-      this.onStatus('error', 'تعذّر تشغيل تتبّع اليد');
-      console.error(err);
-      return;
-    }
-    this._schedule();
   }
 
   stop() {
@@ -1304,6 +1372,8 @@ export class HandTracker {
     this.video.srcObject = null;
     this.matcher.clear();
     this.lastHands = [];
+    this.focus = [];
+    this._inflight = null;
     this.onStatus('off', 'الكاميرا متوقفة');
   }
 
@@ -1314,134 +1384,165 @@ export class HandTracker {
     else requestAnimationFrame(() => this._tick());
   }
 
+  /** نوافذ هذا الإطار حسب الوضع. */
+  _plan() {
+    if (!this.smart) return this.tiles.map((t, i) => ({ kind: 'tile', slot: i, x: t.x, y: t.y, w: t.w, h: t.h }));
+    const { scanPerFrame } = QUALITY[this.effQuality];
+    const { crops, scanIdx } = planFrame({ tiles: this.tiles, focus: this.focus, scanIdx: this.scanIdx, scanPerFrame });
+    this.scanIdx = scanIdx;
+    return crops;
+  }
+
   async _tick() {
     if (!this.running) return;
     try {
       const v = this.video;
       if (v.paused && v.srcObject) v.play().catch(() => {}); // بعد قفل الجهاز أو تبديل التطبيق
-      if (this.detectors.length !== this._neededDetectors() || (this.smart && !this.imageLm)) await this._ensureDetectors();
-      const ready = this.smart ? !!this.imageLm : this.detectors.length > 0;
-      if (v.readyState >= 2 && v.currentTime !== this.lastVideoTime && ready) {
+      if (!this.backend) await this._setupBackend();
+      await this._configure();
+      // إطار جديد ولا إطار قيد الاستدلال: لا نكدّس الإطارات (تأخير أقل من إطارات أكثر)
+      if (v.readyState >= 2 && v.currentTime !== this.lastVideoTime && !this._inflight) {
         this.lastVideoTime = v.currentTime;
         let ts = performance.now();
         if (ts <= this.lastTs) ts = this.lastTs + 1; // الطوابع يجب أن تتزايد تمامًا
         this.lastTs = ts;
-        if (this.smart) this._detectSmart(ts);
-        else this._detect(ts);
-        this._countFps(ts);
+        const crops = this._plan();
+        if (this.backend === 'worker') {
+          this._inflight = { ts, crops, at: ts };
+          const bitmap = await createImageBitmap(v);
+          if (!this.running || !this.worker) {
+            bitmap.close();
+            this._inflight = null;
+          } else this.worker.postMessage({ type: 'frame', bitmap, ts, crops }, [bitmap]);
+        } else {
+          const t0 = performance.now();
+          const results = this.core.run(v, crops, ts);
+          this.inferMs = performance.now() - t0;
+          this._onResults(ts, crops, results);
+        }
         this._errors = 0;
+      } else if (this._inflight && performance.now() - this._inflight.at > 4000) {
+        // الـWorker لم يردّ أربع ثوانٍ: شيء تعطّل، نرجع إلى الخيط الرئيسي
+        console.warn('[board-kit] worker لا يستجيب');
+        await this._workerFailed();
       }
     } catch (err) {
-      console.error('[asnan] detect', err);
+      console.error('[board-kit] detect', err);
       // معالج الرسوم قد يُنشئ النموذج ثم يفشل أثناء العمل على بعض الأجهزة: ننتقل للمعالج المركزي
-      if (++this._errors >= 5 && this.delegate === 'GPU') {
+      if (++this._errors >= 5) {
         this._errors = 0;
-        this._fallbackToCpu();
-        return;
+        if (this.backend === 'worker') await this._workerFailed();
+        else if (this.delegate === 'GPU') {
+          await this._fallbackToCpu();
+          return this._schedule();
+        }
       }
     }
     this._schedule();
   }
 
-  /** يحوّل نتيجة كاشف على نافذة (بلاطة أو نافذة تركيز) إلى أيدٍ بإحداثيات الكاميرا. */
-  _handsFrom(res, tile, aspect, out) {
-    (res?.landmarks || []).forEach((lmT, j) => {
-      const lm = lmT.map((p) => ({ x: tile.x + p.x * tile.w, y: tile.y + p.y * tile.h }));
-      const c = this.handCamPoint(lm);
-      const hd = res.handedness?.[j]?.[0];
-      const tx = (c.x - tile.x) / tile.w;
-      const ty = (c.y - tile.y) / tile.h;
-      out.push({
-        lm,
-        cx: c.x,
-        cy: c.y,
-        size: Math.hypot(lm[0].x - lm[9].x, (lm[0].y - lm[9].y) / aspect),
-        score: hd?.score ?? 0.5,
-        handed: hd?.categoryName,
-        edge: Math.min(tx, 1 - tx, ty, 1 - ty),
-      });
-    });
+  _onWorkerMessage(m) {
+    if (m.type === 'result') {
+      const inflight = this._inflight;
+      this._inflight = null;
+      if (!this.running || !inflight || inflight.ts !== m.ts) return;
+      this.inferMs = m.ms;
+      if (m.delegate) this.delegate = m.delegate;
+      this._onResults(m.ts, inflight.crops, m.results);
+      this._errors = 0;
+    } else if (m.type === 'error') {
+      console.error('[board-kit] worker', m.message);
+      this._inflight = null;
+      if (++this._errors >= 3) {
+        this._errors = 0;
+        this._workerFailed();
+      }
+    }
   }
 
-  /** يرسم جزءًا من الإطار على لوحة بحجم مناسب للكاشف. */
-  _crop(canvas, ctx, tile, maxSide) {
+  /** يحوّل نتائج النوافذ إلى أيدٍ بإحداثيات الكاميرا، ويحدّث نوافذ التركيز، ثم يُخرج المؤشرات. */
+  _onResults(ts, crops, results) {
     const v = this.video;
-    const sw = tile.w * v.videoWidth;
-    const sh = tile.h * v.videoHeight;
-    const k = Math.min(1, maxSide / Math.max(sw, sh));
-    const cw = Math.max(16, Math.round(sw * k));
-    const ch = Math.max(16, Math.round(sh * k));
-    if (canvas.width !== cw || canvas.height !== ch) {
-      canvas.width = cw;
-      canvas.height = ch;
-    }
-    ctx.drawImage(v, tile.x * v.videoWidth, tile.y * v.videoHeight, sw, sh, 0, 0, cw, ch);
-    return canvas;
-  }
-
-  /** الدقة القصوى: مسح جزأين من الشبكة + نافذة تركيز لكل يد معروفة. */
-  _detectSmart(ts) {
-    const v = this.video;
-    const aspect = v.videoWidth / v.videoHeight;
-    if (!this._cropCanvas) {
-      this._cropCanvas = document.createElement('canvas');
-      this._cropCtx = this._cropCanvas.getContext('2d', { willReadFrequently: false });
-    }
-    this.focus = this.focus.filter((f) => ts - f.seen <= FOCUS_KEEP_MS);
-    const crops = this.focus.map((f) => {
-      // نستبق حركة اليد: مركز النافذة حيث نتوقعها في هذا الإطار
-      const dt = Math.min(200, ts - f.seen) / 1000;
-      return focusCrop({ cx: f.cx + f.vx * dt, cy: f.cy + f.vy * dt, size: f.size }, aspect);
-    });
-    // لا أيدي متتبَّعة الآن: الوقت كله للمسح، فنمسح جزءًا إضافيًا لنجدها أسرع
-    const scans = QUALITY[this.effQuality].scanPerFrame + (this.focus.length ? 0 : 1);
-    for (let i = 0; i < scans && this.tiles.length; i++) {
-      crops.push(this.tiles[this.scanIdx]);
-      this.scanIdx = (this.scanIdx + 1) % this.tiles.length;
-    }
+    const aspect = v.videoWidth / Math.max(1, v.videoHeight);
     const raw = [];
-    for (const c of crops) {
-      const img = this._crop(this._cropCanvas, this._cropCtx, c, MAX_CROP_SIDE);
-      this._handsFrom(this.imageLm.detect(img), c, aspect, raw);
+    for (const r of results) {
+      const tile = crops[r.i];
+      if (!tile) continue;
+      r.landmarks.forEach((lmT, j) => {
+        const lm = lmT.map((p) => ({ x: tile.x + p.x * tile.w, y: tile.y + p.y * tile.h }));
+        const c = this.handCamPoint(lm);
+        const hd = r.handedness[j];
+        const tx = (c.x - tile.x) / tile.w;
+        const ty = (c.y - tile.y) / tile.h;
+        raw.push({
+          lm,
+          cx: c.x,
+          cy: c.y,
+          size: Math.hypot(lm[0].x - lm[9].x, (lm[0].y - lm[9].y) / aspect),
+          score: hd?.score ?? 0.5,
+          handed: hd?.categoryName,
+          edge: Math.min(tx, 1 - tx, ty, 1 - ty),
+        });
+      });
     }
+    const merged = crops.length > 1 ? mergeDetections(raw, aspect) : raw;
     this.lastCrops = crops;
-    const merged = mergeDetections(raw, aspect);
-    // تحديث نوافذ التركيز: كل يد مكتشفة تُتبَع، والمفقودة تبقى لحظة مكانها
-    const next = [];
-    for (const d of merged.slice(0, MAX_FOCUS)) {
-      const prev = this.focus.find((f) => Math.hypot(f.cx - d.cx, (f.cy - d.cy) / aspect) < 3 * Math.max(f.size, d.size));
-      const dt = prev ? Math.max(1, ts - prev.seen) / 1000 : 0;
-      next.push({
-        cx: d.cx,
-        cy: d.cy,
-        size: d.size,
-        seen: ts,
-        vx: prev ? 0.5 * prev.vx + 0.5 * ((d.cx - prev.cx) / dt) : 0,
-        vy: prev ? 0.5 * prev.vy + 0.5 * ((d.cy - prev.cy) / dt) : 0,
-      });
-      if (prev) prev.taken = true;
-    }
-    for (const f of this.focus) if (!f.taken && next.length < MAX_FOCUS) next.push({ ...f, vx: 0, vy: 0 });
-    this.focus = next;
     this.lastHands = merged.map((d) => d.lm);
+    if (this.smart) this._updateFocus(merged, ts, aspect);
+    this.latencyMs = performance.now() - ts;
+    this._countFps(ts);
     this._emit(merged, ts);
   }
 
-  _detect(ts) {
-    const v = this.video;
-    const aspect = v.videoWidth / v.videoHeight;
-    const raw = [];
-    this.tiles.forEach((tile, i) => {
-      const det = this.detectors[i];
-      if (!det) return;
-      const full = tile.w >= 0.999 && tile.h >= 0.999;
-      const src = full ? v : this._crop(det.canvas, det.ctx, tile, MAX_TILE_SIDE);
-      this._handsFrom(det.lm.detectForVideo(src, ts), tile, aspect, raw);
-    });
-    const merged = this.tiles.length > 1 ? mergeDetections(raw, aspect) : raw;
-    this.lastCrops = this.tiles;
-    this.lastHands = merged.map((d) => d.lm);
-    this._emit(merged, ts);
+  /** نوافذ التركيز اللاصقة: كل يد مكتشفة تحتفظ بخانتها ونافذتها، والمفقودة تبقى لحظة. */
+  _updateFocus(merged, ts, aspect) {
+    const maxSlots = Math.max(1, this.focusSlots || MAX_FOCUS_SLOTS);
+    const next = [];
+    const taken = new Set();
+    const usedSlots = new Set();
+    for (const d of merged) {
+      if (next.length >= maxSlots) break;
+      let prev = null;
+      let best = Infinity;
+      for (const f of this.focus) {
+        if (taken.has(f)) continue;
+        const dt = Math.min(200, ts - f.seen) / 1000;
+        const dist = Math.hypot(f.cx + f.vx * dt - d.cx, (f.cy + f.vy * dt - d.cy) / aspect);
+        if (dist < 3 * Math.max(f.size, d.size) && dist < best) {
+          best = dist;
+          prev = f;
+        }
+      }
+      const dt = prev ? Math.max(1, ts - prev.seen) / 1000 : 0;
+      const vx = prev ? 0.5 * prev.vx + 0.5 * ((d.cx - prev.cx) / dt) : 0;
+      const vy = prev ? 0.5 * prev.vy + 0.5 * ((d.cy - prev.cy) / dt) : 0;
+      // النافذة تُثبَّت حيث نتوقّع اليد في الإطار القادم
+      const ahead = { cx: d.cx + vx * 0.05, cy: d.cy + vy * 0.05, size: d.size };
+      const f = { cx: d.cx, cy: d.cy, size: d.size, seen: ts, vx, vy, win: stickyFocus(prev?.win ?? null, ahead, aspect), slot: prev?.slot };
+      if (prev) taken.add(prev);
+      next.push(f);
+    }
+    // المفقودة حديثًا تبقى بنافذتها (حجب قصير)
+    for (const f of this.focus) {
+      if (taken.has(f) || next.length >= maxSlots) continue;
+      if (ts - f.seen <= FOCUS_KEEP_MS) next.push({ ...f, vx: 0, vy: 0 });
+    }
+    // الخانات: كل يد تبقى في خانتها (كاشف الفيديو يحتفظ بتتبّعها)، والجديدة تأخذ خانة حرّة
+    for (const f of next) {
+      if (f.slot !== undefined && f.slot < maxSlots && !usedSlots.has(f.slot)) usedSlots.add(f.slot);
+      else f.slot = undefined;
+    }
+    for (const f of next) {
+      if (f.slot !== undefined) continue;
+      for (let i = 0; i < maxSlots; i++) {
+        if (!usedSlots.has(i)) {
+          usedSlots.add(i);
+          f.slot = i;
+          break;
+        }
+      }
+    }
+    this.focus = next.filter((f) => f.slot !== undefined);
   }
 
   _emit(dets, t) {
@@ -1461,7 +1562,9 @@ export class HandTracker {
       const size = a && b ? Math.hypot((a.x - b.x) * this.matcher.aspect, a.y - b.y) : undefined;
       pts.push({ x: p.x, y: p.y, handed: d.handed, size });
     }
-    this.onHands(this.matcher.update(pts, t), t);
+    // الاستباق بقدر التأخير المقاس (الكاميرا + الاستدلال) ونصف فاصل الإطار
+    const lead = Math.min(MAX_LEAD_MS, 0.9 * this.latencyMs + 12);
+    this.onHands(this.matcher.update(pts, t, { lead }), t);
   }
 
   _countFps(t) {
@@ -1492,6 +1595,11 @@ export class HandTracker {
       y += lm[i].y;
     }
     return { x: x / PALM.length, y: y / PALM.length };
+  }
+
+  /** وصف الخلفية للوحة المعلم: «GPU • Worker». */
+  get backendLabel() {
+    return [this.delegate, this.backend === 'worker' ? 'Worker' : this.backend === 'main' ? 'الخيط الرئيسي' : ''].filter(Boolean).join(' • ');
   }
 
   /**
@@ -1555,9 +1663,11 @@ export class HandTracker {
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.drawImage(v, 0, 0, w, h);
     if (this.H) {
-      g.strokeStyle = 'rgba(34, 211, 238, 0.7)';
       g.lineWidth = 1.5;
-      for (const t of this.lastCrops.length ? this.lastCrops : this.tiles) g.strokeRect(t.x * w, t.y * h, t.w * w, t.h * h);
+      for (const t of this.lastCrops.length ? this.lastCrops : this.tiles) {
+        g.strokeStyle = t.kind === 'focus' ? 'rgba(255, 211, 77, 0.9)' : 'rgba(34, 211, 238, 0.7)';
+        g.strokeRect(t.x * w, t.y * h, t.w * w, t.h * h);
+      }
       const inv = invert3(this.H);
       if (inv) {
         g.strokeStyle = '#ffd34d';
@@ -1723,9 +1833,13 @@ export class HandMatcher {
 
   /**
    * @param {{x:number,y:number,handed?:string,size?:number}[]} dets
+   * @param {number} t طابع التقاط الإطار (ms)
+   * @param {{lead?:number}} [o] lead: كم ms نستبق بها الموضع (تأخير الكاميرا + الاستدلال)،
+   *   فتصل الدائرة إلى حيث اليد الآن لا حيث كانت حين التُقط الإطار.
    * @returns {{id:number,x:number,y:number,handed?:string}[]}
    */
-  update(dets, t) {
+  update(dets, t, { lead = 0 } = {}) {
+    this.lead = Math.max(0, Math.min(MAX_LEAD_MS, lead));
     for (const [id, tr] of this.tracks) if (t - tr.seen > this.memoryMs) this.tracks.delete(id);
     const pairs = [];
     dets.forEach((d, di) => {
@@ -1790,8 +1904,64 @@ export class HandMatcher {
     if (d.size) tr.size = tr.size ? 0.7 * tr.size + 0.3 * d.size : d.size;
     tr.x = tr.fx.filter(d.x, t);
     tr.y = tr.fy.filter(d.y, t);
-    return { id: tr.id, x: tr.x, y: tr.y, handed: tr.handed };
+    // الاستباق: بالسرعة المنعَّمة، ويتلاشى مع بطء اليد (لا يتجاوز الهدف عند التوقف)
+    let x = tr.x;
+    let y = tr.y;
+    const lead = this.lead || 0;
+    if (lead > 0 && !tr.fresh) {
+      const speed = Math.hypot(tr.vx * this.aspect, tr.vy) / this.aspect; // بنسبة الشاشة/ث
+      const k = Math.min(1, speed / 0.35); // يد تقطع ثلث الشاشة في الثانية = استباق كامل
+      x += tr.vx * (lead / 1000) * k;
+      y += tr.vy * (lead / 1000) * k;
+    }
+    return { id: tr.id, x, y, handed: tr.handed, vx: tr.vx, vy: tr.vy };
   }
+}
+
+/** أقصى استباق (ms): أبعد منه يصير المؤشر «يتخيّل» الحركة. */
+export const MAX_LEAD_MS = 110;
+
+// ---------------------------------------------------------------------------
+// جدولة عمل الإطار (الدقة القصوى): ما يُشغَّل عليه الكاشف في هذا الإطار.
+//
+// كل نافذة تركيز تُفحص كل إطار (كاشف «فيديو» يتتبّع اليد داخلها بلا كاشف الكف،
+// فهي رخيصة)، أمّا المسح (كاشف الكف على بلاطة من الشبكة) فيُقلَّل حين توجد
+// أيدٍ متتبَّعة: بلاطة واحدة كل إطار بدل اثنتين، وثلاث حين لا توجد يد (لنجدها
+// بسرعة). هكذا ينزل عمل الإطار إلى النصف أثناء اللعب الفعلي.
+// ---------------------------------------------------------------------------
+
+/**
+ * @param {{tiles:object[], focus:object[], scanIdx:number, scanPerFrame:number}} s
+ * @returns {{crops:{kind:'focus'|'scan', slot?:number, x:number,y:number,w:number,h:number}[], scanIdx:number}}
+ */
+export function planFrame({ tiles, focus, scanIdx, scanPerFrame = 2 }) {
+  const crops = focus.map((f, i) => ({ kind: 'focus', slot: f.slot ?? i, x: f.win.x, y: f.win.y, w: f.win.w, h: f.win.h }));
+  const scans = focus.length ? 1 : scanPerFrame + 1;
+  let idx = scanIdx;
+  for (let i = 0; i < scans && tiles.length; i++) {
+    const t = tiles[idx % tiles.length];
+    crops.push({ kind: 'scan', x: t.x, y: t.y, w: t.w, h: t.h });
+    idx = (idx + 1) % tiles.length;
+  }
+  return { crops, scanIdx: idx };
+}
+
+/**
+ * نافذة تركيز «لاصقة»: تبقى مكانها ما دامت اليد في نطاقها الداخلي، فتبقى
+ * إحداثيات اليد داخل النافذة متّسقة بين الإطارات ويواصل كاشف «الفيديو» تتبّعها
+ * بلا كاشف الكف. تُعاد توسيطها فقط حين تقترب اليد من حافتها أو يتغيّر حجمها كثيرًا.
+ * @param {{x:number,y:number,w:number,h:number}|null} win النافذة الحالية (مطبّعة)
+ * @param {{cx:number,cy:number,size:number}} h اليد
+ * @param {number} aspect عرض الإطار ÷ ارتفاعه
+ */
+export function stickyFocus(win, h, aspect) {
+  const want = focusCrop(h, aspect);
+  if (!win) return want;
+  const mx = win.w * 0.22;
+  const my = win.h * 0.22;
+  const inside = h.cx > win.x + mx && h.cx < win.x + win.w - mx && h.cy > win.y + my && h.cy < win.y + win.h - my;
+  const sizeOk = want.w < win.w * 1.35 && want.w > win.w * 0.55;
+  return inside && sizeOk ? win : want;
 }
 
 /**

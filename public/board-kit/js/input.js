@@ -74,13 +74,32 @@ export class Interaction {
         this.cursors.set(key, c);
       }
       // يُحصر المؤشر داخل المسرح: كف عند الحافة الطرفية يبقى فوق البطاقة الطرفية
-      const x = ((h.x * innerWidth - r.left) / r.width) * VW;
-      const y = ((h.y * innerHeight - r.top) / r.height) * VH;
-      c.x = Math.max(0, Math.min(VW, x));
-      c.y = Math.max(0, Math.min(VH, y));
+      const x = Math.max(0, Math.min(VW, ((h.x * innerWidth - r.left) / r.width) * VW));
+      const y = Math.max(0, Math.min(VH, ((h.y * innerHeight - r.top) / r.height) * VH));
+      // أول ظهور (أو عودة بعد غياب): قفزة مباشرة؛ وإلا هدف ينزلق إليه المؤشر كل إطار شاشة
+      const gap = t - c.seen;
+      if (c.tx === undefined || gap > 400) {
+        c.x = x;
+        c.y = y;
+      }
+      c.tx = x;
+      c.ty = y;
       c.seen = t;
       if (c.parked) c.parked = false;
     }
+  }
+
+  /**
+   * انزلاق المؤشر نحو هدفه بمعدل الشاشة (٦٠ إطارًا/ث) بين إطارات الكاميرا (١٥–٣٠/ث):
+   * حركة ناعمة بلا قفزات، وثابت زمن قصير (٣٥ م.ث) فلا يُضاف تأخير يُذكر.
+   */
+  _glide(c, now) {
+    if (c.tx === undefined || c.parked) return;
+    const dt = Math.min(100, now - (c.glideAt || now));
+    c.glideAt = now;
+    const k = 1 - Math.exp(-dt / 35);
+    c.x += (c.tx - c.x) * k;
+    c.y += (c.ty - c.y) * k;
   }
 
   _newCursor(key, source) {
@@ -186,6 +205,7 @@ export class Interaction {
         this.cursors.delete(key);
         continue;
       }
+      this._glide(c, now);
       if (!c.holding) this._adopt(c, now);
       const t = this.targetFor(c);
       const id = t?.id ?? null;
@@ -233,6 +253,7 @@ export class Interaction {
     c.team = best.team;
     c.consumed = null;
     c.dwellId = null;
+    c.dwellStart = now;
     best.holding = null;
     best.g?.remove();
     this.cursors.delete(best.key);
