@@ -15,7 +15,7 @@
 
 const HANDS_SCAN = 4;
 const HANDS_FOCUS = 2;
-export const MAX_FOCUS_SLOTS = 4;
+export const MAX_FOCUS_SLOTS = 2; // كل كاشف نسخة كاملة من النموذج في ذاكرة معالج الرسوم؛ اثنان يكفيان ويد ثالثة يلتقطها المسح
 
 /** حجم النافذة المرسلة للكاشف بالبكسل (ضلعها الأطول). الكاشف يصغّرها إلى ١٩٢/٢٢٤ على كل حال. */
 export const CROP_PX = { tile: 1024, scan: 512, focus: 384 };

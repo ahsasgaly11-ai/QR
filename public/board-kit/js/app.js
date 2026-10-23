@@ -188,6 +188,13 @@ export function startBoardApp({
       camStatus.title = text;
       $('#camText').textContent = text;
       updateCamChip();
+      // الكاميرا والتتبّع يأخذان نصيبهما من ذاكرة معالج الرسوم: تخفّض الألعاب ثلاثية الأبعاد
+      // دقة رسمها ما دامت الكاميرا تعمل (cameraBudget في budget.js)، فلا تنهار الصفحة على الآيباد
+      const on = state === 'running' || state === 'loading';
+      if ((document.documentElement.dataset.camera === 'on') !== on) {
+        document.documentElement.dataset.camera = on ? 'on' : 'off';
+        rerender(60);
+      }
     },
     // خفّض المتتبّع الدقة تلقائيًا لبطء الجهاز: نعرض ذلك في اللوحة دون تغيير اختيار المعلم
     onQuality: () => syncPanel(),

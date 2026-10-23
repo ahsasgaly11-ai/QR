@@ -40,6 +40,7 @@ import { Germs, sampleSurface } from './germs.js';
 import { buildCardModel } from './cards3d.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { labEnvironment } from './env.js';
+import { cameraBudget } from '../../board-kit/js/budget.js';
 
 const FPS_MS = 1000 / 30;
 const IDLE_MS = 1000 / 15;
@@ -674,7 +675,9 @@ class Scene3D {
     this.VH = VH;
     this.wPx = wPx;
     this.hPx = hPx;
-    const dpr = Math.min(devicePixelRatio || 1, this.cfg.dpr, Math.sqrt(this.cfg.maxPx / Math.max(1, wPx * hPx)));
+    // مع الكاميرا تنخفض الدقة (budget.js) لتبقى ذاكرة معالج الرسوم كافية لتتبّع اليد
+    const { dprCap, maxPx } = cameraBudget(this.cfg.dpr, this.cfg.maxPx);
+    const dpr = Math.min(devicePixelRatio || 1, dprCap, Math.sqrt(maxPx / Math.max(1, wPx * hPx)));
     this.renderer.setPixelRatio(dpr);
     this.renderer.setSize(wPx, hPx, false);
     if (this.composer) {

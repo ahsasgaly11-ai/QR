@@ -27,6 +27,7 @@ import { OUTBREAK } from './content.js';
 import { UILayer } from './ui.js';
 import { MicroWorld } from './micro.js';
 import { enamel, tissuePaper, bottlePlastic, bubbleMat, glass, gold, chrome, beam } from './materials.js';
+import { cameraBudget } from '../../board-kit/js/budget.js';
 
 const FPS_MS = 1000 / 30;
 // للتجربة الآلية على جهاز بطيء جدًا (?test): لا نقيّد خطوة الزمن حتى تتزامن الجسيمات مع المهام
@@ -364,8 +365,9 @@ class Scene3D {
     this.VW = VW;
     this.VH = VH;
     this.frame = frame;
-    const cap = this.tier === 'A' ? 2.6e6 : 1.4e6;
-    let pr = Math.min(devicePixelRatio || 1, this.tier === 'A' ? 1.5 : 1.15) * (this.prScale || 1);
+    // مع الكاميرا تنخفض الدقة (budget.js) لتبقى ذاكرة معالج الرسوم كافية لتتبّع اليد
+    const { dprCap, maxPx: cap } = cameraBudget(this.tier === 'A' ? 1.5 : 1.15, this.tier === 'A' ? 2.6e6 : 1.4e6);
+    let pr = Math.min(devicePixelRatio || 1, dprCap) * (this.prScale || 1);
     if (wPx * hPx * pr * pr > cap) pr = Math.sqrt(cap / (wPx * hPx));
     this.pr = pr;
     this.renderer.setPixelRatio(pr);
