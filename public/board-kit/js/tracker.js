@@ -20,7 +20,7 @@
 // ---------------------------------------------------------------------------
 import { applyH, invert3 } from './geometry.js';
 import { boardRoi, makeTiles, mergeDetections, stickyFocus, planFrame, HandMatcher, QUALITY, QUALITY_ORDER, MAX_LEAD_MS } from './tracking.js';
-import { DetectCore, MAX_FOCUS_SLOTS } from './detect-core.js';
+import { DetectCore, MAX_FOCUS_SLOTS, CROP_PX } from './detect-core.js';
 
 const VENDOR = new URL('../vendor/mediapipe/', import.meta.url).href;
 const MODEL = new URL('../models/hand_landmarker.task', import.meta.url).href;
@@ -35,6 +35,8 @@ const PALM = [0, 5, 9, 13, 17];
 const INDEX_TIP = 8;
 
 const params = () => new URLSearchParams(location.search);
+/** آيباد/آيفون (بما فيها آيباد بواجهة Mac): مسار WebGL لمعالج الرسوم في Safari أبطأ من XNNPACK على المعالج المركزي داخل Worker. */
+const isApple = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
 export class HandTracker {
   /**
@@ -66,7 +68,9 @@ export class HandTracker {
     this.lastHands = []; // آخر معالم بإحداثيات الكاميرا (للمعاينة)
     this.lastCrops = [];
     this.delegate = null;
-    this.forceCpu = params().has('cpu');
+    // ?cpu يفرض المعالج المركزي، و?gpu يفرض معالج الرسوم (للمقارنة)؛ وإلا: Apple ← المعالج المركزي في Worker
+    this.forceCpu = params().has('cpu') || (isApple() && !params().has('gpu'));
+    this.preferWorkerCpu = this.forceCpu;
     this._errors = 0;
     // الخلفية: worker أو main؛ تُحدَّد عند أول تشغيل
     this.backend = null;
@@ -148,8 +152,8 @@ export class HandTracker {
           else this._workerFailed();
         };
         const ready = await this._ask(w, { type: 'init', vendor: VENDOR, model: MODEL, forceCpu: this.forceCpu }, 'ready', 20000);
-        // معالج الرسوم غير متاح داخل الـWorker (iOS أقدم من 17): الخيط الرئيسي بمعالج الرسوم أسرع من Worker بالمعالج المركزي
-        if (ready.delegate === 'CPU' && !this.forceCpu) {
+        // على غير Apple: معالج الرسوم غير متاح داخل الـWorker ⇒ الخيط الرئيسي بمعالج الرسوم أسرع من Worker بالمعالج المركزي
+        if (ready.delegate === 'CPU' && !this.preferWorkerCpu) {
           w.postMessage({ type: 'close' });
         } else {
           this.worker = w;
@@ -329,6 +333,14 @@ export class HandTracker {
   _plan() {
     if (!this.smart) return this.tiles.map((t, i) => ({ kind: 'tile', slot: i, x: t.x, y: t.y, w: t.w, h: t.h }));
     const { scanPerFrame } = QUALITY[this.effQuality];
+    // جهاز بطيء وأيدٍ متتبَّعة: المسح (كاشف الكف، الأغلى) كل إطارين أو ثلاثة بدل كل إطار،
+    // فتحتفظ نوافذ التركيز بكل الوقت وتلحق الدائرة باليد
+    this._frameNo = (this._frameNo || 0) + 1;
+    const skip = this.focus.length ? (this.inferMs > 90 ? 3 : this.inferMs > 55 ? 2 : 1) : 1;
+    if (skip > 1 && this._frameNo % skip) {
+      const { crops } = planFrame({ tiles: [], focus: this.focus, scanIdx: this.scanIdx, scanPerFrame });
+      return crops;
+    }
     const { crops, scanIdx } = planFrame({ tiles: this.tiles, focus: this.focus, scanIdx: this.scanIdx, scanPerFrame });
     this.scanIdx = scanIdx;
     return crops;
@@ -350,11 +362,12 @@ export class HandTracker {
         const crops = this._plan();
         if (this.backend === 'worker') {
           this._inflight = { ts, crops, at: ts };
-          const bitmap = await createImageBitmap(v);
+          // كل نافذة تُقصّ وتُصغَّر هنا (مسرّع في المتصفح) إلى حجم الكاشف، فيُنقل أقل من ربع بكسلات الإطار
+          const images = await Promise.all(crops.map((c) => this._cropBitmap(v, c)));
           if (!this.running || !this.worker) {
-            bitmap.close();
+            for (const b of images) b?.close?.();
             this._inflight = null;
-          } else this.worker.postMessage({ type: 'frame', bitmap, ts, crops }, [bitmap]);
+          } else this.worker.postMessage({ type: 'frame', images, ts, crops }, images.filter(Boolean));
         } else {
           const t0 = performance.now();
           const results = this.core.run(v, crops, ts);
@@ -380,6 +393,19 @@ export class HandTracker {
       }
     }
     this._schedule();
+  }
+
+  /** يقصّ نافذة من الفيديو ويصغّرها إلى حجم الكاشف في خطوة واحدة (ImageBitmap قابل للنقل). */
+  _cropBitmap(v, c) {
+    const fw = v.videoWidth;
+    const fh = v.videoHeight;
+    const sx = Math.max(0, Math.floor(c.x * fw));
+    const sy = Math.max(0, Math.floor(c.y * fh));
+    const sw = Math.max(16, Math.min(fw - sx, Math.round(c.w * fw)));
+    const sh = Math.max(16, Math.min(fh - sy, Math.round(c.h * fh)));
+    const maxSide = CROP_PX[c.kind] || CROP_PX.scan;
+    const k = Math.min(1, maxSide / Math.max(sw, sh));
+    return createImageBitmap(v, sx, sy, sw, sh, { resizeWidth: Math.max(16, Math.round(sw * k)), resizeHeight: Math.max(16, Math.round(sh * k)), resizeQuality: 'low' }).catch(() => null);
   }
 
   _onWorkerMessage(m) {
@@ -517,8 +543,8 @@ export class HandTracker {
       // جهاز بطيء على هذه الدقة ٤ ثوانٍ متتالية: نخفّضها درجة (بعد مهلة الإحماء:
       // الإطارات الأولى بطيئة دائمًا بينما يُجهَّز النموذج)
       const warm = t - this._layoutAt > 6000;
-      if (warm && this.fps > 0 && this.fps < 7 && this.effQuality !== 'normal') {
-        if (++this._slowSecs >= 4) {
+      if (warm && this.fps > 0 && this.fps < 12 && this.effQuality !== 'normal') {
+        if (++this._slowSecs >= 3) {
           this._slowSecs = 0;
           this._degrade('الجهاز بطيء على هذه الدقة');
         }

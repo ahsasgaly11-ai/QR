@@ -18,6 +18,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { CROWN_CMDS, ROOT_CMDS, SLOT_CMDS, CUSPS, CROWN_LEN, TYPES, TYPE_ORDER } from './teeth.js';
+import { cameraBudget } from '../../board-kit/js/budget.js';
 
 const FPS_MS = 1000 / 30;
 const TIER = {
@@ -311,9 +312,10 @@ export class Scene3D {
     this.VH = VH;
     const w = Math.max(1, Math.round(VW * scale));
     const h = Math.max(1, Math.round(VH * scale));
-    const cfg = TIER[this.tier];
-    let dpr = Math.min(devicePixelRatio || 1, cfg.dpr * (this.pr || 1));
-    dpr = Math.min(dpr, Math.sqrt(cfg.maxPx / (w * h)));
+    // مع الكاميرا تنخفض الدقة (budget.js) لتبقى ذاكرة معالج الرسوم كافية لتتبّع اليد
+    const { dprCap, maxPx } = cameraBudget(TIER[this.tier].dpr, TIER[this.tier].maxPx);
+    let dpr = Math.min(devicePixelRatio || 1, dprCap * (this.pr || 1));
+    dpr = Math.min(dpr, Math.sqrt(maxPx / (w * h)));
     this.renderer.setPixelRatio(Math.max(0.6, dpr));
     this.renderer.setSize(w, h, false);
     const cam = this.camera;

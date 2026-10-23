@@ -17,6 +17,7 @@
 // إن كان الجهاز بطيئًا. للتجربة: ?tier=A أو ?tier=B أو ?tier=C (الطبقة المفروضة لا يغيّرها المنظّم).
 // ---------------------------------------------------------------------------
 import * as THREE from '/board-kit/vendor/three/three.module.min.js';
+import { cameraBudget } from '../../board-kit/js/budget.js';
 
 const FPS_MS = 1000 / 30;
 const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
@@ -312,8 +313,10 @@ export class Scene3D {
     this._size = [wPx, hPx, VW, VH];
     this.VW = VW;
     this.VH = VH;
-    const dpr = devicePixelRatio || 1;
-    this.renderer.setPixelRatio(this.tier === 'A' ? Math.min(2, dpr) : Math.min(1.25, dpr));
+    // مع الكاميرا تنخفض الدقة (budget.js) لتبقى ذاكرة معالج الرسوم كافية لتتبّع اليد
+    const { dprCap, maxPx } = cameraBudget(this.tier === 'A' ? 2 : 1.25, this.tier === 'A' ? 3.2e6 : 1.6e6);
+    const dpr = Math.min(devicePixelRatio || 1, dprCap, Math.sqrt(maxPx / Math.max(1, wPx * hPx)));
+    this.renderer.setPixelRatio(dpr);
     this.renderer.setSize(wPx, hPx, false);
     const cam = this.camera;
     const dist = VH / 2 / Math.tan(THREE.MathUtils.degToRad(cam.fov / 2));

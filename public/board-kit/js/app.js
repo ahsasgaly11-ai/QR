@@ -188,6 +188,13 @@ export function startBoardApp({
       camStatus.title = text;
       $('#camText').textContent = text;
       updateCamChip();
+      // الكاميرا والتتبّع يأخذان نصيبهما من ذاكرة معالج الرسوم: تخفّض الألعاب ثلاثية الأبعاد
+      // دقة رسمها ما دامت الكاميرا تعمل (cameraBudget في budget.js)، فلا تنهار الصفحة على الآيباد
+      const on = state === 'running' || state === 'loading';
+      if ((document.documentElement.dataset.camera === 'on') !== on) {
+        document.documentElement.dataset.camera = on ? 'on' : 'off';
+        rerender(60);
+      }
     },
     // خفّض المتتبّع الدقة تلقائيًا لبطء الجهاز: نعرض ذلك في اللوحة دون تغيير اختيار المعلم
     onQuality: () => syncPanel(),
@@ -206,6 +213,7 @@ export function startBoardApp({
     if (now - lastClock > 250) {
       lastClock = now;
       game.tickClock?.();
+      if (tracker.active) updateCamChip();
       if (!panel.hidden && $('#preview').dataset.on === '1') tracker.drawPreview($('#preview'));
       if (!panel.hidden)
         $('#fps').textContent = tracker.active
@@ -223,8 +231,39 @@ export function startBoardApp({
   };
   addEventListener('resize', () => rerender());
   // منع التكبير بالإصبعين والقائمة المنبثقة عند الضغط المطوّل
-  document.addEventListener('gesturestart', (e) => e.preventDefault());
+  for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(ev, (e) => e.preventDefault());
   document.addEventListener('contextmenu', (e) => e.preventDefault());
+  // منع التكبير بالنقر المزدوج: Safari على iOS يتجاهل user-scalable=no ويكبّر الصفحة عند
+  // لمستين متتاليتين، ولا يعيدها إلا بتحديثها. لمستان خلال ٣٥٠ م.ث تُلغى الثانية
+  // (أحداث المؤشر تكون قد وصلت إلى اللعبة قبلها، فلا يتأثر اللعب). لوحة المعلم مستثناة.
+  let lastTouchEnd = 0;
+  document.addEventListener(
+    'touchend',
+    (e) => {
+      if (e.target?.closest?.('#panel')) return;
+      const now = performance.now();
+      if (now - lastTouchEnd < 350) e.preventDefault();
+      lastTouchEnd = now;
+    },
+    { passive: false }
+  );
+  // وإن كُبّرت الصفحة رغم ذلك (نقر مزدوج قديم أو تكبير بالإصبعين) تُعاد إلى حجمها
+  // تلقائيًا: تثبيت maximum-scale=1 لحظةً في وسم viewport يُرجع Safari إلى الحجم الطبيعي.
+  const viewportMeta = document.querySelector('meta[name="viewport"]');
+  const vv = window.visualViewport;
+  let zoomResetT = 0;
+  function resetZoom() {
+    if (!viewportMeta) return;
+    const original = viewportMeta.content;
+    viewportMeta.content = `${original.replace(/,?\s*maximum-scale=[^,]*/g, '')}, maximum-scale=1`;
+    setTimeout(() => (viewportMeta.content = original), 250);
+  }
+  if (vv) {
+    vv.addEventListener('resize', () => {
+      clearTimeout(zoomResetT);
+      if (vv.scale > 1.02) zoomResetT = setTimeout(resetZoom, 120);
+    });
+  }
 
   // إبقاء الشاشة مضاءة أثناء الحصة (iOS 16.4+)
   let wakeLock = null;
@@ -256,8 +295,11 @@ export function startBoardApp({
       else (text = 'تحتاج معايرة'), (cls = 'wait');
     }
     if (input.sim) (text = 'محاكاة بالماوس'), (cls = 'ok');
+    // أثناء التتبّع تُعرض سرعته دائمًا (إطار/ث) ليعرف المعلّم حال الجهاز بلا فتح اللوحة
+    if (st === 'running' && tracker.active && tracker.fps > 0 && !input.sim) text += ` • ${tracker.fps.toLocaleString('ar-EG')} إطار/ث`;
     camChip.textContent = text;
     camChip.dataset.state = cls;
+    camChip.classList.toggle('slow', st === 'running' && tracker.active && tracker.fps > 0 && tracker.fps < 10);
   }
 
   function openPanel() {
