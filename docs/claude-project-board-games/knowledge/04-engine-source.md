@@ -47,18 +47,21 @@ const PANEL_HTML = ({ speechLabel, reachLabel }) => `
 
   <section>
     <h3>١. الكاميرا <span id="camStatus" data-state="off"><span id="camText">الكاميرا متوقفة</span></span></h3>
-    <p class="help">ثبّت الجهاز (آيباد أو هاتف بالوضع الأفقي) على حامل في <b>زاوية جانبية قريبة من السبورة</b>، ووجّه الكاميرا الخلفية لترى الصورة المعروضة كاملة. <b>لا تضعه على طاولة خلف الطلاب</b>: أجسامهم تحجب أيديهم، والبُعد يُصغّر أيديهم على الكاميرا.</p>
-    <svg class="placement" viewBox="0 0 320 150" role="img" aria-label="مكان الجهاز: في زاوية جانبية قريبة من السبورة، لا خلف الطلاب">
+    <p class="help">ثبّت الجهاز (آيباد أو هاتف بالوضع الأفقي) <b>في منتصف الصف مواجهًا للسبورة مباشرة</b>، على حامل <b>مرتفع فوق رؤوس الطلاب</b> بميل خفيف إلى الأسفل، على بعد ٢–٣ أمتار بحيث تملأ الصورة المعروضة الكادر. <b>لا من زاوية جانبية</b>: تضيق الكف في عين الكاميرا فيضيع التتبّع. <b>ولا منخفضًا خلف الطلاب</b>: أجسامهم تحجب أيديهم.</p>
+    <svg class="placement" viewBox="0 0 320 150" role="img" aria-label="مكان الجهاز: في المنتصف مقابل السبورة ومرتفعًا فوق الطلاب؛ لا من زاوية جانبية ولا منخفضًا خلفهم">
       <rect x="40" y="10" width="240" height="14" rx="3" fill="#e2d5bd"/>
       <text x="160" y="21" text-anchor="middle" font-size="10" fill="#5f0d26">السبورة</text>
+      <path d="M160 118 L40 24 L280 24 Z" fill="rgba(22,163,74,0.10)" stroke="#16a34a" stroke-width="1" stroke-dasharray="4 3"/>
       <circle cx="120" cy="45" r="11" fill="#cbd5e1"/><circle cx="185" cy="48" r="11" fill="#cbd5e1"/>
       <text x="152" y="72" text-anchor="middle" font-size="9" fill="#57534e">الطلاب</text>
-      <rect x="282" y="34" width="22" height="15" rx="3" fill="#15803d" transform="rotate(-35 293 41)"/>
-      <path d="M284 34 L250 18 M284 34 L262 54" stroke="#15803d" stroke-width="1.5" stroke-dasharray="3 3" fill="none"/>
-      <text x="292" y="72" text-anchor="middle" font-size="10" fill="#15803d" font-weight="700">✓ هنا</text>
-      <rect x="143" y="118" width="24" height="16" rx="3" fill="#b91c1c"/>
-      <text x="155" y="146" text-anchor="middle" font-size="10" fill="#b91c1c" font-weight="700">✗ لا: خلف الطلاب</text>
-      <path d="M155 116 L155 62" stroke="#b91c1c" stroke-width="1.5" stroke-dasharray="3 3"/>
+      <rect x="146" y="112" width="28" height="18" rx="3" fill="#15803d"/>
+      <text x="160" y="146" text-anchor="middle" font-size="10" fill="#15803d" font-weight="700">✓ في المنتصف، مقابل السبورة، مرتفع</text>
+      <rect x="286" y="40" width="22" height="15" rx="3" fill="#b91c1c" transform="rotate(-35 297 47)"/>
+      <path d="M290 42 L120 18" stroke="#b91c1c" stroke-width="1.2" stroke-dasharray="3 3"/>
+      <text x="292" y="80" text-anchor="middle" font-size="9" fill="#b91c1c" font-weight="700">✗ زاوية جانبية</text>
+      <rect x="22" y="118" width="24" height="16" rx="3" fill="#b91c1c"/>
+      <path d="M34 116 L34 62" stroke="#b91c1c" stroke-width="1.2" stroke-dasharray="3 3"/>
+      <text x="36" y="146" text-anchor="middle" font-size="9" fill="#b91c1c" font-weight="700">✗ منخفض خلف الطلاب</text>
     </svg>
     <div class="row">
       <select id="camSelect" aria-label="اختيار الكاميرا"></select>
@@ -197,6 +200,13 @@ export function startBoardApp({
       camStatus.title = text;
       $('#camText').textContent = text;
       updateCamChip();
+      // الكاميرا والتتبّع يأخذان نصيبهما من ذاكرة معالج الرسوم: تخفّض الألعاب ثلاثية الأبعاد
+      // دقة رسمها ما دامت الكاميرا تعمل (cameraBudget في budget.js)، فلا تنهار الصفحة على الآيباد
+      const on = state === 'running' || state === 'loading';
+      if ((document.documentElement.dataset.camera === 'on') !== on) {
+        document.documentElement.dataset.camera = on ? 'on' : 'off';
+        rerender(60);
+      }
     },
     // خفّض المتتبّع الدقة تلقائيًا لبطء الجهاز: نعرض ذلك في اللوحة دون تغيير اختيار المعلم
     onQuality: () => syncPanel(),
@@ -215,6 +225,7 @@ export function startBoardApp({
     if (now - lastClock > 250) {
       lastClock = now;
       game.tickClock?.();
+      if (tracker.active) updateCamChip();
       if (!panel.hidden && $('#preview').dataset.on === '1') tracker.drawPreview($('#preview'));
       if (!panel.hidden)
         $('#fps').textContent = tracker.active
@@ -232,8 +243,39 @@ export function startBoardApp({
   };
   addEventListener('resize', () => rerender());
   // منع التكبير بالإصبعين والقائمة المنبثقة عند الضغط المطوّل
-  document.addEventListener('gesturestart', (e) => e.preventDefault());
+  for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(ev, (e) => e.preventDefault());
   document.addEventListener('contextmenu', (e) => e.preventDefault());
+  // منع التكبير بالنقر المزدوج: Safari على iOS يتجاهل user-scalable=no ويكبّر الصفحة عند
+  // لمستين متتاليتين، ولا يعيدها إلا بتحديثها. لمستان خلال ٣٥٠ م.ث تُلغى الثانية
+  // (أحداث المؤشر تكون قد وصلت إلى اللعبة قبلها، فلا يتأثر اللعب). لوحة المعلم مستثناة.
+  let lastTouchEnd = 0;
+  document.addEventListener(
+    'touchend',
+    (e) => {
+      if (e.target?.closest?.('#panel')) return;
+      const now = performance.now();
+      if (now - lastTouchEnd < 350) e.preventDefault();
+      lastTouchEnd = now;
+    },
+    { passive: false }
+  );
+  // وإن كُبّرت الصفحة رغم ذلك (نقر مزدوج قديم أو تكبير بالإصبعين) تُعاد إلى حجمها
+  // تلقائيًا: تثبيت maximum-scale=1 لحظةً في وسم viewport يُرجع Safari إلى الحجم الطبيعي.
+  const viewportMeta = document.querySelector('meta[name="viewport"]');
+  const vv = window.visualViewport;
+  let zoomResetT = 0;
+  function resetZoom() {
+    if (!viewportMeta) return;
+    const original = viewportMeta.content;
+    viewportMeta.content = `${original.replace(/,?\s*maximum-scale=[^,]*/g, '')}, maximum-scale=1`;
+    setTimeout(() => (viewportMeta.content = original), 250);
+  }
+  if (vv) {
+    vv.addEventListener('resize', () => {
+      clearTimeout(zoomResetT);
+      if (vv.scale > 1.02) zoomResetT = setTimeout(resetZoom, 120);
+    });
+  }
 
   // إبقاء الشاشة مضاءة أثناء الحصة (iOS 16.4+)
   let wakeLock = null;
@@ -265,8 +307,11 @@ export function startBoardApp({
       else (text = 'تحتاج معايرة'), (cls = 'wait');
     }
     if (input.sim) (text = 'محاكاة بالماوس'), (cls = 'ok');
+    // أثناء التتبّع تُعرض سرعته دائمًا (إطار/ث) ليعرف المعلّم حال الجهاز بلا فتح اللوحة
+    if (st === 'running' && tracker.active && tracker.fps > 0 && !input.sim) text += ` • ${tracker.fps.toLocaleString('ar-EG')} إطار/ث`;
     camChip.textContent = text;
     camChip.dataset.state = cls;
+    camChip.classList.toggle('slow', st === 'running' && tracker.active && tracker.fps > 0 && tracker.fps < 10);
   }
 
   function openPanel() {
@@ -1079,7 +1124,7 @@ export function saveSettings(s) {
 // ---------------------------------------------------------------------------
 import { applyH, invert3 } from './geometry.js';
 import { boardRoi, makeTiles, mergeDetections, stickyFocus, planFrame, HandMatcher, QUALITY, QUALITY_ORDER, MAX_LEAD_MS } from './tracking.js';
-import { DetectCore, MAX_FOCUS_SLOTS } from './detect-core.js';
+import { DetectCore, MAX_FOCUS_SLOTS, CROP_PX } from './detect-core.js';
 
 const VENDOR = new URL('../vendor/mediapipe/', import.meta.url).href;
 const MODEL = new URL('../models/hand_landmarker.task', import.meta.url).href;
@@ -1094,6 +1139,8 @@ const PALM = [0, 5, 9, 13, 17];
 const INDEX_TIP = 8;
 
 const params = () => new URLSearchParams(location.search);
+/** آيباد/آيفون (بما فيها آيباد بواجهة Mac): مسار WebGL لمعالج الرسوم في Safari أبطأ من XNNPACK على المعالج المركزي داخل Worker. */
+const isApple = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
 export class HandTracker {
   /**
@@ -1125,7 +1172,9 @@ export class HandTracker {
     this.lastHands = []; // آخر معالم بإحداثيات الكاميرا (للمعاينة)
     this.lastCrops = [];
     this.delegate = null;
-    this.forceCpu = params().has('cpu');
+    // ?cpu يفرض المعالج المركزي، و?gpu يفرض معالج الرسوم (للمقارنة)؛ وإلا: Apple ← المعالج المركزي في Worker
+    this.forceCpu = params().has('cpu') || (isApple() && !params().has('gpu'));
+    this.preferWorkerCpu = this.forceCpu;
     this._errors = 0;
     // الخلفية: worker أو main؛ تُحدَّد عند أول تشغيل
     this.backend = null;
@@ -1207,8 +1256,8 @@ export class HandTracker {
           else this._workerFailed();
         };
         const ready = await this._ask(w, { type: 'init', vendor: VENDOR, model: MODEL, forceCpu: this.forceCpu }, 'ready', 20000);
-        // معالج الرسوم غير متاح داخل الـWorker (iOS أقدم من 17): الخيط الرئيسي بمعالج الرسوم أسرع من Worker بالمعالج المركزي
-        if (ready.delegate === 'CPU' && !this.forceCpu) {
+        // على غير Apple: معالج الرسوم غير متاح داخل الـWorker ⇒ الخيط الرئيسي بمعالج الرسوم أسرع من Worker بالمعالج المركزي
+        if (ready.delegate === 'CPU' && !this.preferWorkerCpu) {
           w.postMessage({ type: 'close' });
         } else {
           this.worker = w;
@@ -1388,6 +1437,14 @@ export class HandTracker {
   _plan() {
     if (!this.smart) return this.tiles.map((t, i) => ({ kind: 'tile', slot: i, x: t.x, y: t.y, w: t.w, h: t.h }));
     const { scanPerFrame } = QUALITY[this.effQuality];
+    // جهاز بطيء وأيدٍ متتبَّعة: المسح (كاشف الكف، الأغلى) كل إطارين أو ثلاثة بدل كل إطار،
+    // فتحتفظ نوافذ التركيز بكل الوقت وتلحق الدائرة باليد
+    this._frameNo = (this._frameNo || 0) + 1;
+    const skip = this.focus.length ? (this.inferMs > 90 ? 3 : this.inferMs > 55 ? 2 : 1) : 1;
+    if (skip > 1 && this._frameNo % skip) {
+      const { crops } = planFrame({ tiles: [], focus: this.focus, scanIdx: this.scanIdx, scanPerFrame });
+      return crops;
+    }
     const { crops, scanIdx } = planFrame({ tiles: this.tiles, focus: this.focus, scanIdx: this.scanIdx, scanPerFrame });
     this.scanIdx = scanIdx;
     return crops;
@@ -1409,11 +1466,12 @@ export class HandTracker {
         const crops = this._plan();
         if (this.backend === 'worker') {
           this._inflight = { ts, crops, at: ts };
-          const bitmap = await createImageBitmap(v);
+          // كل نافذة تُقصّ وتُصغَّر هنا (مسرّع في المتصفح) إلى حجم الكاشف، فيُنقل أقل من ربع بكسلات الإطار
+          const images = await Promise.all(crops.map((c) => this._cropBitmap(v, c)));
           if (!this.running || !this.worker) {
-            bitmap.close();
+            for (const b of images) b?.close?.();
             this._inflight = null;
-          } else this.worker.postMessage({ type: 'frame', bitmap, ts, crops }, [bitmap]);
+          } else this.worker.postMessage({ type: 'frame', images, ts, crops }, images.filter(Boolean));
         } else {
           const t0 = performance.now();
           const results = this.core.run(v, crops, ts);
@@ -1439,6 +1497,19 @@ export class HandTracker {
       }
     }
     this._schedule();
+  }
+
+  /** يقصّ نافذة من الفيديو ويصغّرها إلى حجم الكاشف في خطوة واحدة (ImageBitmap قابل للنقل). */
+  _cropBitmap(v, c) {
+    const fw = v.videoWidth;
+    const fh = v.videoHeight;
+    const sx = Math.max(0, Math.floor(c.x * fw));
+    const sy = Math.max(0, Math.floor(c.y * fh));
+    const sw = Math.max(16, Math.min(fw - sx, Math.round(c.w * fw)));
+    const sh = Math.max(16, Math.min(fh - sy, Math.round(c.h * fh)));
+    const maxSide = CROP_PX[c.kind] || CROP_PX.scan;
+    const k = Math.min(1, maxSide / Math.max(sw, sh));
+    return createImageBitmap(v, sx, sy, sw, sh, { resizeWidth: Math.max(16, Math.round(sw * k)), resizeHeight: Math.max(16, Math.round(sh * k)), resizeQuality: 'low' }).catch(() => null);
   }
 
   _onWorkerMessage(m) {
@@ -1576,8 +1647,8 @@ export class HandTracker {
       // جهاز بطيء على هذه الدقة ٤ ثوانٍ متتالية: نخفّضها درجة (بعد مهلة الإحماء:
       // الإطارات الأولى بطيئة دائمًا بينما يُجهَّز النموذج)
       const warm = t - this._layoutAt > 6000;
-      if (warm && this.fps > 0 && this.fps < 7 && this.effQuality !== 'normal') {
-        if (++this._slowSecs >= 4) {
+      if (warm && this.fps > 0 && this.fps < 12 && this.effQuality !== 'normal') {
+        if (++this._slowSecs >= 3) {
           this._slowSecs = 0;
           this._degrade('الجهاز بطيء على هذه الدقة');
         }
@@ -2653,6 +2724,8 @@ html, body {
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
+  /* لا تكبير بالنقر المزدوج خارج المسرح (أدوات المعلم والهوامش) */
+  touch-action: manipulation;
 }
 
 /* الكاميرا: موجودة ومشغّلة (شرط Safari لاستمرار الإطارات) لكنها غير مرئية */
@@ -3002,6 +3075,7 @@ html, body {
 .cam-chip[data-state='ok']::before { color: #16a34a; }
 .cam-chip[data-state='wait']::before { color: #d97706; }
 .cam-chip[data-state='bad']::before { color: #dc2626; }
+.cam-chip.slow::before { color: #d97706; } /* التتبّع أبطأ من ١٠ إطارات/ث */
 
 #panel {
   position: fixed;

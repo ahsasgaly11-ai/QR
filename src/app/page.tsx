@@ -193,7 +193,7 @@ export default async function HomePage() {
               <figure className="bg-diagram bg-home-setup">
                 <ClassroomSetupDiagram />
                 <figcaption>
-                  ثبّت الجهاز في زاوية جانبية قريبة من السبورة، واعكس شاشته على جهاز العرض، ثم عايِر مرة واحدة من داخل اللعبة.{' '}
+                  ثبّت الجهاز مقابل السبورة في منتصف الصف ومرتفعًا فوق رؤوس الطلاب، واعكس شاشته على جهاز العرض، ثم عايِر مرة واحدة من داخل اللعبة.{' '}
                   <Link href="/board-games#setup" className="font-semibold text-[color:var(--maroon)] underline underline-offset-4">
                     دليل تجهيز الصف
                   </Link>

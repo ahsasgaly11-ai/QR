@@ -38,18 +38,23 @@ const PANEL_HTML = ({ speechLabel, reachLabel }) => `
 
   <section>
     <h3>١. الكاميرا <span id="camStatus" data-state="off"><span id="camText">الكاميرا متوقفة</span></span></h3>
-    <p class="help">ثبّت الجهاز (آيباد أو هاتف بالوضع الأفقي) على حامل في <b>زاوية جانبية قريبة من السبورة</b>، ووجّه الكاميرا الخلفية لترى الصورة المعروضة كاملة. <b>لا تضعه على طاولة خلف الطلاب</b>: أجسامهم تحجب أيديهم، والبُعد يُصغّر أيديهم على الكاميرا.</p>
-    <svg class="placement" viewBox="0 0 320 150" role="img" aria-label="مكان الجهاز: في زاوية جانبية قريبة من السبورة، لا خلف الطلاب">
-      <rect x="40" y="10" width="240" height="14" rx="3" fill="#e2d5bd"/>
+    <p class="help">ثبّت الجهاز (آيباد أو هاتف بالوضع الأفقي) <b>في منتصف الصف مواجهًا للسبورة مباشرة</b>، على حامل <b>مرتفع فوق رؤوس الطلاب</b> بميل خفيف إلى الأسفل، على بعد ٢–٣ أمتار بحيث تملأ الصورة المعروضة الكادر. <b>لا من زاوية جانبية</b>: تضيق الكف في عين الكاميرا فيضيع التتبّع. <b>ولا منخفضًا خلف الطلاب</b>: أجسامهم تحجب أيديهم.</p>
+    <svg class="placement" viewBox="0 0 320 170" role="img" aria-label="مكان الجهاز: في المنتصف مقابل السبورة ومرتفعًا فوق الطلاب؛ لا من زاوية جانبية ولا منخفضًا خلفهم">
+      <rect x="60" y="10" width="200" height="14" rx="3" fill="#e2d5bd"/>
       <text x="160" y="21" text-anchor="middle" font-size="10" fill="#5f0d26">السبورة</text>
-      <circle cx="120" cy="45" r="11" fill="#cbd5e1"/><circle cx="185" cy="48" r="11" fill="#cbd5e1"/>
-      <text x="152" y="72" text-anchor="middle" font-size="9" fill="#57534e">الطلاب</text>
-      <rect x="282" y="34" width="22" height="15" rx="3" fill="#15803d" transform="rotate(-35 293 41)"/>
-      <path d="M284 34 L250 18 M284 34 L262 54" stroke="#15803d" stroke-width="1.5" stroke-dasharray="3 3" fill="none"/>
-      <text x="292" y="72" text-anchor="middle" font-size="10" fill="#15803d" font-weight="700">✓ هنا</text>
-      <rect x="143" y="118" width="24" height="16" rx="3" fill="#b91c1c"/>
-      <text x="155" y="146" text-anchor="middle" font-size="10" fill="#b91c1c" font-weight="700">✗ لا: خلف الطلاب</text>
-      <path d="M155 116 L155 62" stroke="#b91c1c" stroke-width="1.5" stroke-dasharray="3 3"/>
+      <path d="M160 122 L60 24 L260 24 Z" fill="rgba(22,163,74,0.10)" stroke="#16a34a" stroke-width="1" stroke-dasharray="4 3"/>
+      <circle cx="125" cy="48" r="11" fill="#cbd5e1"/><circle cx="190" cy="50" r="11" fill="#cbd5e1"/>
+      <text x="158" y="76" text-anchor="middle" font-size="9" fill="#57534e">الطلاب</text>
+      <rect x="146" y="116" width="28" height="18" rx="3" fill="#15803d"/>
+      <text x="160" y="150" text-anchor="middle" font-size="10" fill="#15803d" font-weight="700">✓ في المنتصف مقابل السبورة</text>
+      <text x="160" y="163" text-anchor="middle" font-size="8.5" fill="#15803d">على حامل مرتفع فوق رؤوس الطلاب</text>
+      <rect x="290" y="44" width="22" height="15" rx="3" fill="#b91c1c" transform="rotate(-35 301 51)"/>
+      <path d="M294 46 L100 16" stroke="#b91c1c" stroke-width="1.2" stroke-dasharray="3 3"/>
+      <text x="296" y="86" text-anchor="middle" font-size="9" fill="#b91c1c" font-weight="700">✗ زاوية جانبية</text>
+      <rect x="12" y="92" width="24" height="16" rx="3" fill="#b91c1c"/>
+      <path d="M24 90 L110 60" stroke="#b91c1c" stroke-width="1.2" stroke-dasharray="3 3"/>
+      <text x="28" y="124" text-anchor="middle" font-size="9" fill="#b91c1c" font-weight="700">✗ منخفض</text>
+      <text x="28" y="136" text-anchor="middle" font-size="9" fill="#b91c1c" font-weight="700">خلف الطلاب</text>
     </svg>
     <div class="row">
       <select id="camSelect" aria-label="اختيار الكاميرا"></select>

@@ -203,21 +203,19 @@ export function BoardGameCard({
   );
 }
 
-/** رسم من أعلى للصف: أين يوضع الجهاز (زاوية جانبية) وأين لا يوضع (خلف الطلاب). */
+/** رسم من أعلى للصف: أين يوضع الجهاز (في المنتصف مقابل السبورة ومرتفعًا) وأين لا يوضع (زاوية جانبية، أو منخفضًا خلف الطلاب). */
 export function ClassroomSetupDiagram() {
   return (
     <svg viewBox="0 0 460 340" role="img" aria-labelledby="bg-diagram-t" className="bg-diagram-svg">
       <title id="bg-diagram-t">
-        مخطط الصف من أعلى: السبورة وجهاز العرض فوقها، والطلاب أمامها، والجهاز على حامل في الزاوية الجانبية يرى السبورة ويعكس شاشته
-        على جهاز العرض لاسلكيًا.
+        مخطط الصف من أعلى: السبورة وجهاز العرض فوقها، والطلاب أمامها، والجهاز على حامل مرتفع في منتصف الصف مواجهًا للسبورة مباشرة
+        ويعكس شاشته على جهاز العرض؛ لا في زاوية جانبية حادة، ولا منخفضًا على طاولة خلف الطلاب.
       </title>
       {/* السبورة وجهاز العرض */}
       <rect x="70" y="22" width="320" height="18" rx="4" className="d-board" />
       <text x="230" y="35" textAnchor="middle" className="d-label-sm">السبورة (الصورة المعروضة)</text>
       <rect x="205" y="6" width="50" height="12" rx="3" className="d-device" />
       <text x="262" y="15" className="d-label-xs">جهاز العرض</text>
-      {/* انعكاس الشاشة لاسلكيًا من الجهاز إلى جهاز العرض مباشرة (أو عبر Apple TV أو كابل HDMI) */}
-      <text x="456" y="62" textAnchor="end" className="d-label-xs">انعكاس الشاشة</text>
       {/* الطلاب أمام السبورة */}
       {[150, 215, 285].map((x) => (
         <g key={x}>
@@ -226,20 +224,28 @@ export function ClassroomSetupDiagram() {
         </g>
       ))}
       <text x="218" y="114" textAnchor="middle" className="d-label-sm">الطلاب يلمسون السبورة بأيديهم</text>
-      {/* الجهاز الصحيح: زاوية جانبية */}
-      <path d="M420 120 L392 40 L70 40 Z" className="d-fov" />
+      {/* الصحيح: في المنتصف مقابل السبورة، على حامل مرتفع فوق رؤوس الطلاب */}
+      <path d="M230 262 L70 40 L390 40 Z" className="d-fov" />
+      <rect x="208" y="246" width="44" height="26" rx="5" className="d-ok" />
+      <path d="M216 252 h28 M216 260 h28" stroke="#dcfce7" strokeWidth="2" />
+      <text x="230" y="294" textAnchor="middle" className="d-ok-t">✓ هنا: في المنتصف مقابل السبورة</text>
+      <text x="230" y="312" textAnchor="middle" className="d-label-xs">على حامل مرتفع فوق رؤوس الطلاب</text>
+      <text x="230" y="328" textAnchor="middle" className="d-label-xs">٢–٣ م، بميل خفيف إلى الأسفل</text>
+      <path d="M230 244 Q 232 120 240 18" className="d-wave" />
+      <text x="248" y="150" className="d-label-xs">انعكاس الشاشة</text>
+      {/* الخطأ ١: زاوية جانبية حادة (الكف تضيق في عين الكاميرا) */}
       <g transform="rotate(-62 420 128)">
-        <rect x="402" y="118" width="36" height="22" rx="4" className="d-ok" />
+        <rect x="402" y="118" width="36" height="22" rx="4" className="d-bad" />
       </g>
-      <text x="420" y="168" textAnchor="middle" className="d-ok-t">✓ هنا</text>
-      <text x="456" y="186" textAnchor="end" className="d-label-xs">حامل في الزاوية، ١–١٫٥ م</text>
-      <path d="M432 108 Q 440 30 262 13" className="d-wave" />
-      {/* الخطأ: طاولة خلف الطلاب */}
-      <rect x="170" y="250" width="120" height="44" rx="6" className="d-desk" />
-      <rect x="214" y="238" width="32" height="20" rx="4" className="d-bad" />
-      <path d="M230 236 L230 100" className="d-blocked" />
-      <text x="230" y="316" textAnchor="middle" className="d-bad-t">✗ لا: على طاولة خلف الطلاب</text>
-      <text x="230" y="333" textAnchor="middle" className="d-label-xs">أجسامهم تحجب أيديهم، والبُعد يُصغّرها</text>
+      <path d="M408 120 L120 40" className="d-blocked" />
+      <text x="420" y="168" textAnchor="middle" className="d-bad-t">✗ لا: زاوية جانبية</text>
+      <text x="456" y="186" textAnchor="end" className="d-label-xs">تضيق الكف في الصورة فيضيع التتبّع</text>
+      {/* الخطأ ٢: منخفض على طاولة خلف الطلاب (الأجسام تحجب) — في الجانب الأيسر بعيدًا عن نصوص ✓ */}
+      <rect x="14" y="150" width="96" height="36" rx="6" className="d-desk" />
+      <rect x="46" y="140" width="32" height="20" rx="4" className="d-bad" />
+      <path d="M62 138 L120 100" className="d-blocked" />
+      <text x="62" y="208" textAnchor="middle" className="d-bad-t">✗ لا: منخفض خلف الطلاب</text>
+      <text x="62" y="226" textAnchor="middle" className="d-label-xs">أجسامهم تحجب أيديهم</text>
     </svg>
   );
 }
