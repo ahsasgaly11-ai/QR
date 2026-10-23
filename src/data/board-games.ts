@@ -1,39 +1,23 @@
 // ---------------------------------------------------------------------------
-// فهرس «ألعاب السبورة الذكية»: ألعاب تُلعب بلمس السبورة باليد، يعرضها جهاز
-// (هاتف أو آيباد) على جهاز العرض بانعكاس الشاشة — Screen Mirroring أو تطبيق Epson
-// iProjection أو Apple TV أو كابل HDMI — ويرى أيدي الطلاب بكاميرته.
+// القائمة المضمّنة (البذرة) لـ«ألعاب السبورة الذكية»: ألعاب تُلعب بلمس
+// السبورة باليد، يعرضها جهاز (هاتف أو آيباد) على جهاز العرض بانعكاس الشاشة —
+// Screen Mirroring أو تطبيق Epson iProjection أو Apple TV أو كابل HDMI — ويرى
+// أيدي الطلاب بكاميرته.
 //
 // كل لعبة تطبيق ويب ثابت في public/<slug>/ مبني على المحرّك المشترك
-// public/board-kit/ (راجع board-kit/README_AR.md). لإضافة لعبة: أنشئ مجلدها،
-// وأضف تحويل /<slug> في next.config.ts، ثم أضف سطرها هنا — فتظهر في القسم.
+// public/board-kit/ (راجع board-kit/README_AR.md).
+//
+// هذه القائمة احتياط فقط: ما يحفظه المشرف في Firestore (boardGames/{slug})
+// يغلب عليها، ويمكنه من لوحة الإدارة تعديل أي لعبة هنا أو إخفاؤها أو ربطها
+// بدرسها، وإضافة لعبة جديدة بمجرّد وجود مجلدها في public/ — بلا تعديل هنا.
+// الدمج والقراءة في src/lib/board-games.ts.
 // ---------------------------------------------------------------------------
 
-export interface BoardGame {
-  /** اسم المجلد في public/ وأساس الرابط */
-  slug: string;
-  title: string;
-  /** وصف قصير يظهر في البطاقة (سطران) */
-  summary: string;
-  subject: string;
-  /** الصف/المستوى والوحدة أو الدرس */
-  context?: string;
-  /** نواتج التعلّم الرئيسية (٢–٤ نقاط قصيرة) */
-  objectives: string[];
-  /** أوضاع اللعب كما تظهر في قائمة اللعبة */
-  modes: string[];
-  /** فردي/الصف كله/سباق فريقين… */
-  players: string;
-  /** مدة الجولة التقريبية بالدقائق */
-  minutes: number;
-  /** صورة الغلاف (لقطة من اللعبة، نسبة 16:10) */
-  cover: string;
-  /** لون البطاقة */
-  color: string;
-  /** تاريخ الإضافة (YYYY-MM-DD) — الأحدث يظهر أولًا */
-  added: string;
-}
+import type { BoardGame } from '@/lib/types';
 
-export const BOARD_GAMES: BoardGame[] = [
+export type { BoardGame };
+
+export const BOARD_GAME_SEEDS: BoardGame[] = [
   {
     slug: 'cold-week',
     title: 'أسبوع الزكام',
@@ -112,13 +96,9 @@ export const BOARD_GAMES: BoardGame[] = [
     cover: '/asnan/cover.jpg',
     color: '#8a1538',
     added: '2026-10-20',
+    subjectId: 'science',
+    gradeId: 'g3',
+    unitId: 'u1',
+    lessonId: 'u1-l1',
   },
 ];
-
-/** رابط فتح اللعبة (صفحة كاملة، لا داخل إطار: الكاميرا لا تعمل في إطار معزول). */
-export const boardGameHref = (g: BoardGame) => `/${g.slug}/index.html`;
-
-/** الألعاب مرتّبة: الأحدث أولًا. */
-export function boardGames(): BoardGame[] {
-  return [...BOARD_GAMES].sort((a, b) => b.added.localeCompare(a.added));
-}

@@ -57,6 +57,77 @@ export const standalonePath = (id: string) => `/view/${id}`;
 /** مسار قسم العروض التقديمية الذكية. */
 export const PRESENTATIONS_PATH = '/smart-presentations';
 
+// ---------------------------------------------------------------------------
+// ألعاب السبورة الذكية: تُلعب بلمس السبورة باليد، وكل لعبة تطبيق ويب ثابت في
+// public/<slug>/ على المحرّك المشترك public/board-kit/. بياناتها الوصفية
+// (العنوان، النواتج، الدرس…) تُقرأ من Firestore (boardGames/{slug}) فوق
+// القائمة المضمّنة في src/data/board-games.ts، فتُعدَّل من لوحة الإدارة
+// ومن صفحة القسم بلا نشر جديد. ملفات اللعبة نفسها تبقى في المستودع.
+// ---------------------------------------------------------------------------
+
+/** هوية قسم ألعاب السبورة الذكية. */
+export const BOARD_GAME_META = {
+  label: 'لعبة سبورة ذكية',
+  color: '#1d5c63',
+  play: 'افتح على السبورة',
+} as const;
+
+/** مسار قسم ألعاب السبورة الذكية. */
+export const BOARD_GAMES_PATH = '/board-games';
+
+/** عدد الألعاب بصيغة عربية صحيحة: لعبة واحدة، لعبتان، ٣ ألعاب، ١١ لعبة. */
+export function boardGamesCount(n: number): string {
+  if (n === 1) return 'لعبة واحدة';
+  if (n === 2) return 'لعبتان';
+  return `${n} ${n <= 10 ? 'ألعاب' : 'لعبة'}`;
+}
+
+export interface BoardGame {
+  /** اسم المجلد في public/ وأساس الرابط — معرّف الوثيقة في Firestore */
+  slug: string;
+  title: string;
+  /** وصف قصير يظهر في البطاقة (سطران) */
+  summary: string;
+  /** اسم المادة كما يظهر على الغلاف إن لم تُربط اللعبة بدرس */
+  subject: string;
+  /** ملاحظة قصيرة تحت العنوان (مثل: النشاط 1) — تظهر إلى جانب موقع الدرس */
+  context?: string;
+  /** نواتج التعلّم الرئيسية (٢–٤ نقاط قصيرة) */
+  objectives: string[];
+  /** أوضاع اللعب كما تظهر في قائمة اللعبة */
+  modes: string[];
+  /** فردي/الصف كله/سباق فريقين… */
+  players: string;
+  /** مدة الجولة التقريبية بالدقائق */
+  minutes: number;
+  /** صورة الغلاف (لقطة من اللعبة، نسبة 16:10) */
+  cover: string;
+  /** لون البطاقة */
+  color: string;
+  /** تاريخ الإضافة (YYYY-MM-DD) — الأحدث يظهر أولًا ما لم يُحدَّد ترتيب */
+  added: string;
+  /**
+   * ربط اللعبة بدرسها (كالعروض التقديمية): تظهر شريطًا «لعبة السبورة» داخل
+   * الدرس في صفحة المادة، ويُقرأ موقعها من شجرة المنهج. درس واحد لكل لعبة،
+   * وقد يحوي الدرس أكثر من لعبة.
+   */
+  subjectId?: string;
+  gradeId?: string;
+  unitId?: string;
+  lessonId?: string;
+  /** مخفيّة من الموقع (تبقى في لوحة الإدارة) */
+  hidden?: boolean;
+  /** ترتيب يدوي يحدّده المشرف (الأصغر أولًا)؛ غيابه = حسب تاريخ الإضافة */
+  order?: number;
+  /** طابع آخر تعديل من لوحة الإدارة (ms) */
+  updatedAt?: number;
+}
+
+/** هل اللعبة مرتبطة بدرس محدّد في شجرة المنهج؟ */
+export function boardGameLinked(g: Pick<BoardGame, 'subjectId' | 'gradeId' | 'unitId' | 'lessonId'>): boolean {
+  return Boolean(g.subjectId && g.gradeId && g.unitId && g.lessonId);
+}
+
 /** تسمية النشاط ولونه كما يراهما الزائر (العرض التقديمي له هويته الخاصة). */
 export function activityLabel(a: Pick<Activity, 'type' | 'presentation'>): { label: string; color: string } {
   return a.presentation ? PRESENTATION_META : ACTIVITY_META[a.type];
@@ -159,6 +230,8 @@ export interface Lesson {
   activities: Activity[];
   /** العروض التقديمية الذكية للدرس — منفصلة عن أنشطته. */
   presentations?: Activity[];
+  /** ألعاب السبورة الذكية المرتبطة بالدرس — منفصلة عن أنشطته ولا تُحسب ضمنها. */
+  boardGames?: BoardGame[];
 }
 
 export interface Unit {

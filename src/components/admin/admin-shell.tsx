@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { UploadCloud, ListChecks, Layers, LogOut, Megaphone, Download, Gamepad2, ClipboardCheck, Presentation, HeartHandshake, SpellCheck2, Heading, Users } from 'lucide-react';
-import type { Subject, Activity } from '@/lib/types';
+import { UploadCloud, ListChecks, Layers, LogOut, Megaphone, Download, Gamepad2, ClipboardCheck, Presentation, HeartHandshake, SpellCheck2, Heading, Users, Hand } from 'lucide-react';
+import type { Subject, Activity, BoardGame } from '@/lib/types';
 import { AuthGate, useAdminIdentity } from './auth-gate';
 import { RolesManager } from './roles-manager';
 import type { AdminRole } from '@/lib/roles';
 import { AdminUploader } from '@/components/admin-uploader';
 import { ActivitiesManager } from './activities-manager';
+import { BoardGamesManager } from './board-games-manager';
 import { ContentManager } from './content-manager';
 import { TickerManager } from './ticker-manager';
 import { TextsManager } from './texts-manager';
@@ -19,7 +20,7 @@ import { PedagogyExtractAudit } from './pedagogy-extract-audit';
 import { signOutAdmin, isFirebaseConfigured } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 
-type Tab = 'upload' | 'activities' | 'smart-games' | 'presentations' | 'reviews' | 'content' | 'audit' | 'texts' | 'ticker' | 'impact' | 'downloads' | 'roles';
+type Tab = 'upload' | 'activities' | 'smart-games' | 'board-games' | 'presentations' | 'reviews' | 'content' | 'audit' | 'texts' | 'ticker' | 'impact' | 'downloads' | 'roles';
 
 type ShellProps = {
   subjects: Subject[];
@@ -27,12 +28,14 @@ type ShellProps = {
   activities: Activity[];
   uploadedIds: string[];
   labels: Record<string, string>;
+  /** ألعاب السبورة الذكية كاملة (بما فيها المخفيّة) مدمجةً من البذرة وFirestore */
+  boardGames: BoardGame[];
 };
 
 /** التبويبات المتاحة لكل صلاحية — المالك يرى الكل. */
 const ROLE_TABS: Record<Exclude<AdminRole, 'owner'>, Tab[]> = {
   texts: ['texts'],
-  uploader: ['upload', 'activities', 'smart-games', 'presentations', 'reviews'],
+  uploader: ['upload', 'activities', 'smart-games', 'board-games', 'presentations', 'reviews'],
 };
 
 export function AdminShell(props: ShellProps) {
@@ -43,7 +46,7 @@ export function AdminShell(props: ShellProps) {
   );
 }
 
-function AdminPanel({ subjects, structure, activities, uploadedIds, labels }: ShellProps) {
+function AdminPanel({ subjects, structure, activities, uploadedIds, labels, boardGames }: ShellProps) {
   const { role } = useAdminIdentity();
   const [tab, setTab] = useState<Tab>(role === 'texts' ? 'texts' : 'upload');
 
@@ -51,6 +54,7 @@ function AdminPanel({ subjects, structure, activities, uploadedIds, labels }: Sh
     { id: 'upload', label: 'رفع نشاط', icon: UploadCloud },
     { id: 'activities', label: 'إدارة الأنشطة', icon: ListChecks },
     { id: 'smart-games', label: 'ألعاب التعزيز', icon: Gamepad2 },
+    { id: 'board-games', label: 'ألعاب السبورة', icon: Hand },
     { id: 'presentations', label: 'العروض الذكية', icon: Presentation },
     { id: 'reviews', label: 'مراجعات الوحدات', icon: ClipboardCheck },
     { id: 'content', label: 'إدارة المناهج', icon: Layers },
@@ -134,6 +138,7 @@ function AdminPanel({ subjects, structure, activities, uploadedIds, labels }: Sh
           </div>
         </div>
       )}
+      {tab === 'board-games' && <BoardGamesManager initial={boardGames} structure={structure} />}
       {tab === 'presentations' && (
         <div className="space-y-10">
           <div>

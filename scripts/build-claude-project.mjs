@@ -95,14 +95,19 @@ made.push(
 
 1. **مجلد اللعبة:** \`public/<slug>/\` (\`index.html\`، \`js/main.js\`، \`js/game.js\`، \`js/content.js\`، \`css/game.css\`،
    و\`cover.jpg\` لقطة 1280×800 من اللعبة أثناء اللعب).
-2. **التحويل:** في \`next.config.ts\` داخل \`redirects()\` أضف:
+2. **التحويل (اختياري):** للرابط القصير فقط، في \`next.config.ts\` داخل \`redirects()\`:
    \`{ source: '/<slug>', destination: '/<slug>/index.html', permanent: false }\` والسطر نفسه مع \`'/<slug>/'\`.
-3. **الفهرس:** أضف كائن اللعبة إلى \`BOARD_GAMES\` في \`src/data/board-games.ts\` (الحقول موثّقة في الملف أدناه).
+   الموقع يفتح \`/<slug>/index.html\` مباشرة ولا يحتاج التحويل.
+3. **الظهور في القسم:** بعد نشر المجلد، من لوحة الإدارة \`/admin\` ← «ألعاب السبورة» ← «إضافة لعبة»: اسم المجلد
+   (تتحقّق اللوحة من \`index.html\` و\`cover.jpg\`)، والعنوان والوصف ونواتج التعلّم وأوضاع اللعب والدرس المرتبط من
+   شجرة المنهج. تُحفظ في Firestore (\`boardGames/{slug}\`) وتظهر فورًا في \`/board-games\` وداخل درسها في صفحة المادة.
+   لا تعديل في الكود. (بديل: كائن في \`BOARD_GAME_SEEDS\` في \`src/data/board-games.ts\` كبذرة مضمّنة؛ الحقول موثّقة في
+   \`src/lib/types.ts\` تحت \`BoardGame\`، والدمج في \`src/lib/board-games.ts\`.)
 4. **التجربة:** \`/<slug>/index.html?sim\` (الماوس يتصرف كيد)، ثم شاشة هاتف أفقية، ثم الجهاز الحقيقي في الصف.
 5. **لا تكرّر** \`vendor/\` ولا \`models/\` ولا ملفات المحرّك داخل مجلد اللعبة: كلها في \`/board-kit/\`.
 
 الملفات الحالية للمرجع:`,
-    ['src/data/board-games.ts']
+    ['src/data/board-games.ts', 'src/lib/board-games.ts']
   )
 );
 

@@ -1,6 +1,7 @@
 import { SUBJECTS, SEED_ACTIVITIES } from '@/data/curriculum';
 import type { Subject, Activity, Lesson } from '@/lib/types';
 import { getDb, isFirebaseConfigured } from '@/lib/firebase';
+import { attachBoardGames, getBoardGames } from '@/lib/board-games';
 
 // ---------------------------------------------------------------------------
 // Content service. Returns the curriculum tree with activities attached to
@@ -41,8 +42,8 @@ export function toStructure(subjects: Subject[]): Subject[] {
       ...g,
       units: g.units.map((u) => ({
         ...u,
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars -- العروض تُرفق وقت القراءة ولا تُحفظ في البنية
-        lessons: u.lessons.map(({ presentations, ...l }) => ({ ...l, activities: [] })),
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars -- العروض وألعاب السبورة تُرفق وقت القراءة ولا تُحفظ في البنية
+        lessons: u.lessons.map(({ presentations, boardGames, ...l }) => ({ ...l, activities: [] })),
       })),
     })),
   }));
@@ -98,12 +99,15 @@ function attachActivities(subjects: Subject[], activities: Activity[]) {
 }
 
 export async function getSubjects(): Promise<Subject[]> {
-  const [structure, uploaded] = await Promise.all([
+  const [structure, uploaded, boardGames] = await Promise.all([
     fetchStructure(),
     fetchUploadedActivities(),
+    getBoardGames(),
   ]);
   const subjects = cloneSubjects(structure ?? SUBJECTS);
   attachActivities(subjects, [...SEED_ACTIVITIES, ...uploaded]);
+  // ألعاب السبورة المرتبطة بدروسها تظهر شريطًا داخل الدرس (كالعروض التقديمية)
+  attachBoardGames(subjects, boardGames);
   return subjects;
 }
 

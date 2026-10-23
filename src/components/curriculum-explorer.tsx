@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ChevronDown, BookMarked, Inbox, UploadCloud, Search, ArrowLeft, Presentation } from 'lucide-react';
+import { ChevronDown, BookMarked, Inbox, UploadCloud, Search, ArrowLeft, Presentation, Hand, MousePointerClick } from 'lucide-react';
 import type { Subject, Activity } from '@/lib/types';
 import { ActivityCard } from './activity-card';
 import { HeritageIcon } from './heritage-icons';
 import { cn, normalizeAr } from '@/lib/utils';
+import { boardGameHref, boardGameTryHref } from '@/lib/board-games';
 import {
   listLocalActivities,
   getLocalStructure,
@@ -113,7 +114,8 @@ export function CurriculumExplorer({ subject: serverSubject }: { subject: Subjec
             (l) =>
               normalizeAr(l.title).includes(q) ||
               l.activities.some((a) => normalizeAr(a.title).includes(q)) ||
-              (l.presentations ?? []).some((a) => normalizeAr(a.title).includes(q))
+              (l.presentations ?? []).some((a) => normalizeAr(a.title).includes(q)) ||
+              (l.boardGames ?? []).some((g) => normalizeAr(g.title).includes(q))
           )
         : unit.lessons;
       return { unit, lessons };
@@ -256,6 +258,36 @@ export function CurriculumExplorer({ subject: serverSubject }: { subject: Subjec
                                 </span>
                               </Link>
                             ))}
+                            {/* ألعاب السبورة الذكية المرتبطة بالدرس: تُفتح صفحةً كاملة (الكاميرا لا تعمل داخل إطار) */}
+                            {lesson.boardGames?.map((g) => (
+                              <div key={g.slug} className="board-ticket-row">
+                                <a href={boardGameHref(g)} className="show-ticket board-ticket" aria-label={`لعبة السبورة: ${g.title}`}>
+                                  <span className="show-ticket-icon board-ticket-icon" aria-hidden>
+                                    <Hand />
+                                  </span>
+                                  <span className="min-w-0 flex-1">
+                                    <span className="show-ticket-kicker">
+                                      <Hand className="h-3.5 w-3.5" aria-hidden />
+                                      لعبة السبورة
+                                      <span className="beta-pill">المس بيدك</span>
+                                    </span>
+                                    <span className="show-ticket-title">{g.title}</span>
+                                  </span>
+                                  <span className="show-ticket-go" aria-hidden>
+                                    <ArrowLeft className="h-5 w-5" />
+                                  </span>
+                                </a>
+                                <a
+                                  href={boardGameTryHref(g)}
+                                  className="board-ticket-sim"
+                                  title="جرّبها بالماوس: الماوس يتصرف كيد الطالب"
+                                  aria-label={`جرّب ${g.title} بالماوس`}
+                                >
+                                  <MousePointerClick className="h-4 w-4" aria-hidden />
+                                  <span>بالماوس</span>
+                                </a>
+                              </div>
+                            ))}
                             {lesson.activities.length > 0 ? (
                               <div className="mt-3 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                                 {lesson.activities.map((a, i) => (
@@ -270,7 +302,7 @@ export function CurriculumExplorer({ subject: serverSubject }: { subject: Subjec
                                   />
                                 ))}
                               </div>
-                            ) : lesson.presentations?.length ? null : (
+                            ) : lesson.presentations?.length || lesson.boardGames?.length ? null : (
                               <p className="lesson-empty">
                                 <Inbox className="h-3.5 w-3.5" aria-hidden />
                                 لا توجد أنشطة بعد
