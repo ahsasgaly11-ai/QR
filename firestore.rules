@@ -121,6 +121,13 @@ service cloud.firestore {
     // بنية المناهج (المواد/المستويات/الوحدات/الدروس) — curriculum/tree
     // ورسائل الشريط المتحرّك أسفل الموقع — curriculum/ticker
     // ونصوص الموقع وسجلها — curriculum/texts و curriculum/texts_history
+    match /curriculum/{docId} {
+      allow read: if true;
+      allow write: if isOwner()
+        || (docId in ['texts', 'texts_history'] && hasRole('texts'))
+        || (docId == 'tree' && hasRole('uploader'));
+    }
+
     // ألعاب السبورة الذكية: بيانات كل لعبة (العنوان، النواتج، الدرس، الإخفاء…)
     // بمعرّف مجلدها. القراءة عامة لتُبنى الصفحات، والكتابة للمالك ولرافع
     // الأنشطة، والحذف (استعادة الافتراضي/إزالة لعبة مضافة) للمالك وحده.
@@ -128,13 +135,6 @@ service cloud.firestore {
       allow read: if true;
       allow create, update: if isOwner() || hasRole('uploader');
       allow delete: if isOwner();
-    }
-
-    match /curriculum/{docId} {
-      allow read: if true;
-      allow write: if isOwner()
-        || (docId in ['texts', 'texts_history'] && hasRole('texts'))
-        || (docId == 'tree' && hasRole('uploader'));
     }
 
     // --- خرائط الأيام ({"YYYY-MM-DD": عدد}) ---------------------------------
