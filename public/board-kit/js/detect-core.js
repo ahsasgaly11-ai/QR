@@ -160,24 +160,26 @@ export class DetectCore {
    * @param {number} ts طابع متزايد (ms)
    * @returns {{i:number, landmarks:{x:number,y:number}[][], handedness:{score:number,categoryName:string}[]}[]}
    */
-  run(frame, crops, ts) {
+  run(frame, crops, ts, images = null) {
     const out = [];
     const full = (c) => c.w >= 0.999 && c.h >= 0.999 && (frameW(frame) <= CROP_PX.tile || this.mode !== 'tiled');
+    // صورة النافذة: جاهزة (قُصّت وصُغّرت في الخيط الرئيسي بـ createImageBitmap) أو تُقصّ هنا من الإطار
+    const img = (c, i, key, maxSide) => images?.[i] || this._crop(key, frame, c, maxSide);
     crops.forEach((c, i) => {
       let res = null;
       if (c.kind === 'scan') {
         if (!this.scanLm) return;
-        res = this.scanLm.detect(this._crop(`s${i}`, frame, c, CROP_PX.scan));
+        res = this.scanLm.detect(img(c, i, `s${i}`, CROP_PX.scan));
       } else {
         const slot = c.kind === 'focus' ? this.focus[c.slot] : this.tiles[c.slot];
         if (!slot) {
           // لا خانة فيديو لهذه النافذة (جهاز ضعيف): نستعمل كاشف الصور إن وُجد
-          if (this.scanLm) res = this.scanLm.detect(this._crop(`s${i}`, frame, c, CROP_PX.scan));
+          if (this.scanLm) res = this.scanLm.detect(img(c, i, `s${i}`, CROP_PX.scan));
           else return;
         } else {
           const t = Math.max(ts, slot.lastTs + 1);
           slot.lastTs = t;
-          const src = c.kind === 'tile' && full(c) ? frame : this._crop(`${c.kind}${c.slot}`, frame, c, c.kind === 'focus' ? CROP_PX.focus : CROP_PX.tile);
+          const src = images?.[i] || (c.kind === 'tile' && full(c) ? frame : this._crop(`${c.kind}${c.slot}`, frame, c, c.kind === 'focus' ? CROP_PX.focus : CROP_PX.tile));
           res = slot.lm.detectForVideo(src, t);
         }
       }

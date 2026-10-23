@@ -6,7 +6,8 @@
 // الرسائل:
 //   ← {type:'init', vendor, model, forceCpu}         → {type:'ready', delegate} | {type:'error', code, message}
 //   ← {type:'configure', mode, tiles, focus}         → {type:'configured', tiles, focus} | {type:'error', …}
-//   ← {type:'frame', bitmap, ts, crops}              → {type:'result', ts, results, ms}
+//   ← {type:'frame', images, ts, crops}              → {type:'result', ts, results, ms}
+//      images: ImageBitmap لكل نافذة (قُصّت وصُغّرت في الخيط الرئيسي بـ createImageBitmap)
 //   ← {type:'close'}
 // ---------------------------------------------------------------------------
 import { DetectCore } from './detect-core.js';
@@ -37,9 +38,9 @@ self.onmessage = async (e) => {
       const t0 = performance.now();
       let results = [];
       try {
-        results = core.run(m.bitmap, m.crops, m.ts);
+        results = core.run(m.images[0] || null, m.crops, m.ts, m.images);
       } finally {
-        m.bitmap.close?.();
+        for (const b of m.images) b?.close?.();
       }
       self.postMessage({ type: 'result', ts: m.ts, results, ms: performance.now() - t0, delegate: core.delegate });
     } else if (m.type === 'close') {
