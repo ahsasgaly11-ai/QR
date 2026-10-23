@@ -1,0 +1,172 @@
+/* ----------------------------------------------------------------------------
+   «وضع السبورة» لألعاب HTML المرفوعة (hand-mouse.js): طبقة مؤشرات الأيدي،
+   وشريحة الحالة، ولوحة الكاميرا والمعايرة. كل الأصناف تحت .hm- فلا تلمس أنماط
+   الموقع (kit.css يغيّر html/body فلا يُحمَّل هنا)، مع نسخة من أصناف المعايرة
+   (.calib-*) التي يستعملها calibrate.js.
+---------------------------------------------------------------------------- */
+.hm-root {
+  --hm-maroon: #8a1538;
+  --hm-maroon-d: #5f0d26;
+  --hm-gold: #c9961a;
+  --hm-ink: #2a1f1a;
+  --hm-fh: 'Baloo Bhaijaan 2', 'Readex Pro', system-ui, sans-serif;
+  --hm-fb: 'Readex Pro', 'Baloo Bhaijaan 2', system-ui, sans-serif;
+  font-family: var(--hm-fb);
+}
+
+/* طبقة التقاط الماوس أثناء المحاكاة (شفافة، فوق الإطار وتحت المؤشرات) */
+.hm-catch { position: absolute; inset: 0; z-index: 29; background: transparent; cursor: crosshair; }
+.hm-catch[hidden] { display: none; }
+
+/* طبقة المؤشرات فوق إطار اللعبة (لا تلتقط اللمس) */
+.hm-layer { position: absolute; inset: 0; z-index: 30; pointer-events: none; overflow: visible; }
+.hm-layer .hm-ring-bg { fill: rgba(255, 255, 255, 0.38); stroke: rgba(40, 20, 10, 0.22); stroke-width: 7; }
+.hm-layer .hm-ring { fill: none; stroke-width: 8; stroke-linecap: round; }
+.hm-layer .hm-dot { stroke: #fff; stroke-width: 3; }
+.hm-layer .hm-cursor.is-down .hm-dot { r: 12; }
+.hm-layer .hm-cursor.is-down .hm-ring-bg { stroke: var(--hm-gold); stroke-width: 5; }
+.hm-layer .hm-cursor.is-out { opacity: 0.35; }
+
+/* شريحة الحالة وزرّ اللوحة (أعلى اليمين داخل المسرح) */
+.hm-bar {
+  position: absolute;
+  top: 10px;
+  inset-inline-start: 10px;
+  z-index: 40;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  direction: rtl;
+}
+.hm-chip {
+  font: 600 13px var(--hm-fb);
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: var(--hm-ink);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+}
+.hm-chip::before { content: '●'; margin-inline-end: 6px; color: #9ca3af; }
+.hm-chip[data-state='ok']::before { color: #16a34a; }
+.hm-chip[data-state='wait']::before { color: #d97706; }
+.hm-chip[data-state='bad']::before { color: #dc2626; }
+.hm-chip.slow::before { color: #d97706; }
+.hm-tbtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--hm-ink);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* اللوحة */
+.hm-panel {
+  position: absolute;
+  top: 0;
+  inset-inline-end: 0;
+  bottom: 0;
+  z-index: 60;
+  width: min(440px, 94%);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  padding: 16px 18px max(24px, env(safe-area-inset-bottom));
+  background: #fff;
+  color: var(--hm-ink);
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.2);
+  font-size: 15px;
+  line-height: 1.6;
+  direction: rtl;
+  text-align: start;
+  -webkit-user-select: text;
+  user-select: text;
+}
+.hm-panel[hidden] { display: none; }
+.hm-panel h2 { margin: 0; font-family: var(--hm-fh); color: var(--hm-maroon); font-size: 21px; }
+.hm-panel h3 { margin: 4px 0 6px; font-size: 16px; font-weight: 700; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.hm-panel section { border-top: 1px solid #eee3d0; padding: 10px 0; }
+.hm-head { display: flex; align-items: center; justify-content: space-between; }
+.hm-help { margin: 4px 0 8px; color: #57534e; font-size: 13.5px; }
+.hm-help.warn { color: #92400e; font-size: 13px; }
+.hm-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0; }
+.hm-panel select, .hm-panel input[type='range'] { font: inherit; max-width: 100%; }
+.hm-panel select { padding: 6px 8px; border-radius: 8px; border: 1px solid #d6cbb5; background: #fff; }
+.hm-btn {
+  font: 700 15px var(--hm-fb);
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid #d6cbb5;
+  background: #fff;
+  color: var(--hm-ink);
+  cursor: pointer;
+}
+.hm-btn.primary { background: var(--hm-maroon); border-color: var(--hm-maroon-d); color: #fff; }
+.hm-btn.ghost { background: #faf6ee; }
+.hm-muted { color: #78716c; font-size: 13px; }
+.hm-msg:empty { display: none; }
+.hm-msg { margin: 8px 0; padding: 8px 12px; border-radius: 10px; background: #ecfdf5; color: #065f46; font-size: 14px; }
+.hm-msg[data-bad='1'] { background: #fef2f2; color: #991b1b; }
+.hm-field { display: block; margin: 8px 0; border: 0; padding: 0; }
+.hm-field output { color: var(--hm-maroon); font-weight: 700; margin-inline-start: 6px; }
+.hm-field input[type='range'] { width: 100%; }
+.hm-field legend { font-weight: 600; padding: 0; }
+.hm-field label, .hm-check { display: flex; gap: 8px; align-items: center; margin: 4px 0; }
+.hm-cal { margin: 6px 0 0; font-size: 14px; padding: 6px 10px; border-radius: 8px; background: #f5f5f4; }
+.hm-cal[data-q='good'] { background: #dcfce7; color: #14532d; }
+.hm-cal[data-q='ok'] { background: #fef9c3; color: #713f12; }
+.hm-cal[data-q='bad'] { background: #fee2e2; color: #7f1d1d; }
+.hm-panel .hm-preview { display: block; width: 100%; border-radius: 8px; background: #000; }
+.hm-panel .hm-preview[hidden] { display: none; }
+
+/* المعايرة (calibrate.js يستعمل هذه الأصناف؛ نسخة من kit.css) */
+.calib-overlay { position: fixed; inset: 0; z-index: 100; }
+.calib-spot { position: absolute; transform: translate(-50%, -50%); border-radius: 50%; }
+.calib-spot.numbered {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font: 800 34px var(--hm-fh, system-ui);
+  box-shadow: 0 0 0 6px #fff, 0 0 0 9px #111;
+}
+.calib-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #3a3a3a;
+  font: 700 24px var(--hm-fh, system-ui);
+}
+.calib-shot { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; touch-action: none; }
+.calib-hint {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 20px;
+  border-radius: 999px;
+  background: #fff;
+  font: 700 20px var(--hm-fh, system-ui);
+  pointer-events: none;
+}
+.calib-bar { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; }
+.calib-tap {
+  position: fixed;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 4px solid;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  box-shadow: 0 0 0 2px #fff;
+}
+/* أزرار المعايرة اليدوية (calibrate.js يستعمل .btn.sm) */
+.calib-bar .btn { font: 700 15px var(--hm-fh, system-ui); padding: 6px 12px; border-radius: 10px; border: 1px solid #d6cbb5; background: #fff; color: #2a1f1a; cursor: pointer; }

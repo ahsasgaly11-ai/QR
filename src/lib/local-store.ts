@@ -184,8 +184,30 @@ const REPORT_SHIM = `<script>(function(){var P=window.parent;if(!P||P===window)r
 window.qaReport=function(c,t){try{P.postMessage({${SCORE_KEY}:{correct:Number(c),total:Number(t)}},'*')}catch(e){}};})();</script>`;
 
 /** يحقن بديل التخزين وجسر ملء الشاشة وجسر النتيجة في بداية المستند قبل أي سكربت للعبة. */
+// ---------------------------------------------------------------------------
+// جسر «وضع السبورة» (اللعب باليد عبر الكاميرا): الصفحة الأم (hand-mouse.js في
+// board-kit) تحوّل أيدي الطلاب على السبورة إلى رسائل {__qaHand:{t,id,x,y}}،
+// وهذا الجسر يبثّها داخل اللعبة أحداث مؤشر حقيقية (pointer ثم touch ثم mouse
+// وclick بالترتيب الذي يصدره المتصفّح للمس)، على العنصر الواقع تحت النقطة، مع
+// «التقاط ضمني» كاللمس: ما بعد الضغط يذهب إلى عنصر الضغط حتى الرفع. إن ألغت
+// اللعبة touchstart أو pointerdown فلا أحداث فأرة ولا click، كما يفعل المتصفّح.
+// خامل تمامًا ما لم تصل رسائل، ولا يغيّر شيئًا في اللعبة.
+// ---------------------------------------------------------------------------
+export const HAND_KEY = '__qaHand';
+const HAND_SHIM = `<script>(function(){var P=window.parent;if(P===window)return;var S={};
+function tg(x,y){return document.elementFromPoint(x,y)||document.documentElement}
+function pe(t,el,x,y,id,b){var i={bubbles:true,cancelable:true,composed:true,clientX:x,clientY:y,screenX:x,screenY:y,button:0,buttons:b,pointerId:id,pointerType:'touch',isPrimary:true,width:22,height:22,pressure:b?0.5:0,view:window};var e;try{e=new PointerEvent(t,i)}catch(_){e=new MouseEvent(t,i)}return el.dispatchEvent(e)}
+function me(t,el,x,y,b){return el.dispatchEvent(new MouseEvent(t,{bubbles:true,cancelable:true,composed:true,clientX:x,clientY:y,screenX:x,screenY:y,button:0,buttons:b,detail:t==='click'?1:0,view:window}))}
+function te(t,el,x,y,id,on){try{var o=new Touch({identifier:id,target:el,clientX:x,clientY:y,screenX:x,screenY:y,pageX:x+pageXOffset,pageY:y+pageYOffset,radiusX:11,radiusY:11,force:0.5});var l=on?[o]:[];return el.dispatchEvent(new TouchEvent(t,{bubbles:true,cancelable:true,composed:true,touches:l,targetTouches:l,changedTouches:[o],view:window}))}catch(_){return true}}
+window.addEventListener('message',function(e){if(e.source!==P)return;var d=e.data&&e.data.${'__qaHand'};if(!d)return;var id=1000+(d.id|0);var s=S[d.id]||(S[d.id]={el:null,down:false,cap:null,np:false});var x=+d.x,y=+d.y,b=s.down?1:0;
+if(d.t==='move'){var el=s.cap||tg(x,y);if(el!==s.el){if(s.el){pe('pointerout',s.el,x,y,id,b);me('mouseout',s.el,x,y,b)}pe('pointerover',el,x,y,id,b);me('mouseover',el,x,y,b);s.el=el}pe('pointermove',el,x,y,id,b);if(s.down)te('touchmove',el,x,y,id,true);if(!s.np)me('mousemove',el,x,y,b)}
+else if(d.t==='down'){var dl=tg(x,y);s.down=true;s.cap=dl;s.el=dl;var pk=pe('pointerdown',dl,x,y,id,1);var tk=te('touchstart',dl,x,y,id,true);s.np=!(pk&&tk);if(!s.np)me('mousedown',dl,x,y,1);try{if(dl.focus)dl.focus({preventScroll:true})}catch(_){}}
+else if(d.t==='up'){var ul=s.cap||tg(x,y);pe('pointerup',ul,x,y,id,0);var uk=te('touchend',ul,x,y,id,false);if(uk&&!s.np)me('mouseup',ul,x,y,0);s.np=s.np||!uk;s.down=false;s.cap=null}
+else if(d.t==='click'){if(!s.np){var cl=tg(x,y);me('click',cl,x,y,0)}s.np=false}});
+})();</script>`;
+
 export function withStorageShim(html: string): string {
-  const shims = STORAGE_SHIM + FULLSCREEN_SHIM + REPORT_SHIM;
+  const shims = STORAGE_SHIM + FULLSCREEN_SHIM + REPORT_SHIM + HAND_SHIM;
   const m = /<head[^>]*>/i.exec(html);
   if (m) return html.slice(0, m.index + m[0].length) + shims + html.slice(m.index + m[0].length);
   return shims + html;

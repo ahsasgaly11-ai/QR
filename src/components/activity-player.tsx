@@ -12,6 +12,7 @@ import {
   AppWindow,
   RefreshCw,
   Loader2,
+  Hand,
 } from 'lucide-react';
 import type { Activity } from '@/lib/types';
 import { opensStandalone, standalonePath } from '@/lib/types';
@@ -162,6 +163,43 @@ function PlayerInner({ activity, localHtml, next, standalone = false }: PlayerPr
   // حتى لا يُنهيها التمرير على الجوال، وتعمل على iOS الذي لا يدعم ملء شاشة
   // العناصر. نطلب ملء الشاشة الأصلي إضافةً إليها عند توفّره فقط.
   const [immersive, setImmersive] = useState(false);
+
+  // «وضع السبورة»: اللعب باليد عبر كاميرا الجهاز (محرّك ألعاب السبورة الذكية،
+  // board-kit/js/hand-mouse.js) — للألعاب المرفوعة فقط، لأن الجسر الذي يبثّ
+  // أحداث اللمس داخل الإطار يُحقن فيها عند التحميل (HAND_SHIM في local-store).
+  type HandMouse = { open: () => void; autoStart: () => Promise<void>; destroy: () => void; onOff?: () => void };
+  const handRef = useRef<HandMouse | null>(null);
+  const [handMode, setHandMode] = useState<'off' | 'loading' | 'on'>('off');
+  const canHand = uploaded && !activity.presentation && typeof navigator !== 'undefined' && !!navigator.mediaDevices;
+  const stopHandMode = useCallback(() => {
+    handRef.current?.destroy();
+    handRef.current = null;
+    setHandMode('off');
+  }, []);
+  const startHandMode = useCallback(async () => {
+    if (handRef.current || !wrapRef.current) return;
+    setHandMode('loading');
+    try {
+      // الوحدة تُحمَّل من public/ وقت التشغيل (لا من حزمة الموقع): مسار نصّي كي لا يحلّه المجمّع
+      const url = '/board-kit/js/hand-mouse.js';
+      const mod = (await import(/* webpackIgnore: true */ url)) as {
+        createHandMouse: (o: { host: HTMLElement; getFrame: () => HTMLIFrameElement | null }) => Promise<HandMouse>;
+      };
+      const hm = await mod.createHandMouse({ host: wrapRef.current, getFrame: () => frameRef.current });
+      hm.onOff = () => stopHandMode();
+      handRef.current = hm;
+      setHandMode('on');
+      await hm.autoStart();
+    } catch (e) {
+      console.error('[player] hand mode', e);
+      setHandMode('off');
+    }
+  }, [stopHandMode]);
+  useEffect(() => () => handRef.current?.destroy(), []);
+  // الخروج من العرض الكامل (Esc، رجوع، زرّ خروج) يوقف وضع السبورة والكاميرا معه
+  useEffect(() => {
+    if (!immersive && handRef.current) stopHandMode();
+  }, [immersive, stopHandMode]);
 
   // لؤلؤة عن كل نشاط يُجرَّب دقيقة كاملة
   usePearlTimer(activity.id, activity.title);
@@ -560,6 +598,21 @@ function PlayerInner({ activity, localHtml, next, standalone = false }: PlayerPr
             <Maximize2 className="h-4 w-4" aria-hidden />{' '}
             {activity.presentation ? 'ابدأ العرض بملء الشاشة' : 'ملء الشاشة'}
           </button>
+          {canHand && (
+            <button
+              onClick={() => {
+                gameOwnedRef.current = false;
+                enterImmersive();
+                void startHandMode();
+              }}
+              disabled={handMode === 'loading'}
+              className="tool-btn"
+              title="العب بلمس السبورة باليد: كاميرا جهاز المعلّم ترى أيدي الطلاب (كما في ألعاب السبورة الذكية)"
+            >
+              {handMode === 'loading' ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Hand className="h-4 w-4" aria-hidden />}{' '}
+              وضع السبورة
+            </button>
+          )}
           {/* «فتح في نافذة» يعرض ملف اللعبة خارج الموقع فيُمكن حفظه، لذا يُخفى
               مع زرّ التحميل عند قصر الاستخدام على داخل الموقع. */}
           {canDownload && (
