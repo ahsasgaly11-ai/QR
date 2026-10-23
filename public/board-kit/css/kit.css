@@ -60,6 +60,8 @@ html, body {
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
+  /* لا تكبير بالنقر المزدوج خارج المسرح (أدوات المعلم والهوامش) */
+  touch-action: manipulation;
 }
 
 /* الكاميرا: موجودة ومشغّلة (شرط Safari لاستمرار الإطارات) لكنها غير مرئية */

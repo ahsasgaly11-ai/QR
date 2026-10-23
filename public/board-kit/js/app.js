@@ -223,8 +223,39 @@ export function startBoardApp({
   };
   addEventListener('resize', () => rerender());
   // منع التكبير بالإصبعين والقائمة المنبثقة عند الضغط المطوّل
-  document.addEventListener('gesturestart', (e) => e.preventDefault());
+  for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(ev, (e) => e.preventDefault());
   document.addEventListener('contextmenu', (e) => e.preventDefault());
+  // منع التكبير بالنقر المزدوج: Safari على iOS يتجاهل user-scalable=no ويكبّر الصفحة عند
+  // لمستين متتاليتين، ولا يعيدها إلا بتحديثها. لمستان خلال ٣٥٠ م.ث تُلغى الثانية
+  // (أحداث المؤشر تكون قد وصلت إلى اللعبة قبلها، فلا يتأثر اللعب). لوحة المعلم مستثناة.
+  let lastTouchEnd = 0;
+  document.addEventListener(
+    'touchend',
+    (e) => {
+      if (e.target?.closest?.('#panel')) return;
+      const now = performance.now();
+      if (now - lastTouchEnd < 350) e.preventDefault();
+      lastTouchEnd = now;
+    },
+    { passive: false }
+  );
+  // وإن كُبّرت الصفحة رغم ذلك (نقر مزدوج قديم أو تكبير بالإصبعين) تُعاد إلى حجمها
+  // تلقائيًا: تثبيت maximum-scale=1 لحظةً في وسم viewport يُرجع Safari إلى الحجم الطبيعي.
+  const viewportMeta = document.querySelector('meta[name="viewport"]');
+  const vv = window.visualViewport;
+  let zoomResetT = 0;
+  function resetZoom() {
+    if (!viewportMeta) return;
+    const original = viewportMeta.content;
+    viewportMeta.content = `${original.replace(/,?\s*maximum-scale=[^,]*/g, '')}, maximum-scale=1`;
+    setTimeout(() => (viewportMeta.content = original), 250);
+  }
+  if (vv) {
+    vv.addEventListener('resize', () => {
+      clearTimeout(zoomResetT);
+      if (vv.scale > 1.02) zoomResetT = setTimeout(resetZoom, 120);
+    });
+  }
 
   // إبقاء الشاشة مضاءة أثناء الحصة (iOS 16.4+)
   let wakeLock = null;
