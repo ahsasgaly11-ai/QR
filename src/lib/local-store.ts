@@ -1,4 +1,4 @@
-import type { Activity, Subject } from '@/lib/types';
+import type { Activity, BoardGame, Subject } from '@/lib/types';
 
 // ---------------------------------------------------------------------------
 // وضع العرض المحلي (Local preview store)
@@ -256,6 +256,16 @@ export function mergeLocalIntoSubject(
   const base =
     localStructure?.find((s) => s.id === subject.id) ?? subject;
   const merged = JSON.parse(JSON.stringify(base)) as Subject;
+
+  // البنية المحلية/الحيّة بنية صِرفة بلا ألعاب سبورة؛ أعِد ما أرفقه الخادم بكل درس
+  if (base !== subject) {
+    const fromServer = new Map<string, BoardGame[]>();
+    for (const g of subject.grades) for (const u of g.units) for (const l of u.lessons) if (l.boardGames?.length) fromServer.set(l.id, l.boardGames);
+    for (const g of merged.grades) for (const u of g.units) for (const l of u.lessons) {
+      const bg = fromServer.get(l.id);
+      if (bg && !l.boardGames) l.boardGames = bg;
+    }
+  }
 
   for (const a of localActivities) {
     if (a.subjectId !== merged.id) continue;

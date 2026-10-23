@@ -2834,6 +2834,107 @@ a.ledger-row:hover .ledger-go { transform: translateX(-4px); }
 .dark .bg-home-points svg { color: var(--gold); }
 .bg-privacy { display: flex; align-items: center; gap: 0.5rem; margin-top: 1.2rem; font-size: 0.9rem; color: var(--muted); }
 
+/* بطاقة اللعبة: سطر الموقع في المنهج، وأدوات المالك، والتعديل المباشر، والإخفاء */
+.bg-card { position: relative; }
+.bg-card.is-hidden { opacity: 0.72; border-style: dashed; }
+.bg-crumb {
+  order: -1;
+  margin: 0;
+  padding: 0.45rem 1rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--bg-color) 70%, var(--ink));
+  background: color-mix(in srgb, var(--bg-color) 9%, var(--surface));
+  border-bottom: 1px solid color-mix(in srgb, var(--bg-color) 25%, transparent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bg-hidden-badge {
+  position: absolute;
+  top: 0.75rem;
+  inset-inline-end: 0.75rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 0.4rem;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.bg-owner { position: absolute; top: 0.75rem; inset-inline-start: 0.75rem; z-index: 2; display: flex; gap: 0.35rem; }
+.bg-crumb ~ .bg-owner { top: calc(0.75rem + 2.1rem); }
+.bg-edit { display: grid; gap: 0.6rem; }
+.bg-edit label { display: grid; gap: 0.25rem; }
+.bg-edit label > span { font-size: 0.75rem; font-weight: 700; color: var(--maroon); }
+.bg-edit input, .bg-edit textarea {
+  width: 100%;
+  border-radius: 0.6rem;
+  border: 1px solid var(--hairline-strong);
+  background: var(--surface);
+  padding: 0.5rem 0.7rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.6;
+  outline: none;
+  resize: vertical;
+}
+.bg-edit input:focus, .bg-edit textarea:focus { border-color: var(--maroon); }
+.bg-edit-error { font-size: 0.82rem; font-weight: 700; color: var(--coral); }
+.bg-edit-actions { display: flex; gap: 0.5rem; }
+.bg-edit-save, .bg-edit-cancel {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
+  padding: 0.5rem 0.9rem; border-radius: 0.6rem; font-size: 0.88rem; font-weight: 700;
+}
+.bg-edit-save { flex: 1; background: var(--maroon); color: #fff; }
+.bg-edit-save:disabled { opacity: 0.5; }
+.bg-edit-cancel { background: var(--surface-2); color: var(--maroon); }
+
+/* شريط «لعبة السبورة» داخل الدرس في صفحة المادة (أخضر مزرق: لون القسم) */
+.board-ticket-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; }
+.board-ticket-row .show-ticket { margin-top: 0.75rem; }
+.show-ticket.board-ticket {
+  background:
+    radial-gradient(120% 140% at 85% 0%, rgba(255, 255, 255, 0.14), transparent 55%),
+    linear-gradient(160deg, #2b7a83, #15454a);
+  box-shadow:
+    0 5px 0 #0c2a2d,
+    0 18px 26px -16px rgba(12, 42, 45, 0.75),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+.show-ticket.board-ticket:hover { box-shadow: 0 7px 0 #0c2a2d, 0 22px 30px -16px rgba(12, 42, 45, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.18); }
+.show-ticket.board-ticket:active { box-shadow: 0 1px 0 #0c2a2d, inset 0 1px 0 rgba(255, 255, 255, 0.18); }
+.board-ticket-icon {
+  display: grid;
+  place-items: center;
+  width: 3.4rem;
+  height: 3.4rem;
+  inset-inline-start: 0.55rem;
+  bottom: auto;
+  top: 50%;
+  translate: 0 -50%;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  filter: none;
+}
+.board-ticket-icon svg { width: 1.8rem; height: 1.8rem; }
+.board-ticket .beta-pill { background: rgba(255, 255, 255, 0.18); color: #fff; }
+.board-ticket-sim {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.75rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 0.6rem;
+  border: 1.5px solid var(--hairline-strong);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ink-2);
+  background: var(--surface);
+  text-decoration: none;
+}
+.board-ticket-sim:hover { border-color: #1d5c63; color: #1d5c63; }
+
 /* البحث */
 .search-well {
   display: flex;

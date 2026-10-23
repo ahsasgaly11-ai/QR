@@ -6,6 +6,7 @@ import {
   locateActivity,
 } from '@/lib/content';
 import { AdminShell } from '@/components/admin/admin-shell';
+import { getBoardGames } from '@/lib/board-games';
 import { PageCourt } from '@/components/page-court';
 import { SITE_NAME } from '@/lib/site';
 
@@ -15,11 +16,12 @@ export const dynamic = 'force-dynamic';
 export const metadata = { title: `لوحة الإدارة | ${SITE_NAME}` };
 
 export default async function AdminPage() {
-  const [subjects, structure, activities, uploadedIds] = await Promise.all([
+  const [subjects, structure, activities, uploadedIds, boardGames] = await Promise.all([
     getSubjects(),
     getStructure(),
     getAllActivities(),
     getUploadedActivityIds(),
+    getBoardGames(),
   ]);
 
   const labels: Record<string, string> = {};
@@ -38,7 +40,7 @@ export default async function AdminPage() {
         title="لوحة الإدارة"
         icon="key"
         color="#5b3a22"
-        lead="ارفع الأنشطة ونظّمها، وأدِر بنية المناهج والمواد والوحدات والدروس، وعناوين أقسام الموقع ونصوصها، ورسائل الشريط وإعدادات التنزيل."
+        lead="ارفع الأنشطة ونظّمها، وأدِر ألعاب السبورة الذكية وربطها بدروسها، وبنية المناهج والمواد والوحدات والدروس، وعناوين أقسام الموقع ونصوصها، ورسائل الشريط وإعدادات التنزيل."
       />
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
         <AdminShell
@@ -47,6 +49,7 @@ export default async function AdminPage() {
           activities={activities}
           uploadedIds={[...uploadedIds]}
           labels={labels}
+          boardGames={boardGames}
         />
       </div>
     </>

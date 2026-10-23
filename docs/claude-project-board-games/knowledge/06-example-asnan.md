@@ -1,4 +1,4 @@
-# مثال لعبة كاملة: «ركّب الأسنان» (مولَّد 2026-10-21 من public/asnan/)
+# مثال لعبة كاملة: «ركّب الأسنان» (مولَّد 2026-10-23 من public/asnan/)
 لعبة أغنى من القالب: رسم SVG مخصّص (فكّان بقوسين وخانات على امتدادهما)، وضعان (ركّب/تعرّف)،
 سباق فريقين لكل فريق فكّه وبطاقاته، معلومة عن كل نوع، نطق الاسم، خريطة ألوان في النتيجة.
 استرشد بها حين تحتاج اللعبة رسمًا علميًا تُوضع عليه العناصر (مخطط، خريطة، جسم، دائرة كهربائية…).
@@ -24,9 +24,15 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
+<!-- three.js r186 الكلاسيكي (WebGLRenderer) وإضافاته مستضافة محليًا: سياسة CSP تمنع الروابط الخارجية (الملف 10) -->
+<script type="importmap">{ "imports": {
+  "three": "/board-kit/vendor/three/three.module.min.js",
+  "three/addons/": "/board-kit/vendor/three/addons/"
+} }</script>
 <link rel="stylesheet" href="/board-kit/css/kit.css">
 <link rel="stylesheet" href="css/app.css">
 <link rel="modulepreload" href="js/main.js">
+<link rel="modulepreload" href="js/scene3d.js">
 <link rel="modulepreload" href="/board-kit/js/app.js">
 </head>
 <body>
@@ -139,95 +145,100 @@ export const CROWN_LEN = { incisor: 1.15, canine: 1.22, premolar: 1.0, molar: 0.
 const f = (n) => Math.round(n * 1000) / 1000;
 const P = (pts) => pts.map(([c, ...xy]) => c + xy.map(f).join(' ')).join(' ');
 
-/** مسار التاج لكل نوع: شكله هو ما يميّز النوع (حافة مستقيمة، رأس مدبّب، نتوءان، عدة نتوءات). */
-export function crownPath(type) {
-  switch (type) {
-    case 'incisor': // حافة قاطعة مستقيمة عريضة
-      return P([
-        ['M', -0.36, 0],
-        ['C', -0.42, 0.35, -0.5, 0.7, -0.49, 1.02],
-        ['Q', -0.48, 1.15, -0.36, 1.15],
-        ['L', 0.36, 1.15],
-        ['Q', 0.48, 1.15, 0.49, 1.02],
-        ['C', 0.5, 0.7, 0.42, 0.35, 0.36, 0],
-        ['Z'],
-      ]);
-    case 'canine': // رأس واحد مدبّب
-      return P([
-        ['M', -0.37, 0],
-        ['C', -0.48, 0.3, -0.52, 0.62, -0.42, 0.86],
-        ['C', -0.3, 1.04, -0.12, 1.16, 0, 1.24],
-        ['C', 0.12, 1.16, 0.3, 1.04, 0.42, 0.86],
-        ['C', 0.52, 0.62, 0.48, 0.3, 0.37, 0],
-        ['Z'],
-      ]);
-    case 'premolar': // نتوءان
-      return P([
-        ['M', -0.38, 0],
-        ['C', -0.5, 0.28, -0.52, 0.58, -0.44, 0.8],
-        ['C', -0.38, 0.97, -0.3, 1.02, -0.22, 1.0],
-        ['C', -0.12, 0.98, -0.06, 0.86, 0, 0.84],
-        ['C', 0.06, 0.86, 0.12, 0.98, 0.22, 1.0],
-        ['C', 0.3, 1.02, 0.38, 0.97, 0.44, 0.8],
-        ['C', 0.52, 0.58, 0.5, 0.28, 0.38, 0],
-        ['Z'],
-      ]);
-    case 'molar': // تاج عريض بثلاثة نتوءات
-    default:
-      return P([
-        ['M', -0.42, 0],
-        ['C', -0.52, 0.2, -0.53, 0.46, -0.47, 0.66],
-        ['C', -0.44, 0.84, -0.36, 0.88, -0.29, 0.86],
-        ['C', -0.22, 0.84, -0.18, 0.74, -0.13, 0.73],
-        ['C', -0.08, 0.74, -0.05, 0.86, 0, 0.87],
-        ['C', 0.05, 0.86, 0.08, 0.74, 0.13, 0.73],
-        ['C', 0.18, 0.74, 0.22, 0.84, 0.29, 0.86],
-        ['C', 0.36, 0.88, 0.44, 0.84, 0.47, 0.66],
-        ['C', 0.53, 0.46, 0.52, 0.2, 0.42, 0],
-        ['Z'],
-      ]);
-  }
-}
+/** مخطّطات التيجان: شكل كل نوع هو ما يميّزه (حافة مستقيمة، رأس مدبّب، نتوءان، عدة نتوءات). تُستعمل للـSVG وللمجسّمات. */
+export const CROWN_CMDS = {
+  incisor: [
+    ['M', -0.36, 0],
+    ['C', -0.42, 0.35, -0.5, 0.7, -0.49, 1.02],
+    ['Q', -0.48, 1.15, -0.36, 1.15],
+    ['L', 0.36, 1.15],
+    ['Q', 0.48, 1.15, 0.49, 1.02],
+    ['C', 0.5, 0.7, 0.42, 0.35, 0.36, 0],
+    ['Z'],
+  ],
+  canine: [
+    ['M', -0.37, 0],
+    ['C', -0.48, 0.3, -0.52, 0.62, -0.42, 0.86],
+    ['C', -0.3, 1.04, -0.12, 1.16, 0, 1.24],
+    ['C', 0.12, 1.16, 0.3, 1.04, 0.42, 0.86],
+    ['C', 0.52, 0.62, 0.48, 0.3, 0.37, 0],
+    ['Z'],
+  ],
+  premolar: [
+    ['M', -0.38, 0],
+    ['C', -0.5, 0.28, -0.52, 0.58, -0.44, 0.8],
+    ['C', -0.38, 0.97, -0.3, 1.02, -0.22, 1.0],
+    ['C', -0.12, 0.98, -0.06, 0.86, 0, 0.84],
+    ['C', 0.06, 0.86, 0.12, 0.98, 0.22, 1.0],
+    ['C', 0.3, 1.02, 0.38, 0.97, 0.44, 0.8],
+    ['C', 0.52, 0.58, 0.5, 0.28, 0.38, 0],
+    ['Z'],
+  ],
+  molar: [
+    ['M', -0.42, 0],
+    ['C', -0.52, 0.2, -0.53, 0.46, -0.47, 0.66],
+    ['C', -0.44, 0.84, -0.36, 0.88, -0.29, 0.86],
+    ['C', -0.22, 0.84, -0.18, 0.74, -0.13, 0.73],
+    ['C', -0.08, 0.74, -0.05, 0.86, 0, 0.87],
+    ['C', 0.05, 0.86, 0.08, 0.74, 0.13, 0.73],
+    ['C', 0.18, 0.74, 0.22, 0.84, 0.29, 0.86],
+    ['C', 0.36, 0.88, 0.44, 0.84, 0.47, 0.66],
+    ['C', 0.53, 0.46, 0.52, 0.2, 0.42, 0],
+    ['Z'],
+  ],
+};
 
 /** الجذور: واحد طويل للقاطع والناب (والناب أطولها)، واثنان متقاربان للضاحك، واثنان متباعدان للطاحن. */
+export const ROOT_CMDS = {
+  incisor: [['M', -0.34, 0.02], ['C', -0.3, -0.5, -0.14, -1.05, 0, -1.3], ['C', 0.14, -1.05, 0.3, -0.5, 0.34, 0.02], ['Z']],
+  canine: [['M', -0.36, 0.02], ['C', -0.32, -0.6, -0.16, -1.3, 0, -1.62], ['C', 0.16, -1.3, 0.32, -0.6, 0.36, 0.02], ['Z']],
+  premolar: [
+    ['M', -0.36, 0.02],
+    ['C', -0.34, -0.45, -0.26, -0.95, -0.15, -1.18],
+    ['C', -0.08, -1.05, -0.04, -0.72, 0, -0.5],
+    ['C', 0.04, -0.72, 0.08, -1.05, 0.15, -1.18],
+    ['C', 0.26, -0.95, 0.34, -0.45, 0.36, 0.02],
+    ['Z'],
+  ],
+  molar: [
+    ['M', -0.41, 0.02],
+    ['C', -0.44, -0.35, -0.42, -0.72, -0.33, -0.95],
+    ['C', -0.24, -0.82, -0.16, -0.5, -0.1, -0.28],
+    ['Q', 0, -0.2, 0.1, -0.28],
+    ['C', 0.16, -0.5, 0.24, -0.82, 0.33, -0.95],
+    ['C', 0.42, -0.72, 0.44, -0.35, 0.41, 0.02],
+    ['Z'],
+  ],
+};
+
+/** مواضع النتوءات على سطح التاج (بإحداثيات الإطار المحلي) للمجسّم ثلاثي الأبعاد. */
+export const CUSPS = {
+  incisor: [],
+  canine: [[0, 0.98, 0.12]],
+  premolar: [[-0.2, 0.62, 0.16], [0.2, 0.62, 0.16]],
+  molar: [[-0.26, 0.5, 0.17], [0.26, 0.5, 0.17], [-0.22, 0.18, 0.15], [0.22, 0.18, 0.15]],
+};
+
+/** مسار التاج لكل نوع (SVG). */
+export function crownPath(type) {
+  return P(CROWN_CMDS[type] || CROWN_CMDS.molar);
+}
+
+/** مسار الجذور لكل نوع (SVG). */
 export function rootPath(type) {
-  switch (type) {
-    case 'incisor':
-      return P([['M', -0.34, 0.02], ['C', -0.3, -0.5, -0.14, -1.05, 0, -1.3], ['C', 0.14, -1.05, 0.3, -0.5, 0.34, 0.02], ['Z']]);
-    case 'canine':
-      return P([['M', -0.36, 0.02], ['C', -0.32, -0.6, -0.16, -1.3, 0, -1.62], ['C', 0.16, -1.3, 0.32, -0.6, 0.36, 0.02], ['Z']]);
-    case 'premolar':
-      return P([
-        ['M', -0.36, 0.02],
-        ['C', -0.34, -0.45, -0.26, -0.95, -0.15, -1.18],
-        ['C', -0.08, -1.05, -0.04, -0.72, 0, -0.5],
-        ['C', 0.04, -0.72, 0.08, -1.05, 0.15, -1.18],
-        ['C', 0.26, -0.95, 0.34, -0.45, 0.36, 0.02],
-        ['Z'],
-      ]);
-    case 'molar':
-    default:
-      return P([
-        ['M', -0.41, 0.02],
-        ['C', -0.44, -0.35, -0.42, -0.72, -0.33, -0.95],
-        ['C', -0.24, -0.82, -0.16, -0.5, -0.1, -0.28],
-        ['Q', 0, -0.2, 0.1, -0.28],
-        ['C', 0.16, -0.5, 0.24, -0.82, 0.33, -0.95],
-        ['C', 0.42, -0.72, 0.44, -0.35, 0.41, 0.02],
-        ['Z'],
-      ]);
-  }
+  return P(ROOT_CMDS[type] || ROOT_CMDS.molar);
 }
 
 /** إطار الخانة الفارغة: تاج عام بلا ملامح (لا يكشف النوع، وعرضه فقط يلمّح للحجم). */
-export const SLOT_PATH = P([
+export const SLOT_CMDS = [
   ['M', -0.4, 0],
   ['C', -0.5, 0.3, -0.5, 0.75, -0.42, 0.92],
   ['Q', -0.35, 1.04, 0, 1.04],
   ['Q', 0.35, 1.04, 0.42, 0.92],
   ['C', 0.5, 0.75, 0.5, 0.3, 0.4, 0],
   ['Z'],
-]);
+];
+export const SLOT_PATH = P(SLOT_CMDS);
 ```
 
 ## `public/asnan/js/game.js`
@@ -249,6 +260,7 @@ export const SLOT_PATH = P([
 import { TYPES, TYPE_ORDER, jawTeeth, crownPath, rootPath, SLOT_PATH, CROWN_LEN } from './teeth.js';
 import { archCurve, placeOnArch, inwardNormal } from '../../board-kit/js/geometry.js';
 import { sfx, say } from '../../board-kit/js/audio.js';
+import { pickTier } from './scene3d.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 /** عمق القوس ÷ عرضه (الفك البشري أعرض من عمقه). */
@@ -314,6 +326,70 @@ export class Game {
     this._hoverOn = new Set();
     this._timers = new Set();
     this.state = null;
+    // المشهد ثلاثي الأبعاد (scene3d.js): الفكوك والأسنان مجسّمة فوق الخلفية، وSVG يبقى
+    // طبقة الأهداف (وفي الطبقة C هو الرسم نفسه كما كان)
+    this.scene = null;
+    this.thumbs = null;
+    this._jawData = [];
+    const { tier, forced } = pickTier();
+    this.tier = 'C';
+    this.stage.dataset.tier = 'C';
+    if (tier !== 'C') this._init3D(tier, forced);
+  }
+
+  async _init3D(tier, forced) {
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.id = 'gl';
+      canvas.setAttribute('aria-hidden', 'true');
+      const { createScene3D } = await import('./scene3d.js');
+      const sc = await createScene3D(canvas, { tier, forced });
+      if (!sc) return;
+      this.scene = sc;
+      this.tier = sc.tier;
+      this.stage.prepend(canvas);
+      this.stage.dataset.tier = sc.tier;
+      this.stage.classList.add('has3d');
+      if (Object.keys(sc.thumbs).length === TYPE_ORDER.length) this.thumbs = sc.thumbs;
+      sc.onTier = (t) => {
+        if (t === 'C') return this._dropTo2D();
+        this.tier = t;
+        this.stage.dataset.tier = t;
+      };
+      this.render();
+      const loop = (now) => {
+        if (!this.scene) return;
+        this.scene.frame(now);
+        requestAnimationFrame(loop);
+      };
+      requestAnimationFrame(loop);
+    } catch (e) {
+      console.warn('3D غير متاح ← الطبقة C', e);
+      this._dropTo2D();
+    }
+  }
+
+  /** الجهاز لا يحمل المشهد: نعود إلى رسوم SVG الأصلية بلا أي تغيير في الأهداف. */
+  _dropTo2D() {
+    this.scene?.dispose();
+    this.scene = null;
+    this.thumbs = null;
+    this.tier = 'C';
+    this.stage.dataset.tier = 'C';
+    this.stage.classList.remove('has3d');
+    this.stage.querySelector('#gl')?.remove();
+    this.render();
+  }
+
+  /** أيقونة السن للبطاقة: صورة مصيَّرة من المجسّم إن توفّرت، وإلا رسم SVG. */
+  _toothIcon(type) {
+    if (!this.thumbs?.[type]) return toothIconSvg(type);
+    const img = document.createElement('img');
+    img.src = this.thumbs[type];
+    img.alt = '';
+    img.className = `tooth-img t-${type}`;
+    img.draggable = false;
+    return img;
   }
 
   // ------------------------------------------------------------------ عام
@@ -325,6 +401,7 @@ export class Game {
     this.scale = h / 1000;
     this.stage.style.setProperty('--u', `${this.scale}px`);
     for (const s of [this.board, this.fx]) s.setAttribute('viewBox', `0 0 ${this.VW} ${this.VH}`);
+    this.scene?.resize(this.VW, this.VH, this.scale);
   }
 
   setSettings(s) {
@@ -339,6 +416,7 @@ export class Game {
     for (const id of this._hoverOn) if (!ids.has(id)) this._els.get(id)?.classList.remove('hover');
     for (const id of ids) if (!this._hoverOn.has(id)) this._els.get(id)?.classList.add('hover');
     this._hoverOn = new Set(ids);
+    this.scene?.setHover(ids);
   }
 
   later(fn, ms) {
@@ -364,12 +442,15 @@ export class Game {
     this.hud.replaceChildren();
     this.fx.replaceChildren();
     this.board.appendChild(this._defs());
+    this._jawData = [];
     if (this.screen === 'menu') this._renderMenu();
     else this._renderPlay();
     const cursors = svg('g', { class: 'cursors' });
     this.fx.appendChild(cursors);
     this.input?.attachLayer(cursors);
     this._collectTargets();
+    // المجسّمات في مواضع خانات SVG نفسها؛ في القائمة والنتيجة تُصبغ المينا بلون النوع
+    this.scene?.setJaws(this._jawData, { reveal: this.screen !== 'play' });
   }
 
   _defs() {
@@ -450,6 +531,7 @@ export class Game {
     const meanW = placed.slots.reduce((s, x) => s + x.width, 0) / placed.slots.length;
     // اللثة: شريط على امتداد القوس نحو الخارج (جهة الجذور)
     const off = [];
+    const outer = [];
     const pts = curve.pts;
     for (let i = 0; i < pts.length; i += 6) {
       const a = pts[Math.max(0, i - 1)];
@@ -460,7 +542,10 @@ export class Game {
       tx /= l;
       ty /= l;
       const { nx, ny } = inwardNormal(curve, pts[i].x, pts[i].y, tx, ty);
-      off.push(`${(pts[i].x - nx * meanW * 0.42).toFixed(1)},${(pts[i].y - ny * meanW * 0.42).toFixed(1)}`);
+      const ox = pts[i].x - nx * meanW * 0.42;
+      const oy = pts[i].y - ny * meanW * 0.42;
+      outer.push({ x: ox, y: oy });
+      off.push(`${ox.toFixed(1)},${oy.toFixed(1)}`);
     }
     const line = off.join(' ');
     gum.appendChild(svg('polyline', { points: line, class: 'gum-edge', 'stroke-width': (meanW * 1.12).toFixed(1) }));
@@ -489,18 +574,24 @@ export class Game {
         filled: filledAll,
         crownEl,
         slotEl,
+        // أصل الإطار المحلي للسن (العنق) وزاويته — للمجسّم
+        ox: p.x,
+        oy: p.y,
+        angle: p.angle,
       };
       this._showSlot(slot, false);
       if (interactive) this._els.set(slot.id, slotEl);
       return slot;
     });
     this.board.appendChild(layer);
+    this._jawData.push({ jaw, pts: curve.pts, outer, meanW, slots });
     return slots;
   }
 
   _showSlot(slot, animate) {
     slot.crownEl.style.display = slot.filled ? '' : 'none';
     slot.slotEl.style.display = slot.filled ? 'none' : '';
+    this.scene?.setFilled(slot.id, slot.filled, animate);
     if (animate) {
       const inner = slot.crownEl.firstChild;
       inner.classList.remove('popping');
@@ -683,7 +774,7 @@ export class Game {
       const T = TYPES[id];
       const card = html('div', `card t-${id}`);
       card.dataset.target = `card:${team}:${id}`;
-      card.appendChild(toothIconSvg(id));
+      card.appendChild(this._toothIcon(id));
       const body = html('div', 'card-body', `<b>${T.name}</b><small>${T.job}</small>`);
       const count = html('span', 'count');
       body.appendChild(count);
@@ -864,6 +955,7 @@ export class Game {
     slot.slotEl.classList.remove('wrong');
     void slot.slotEl.getBoundingClientRect();
     slot.slotEl.classList.add('wrong');
+    this.scene?.wrong(slot.id);
     this.later(() => slot.slotEl.classList.remove('wrong'), 700);
     if (T.wrongStreak[type] >= 2) {
       this.toast(`تلميح: الخانات المضيئة لـ${TYPES[type].name}`, 'hint');
@@ -883,7 +975,9 @@ export class Game {
   }
 
   _hint(pred) {
-    for (const s of this.slots.filter(pred)) {
+    const hs = this.slots.filter(pred);
+    this.scene?.hint(hs.map((s) => s.id), 2600);
+    for (const s of hs) {
       s.slotEl.classList.add('hint');
       this.later(() => s.slotEl.classList.remove('hint'), 2600);
     }
@@ -938,6 +1032,7 @@ export class Game {
   _markQuiz() {
     const targets = new Set(Object.values(this.state.teams).map((t) => t.quizTarget));
     for (const s of this.slots) s.slotEl.classList.toggle('target', targets.has(s.id));
+    this.scene?.setTarget(targets);
   }
 
   _answer(team, type, cardEl) {
@@ -1056,11 +1151,12 @@ export class Game {
   heldIcon(type, team) {
     const teamed = team && team !== 'all';
     const g = svg('g', { class: `held-item held-tooth t-${type}${teamed ? ` team-${team}` : ''}`, 'data-team': teamed ? team : null });
-    const icon = toothIconSvg(type);
     const size = 92;
     const crown = CROWN_LEN[type];
     const rootLen = { incisor: 1.3, canine: 1.62, premolar: 1.18, molar: 0.95 }[type];
     const h = (size * (crown + rootLen + 0.16)) / 1.16;
+    // الصورة المصيَّرة من المجسّم إن توفّرت (بنسبة 256×340)، وإلا رسم SVG
+    const icon = this.thumbs?.[type] ? svg('image', { href: this.thumbs[type], preserveAspectRatio: 'xMidYMid meet' }) : toothIconSvg(type);
     icon.setAttribute('width', size);
     icon.setAttribute('height', h.toFixed(1));
     icon.setAttribute('x', -size / 2);
@@ -1143,4 +1239,13 @@ export class Game {
 /* لون كل فريق (يستعمله kit.css لشريط الفريق وإطار بطاقاته وهالة سنّه المحمول) */
 .team-upper { --team: #8a1538; }
 .team-lower { --team: #0e7490; }
+
+/* ---------------------------------------------------------------- المشهد ثلاثي الأبعاد */
+#gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+/* المجسّمات تحلّ محلّ رسوم SVG (التي تبقى طبقة الأهداف والتسميات) */
+.has3d .gum-layer, .has3d .crowns-layer, .has3d .slots-layer .slot-shape { display: none; }
+.has3d .jaw-label { fill: #5f0d26; opacity: 0.9; paint-order: stroke; stroke: rgba(255, 255, 255, 0.75); stroke-width: 6px; }
+.has3d .menu-legend .lg i { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8); }
+.tooth-img { object-fit: contain; filter: drop-shadow(0 4px 4px rgba(60, 30, 10, 0.25)); }
+.held-tooth image { filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.35)); }
 ```

@@ -14,9 +14,15 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
+<!-- three.js r186 الكلاسيكي (WebGLRenderer) وإضافاته مستضافة محليًا: سياسة CSP تمنع الروابط الخارجية (الملف 10) -->
+<script type="importmap">{ "imports": {
+  "three": "/board-kit/vendor/three/three.module.min.js",
+  "three/addons/": "/board-kit/vendor/three/addons/"
+} }</script>
 <link rel="stylesheet" href="/board-kit/css/kit.css">
 <link rel="stylesheet" href="css/app.css">
 <link rel="modulepreload" href="js/main.js">
+<link rel="modulepreload" href="js/scene3d.js">
 <link rel="modulepreload" href="/board-kit/js/app.js">
 </head>
 <body>

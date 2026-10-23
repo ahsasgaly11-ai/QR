@@ -76,7 +76,7 @@ const PANEL_HTML = ({ speechLabel, reachLabel }) => `
   <section>
     <h3>٣. اللعب</h3>
     <label class="field">مدة إبقاء اليد <output id="dwellVal"></output>
-      <input id="dwell" type="range" min="400" max="1500" step="50">
+      <input id="dwell" type="range" min="300" max="1500" step="50">
     </label>
     <label class="field">${reachLabel} <output id="reachVal"></output>
       <input id="reach" type="range" min="0" max="45" step="1">
@@ -207,7 +207,10 @@ export function startBoardApp({
       lastClock = now;
       game.tickClock?.();
       if (!panel.hidden && $('#preview').dataset.on === '1') tracker.drawPreview($('#preview'));
-      if (!panel.hidden) $('#fps').textContent = tracker.active ? `${tracker.fps} إطار/ث • ${tracker.delegate || ''}` : '';
+      if (!panel.hidden)
+        $('#fps').textContent = tracker.active
+          ? `${tracker.fps} إطار/ث • ${Math.round(tracker.inferMs)} م.ث استدلال • ${tracker.backendLabel}`
+          : '';
     }
     requestAnimationFrame(loop);
   }

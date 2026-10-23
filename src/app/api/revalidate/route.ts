@@ -24,6 +24,7 @@ function pathsFor(subjectId?: string, activityId?: string): string[] {
     '/dashboard',
     '/smart-games',
     '/smart-presentations',
+    '/board-games',
     '/heatmap',
     '/about',
   ];

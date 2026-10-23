@@ -19,7 +19,7 @@ import { HeritageIcon } from '@/components/heritage-icons';
 import type { HeritageIconKind } from '@/components/heritage-icons';
 import { PRESENTATIONS_PATH, presentationsCount } from '@/lib/types';
 import { doorStyle, fetchSiteTextsServer, homeOrder, isSectionHidden, SPECIAL_DOORS, txt } from '@/lib/site-texts';
-import { BOARD_GAMES, boardGames } from '@/data/board-games';
+import { boardGameContext, getVisibleBoardGames } from '@/lib/board-games';
 import { BoardGameCard, ClassroomSetupDiagram } from '@/components/board-games';
 import { T } from '@/components/editable-text';
 
@@ -39,7 +39,7 @@ const TYPE_ICONS: HeritageIconKind[] = ['flask', 'globe', 'question', 'oyster'];
 export default async function HomePage() {
   // المحتوى والعدّادات المشتركة وآراء «أثر التعلّم» تُقرأ معًا في الخادم،
   // فتصل الأرقام الفعلية مضمَّنة في HTML بدل أصفار تنتظر المتصفّح.
-  const [subjects, activities, siteStats, reach, impact, mastery, texts] = await Promise.all([
+  const [subjects, activities, siteStats, reach, impact, mastery, texts, boardGames] = await Promise.all([
     getSubjects(),
     getAllActivities(),
     getSiteStatsServer(),
@@ -47,6 +47,8 @@ export default async function HomePage() {
     fetchImpactServer(),
     getMasteryServer(),
     fetchSiteTextsServer(),
+    // ألعاب السبورة الظاهرة: من Firestore فوق القائمة المضمّنة (ما يعدّله المشرف يظهر هنا)
+    getVisibleBoardGames(),
   ]);
   const t = (key: string) => txt(texts, key);
   // نصّ قابل للتحرير المباشر من الموقع (انظر InlineTextEditor)
@@ -63,7 +65,7 @@ export default async function HomePage() {
     .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
   const smartGames = activities.filter((a) => a.smartReinforcement).length;
   const presentations = activities.filter((a) => a.presentation).length;
-  const boardGameCount = BOARD_GAMES.length;
+  const boardGameCount = boardGames.length;
 
   // أقسام الرئيسية بمعرّفاتها؛ يُعرض منها الظاهر بالترتيب الذي يحدّده المشرف
   const sections: Record<string, React.ReactNode> = {
@@ -178,13 +180,14 @@ export default async function HomePage() {
           {/* أقل من ثلاث ألعاب: بجانبها مخطط تجهيز الصف، وإلا فالبطاقات بعرض القسم */}
           <div className={boardGameCount < 3 ? 'bg-home-split' : undefined}>
             <div className="bg-grid">
-              {boardGames()
-                .slice(0, 3)
-                .map((g, i) => (
+              {boardGames.slice(0, 3).map((g, i) => {
+                const ctx = boardGameContext(subjects, g);
+                return (
                   <Reveal key={g.slug} delay={i * 80}>
-                    <BoardGameCard game={g} />
+                    <BoardGameCard game={g} context={[ctx.subjectTitle, ctx.context].filter(Boolean).join(' • ')} />
                   </Reveal>
-                ))}
+                );
+              })}
             </div>
             {boardGameCount < 3 && (
               <figure className="bg-diagram bg-home-setup">

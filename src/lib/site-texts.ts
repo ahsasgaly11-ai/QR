@@ -277,12 +277,120 @@ export const SITE_TEXT_GROUPS: SiteTextGroup[] = [
     id: 'page.boardGames',
     label: 'صفحة ألعاب السبورة الذكية',
     href: '/board-games',
-    fields: court(
-      'page.boardGames',
-      'جديد • المس السبورة بيدك',
-      'ألعاب السبورة الذكية',
-      'ألعاب صفّية تُلعب بلمس السبورة بالأيدي، بلا أقلام إلكترونية ولا أجهزة للطلاب: جهاز المعلّم يعرض اللعبة على جهاز العرض ويرى أيدي الطلاب بكاميرته.'
-    ),
+    fields: [
+      ...court(
+        'page.boardGames',
+        'جديد • المس السبورة بيدك',
+        'ألعاب السبورة الذكية',
+        'ألعاب صفّية تُلعب بلمس السبورة بالأيدي، بلا أقلام إلكترونية ولا أجهزة للطلاب: جهاز المعلّم يعرض اللعبة على جهاز العرض ويرى أيدي الطلاب بكاميرته.'
+      ),
+      // ما تحتاجه (٤ بطاقات)
+      { key: 'page.boardGames.needs.1.title', label: 'ما تحتاجه ١ • العنوان', default: 'جهاز عرض' },
+      { key: 'page.boardGames.needs.1.text', label: 'ما تحتاجه ١ • الشرح', default: 'تفاعلي أو عادي، يعرض على سبورة بيضاء أو جدار فاتح.', long: true },
+      { key: 'page.boardGames.needs.2.title', label: 'ما تحتاجه ٢ • العنوان', default: 'آيباد أو هاتف' },
+      { key: 'page.boardGames.needs.2.text', label: 'ما تحتاجه ٢ • الشرح', default: 'بالوضع الأفقي على حامل، بنظام iOS ‏16.4 أو أندرويد حديث.', long: true },
+      { key: 'page.boardGames.needs.3.title', label: 'ما تحتاجه ٣ • العنوان', default: 'انعكاس الشاشة' },
+      {
+        key: 'page.boardGames.needs.3.text',
+        label: 'ما تحتاجه ٣ • الشرح',
+        default: 'مباشرة إلى جهاز العرض: Screen Mirroring في أندرويد، أو تطبيق Epson iProjection للآيفون والآيباد، أو Apple TV، أو كابل HDMI.',
+        long: true,
+      },
+      { key: 'page.boardGames.needs.4.title', label: 'ما تحتاجه ٤ • العنوان', default: 'أيدي الطلاب فقط' },
+      { key: 'page.boardGames.needs.4.text', label: 'ما تحتاجه ٤ • الشرح', default: 'لا أقلام إلكترونية ولا أجهزة للطلاب ولا تطبيقات تُثبَّت.', long: true },
+      // مكتبة الألعاب
+      { key: 'page.boardGames.library.kicker', label: 'مكتبة الألعاب • السطر التمهيدي', default: 'مكتبة ألعاب السبورة' },
+      { key: 'page.boardGames.library.title', label: 'مكتبة الألعاب • العنوان', default: 'اختر لعبة واعرضها على السبورة' },
+      {
+        key: 'page.boardGames.library.lead',
+        label: 'مكتبة الألعاب • الوصف',
+        default: 'كل لعبة تُفتح بملء الشاشة على جهاز المعلّم، وتعمل باللمس باليد أو بلمس شاشة الجهاز. اللعبة المرتبطة بدرس تظهر أيضًا شريطًا «لعبة السبورة» داخل درسها في صفحة المادة.',
+        long: true,
+      },
+      // تجهيز الصف (٤ خطوات)
+      { key: 'page.boardGames.setup.kicker', label: 'تجهيز الصف • السطر التمهيدي', default: 'دليل المعلّم' },
+      { key: 'page.boardGames.setup.title', label: 'تجهيز الصف • العنوان', default: 'جهّز صفّك في أربع خطوات' },
+      { key: 'page.boardGames.setup.1.title', label: 'الخطوة ١ • العنوان', default: 'ثبّت الجهاز جانبيًا' },
+      {
+        key: 'page.boardGames.setup.1.text',
+        label: 'الخطوة ١ • الشرح',
+        default: 'على حامل في زاوية قريبة من السبورة (متر إلى متر ونصف)، والكاميرا الخلفية ترى الصورة المعروضة كاملة. لا تضعه على طاولة خلف الطلاب.',
+        long: true,
+      },
+      { key: 'page.boardGames.setup.2.title', label: 'الخطوة ٢ • العنوان', default: 'اعكس الشاشة على جهاز العرض' },
+      {
+        key: 'page.boardGames.setup.2.text',
+        label: 'الخطوة ٢ • الشرح',
+        default:
+          'لا يلزم Apple TV: في أندرويد «بث الشاشة» (Screen Mirroring) مباشرة إلى جهاز العرض، وفي الآيفون والآيباد تطبيق Epson iProjection ← «Mirror device screen»، أو Apple TV إن وُجد، أو كابل HDMI. ثم افتح اللعبة من هذه الصفحة.',
+        long: true,
+      },
+      { key: 'page.boardGames.setup.3.title', label: 'الخطوة ٣ • العنوان', default: 'شغّل الكاميرا وعايِر' },
+      {
+        key: 'page.boardGames.setup.3.text',
+        label: 'الخطوة ٣ • الشرح',
+        default: 'من زر ⚙ في اللعبة: «تشغيل الكاميرا» ثم «معايرة تلقائية» وابتعدوا عن السبورة ٨ ثوانٍ. المعايرة تصلح لكل ألعاب القسم ما دام الحامل مكانه.',
+        long: true,
+      },
+      { key: 'page.boardGames.setup.4.title', label: 'الخطوة ٤ • العنوان', default: 'العبوا بأيديكم' },
+      {
+        key: 'page.boardGames.setup.4.text',
+        label: 'الخطوة ٤ • الشرح',
+        default: 'يضع الطالب كفّه على البطاقة ويبقيها حتى تمتلئ الدائرة، ثم يسحبها إلى مكانها ويبقيها لحظة. يلعب أكثر من طالب معًا.',
+        long: true,
+      },
+      {
+        key: 'page.boardGames.setup.caption',
+        label: 'تعليق مخطط الصف',
+        default: 'الجهاز في زاوية جانبية يرى السبورة والأيدي، لا خلف الطلاب حيث تحجب أجسامهم أيديهم.',
+        long: true,
+      },
+      // أسئلة المعلّمين (٥)
+      { key: 'page.boardGames.faq.kicker', label: 'الأسئلة • السطر التمهيدي', default: 'أسئلة المعلّمين' },
+      { key: 'page.boardGames.faq.title', label: 'الأسئلة • العنوان', default: 'قبل أن تبدأ' },
+      { key: 'page.boardGames.faq.1.q', label: 'السؤال ١', default: 'هل تظهر صورة الطلاب على السبورة أو تُرسل إلى أي مكان؟' },
+      {
+        key: 'page.boardGames.faq.1.a',
+        label: 'الجواب ١',
+        default: 'لا. الكاميرا تعمل في الخلفية ولا تُعرض صورتها على الصفحة، وتتبّع اليد يجري داخل الجهاز نفسه؛ لا يُرسل أي فيديو أو صورة إلى خادم.',
+        long: true,
+      },
+      { key: 'page.boardGames.faq.2.q', label: 'السؤال ٢', default: 'الطلاب الصغار لا يصلون إلى أعلى السبورة؟' },
+      {
+        key: 'page.boardGames.faq.2.a',
+        label: 'الجواب ٢',
+        default: 'من ⚙ في اللعبة: «أنزِل منطقة اللعب» يجعل كل ما يُلمس في الجزء السفلي، و«إبعاد البطاقات عن طرفي الصورة» إن كانت الأطراف خارج السبورة.',
+        long: true,
+      },
+      { key: 'page.boardGames.faq.3.q', label: 'السؤال ٣', default: 'اليد لا تُكشف أحيانًا أو تضيع أثناء السحب؟' },
+      {
+        key: 'page.boardGames.faq.3.a',
+        label: 'الجواب ٣',
+        default: 'قرّب الجهاز من السبورة وضعه في زاوية جانبية، واجعل «دقة تتبّع اليد» على «قصوى». إن اختفت اليد لحظة يبقى العنصر مكانه بدائرة ذهبية حتى تعود اليد إليه.',
+        long: true,
+      },
+      { key: 'page.boardGames.faq.4.q', label: 'السؤال ٤', default: 'لا يوجد Apple TV في الصف؟' },
+      {
+        key: 'page.boardGames.faq.4.a',
+        label: 'الجواب ٤',
+        default:
+          'لا بأس. جهاز العرض التفاعلي من Epson يستقبل الشاشة لاسلكيًا بنفسه: الهاتف الأندرويد عبر «بث الشاشة» (Screen Mirroring / Miracast)، والآيفون والآيباد عبر تطبيق Epson iProjection المجاني (على شبكة Wi-Fi نفسها) ثم «Mirror device screen». ويصلح أيضًا كابل HDMI مع محوّل. المعايرة تقيس تأخير الانعكاس وتعمل مع كل الطرق.',
+        long: true,
+      },
+      { key: 'page.boardGames.faq.5.q', label: 'السؤال ٥', default: 'لا تتوفّر كاميرا أو حامل الآن؟' },
+      {
+        key: 'page.boardGames.faq.5.a',
+        label: 'الجواب ٥',
+        default: 'كل الألعاب تعمل أيضًا بلمس شاشة الجهاز نفسه (سحب وإفلات)، والصورة تنعكس على السبورة كالمعتاد.',
+        long: true,
+      },
+      {
+        key: 'page.boardGames.privacy',
+        label: 'سطر الخصوصية أسفل الصفحة',
+        default: 'تتبّع اليد يجري داخل جهاز المعلّم فقط، ولا تُحفظ صور الطلاب ولا تُرسل.',
+        long: true,
+      },
+    ],
   },
   {
     id: 'page.reviews',
